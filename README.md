@@ -39,3 +39,11 @@ Planned development priorities:
 - structured JSON/CSV outputs;
 - CLI-first workflow;
 - tests around validation, tagging, scoring, and reporting.
+
+## Data Contracts
+
+Quillan's MVP data contracts are documented in [`docs/data_contracts.md`](docs/data_contracts.md).
+
+Synthetic example files are available in [`examples/`](examples/).
+
+The repository should not include real student data.
