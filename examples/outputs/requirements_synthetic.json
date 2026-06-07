@@ -1,0 +1,23 @@
+{
+  "submission_id": "sub_0001_villainy_final_essay_synthetic",
+  "student_id": "stu_0001",
+  "assignment_id": "villainy_final_essay_synthetic",
+  "requirements_check": {
+    "paragraph_count": {
+      "expected_min": 4,
+      "expected_max": 6,
+      "actual": 5,
+      "status": "met"
+    },
+    "word_count": {
+      "expected_min": 500,
+      "actual": 151,
+      "status": "not_met"
+    },
+    "required_elements": {
+      "thesis": "met",
+      "textual evidence": "met",
+      "comparative reasoning": "partially_met"
+    }
+  }
+}
