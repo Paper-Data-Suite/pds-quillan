@@ -1,0 +1,84 @@
+"""Tests for shared PDS assignment storage paths."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from pds_core.routes import (
+    assignment_config_path as pds_assignment_config_path,
+    assignment_dir as pds_assignment_dir,
+    assignment_submissions_dir as pds_assignment_submissions_dir,
+    student_submission_dir as pds_student_submission_dir,
+)
+
+from quillan.storage import (
+    assignment_config_path,
+    assignment_dir,
+    assignment_submissions_dir,
+    feedback_path,
+    reports_dir,
+    requirements_path,
+    scores_path,
+    student_submission_dir,
+    submission_text_path,
+    tags_path,
+)
+
+CLASS_ID = "english12_period3_synthetic"
+ASSIGNMENT_ID = "villainy_final_essay_synthetic"
+STUDENT_ID = "stu_0001"
+
+
+def test_assignment_paths_use_shared_pds_routes(tmp_path: Path) -> None:
+    expected_dir = tmp_path / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID
+
+    assert assignment_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID) == expected_dir
+    assert assignment_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID) == pds_assignment_dir(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID
+    )
+    assert assignment_config_path(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID
+    ) == pds_assignment_config_path(tmp_path, CLASS_ID, ASSIGNMENT_ID)
+    assert assignment_submissions_dir(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID
+    ) == pds_assignment_submissions_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID)
+
+
+def test_quillan_assignment_files_remain_assignment_local(tmp_path: Path) -> None:
+    expected_dir = pds_assignment_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID)
+
+    assert reports_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID) == expected_dir / "reports"
+
+
+def test_student_files_remain_submission_local(tmp_path: Path) -> None:
+    expected_dir = pds_student_submission_dir(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+    )
+
+    assert (
+        student_submission_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+        == expected_dir
+    )
+    assert (
+        submission_text_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+        == expected_dir / "submission.txt"
+    )
+    assert (
+        requirements_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+        == expected_dir / "requirements.json"
+    )
+    assert (
+        tags_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+        == expected_dir / "tags.json"
+    )
+    assert (
+        scores_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+        == expected_dir / "scores.json"
+    )
+    assert (
+        feedback_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+        == expected_dir / "feedback.md"
+    )
