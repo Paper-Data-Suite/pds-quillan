@@ -69,19 +69,39 @@ Development priorities:
 
 ## Local Setup
 
+`pds-core` is required for local Paper Data Suite development. Check out
+`pds-core` and `pds-quillan` as sibling repositories; the parent directory name
+and location can vary:
+
+```text
+Paper-Data-Suite/
+  pds-core/
+  pds-quillan/
+```
+
 Create and activate a virtual environment:
 
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
-````
+```
 
-Install the project with development dependencies:
+From inside `pds-quillan`, install the project, development tools, and the
+editable sibling checkout of `pds-core`:
 
 ```powershell
 python -m pip install --upgrade pip
-pip install -e ".[dev]"
+python -m pip install -r requirements-dev.txt
 ```
+
+Installing only Quillan's ordinary third-party dependencies is not sufficient
+for Paper Data Suite development because Quillan depends on shared
+infrastructure from `pds-core`.
+
+Later Quillan work will use `pds-core` for identifier validation, shared
+workspace-root behavior, route conventions, and QR payload construction and
+parsing. The shared PDS workspace root is owned by `pds-core`; this issue does
+not yet route Quillan data through it.
 
 ## Running Quillan
 
