@@ -106,7 +106,7 @@ An assignment defines what students wrote, which class or classes are connected,
 Suggested path:
 
 ```text
-quillan_data/assignments/<assignment_id>/assignment.json
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/assignment.json
 ```
 
 Required fields:
@@ -165,7 +165,7 @@ MVP submissions are plain-text files.
 Suggested path:
 
 ```text
-quillan_data/assignments/<assignment_id>/submissions/<student_id>/submission.txt
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.txt
 ```
 
 A future metadata file may describe source type, import time, OCR status, or original file references.
@@ -173,7 +173,7 @@ A future metadata file may describe source type, import time, OCR status, or ori
 Example path:
 
 ```text
-quillan_data/assignments/villainy_final_essay_synthetic/submissions/stu_0001/submission.txt
+<PDS workspace root>/classes/english12_period3_synthetic/assignments/villainy_final_essay_synthetic/submissions/stu_0001/submission.txt
 ```
 
 ## Requirements Check
@@ -183,7 +183,7 @@ A requirements check records whether the submission met basic assignment require
 Suggested path:
 
 ```text
-quillan_data/assignments/<assignment_id>/submissions/<student_id>/requirements.json
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/requirements.json
 ```
 
 Requirement status values:
@@ -228,7 +228,7 @@ A tag record connects a specific observation to a location in the writing, a sta
 Suggested path:
 
 ```text
-quillan_data/assignments/<assignment_id>/submissions/<student_id>/tags.json
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/tags.json
 ```
 
 Required fields:
@@ -300,7 +300,7 @@ Scores are informed by tags but are not automatically determined by tags.
 Suggested path:
 
 ```text
-quillan_data/assignments/<assignment_id>/submissions/<student_id>/scores.json
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/scores.json
 ```
 
 Example:
@@ -331,7 +331,7 @@ A feedback file stores student-readable feedback.
 Suggested path:
 
 ```text
-quillan_data/assignments/<assignment_id>/submissions/<student_id>/feedback.md
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/feedback.md
 ```
 
 Example:
@@ -361,7 +361,7 @@ A standards summary aggregates tag data by standard.
 Suggested path:
 
 ```text
-quillan_data/assignments/<assignment_id>/reports/standards_summary.csv
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/reports/standards_summary.csv
 ```
 
 Required MVP columns:
@@ -384,7 +384,7 @@ A class summary aggregates submission-level results.
 Suggested path:
 
 ```text
-quillan_data/assignments/<assignment_id>/reports/class_summary.csv
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/reports/class_summary.csv
 ```
 
 Required MVP columns:

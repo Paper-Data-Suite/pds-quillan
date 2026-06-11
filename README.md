@@ -98,10 +98,15 @@ Installing only Quillan's ordinary third-party dependencies is not sufficient
 for Paper Data Suite development because Quillan depends on shared
 infrastructure from `pds-core`.
 
-Later Quillan work will use `pds-core` for identifier validation, shared
-workspace-root behavior, route conventions, and QR payload construction and
-parsing. The shared PDS workspace root is owned by `pds-core`; this issue does
-not yet route Quillan data through it.
+Quillan uses `pds-core` route helpers for assignment-local storage beneath the
+shared PDS workspace root:
+
+```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/
+```
+
+This alignment establishes the shared path convention only. Workspace settings,
+scan routing, QR workflows, and paper/PDF workflows are not yet implemented.
 
 ## Running Quillan
 
