@@ -19,7 +19,14 @@ Quillan data should be:
 
 ## Standards Profile
 
-A standards profile defines the standards and comments available for tagging.
+A standards profile is a teacher- or department-defined collection of
+instructional targets and reusable review language. Profiles can be reused
+across assignments to make teacher review, evidence organization, and
+reporting more consistent.
+
+A profile describes the review vocabulary available to a teacher. It does not
+discover standards, inspect writing automatically, determine whether a
+standard was met, generate authoritative feedback, or calculate a score.
 
 Suggested Paper Data Suite path:
 
@@ -47,11 +54,27 @@ Each standard requires:
 * `description`
 * `comments`
 
+A standard is an instructional target or teacher-defined evaluation category.
+It may represent a published standard, a course skill, a local performance
+expectation, or a writing criterion used in another subject. Standard `code`
+values must be unique within a standards profile.
+
+The `comments` field is a list and may be empty when a teacher has not defined
+reusable comments for that standard. A standard with no comments is available
+for alignment and reporting only until teacher-review comments are added.
+
 Each comment requires:
 
 * `comment_id`
 * `label`
 * `polarity`
+
+A comment is reusable teacher-approved language connected to a standard. It
+supports consistent teacher tagging and feedback, but its presence in a
+profile is not a judgment about any student work. Each `comment_id` must be
+unique within its standard. The same `comment_id` may be reused under a
+different standard; records that refer to a comment use both `standard_code`
+and `comment_id` to identify it.
 
 Allowed polarity values:
 
@@ -59,11 +82,31 @@ Allowed polarity values:
 * `developing`
 * `negative`
 
+Polarity organizes teacher observations as strengths, developing skills, or
+problems. It has no numeric scoring semantics and does not determine a grade.
+
 Optional comment fields:
 
 * `severity_default`
 * `feedback_template`
 * `subskills`
+* `hotwords`
+
+`severity_default`, when present, is a non-negative integer. It is a suggested
+organizational default for a teacher-entered observation, not a score.
+`feedback_template` is optional teacher-approved wording.
+
+Subskills are smaller teacher-defined components of a standard or comment,
+such as `claim`, `reasoning`, `evidence_integration`, `imagery`, or
+`line_breaks`. Hotwords are teacher-defined text cues, such as `because`,
+`however`, or `this shows`, that may help a teacher search for or organize
+evidence. Both fields are optional lists of non-empty strings, and either list
+may be empty.
+
+Hotwords and subskills are support metadata only. A hotword match is not proof
+that a standard was met or missed, and neither field defines an automated
+detection, feedback, grading, or scoring rule. Scores and final judgments
+remain teacher decisions based on teacher-reviewed evidence.
 
 Example:
 
@@ -81,12 +124,18 @@ Example:
         {
           "comment_id": "clear_claim",
           "label": "Clear claim",
-          "polarity": "positive"
+          "polarity": "positive",
+          "subskills": ["claim"],
+          "hotwords": ["claim", "thesis", "argues"]
         },
         {
           "comment_id": "evidence_needs_explanation",
           "label": "Evidence needs more explanation",
-          "polarity": "developing"
+          "polarity": "developing",
+          "severity_default": 2,
+          "feedback_template": "The evidence is relevant, but the explanation needs to show more clearly how it supports the claim.",
+          "subskills": ["reasoning", "evidence_explanation"],
+          "hotwords": ["quote", "example", "this shows"]
         },
         {
           "comment_id": "unsupported_claim",
