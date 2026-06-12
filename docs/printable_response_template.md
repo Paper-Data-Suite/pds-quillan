@@ -200,25 +200,26 @@ use synthetic data only. Do not commit:
 Synthetic display names should be obviously fictional, and synthetic
 identifiers should follow the same validation rules as production identifiers.
 
-## Relationship to Future Fixtures
+## Relationship to Test Fixtures
 
-This contract is the source of page-template expectations for the synthetic
-paper-workflow fixtures planned in issue `#22`. Those fixtures should provide
-enough synthetic data to construct and verify a response page, including:
+The synthetic paper-workflow fixtures in
+`tests/fixtures/paper_workflow/` provide repository-safe assignment,
+standards, student display, and submission data for future response-page
+generation tests. They include:
 
 * a valid `class_id`;
-* a class display label when the scenario exercises friendly labels;
 * a valid `assignment_id`;
 * an assignment title;
 * a valid `student_id`;
 * a synthetic student display name;
-* a positive integer page number; and
-* a standards profile reference if required by the assignment fixture.
+* a standards profile reference; and
+* valid submission metadata and synthetic submission text.
 
-Fixtures should make it possible to verify that human-readable fields agree
-with the PDS1 identity fields without introducing real student information.
-This document does not create or prescribe the storage schema for those
-fixtures.
+The fixture consistency tests verify that the assignment, standards profile,
+student display record, and submission refer to the same synthetic workflow.
+Future response-page tests can combine those fixture identities with a
+positive page number. The fixture layout is test data, not a production roster
+or workspace schema.
 
 ## Out of Scope
 
@@ -230,7 +231,6 @@ This contract does not implement or define:
 * prompt, rubric, standards-summary, or graphic-organizer pages;
 * multiple response-layout modes;
 * teacher scoring areas;
-* synthetic fixture files;
 * assignment, submission, or standards model redesign;
 * requirements checking, tagging, scoring, feedback, or reporting;
 * AI tagging, scoring, feedback, or automatic grading; or
