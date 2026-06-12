@@ -63,7 +63,9 @@ basic requirements, tagging mode, and rubric reference.
 
 A reserved assignment-local directory for future generated or teacher-facing
 printable materials. Template or printable-material generation is not part of
-the current lifecycle implementation.
+the current lifecycle implementation. The contract for future printable
+writing-response pages and their use of this directory is defined in
+[`printable_response_template.md`](printable_response_template.md).
 
 ### `scans/`
 
@@ -247,4 +249,8 @@ how they relate to one another over time.
 [`teacher_review_model.md`](teacher_review_model.md) defines what source
 evidence, teacher-review artifacts, scores, feedback, and derived reports mean
 within Quillan's teacher-controlled review process.
+
+[`printable_response_template.md`](printable_response_template.md) defines the
+required structure, identity fields, PDS1 payload use, writing area, and
+intended `templates/` location for future printable writing-response pages.
 
