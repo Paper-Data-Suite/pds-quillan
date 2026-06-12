@@ -63,6 +63,7 @@ def test_cli_reports_invalid_standards_profile(tmp_path: Path) -> None:
 
     assert "Invalid standards profile" in str(error.value)
 
+
 def test_cli_validates_assignment_config(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

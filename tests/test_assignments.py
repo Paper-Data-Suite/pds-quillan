@@ -53,7 +53,9 @@ def test_missing_required_field_raises_error(tmp_path: Path) -> None:
     del assignment_data["rubric_id"]
     assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
 
-    with pytest.raises(AssignmentConfigError, match="Missing required field 'rubric_id'"):
+    with pytest.raises(
+        AssignmentConfigError, match="Missing required field 'rubric_id'"
+    ):
         load_assignment_config(assignment_path)
 
 
@@ -117,7 +119,9 @@ def test_required_elements_must_be_list(tmp_path: Path) -> None:
     }
     assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
 
-    with pytest.raises(AssignmentConfigError, match="required_elements.*must be a list"):
+    with pytest.raises(
+        AssignmentConfigError, match="required_elements.*must be a list"
+    ):
         load_assignment_config(assignment_path)
 
 
