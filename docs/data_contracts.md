@@ -4,6 +4,9 @@ Quillan stores structured evidence about student writing using local files.
 
 These contracts describe the expected MVP file formats for standards profiles, assignments, submissions, requirements checks, tags, scores, feedback, and reports.
 
+For the expected workspace layout and file lifecycle of these records, see
+[`workspace_lifecycle.md`](workspace_lifecycle.md).
+
 All examples must use synthetic data only. No real student names, writing, rosters, scores, or personally identifiable student information should be committed to the repository.
 
 ## Design Principles
