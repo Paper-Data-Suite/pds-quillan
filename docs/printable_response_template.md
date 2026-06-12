@@ -3,8 +3,8 @@
 ## Overview
 
 This document defines the MVP contract for one generic printable Quillan
-writing-response page. It describes the information and page structure that a
-future PDF generator must produce so teachers can distribute identifiable
+writing-response page. It describes the information and page structure that the
+PDF generator produces so teachers can distribute identifiable
 paper writing surfaces and later connect captured pages to local Quillan
 records.
 
@@ -37,7 +37,7 @@ One physical response page represents exactly:
 * one positive integer `page_number`; and
 * one lined student writing surface.
 
-A future generator may produce `N` response pages for a student by repeating
+The generator may produce `N` response pages for a student by repeating
 this contract with a different `page_number` on each page. The human-readable
 identity and PDS1 payload must describe the same class, assignment, student,
 and page number.
@@ -168,7 +168,7 @@ global page identifier.
 
 ## Output Location
 
-Future generated printable response PDFs belong under the assignment-local
+Generated printable response PDFs belong under the assignment-local
 template directory:
 
 ```text
@@ -176,8 +176,17 @@ template directory:
 ```
 
 This location keeps teacher-distributed materials with the applicable local
-assignment. This contract does not define a filename, create the directory,
-generate a PDF, or move any files.
+assignment. The MVP generator writes one batch PDF named
+`printable_response_pages.pdf`, containing each requested page for each
+student.
+
+## Implemented Generator
+
+`quillan.printable_response.generate_printable_response_pdf()` renders US
+Letter portrait pages with ReportLab and embeds QR codes with `qrcode[pil]`.
+`build_response_page_context()` exposes the validated human-readable identity
+and canonical PDS1 payload for one page so contract behavior can be tested
+without inspecting PDF drawing coordinates.
 
 ## Privacy and Synthetic Data
 
@@ -217,7 +226,7 @@ generation tests. They include:
 
 The fixture consistency tests verify that the assignment, standards profile,
 student display record, and submission refer to the same synthetic workflow.
-Future response-page tests can combine those fixture identities with a
+Response-page tests combine those fixture identities with a
 positive page number. The fixture layout is test data, not a production roster
 or workspace schema.
 
@@ -225,7 +234,6 @@ or workspace schema.
 
 This contract does not implement or define:
 
-* PDF or QR image generation;
 * scan decoding, routing, filing, or OCR;
 * complete printable assignment packets;
 * prompt, rubric, standards-summary, or graphic-organizer pages;

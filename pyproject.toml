@@ -8,13 +8,19 @@ license = { text = "MIT" }
 authors = [
     { name = "Stephen Severino" }
 ]
-dependencies = []
+dependencies = [
+    "qrcode[pil]",
+    "reportlab",
+]
 
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pypdf",
     "ruff",
-    "mypy"
+    "mypy",
+    "types-qrcode",
+    "types-reportlab",
 ]
 
 [project.scripts]
