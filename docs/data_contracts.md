@@ -7,6 +7,10 @@ These contracts describe the expected MVP file formats for standards profiles, a
 For the expected workspace layout and file lifecycle of these records, see
 [`workspace_lifecycle.md`](workspace_lifecycle.md).
 
+For the teacher-controlled relationship among evidence, review artifacts,
+scores, feedback, and reports, see
+[`teacher_review_model.md`](teacher_review_model.md).
+
 All examples must use synthetic data only. No real student names, writing, rosters, scores, or personally identifiable student information should be committed to the repository.
 
 ## Design Principles
@@ -304,7 +308,11 @@ forms, and scan routing are outside the current implementation.
 
 ## Requirements Check
 
-A requirements check records whether the submission met basic assignment requirements.
+A requirements check records structural or compliance information about basic
+assignment conditions. It may be manually entered, teacher-confirmed, or
+eventually computed for low-risk facts such as word count or paragraph count.
+It remains separate from writing-quality scoring and does not determine a
+score or feedback decision.
 
 Suggested path:
 
@@ -349,7 +357,11 @@ Example:
 
 ## Tag Record
 
-A tag record connects a specific observation to a location in the writing, a standard, and a structured comment.
+A tag record connects a teacher-created or teacher-confirmed observation to a
+location in the writing, a standard, and a structured comment. A tag is not an
+automatic mark, a score, or proof that a standard was met or missed. Tags can
+support review consistency and reporting, but they do not mechanically
+determine scores.
 
 Suggested path:
 
@@ -419,9 +431,10 @@ Example:
 
 ## Score Record
 
-A score record stores the teacher's final scoring decision.
-
-Scores are informed by tags but are not automatically determined by tags.
+A score record stores a teacher-entered or teacher-confirmed scoring decision.
+Scores may be informed by source evidence, rubric criteria, requirements
+checks, tags, and teacher notes, but they are not automatically generated or
+determined by those records.
 
 Suggested path:
 
@@ -452,7 +465,10 @@ Example:
 
 ## Feedback File
 
-A feedback file stores student-readable feedback.
+A feedback file stores student-readable teacher communication. It may draw on
+teacher-reviewed tags, notes, score records, requirements checks, and
+teacher-approved standards profile comments. Any future drafting or formatting
+support must remain teacher-reviewed and teacher-controlled.
 
 Suggested path:
 
@@ -482,7 +498,9 @@ The essay has a clear central claim and relevant evidence, but several body para
 
 ## Standards Summary Report
 
-A standards summary aggregates tag data by standard.
+A standards summary aggregates teacher-reviewed tag data by standard. It is a
+derived report rather than independent evidence and should remain traceable to
+its underlying review records.
 
 Suggested path:
 
@@ -505,7 +523,9 @@ villainy_final_essay_synthetic,english12_period3_synthetic,W.AW.11-12.1,12,18,6,
 
 ## Class Summary Report
 
-A class summary aggregates submission-level results.
+A class summary aggregates teacher-reviewed submission-level results. It is a
+derived report for review and instructional planning, not a replacement for
+reading student work or consulting the underlying records.
 
 Suggested path:
 
