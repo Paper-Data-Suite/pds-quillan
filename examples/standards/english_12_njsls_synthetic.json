@@ -11,7 +11,9 @@
         {
           "comment_id": "clear_claim",
           "label": "Clear claim",
-          "polarity": "positive"
+          "polarity": "positive",
+          "subskills": ["claim"],
+          "hotwords": ["claim", "thesis", "argues"]
         },
         {
           "comment_id": "relevant_evidence",
@@ -21,7 +23,11 @@
         {
           "comment_id": "evidence_needs_explanation",
           "label": "Evidence needs more explanation",
-          "polarity": "developing"
+          "polarity": "developing",
+          "severity_default": 2,
+          "feedback_template": "The evidence is relevant, but the explanation needs to show more clearly how it supports the claim.",
+          "subskills": ["reasoning", "evidence_explanation"],
+          "hotwords": ["quote", "example", "this shows"]
         },
         {
           "comment_id": "unsupported_claim",
