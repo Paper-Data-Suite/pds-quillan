@@ -1,0 +1,21 @@
+{
+  "assignment_id": "literary_argument_synthetic",
+  "title": "Literary Argument Response",
+  "class_ids": ["english12_p4_synthetic"],
+  "writing_type": "literary argument essay",
+  "standards_profile_id": "english_12_njsls_synthetic",
+  "tagging_mode": "focus",
+  "focus_standards": [
+    "W.AW.11-12.1"
+  ],
+  "basic_requirements": {
+    "paragraphs_min": 3,
+    "word_count_min": 300,
+    "required_elements": [
+      "claim",
+      "textual evidence",
+      "reasoning"
+    ]
+  },
+  "rubric_id": "argument_essay_4pt_synthetic"
+}
