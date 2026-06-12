@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
+from pds_core.identifiers import IdentifierValidationError, validate_identifier
+
 ALLOWED_TAGGING_MODES = {"focus", "focus_plus_past", "benchmark", "custom"}
 
 
@@ -56,10 +58,17 @@ def validate_assignment_config(assignment: dict[str, Any]) -> None:
     for field in required_fields:
         _require_field(assignment, field, "assignment config")
 
+    _validate_identifier(assignment["assignment_id"], "assignment_id")
+    _validate_non_empty_string(assignment["title"], "title")
     _validate_class_ids(assignment["class_ids"])
+    _validate_non_empty_string(assignment["writing_type"], "writing_type")
+    _validate_non_empty_string(
+        assignment["standards_profile_id"], "standards_profile_id"
+    )
     _validate_tagging_mode(assignment["tagging_mode"])
     _validate_focus_standards(assignment["focus_standards"])
     _validate_basic_requirements(assignment["basic_requirements"])
+    _validate_non_empty_string(assignment["rubric_id"], "rubric_id")
 
 
 def _validate_class_ids(class_ids: Any) -> None:
@@ -71,14 +80,14 @@ def _validate_class_ids(class_ids: Any) -> None:
         raise AssignmentConfigError("Field 'class_ids' must not be empty.")
 
     for class_id in class_ids:
-        if not isinstance(class_id, str) or not class_id:
-            raise AssignmentConfigError(
-                "Each value in 'class_ids' must be a non-empty string."
-            )
+        _validate_identifier(class_id, "class_id")
 
 
 def _validate_tagging_mode(tagging_mode: Any) -> None:
     """Validate assignment tagging mode."""
+    if not isinstance(tagging_mode, str):
+        raise AssignmentConfigError("Field 'tagging_mode' must be a string.")
+
     if tagging_mode not in ALLOWED_TAGGING_MODES:
         allowed = ", ".join(sorted(ALLOWED_TAGGING_MODES))
         raise AssignmentConfigError(
@@ -92,7 +101,7 @@ def _validate_focus_standards(focus_standards: Any) -> None:
         raise AssignmentConfigError("Field 'focus_standards' must be a list.")
 
     for standard_code in focus_standards:
-        if not isinstance(standard_code, str) or not standard_code:
+        if not isinstance(standard_code, str) or not standard_code.strip():
             raise AssignmentConfigError(
                 "Each value in 'focus_standards' must be a non-empty string."
             )
@@ -121,7 +130,7 @@ def _validate_basic_requirements(basic_requirements: Any) -> None:
             )
 
         for element in required_elements:
-            if not isinstance(element, str) or not element:
+            if not isinstance(element, str) or not element.strip():
                 raise AssignmentConfigError(
                     "Each value in 'required_elements' must be a non-empty string."
                 )
@@ -129,10 +138,24 @@ def _validate_basic_requirements(basic_requirements: Any) -> None:
 
 def _validate_non_negative_integer_requirement(key: str, value: Any) -> None:
     """Validate a non-negative integer requirement value."""
-    if not isinstance(value, int) or value < 0:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         raise AssignmentConfigError(
             f"Field '{key}' in 'basic_requirements' must be a non-negative integer."
         )
+
+
+def _validate_identifier(value: Any, field: str) -> None:
+    """Validate a shared Paper Data Suite identifier."""
+    try:
+        validate_identifier(value, field)
+    except IdentifierValidationError as error:
+        raise AssignmentConfigError(str(error)) from error
+
+
+def _validate_non_empty_string(value: Any, field: str) -> None:
+    """Validate a required non-empty string field."""
+    if not isinstance(value, str) or not value.strip():
+        raise AssignmentConfigError(f"Field '{field}' must be a non-empty string.")
 
 
 def _require_field(data: dict[str, Any], field: str, context: str) -> None:

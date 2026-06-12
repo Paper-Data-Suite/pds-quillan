@@ -101,7 +101,9 @@ Example:
 
 ## Assignment
 
-An assignment defines what students wrote, which class or classes are connected, which standards are active, and what basic requirements apply.
+An assignment defines what the teacher asked students to write, which class or
+classes are connected, which standards are active, and what basic requirements
+apply.
 
 Suggested path:
 
@@ -158,23 +160,74 @@ Example:
 
 ## Submission
 
-A submission stores or references a student's written work.
-
-MVP submissions are plain-text files.
-
-Suggested path:
+A submission preserves student-produced writing as evidence and records how
+that writing entered the teacher's review workflow. The writing and its
+metadata are stored separately:
 
 ```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.txt
 ```
 
-A future metadata file may describe source type, import time, OCR status, or original file references.
+`submission.txt` contains the student writing. `submission.json` organizes the
+artifact and its provenance without adding scores, feedback, or software-made
+judgments.
 
-Example path:
+Required submission metadata fields:
 
-```text
-<PDS workspace root>/classes/english12_period3_synthetic/assignments/villainy_final_essay_synthetic/submissions/stu_0001/submission.txt
+* `submission_id`
+* `assignment_id`
+* `class_id`
+* `student_id`
+* `source_type`
+* `text_file`
+* `captured_at`
+* `status`
+* `version`
+
+Allowed MVP `source_type` values:
+
+* `manual_entry`
+* `typed_text`
+* `pasted_text`
+* `file_import`
+* `paper_scan`
+* `ocr_scan`
+* `google_doc_export`
+
+Allowed MVP `status` values:
+
+* `captured`
+* `needs_review`
+* `reviewed`
+* `superseded`
+* `invalid`
+
+Example `submission.json`:
+
+```json
+{
+  "submission_id": "sub_stu_0001_v1",
+  "assignment_id": "villainy_final_essay_synthetic",
+  "class_id": "english12_period3_synthetic",
+  "student_id": "stu_0001",
+  "source_type": "manual_entry",
+  "text_file": "submission.txt",
+  "captured_at": "2026-06-07T12:00:00",
+  "status": "captured",
+  "version": 1
+}
 ```
+
+The metadata identifiers follow shared `pds-core` identifier validation.
+`text_file` must be a relative path contained within the submission record;
+absolute paths and parent-directory traversal are not allowed. `version` is a
+positive integer.
+
+Requirements checks, teacher tags, teacher notes, rubric scores entered or
+confirmed by the teacher, and feedback records remain separate artifacts.
+Software may organize and validate these records, but the student text remains
+the evidence and teacher review remains central.
 
 ## Writing-Response Payload
 

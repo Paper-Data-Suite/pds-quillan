@@ -69,6 +69,40 @@ def test_invalid_tagging_mode_raises_error(tmp_path: Path) -> None:
         load_assignment_config(assignment_path)
 
 
+def test_invalid_assignment_identifier_raises_error(tmp_path: Path) -> None:
+    assignment_path = tmp_path / "assignment.json"
+    assignment_data = _valid_assignment_config()
+    assignment_data["assignment_id"] = "../unsafe"
+    assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
+
+    with pytest.raises(AssignmentConfigError, match="assignment_id"):
+        load_assignment_config(assignment_path)
+
+
+def test_invalid_class_identifier_raises_error(tmp_path: Path) -> None:
+    assignment_path = tmp_path / "assignment.json"
+    assignment_data = _valid_assignment_config()
+    assignment_data["class_ids"] = ["English 12"]
+    assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
+
+    with pytest.raises(AssignmentConfigError, match="class_id"):
+        load_assignment_config(assignment_path)
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["title", "writing_type", "standards_profile_id", "rubric_id"],
+)
+def test_required_string_field_must_be_string(tmp_path: Path, field: str) -> None:
+    assignment_path = tmp_path / "assignment.json"
+    assignment_data = _valid_assignment_config()
+    assignment_data[field] = 123
+    assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
+
+    with pytest.raises(AssignmentConfigError, match=field):
+        load_assignment_config(assignment_path)
+
+
 def test_empty_class_ids_raises_error(tmp_path: Path) -> None:
     assignment_path = tmp_path / "assignment.json"
     assignment_data = _valid_assignment_config()
@@ -86,6 +120,16 @@ def test_focus_standards_must_be_list(tmp_path: Path) -> None:
     assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
 
     with pytest.raises(AssignmentConfigError, match="focus_standards.*must be a list"):
+        load_assignment_config(assignment_path)
+
+
+def test_focus_standards_reject_whitespace_only_value(tmp_path: Path) -> None:
+    assignment_path = tmp_path / "assignment.json"
+    assignment_data = _valid_assignment_config()
+    assignment_data["focus_standards"] = ["   "]
+    assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
+
+    with pytest.raises(AssignmentConfigError, match="focus_standards"):
         load_assignment_config(assignment_path)
 
 
@@ -111,6 +155,18 @@ def test_negative_requirement_value_raises_error(tmp_path: Path) -> None:
         load_assignment_config(assignment_path)
 
 
+def test_boolean_requirement_value_raises_error(tmp_path: Path) -> None:
+    assignment_path = tmp_path / "assignment.json"
+    assignment_data = _valid_assignment_config()
+    assignment_data["basic_requirements"] = {
+        "paragraphs_min": True,
+    }
+    assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
+
+    with pytest.raises(AssignmentConfigError, match="paragraphs_min"):
+        load_assignment_config(assignment_path)
+
+
 def test_required_elements_must_be_list(tmp_path: Path) -> None:
     assignment_path = tmp_path / "assignment.json"
     assignment_data = _valid_assignment_config()
@@ -122,6 +178,18 @@ def test_required_elements_must_be_list(tmp_path: Path) -> None:
     with pytest.raises(
         AssignmentConfigError, match="required_elements.*must be a list"
     ):
+        load_assignment_config(assignment_path)
+
+
+def test_required_elements_reject_whitespace_only_value(tmp_path: Path) -> None:
+    assignment_path = tmp_path / "assignment.json"
+    assignment_data = _valid_assignment_config()
+    assignment_data["basic_requirements"] = {
+        "required_elements": ["   "],
+    }
+    assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
+
+    with pytest.raises(AssignmentConfigError, match="required_elements"):
         load_assignment_config(assignment_path)
 
 
