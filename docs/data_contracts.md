@@ -176,6 +176,27 @@ Example path:
 <PDS workspace root>/classes/english12_period3_synthetic/assignments/villainy_final_essay_synthetic/submissions/stu_0001/submission.txt
 ```
 
+## Writing-Response Payload
+
+Each Quillan writing-response page can be identified by a canonical PDS1
+payload built through `pds-core`:
+
+```text
+PDS1|module=quillan|class=<class_id>|aid=<assignment_id>|sid=<student_id>|page=<page_number>|doc=response
+```
+
+The page number is a positive integer. Class, assignment, and student
+identifiers follow shared `pds-core` identifier validation.
+
+Example:
+
+```text
+PDS1|module=quillan|class=english12_p4|aid=personal_narrative|sid=1001|page=1|doc=response
+```
+
+This contract identifies response documents only; QR image generation, paper
+forms, and scan routing are outside the current implementation.
+
 ## Requirements Check
 
 A requirements check records whether the submission met basic assignment requirements.

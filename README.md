@@ -105,8 +105,9 @@ shared PDS workspace root:
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/
 ```
 
-This alignment establishes the shared path convention only. Workspace settings,
-scan routing, QR workflows, and paper/PDF workflows are not yet implemented.
+Quillan also uses `pds-core` to build canonical PDS1 payload strings for
+writing-response pages. QR image generation, workspace settings, scan routing,
+and paper/PDF workflows are not yet implemented.
 
 ## Running Quillan
 
@@ -154,6 +155,12 @@ Before opening a pull request, all three should pass:
 pytest
 ruff check .
 mypy .
+```
+
+Run the complete validation sequence, including the diff whitespace check:
+
+```powershell
+.\run_tests.ps1
 ```
 
 ## Data Contracts
