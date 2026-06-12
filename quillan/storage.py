@@ -8,6 +8,7 @@ from pds_core.routes import (
     assignment_config_path as pds_assignment_config_path,
     assignment_dir as pds_assignment_dir,
     assignment_submissions_dir as pds_assignment_submissions_dir,
+    assignment_templates_dir as pds_assignment_templates_dir,
     student_submission_dir as pds_student_submission_dir,
 )
 
@@ -37,6 +38,15 @@ def assignment_submissions_dir(
 ) -> Path:
     """Return the shared PDS submissions directory for an assignment."""
     return pds_assignment_submissions_dir(root, class_id, assignment_id)
+
+
+def assignment_templates_dir(
+    root: str | Path,
+    class_id: str,
+    assignment_id: str,
+) -> Path:
+    """Return the shared PDS templates directory for an assignment."""
+    return pds_assignment_templates_dir(root, class_id, assignment_id)
 
 
 def student_submission_dir(
