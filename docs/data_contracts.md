@@ -11,6 +11,10 @@ For the teacher-controlled relationship among evidence, review artifacts,
 scores, feedback, and reports, see
 [`teacher_review_model.md`](teacher_review_model.md).
 
+For the required structure and human-readable elements of a printable
+writing-response page, see
+[`printable_response_template.md`](printable_response_template.md).
+
 All examples must use synthetic data only. No real student names, writing, rosters, scores, or personally identifiable student information should be committed to the repository.
 
 ## Design Principles
@@ -304,7 +308,10 @@ PDS1|module=quillan|class=english12_p4|aid=personal_narrative|sid=1001|page=1|do
 ```
 
 This contract identifies response documents only; QR image generation, paper
-forms, and scan routing are outside the current implementation.
+forms, and scan routing are outside the current implementation. The printable
+page structure, identity fields, writing area, and future output location are
+defined in
+[`printable_response_template.md`](printable_response_template.md).
 
 ## Requirements Check
 
