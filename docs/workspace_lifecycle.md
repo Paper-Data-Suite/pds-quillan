@@ -244,3 +244,7 @@ expectations for individual JSON, text, Markdown, and CSV records. This
 document defines where those records belong in the shared PDS workspace and
 how they relate to one another over time.
 
+[`teacher_review_model.md`](teacher_review_model.md) defines what source
+evidence, teacher-review artifacts, scores, feedback, and derived reports mean
+within Quillan's teacher-controlled review process.
+
