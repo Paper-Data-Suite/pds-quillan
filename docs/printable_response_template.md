@@ -120,6 +120,10 @@ readable labels support people handling the paper, but they do not override
 the payload. All displayed identifiers and the displayed page number must
 match their corresponding payload values.
 
+The future validation, destination, filename, collision, and failure behavior
+for an already-decoded payload is defined in
+[`scan_routing_design.md`](scan_routing_design.md).
+
 The QR code must be visually separate from the writing lines, printed with
 sufficient contrast, and given unobstructed whitespace so the page remains
 usable for future scanning. Exact QR sizing, rendering, error-correction

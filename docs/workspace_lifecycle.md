@@ -24,6 +24,7 @@ The expected MVP layout is:
 
 ```text
 <PDS workspace root>/
+  routing_review/
   classes/
     <class_id>/
       assignments/
@@ -69,9 +70,17 @@ writing-response pages and their use of this directory is defined in
 
 ### `scans/`
 
-A reserved assignment-local directory for future scan inputs or scan-related
-files. Its presence does not imply that Quillan currently routes scans,
-performs OCR, or files captured pages.
+A reserved assignment-local directory for raw routed scan evidence. The future
+validation, naming, collision, and failure-routing behavior is defined in
+[`scan_routing_design.md`](scan_routing_design.md). Its presence does not imply
+that Quillan currently routes scans, performs OCR, or files captured pages.
+
+### `routing_review/`
+
+A reserved workspace-level location for scan evidence that cannot be safely
+routed to an assignment. It is workspace-level because a failed payload may
+not contain valid class or assignment identity. Quillan does not currently
+create or process this directory.
 
 ### `submissions/<student_id>/submission.json`
 
@@ -253,4 +262,8 @@ within Quillan's teacher-controlled review process.
 [`printable_response_template.md`](printable_response_template.md) defines the
 required structure, identity fields, PDS1 payload use, writing area, and
 intended `templates/` location for future printable writing-response pages.
+
+[`scan_routing_design.md`](scan_routing_design.md) defines how a future router
+should validate decoded response payloads, preserve scan evidence, and select
+assignment-level `scans/` or workspace-level `routing_review/` destinations.
 
