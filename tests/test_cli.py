@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from pds_core.workspace import WorkspaceRootError, WorkspaceStatus
 import pytest
 
+import quillan.cli
 from quillan.cli import main
 
 
@@ -19,6 +21,15 @@ def test_cli_prints_help(capsys: pytest.CaptureFixture[str]) -> None:
     assert error.value.code == 0
     assert "Quillan: standards-based writing evidence capture" in captured.out
     assert "validate-standards" in captured.out
+    assert "workspace" in captured.out
+
+    with pytest.raises(SystemExit) as workspace_error:
+        main(["workspace", "--help"])
+
+    workspace_help = capsys.readouterr()
+
+    assert workspace_error.value.code == 0
+    assert "show" in workspace_help.out
 
 
 def test_cli_validates_standards_profile(
@@ -109,3 +120,94 @@ def test_cli_reports_invalid_assignment_config(tmp_path: Path) -> None:
         main(["validate-assignment", str(assignment_path)])
 
     assert "Invalid assignment config" in str(error.value)
+
+
+def test_workspace_show_uses_pds_core_status(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    status = WorkspaceStatus(
+        root=tmp_path / "active-workspace",
+        source="saved_config",
+        exists=True,
+        is_dir=True,
+        is_writable=True,
+        config_path=tmp_path / "config.json",
+        default_root=tmp_path / "default-workspace",
+    )
+    calls = 0
+
+    def inspect_workspace_root() -> WorkspaceStatus:
+        nonlocal calls
+        calls += 1
+        return status
+
+    monkeypatch.setattr(quillan.cli, "inspect_workspace_root", inspect_workspace_root)
+
+    result = main(["workspace", "show"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert calls == 1
+    assert str(status.root) in captured.out
+    assert status.source in captured.out
+    assert str(status.config_path) in captured.out
+    assert str(status.default_root) in captured.out
+
+
+def test_workspace_show_reports_status_fields(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    status = WorkspaceStatus(
+        root=tmp_path / "workspace",
+        source="default",
+        exists=False,
+        is_dir=False,
+        is_writable=True,
+        config_path=tmp_path / "config.json",
+        default_root=tmp_path / "workspace",
+    )
+    monkeypatch.setattr(
+        quillan.cli,
+        "inspect_workspace_root",
+        lambda: status,
+    )
+
+    assert main(["workspace", "show"]) == 0
+    output = capsys.readouterr().out
+
+    assert "Exists:\nno" in output
+    assert "Directory:\nno" in output
+    assert "Writable:\nyes" in output
+
+
+def test_workspace_show_rejects_extra_arguments(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit) as error:
+        main(["workspace", "show", "extra"])
+
+    captured = capsys.readouterr()
+
+    assert error.value.code != 0
+    assert "usage:" in captured.err
+
+
+def test_workspace_show_reports_workspace_error(
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def raise_workspace_error() -> WorkspaceStatus:
+        raise WorkspaceRootError("bad workspace")
+
+    monkeypatch.setattr(
+        quillan.cli,
+        "inspect_workspace_root",
+        raise_workspace_error,
+    )
+
+    assert main(["workspace", "show"]) != 0
+    assert "Error: bad workspace" in capsys.readouterr().out

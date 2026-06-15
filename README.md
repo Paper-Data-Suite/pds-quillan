@@ -106,8 +106,8 @@ shared PDS workspace root:
 ```
 
 Quillan also uses `pds-core` to build canonical PDS1 payload strings for
-writing-response pages. QR image generation, workspace settings, scan routing,
-and paper/PDF workflows are not yet implemented.
+writing-response pages. QR image generation, scan routing, and paper/PDF
+workflows are not yet implemented.
 
 Quillan consumes class rosters through the shared `pds-core` roster contract.
 Synthetic roster fixtures use the canonical columns `class_id`, `student_id`,
@@ -122,6 +122,16 @@ Show CLI help:
 ```powershell
 quillan --help
 ```
+
+Inspect the shared Paper Data Suite workspace root:
+
+```powershell
+quillan workspace show
+```
+
+This read-only command reports the resolved root, resolution source, config
+path, default root, and basic filesystem status using the shared `pds-core`
+workspace status API.
 
 Validate a standards profile:
 
