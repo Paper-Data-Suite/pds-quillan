@@ -109,6 +109,11 @@ Quillan also uses `pds-core` to build canonical PDS1 payload strings for
 writing-response pages. QR image generation, workspace settings, scan routing,
 and paper/PDF workflows are not yet implemented.
 
+Quillan consumes class rosters through the shared `pds-core` roster contract.
+Synthetic roster fixtures use the canonical columns `class_id`, `student_id`,
+`last_name`, `first_name`, and `period`. Student IDs remain strings, including
+leading zeros.
+
 ## Running Quillan
 
 Show CLI help:
