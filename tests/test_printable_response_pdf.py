@@ -14,9 +14,15 @@ from quillan.printable_response import (
     PRINTABLE_RESPONSE_FILENAME,
     build_response_page_context,
     generate_printable_response_pdf,
+    generate_printable_responses_for_roster,
 )
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "paper_workflow"
+EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
+ROSTER_PATH = EXAMPLES_DIR / "rosters" / "english12_p3_synthetic.csv"
+ASSIGNMENT_PATH = (
+    EXAMPLES_DIR / "assignments" / "villainy_final_essay_synthetic.json"
+)
 
 
 def _load_assignment() -> dict[str, Any]:
@@ -32,6 +38,15 @@ def _load_students() -> list[dict[str, str]]:
     assert isinstance(students, list)
     assert all(isinstance(student, dict) for student in students)
     return cast(list[dict[str, str]], students)
+
+
+def _write_roster_assignment(tmp_path: Path) -> Path:
+    assignment = json.loads(ASSIGNMENT_PATH.read_text(encoding="utf-8"))
+    assert isinstance(assignment, dict)
+    assignment["class_ids"] = ["english12_p3"]
+    assignment_path = tmp_path / "assignment.json"
+    assignment_path.write_text(json.dumps(assignment), encoding="utf-8")
+    return assignment_path
 
 
 def test_build_response_page_context_uses_fixture_identity() -> None:
@@ -110,6 +125,46 @@ def test_generate_printable_response_pdf_supports_multiple_students_and_pages(
 
     reader = PdfReader(str(output_path))
     assert len(reader.pages) == 4
+
+
+def test_printable_response_generation_accepts_pds_core_roster_fixture(
+    tmp_path: Path,
+) -> None:
+    output_path = generate_printable_responses_for_roster(
+        tmp_path,
+        assignment_path=_write_roster_assignment(tmp_path),
+        roster_path=ROSTER_PATH,
+    )
+
+    reader = PdfReader(str(output_path))
+    assert output_path.is_file()
+    assert len(reader.pages) == 3
+
+
+def test_printable_response_generation_preserves_roster_identity(
+    tmp_path: Path,
+) -> None:
+    output_path = generate_printable_responses_for_roster(
+        tmp_path,
+        assignment_path=_write_roster_assignment(tmp_path),
+        roster_path=ROSTER_PATH,
+    )
+
+    first_page_text = PdfReader(str(output_path)).pages[0].extract_text()
+    assert "Student: Jane Doe" in first_page_text
+    assert "Student ID: 01001" in first_page_text
+    assert "Student ID: 1001" not in first_page_text
+
+
+def test_printable_response_generation_rejects_roster_assignment_class_mismatch(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="english12_p3.*class_ids"):
+        generate_printable_responses_for_roster(
+            tmp_path,
+            assignment_path=ASSIGNMENT_PATH,
+            roster_path=ROSTER_PATH,
+        )
 
 
 @pytest.mark.parametrize("pages_per_student", [0, -1, True, 1.5, "1"])

@@ -5,8 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Mapping, Sequence
+from typing import Final, Mapping, Sequence, TypeAlias, cast
 
+from pds_core.rosters import StudentRecord, load_roster, student_display_name
 import qrcode
 from qrcode.constants import ERROR_CORRECT_M
 from qrcode.image.pil import PilImage
@@ -17,10 +18,12 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen.canvas import Canvas
 
+from quillan.assignments import load_assignment_config
 from quillan.payloads import build_response_payload
 from quillan.storage import assignment_templates_dir
 
 PRINTABLE_RESPONSE_FILENAME: Final = "printable_response_pages.pdf"
+StudentInput: TypeAlias = StudentRecord | Mapping[str, str]
 
 
 @dataclass(frozen=True)
@@ -77,7 +80,7 @@ def generate_printable_response_pdf(
     *,
     class_id: str,
     assignment_id: str,
-    students: Sequence[Mapping[str, str]],
+    students: Sequence[StudentInput],
     pages_per_student: int = 1,
     assignment_title: str | None = None,
     class_label: str | None = None,
@@ -93,8 +96,8 @@ def generate_printable_response_pdf(
             assignment_id=assignment_id,
             assignment_title=assignment_title,
             class_label=class_label,
-            student_id=_student_field(student, "student_id"),
-            student_display_name=_student_field(student, "student_display_name"),
+            student_id=_student_id(student),
+            student_display_name=_student_name(student),
             page_number=page_number,
         )
         for student in students
@@ -113,6 +116,36 @@ def generate_printable_response_pdf(
     pdf.save()
 
     return output_path
+
+
+def generate_printable_responses_for_roster(
+    workspace_root: str | Path,
+    *,
+    assignment_path: str | Path,
+    roster_path: str | Path,
+    pages_per_student: int = 1,
+    class_label: str | None = None,
+) -> Path:
+    """Generate printable response pages from validated shared roster records."""
+    assignment = load_assignment_config(assignment_path)
+    roster = load_roster(roster_path)
+    assignment_class_ids = cast(list[str], assignment["class_ids"])
+
+    if roster.class_id not in assignment_class_ids:
+        raise ValueError(
+            f"Roster class_id '{roster.class_id}' is not included in assignment "
+            f"class_ids: {', '.join(assignment_class_ids)}."
+        )
+
+    return generate_printable_response_pdf(
+        workspace_root,
+        class_id=roster.class_id,
+        assignment_id=cast(str, assignment["assignment_id"]),
+        assignment_title=cast(str, assignment["title"]),
+        class_label=class_label,
+        students=roster.students,
+        pages_per_student=pages_per_student,
+    )
 
 
 def _draw_response_page(
@@ -228,6 +261,20 @@ def _fit_text(text: str, font_name: str, font_size: int, max_width: float) -> st
     ):
         candidate = candidate[:-1]
     return candidate + ellipsis
+
+
+def _student_id(student: StudentInput) -> str:
+    if isinstance(student, StudentRecord):
+        return _require_display_text(student.student_id, "student_id")
+    return _student_field(student, "student_id")
+
+
+def _student_name(student: StudentInput) -> str:
+    if isinstance(student, StudentRecord):
+        return _require_display_text(
+            student_display_name(student), "student_display_name"
+        )
+    return _student_field(student, "student_display_name")
 
 
 def _student_field(student: Mapping[str, str], field: str) -> str:

@@ -301,6 +301,10 @@ PDS1|module=quillan|class=<class_id>|aid=<assignment_id>|sid=<student_id>|page=<
 The page number is a positive integer. Class, assignment, and student
 identifiers follow shared `pds-core` identifier validation.
 
+Printable response generation consumes validated `pds-core` roster records.
+Roster student IDs remain strings, including leading zeros, and visible names
+use the shared student display helper.
+
 Example:
 
 ```text
