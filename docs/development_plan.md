@@ -217,11 +217,12 @@ Responsible for:
 
 * teacher-facing terminal commands;
 * direct CLI workflows;
-* future menu workflows.
+* the initial menu shell and future menu workflows.
 
 Current status:
 
 * implemented `validate-standards`;
+* implemented the initial `quillan menu` skeleton;
 * covered by tests.
 
 ## Development Sequence
@@ -283,6 +284,7 @@ Completed work:
 
 * Add argparse-based CLI structure.
 * Add `validate-standards` command.
+* Add the initial `quillan menu` entry point and navigation skeleton.
 * Add CLI tests.
 
 Remaining possible work:
@@ -290,7 +292,7 @@ Remaining possible work:
 * Add version/status command.
 * Improve user-facing error formatting.
 * Add examples to CLI help text.
-* Add future menu entry point.
+* Expand menu workflows only as supported application behavior is implemented.
 
 ### Phase 5 — Assignments
 
