@@ -8,15 +8,28 @@ Quillan is part of the broader Paper Data Suite concept, alongside ScoreForm.
 
 ## Current Status
 
-Early planning and development.
+Quillan is an early pre-1.0 foundation. It is developer- and CLI-oriented
+rather than a complete teacher-facing application.
 
 Quillan currently supports:
 
-- documented MVP data contracts;
-- synthetic example files;
+- assignment configuration validation;
 - standards profile loading and validation;
-- an initial command-line interface;
-- automated tests for standards validation and CLI behavior.
+- submission metadata validation;
+- documented writing-evidence and teacher-review data contracts;
+- printable writing-response PDF generation with student, class, assignment,
+  and page identity;
+- QR codes containing canonical PDS1 Quillan response payloads on printable
+  response pages;
+- roster-aware printable response generation using shared `pds-core` roster
+  records and display-name helpers;
+- shared Paper Data Suite workspace status reporting;
+- assignment-local storage paths based on shared `pds-core` route helpers; and
+- synthetic examples and fixtures for safe testing and documentation.
+
+Printable response generation is implemented as a Python API in
+`quillan.printable_response`; it is not yet exposed as a complete teacher
+menu or dedicated CLI command.
 
 ## Core Principle
 
@@ -26,24 +39,28 @@ It is a teacher-controlled system for turning student writing into structured in
 
 Teacher judgment remains primary. Quillan may eventually help summarize tags or draft feedback, but final scoring and feedback decisions belong to the teacher.
 
-## Planned MVP
+## Designed but Not Yet Implemented
 
-The first useful version should support:
+The data contracts and design documents describe additional teacher-review
+and paper-ingest workflows that are not yet implemented end to end. In
+particular, Quillan does not currently provide:
 
-1. Creating or importing standards profiles.
-2. Creating writing assignments.
-3. Loading or entering plain-text submissions.
-4. Checking basic assignment requirements.
-5. Tagging subdivisions of writing by standard and comment.
-6. Entering teacher-controlled rubric scores.
-7. Exporting structured JSON, Markdown, and CSV outputs.
+- production scan routing, copying, or filing;
+- QR extraction from scanned PDFs or images;
+- OCR or handwriting interpretation;
+- automatic conversion of scans into reviewed submissions;
+- implemented requirements-checking, tagging, scoring, feedback, or
+  production reporting workflows;
+- AI tagging, AI scoring, or AI feedback;
+- automatic grading; or
+- full teacher-facing terminal menu workflows.
 
-## Early Non-Goals
+The intended scan-routing rules and failure behavior are documented in
+[`docs/scan_routing_design.md`](docs/scan_routing_design.md), but that document
+is a design contract rather than an implemented router.
 
-The MVP should not attempt:
+## Current Non-Goals
 
-- autonomous AI grading;
-- handwriting OCR;
 - precise word-level annotation;
 - complex GUI development;
 - hosted/cloud workflows;
@@ -52,7 +69,9 @@ The MVP should not attempt:
 - district-level dashboards;
 - multi-user collaboration.
 
-These may be considered later, but they are outside the initial MVP.
+These remain outside the current foundation. Quillan's implemented printable
+pages are identity-bearing writing surfaces; they do not evaluate student
+work or imply that scan ingestion and automated review exist.
 
 ## Development
 
@@ -98,22 +117,35 @@ Installing only Quillan's ordinary third-party dependencies is not sufficient
 for Paper Data Suite development because Quillan depends on shared
 infrastructure from `pds-core`.
 
-Quillan uses `pds-core` route helpers for assignment-local storage beneath the
-shared PDS workspace root:
+Quillan uses `pds-core` workspace and route contracts. Assignment-local files
+follow this convention beneath the resolved shared workspace root:
 
 ```text
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/
 ```
 
-Quillan also uses `pds-core` to build canonical PDS1 payload strings for
-writing-response pages. QR image generation, scan routing, and paper/PDF
-workflows are not yet implemented.
+Printable response PDFs are written to:
 
-Quillan consumes class rosters through the shared `pds-core` roster contract.
-Synthetic roster fixtures use the canonical columns `class_id`, `student_id`,
-`last_name`, `first_name`, and `period`. Student IDs remain strings, including
-leading zeros. Printable response generation loads roster CSVs with
-`pds_core.rosters.load_roster()` and uses shared student display names.
+```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/templates/printable_response_pages.pdf
+```
+
+Quillan consumes class rosters through the shared `pds-core` roster contract,
+including `pds_core.rosters.load_roster()` and shared student display-name
+helpers. Canonical roster columns are `class_id`, `student_id`, `last_name`,
+`first_name`, and `period`; student IDs remain strings so leading zeros are
+preserved.
+
+Quillan also consumes the shared PDS1 payload conventions and helpers from
+`pds-core`. Each generated response page embeds a QR code containing a
+canonical payload such as:
+
+```text
+PDS1|module=quillan|class=<class_id>|aid=<assignment_id>|sid=<student_id>|page=<page_number>|doc=response
+```
+
+Generating this QR code is implemented. Extracting it from a later scan,
+routing the scan, and performing OCR are not.
 
 ## Running Quillan
 
@@ -136,7 +168,7 @@ workspace status API.
 Validate a standards profile:
 
 ```powershell
-quillan validate-standards examples\standards\english_12_njsls_synthetic.json
+quillan validate-standards <standards-profile.json>
 ```
 
 Expected output:
@@ -144,6 +176,24 @@ Expected output:
 ```text
 Valid standards profile: english_12_njsls_synthetic
 ```
+
+Validate an assignment configuration:
+
+```powershell
+quillan validate-assignment <assignment.json>
+```
+
+The current command surface is:
+
+```powershell
+quillan --help
+quillan validate-standards <standards-profile.json>
+quillan validate-assignment <assignment.json>
+quillan workspace show
+```
+
+Submission metadata validation and printable response generation currently
+use Python APIs rather than dedicated CLI commands.
 
 ## Quality Checks
 
@@ -181,7 +231,15 @@ Run the complete validation sequence, including the diff whitespace check:
 
 ## Data Contracts
 
-Quillan's MVP data contracts are documented in [`docs/data_contracts.md`](docs/data_contracts.md).
+Quillan's data contracts are documented in
+[`docs/data_contracts.md`](docs/data_contracts.md).
+
+The printable response contract and implemented generator are described in
+[`docs/printable_response_template.md`](docs/printable_response_template.md).
+
+The shared workspace layout and the distinction between active and reserved
+paths are documented in
+[`docs/workspace_lifecycle.md`](docs/workspace_lifecycle.md).
 
 Synthetic example files are available in [`examples/`](examples/).
 
