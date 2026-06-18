@@ -313,8 +313,9 @@ Printable response generation consumes validated `pds-core` roster records.
 The shared roster fields are `class_id`, `student_id`, `last_name`,
 `first_name`, and `period`. Roster student IDs remain strings, including
 leading zeros, and visible names use the shared student display helper.
-Quillan consumes these records for generation; it does not yet provide a
-teacher-facing roster management workflow.
+Quillan consumes these records for generation and provides teacher-facing
+creation, viewing, staged editing, and validation through the Roster
+Management menu.
 
 Example:
 

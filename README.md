@@ -24,6 +24,8 @@ Quillan currently supports:
   response pages;
 - roster-aware printable response generation using shared `pds-core` roster
   records and display-name helpers;
+- teacher-facing class roster creation, viewing, staged editing, and validation
+  through the Roster Management menu;
 - shared Paper Data Suite workspace status reporting;
 - assignment-local storage paths based on shared `pds-core` route helpers; and
 - synthetic examples and fixtures for safe testing and documentation.
@@ -50,12 +52,12 @@ particular, Quillan does not currently provide:
 - QR extraction from scanned PDFs or images;
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
-- assignment creation and roster management workflows;
+- assignment creation workflows;
 - implemented requirements-checking, tagging, scoring, feedback, or
   production reporting workflows;
 - AI tagging, AI scoring, or AI feedback;
 - automatic grading; or
-- complete teacher-facing assignment, roster, printable-response, or review
+- complete teacher-facing assignment, printable-response, or review
   workflows; or
 - a dedicated printable-response command.
 
@@ -140,6 +142,19 @@ helpers. Canonical roster columns are `class_id`, `student_id`, `last_name`,
 `first_name`, and `period`; student IDs remain strings so leading zeros are
 preserved.
 
+The Roster Management menu creates and reads canonical shared rosters at:
+
+```text
+<PDS workspace root>/classes/<class_id>/roster.csv
+```
+
+Existing optional columns are displayed and preserved when students are
+added, edited, or removed. Edits remain in memory until the teacher types
+`SAVE`; canceling changed data requires `DISCARD`. Removing a student changes
+only the active roster and does not delete assignments, submissions,
+printable PDFs, scans, reports, tags, scores, feedback, or historical
+evidence.
+
 Quillan also consumes the shared PDS1 payload conventions and helpers from
 `pds-core`. Each generated response page embeds a QR code containing a
 canonical payload such as:
@@ -161,11 +176,11 @@ quillan
 
 `quillan menu` launches the same menu as an explicit alias.
 
-The menu currently provides honest placeholders for assignment management,
-roster management, and printable response pages. Its Workspace Settings
-section can show, set, validate/create, and reset the shared Paper Data Suite
-workspace root. Its help summarizes Quillan's teacher-controlled purpose and
-safe-data expectations.
+The menu provides class roster creation, viewing, staged editing, and
+validation through Roster Management. Assignment Management and Printable
+Response Pages remain honest placeholders. Workspace Settings can show, set,
+validate/create, and reset the shared Paper Data Suite workspace root. Help
+summarizes Quillan's teacher-controlled purpose and safe-data expectations.
 
 Show direct CLI help:
 

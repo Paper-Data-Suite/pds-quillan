@@ -72,14 +72,10 @@ def launch_assignment_menu() -> None:
 
 
 def launch_roster_menu() -> None:
-    """Display the current roster-management boundary."""
-    clear_screen()
-    print_menu_header("Roster Management")
-    print("Roster management workflows are not implemented yet.")
-    print("Quillan currently consumes shared pds-core roster records for printable")
-    print("response generation, but it does not provide roster management.")
-    print()
-    pause_for_user()
+    """Launch shared-roster teacher workflows."""
+    from quillan.roster_workflows import launch_roster_menu as launch
+
+    launch()
 
 
 def launch_printable_response_menu() -> None:

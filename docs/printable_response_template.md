@@ -196,7 +196,7 @@ without inspecting PDF drawing coordinates.
 `generate_printable_responses_for_roster()` loads shared `pds-core` roster
 records with `class_id`, `student_id`, `last_name`, `first_name`, and `period`.
 Student IDs remain strings so leading zeros are preserved. This API support
-does not provide a teacher-facing roster management workflow.
+is complemented by a teacher-facing Roster Management menu.
 
 ## Privacy and Synthetic Data
 
@@ -253,7 +253,7 @@ This contract does not implement or define:
 * requirements checking, tagging, scoring, feedback, or reporting;
 * AI tagging, scoring, feedback, or automatic grading; or
 * a dedicated printable-response CLI or menu workflow;
-* assignment creation or roster management workflows; or
+* assignment creation workflows; or
 * workspace configuration workflows.
 
 The field-level PDS1 contract remains documented in

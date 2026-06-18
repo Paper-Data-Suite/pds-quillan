@@ -138,9 +138,9 @@ Validation should happen before filesystem writes and in the following order.
    that escapes the root, including through traversal or filesystem links.
 
 Student roster membership is not an initial routing prerequisite. Quillan
-already consumes shared `pds-core` roster records for printable generation,
-but it does not provide a production teacher-facing roster management
-workflow. A future roster-aware routing phase may flag an unknown student for
+consumes and manages shared `pds-core` roster records, but roster membership
+does not alter the routing contract described here. A future roster-aware
+routing phase may flag an unknown student for
 review, but it must preserve the source evidence rather than infer a different
 identity. The student identifier must still be valid.
 

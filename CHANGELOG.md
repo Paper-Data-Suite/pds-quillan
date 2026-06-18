@@ -10,6 +10,11 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a teacher-facing Roster Management menu for creating, viewing, staged
+  editing, and validating canonical shared `pds-core` class rosters.
+- Added preservation of leading-zero student IDs and existing optional roster
+  columns, with explicit `SAVE`, `DISCARD`, `REMOVE`, and overwrite
+  confirmations.
 - Added a full Workspace Settings menu and matching direct commands for
   showing, setting, validating/creating, and resetting the shared Paper Data
   Suite workspace root through `pds-core`.

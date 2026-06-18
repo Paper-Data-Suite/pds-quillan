@@ -17,6 +17,8 @@ Quillan currently has:
 * synthetic example files;
 * standards profile loading and validation;
 * initial CLI support;
+* teacher-facing shared-roster creation, viewing, staged editing, and
+  validation;
 * automated tests for standards validation and CLI behavior;
 * configured development checks using `pytest`, `ruff`, and `mypy`.
 
@@ -131,11 +133,13 @@ Current status:
 
 ### `classes.py`
 
-Planned responsibility:
+Shared responsibility is implemented through `pds-core` class and roster
+contracts plus Quillan's `roster_workflows.py` menu orchestration:
 
-* load class metadata;
-* connect class IDs to rosters;
-* eventually integrate with shared Paper Data Suite class structures.
+* discover canonical class folders;
+* create, load, edit, and validate `classes/<class_id>/roster.csv`;
+* preserve leading-zero IDs and optional columns; and
+* stage edits until explicit save without deleting historical evidence.
 
 ### `assignments.py`
 
@@ -286,6 +290,7 @@ Completed work:
 * Add `validate-standards` command.
 * Add the initial bare `quillan` menu entry point, explicit `quillan menu`
   alias, and navigation skeleton.
+* Add the Roster Management submenu using shared `pds-core` contracts.
 * Add CLI tests.
 
 Remaining possible work:

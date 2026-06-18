@@ -41,6 +41,7 @@ The expected current and reserved layout is:
   routing_review/
   classes/
     <class_id>/
+      roster.csv
       assignments/
         <assignment_id>/
           assignment.json
@@ -68,6 +69,19 @@ reserved locations for future workflows. A directory does not need to exist
 until a workflow has a reason to create it.
 
 ## File Responsibilities
+
+### `roster.csv`
+
+The canonical active class roster uses the shared `pds-core` roster contract.
+Quillan's Roster Management menu can create, view, edit, and validate this
+file. Required columns are `class_id`, `student_id`, `last_name`,
+`first_name`, and `period`; optional columns are preserved. Leading-zero
+student IDs remain strings. Menu edits are staged until explicit `SAVE`, and
+discarded edits are not written.
+
+Removing a student from this active roster does not delete or modify
+assignments, submissions, printable PDFs, scans, reports, tags, scores,
+feedback, or historical evidence.
 
 ### `assignment.json`
 
