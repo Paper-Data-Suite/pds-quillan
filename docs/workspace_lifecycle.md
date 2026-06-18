@@ -18,9 +18,21 @@ organizes files without substituting software decisions for teacher judgment.
 The shared `pds-core` route helpers define the assignment and submission
 locations. Quillan-specific files remain inside those shared routes.
 
+## Workspace vs. Installation
+
+The PDS workspace root is teacher-controlled data storage. It is separate from
+the Quillan source checkout, the Python virtual environment used for
+development, and the location where the Quillan package is installed. None of
+those code or environment locations should be treated as the workspace root.
+
+Quillan currently inspects the resolved workspace through the shared
+`pds-core` workspace status API, exposed read-only by `quillan workspace show`.
+That command reports status; it does not create, select, repair, or populate a
+workspace.
+
 ## Core Directory Layout
 
-The expected MVP layout is:
+The expected current and reserved layout is:
 
 ```text
 <PDS workspace root>/
@@ -31,6 +43,7 @@ The expected MVP layout is:
         <assignment_id>/
           assignment.json
           templates/
+            printable_response_pages.pdf
           scans/
           submissions/
             <student_id>/
@@ -62,10 +75,12 @@ basic requirements, tagging mode, and rubric reference.
 
 ### `templates/`
 
-A reserved assignment-local directory for future generated or teacher-facing
-printable materials. Template or printable-material generation is not part of
-the current lifecycle implementation. The contract for future printable
-writing-response pages and their use of this directory is defined in
+A shared assignment-local directory for generated or teacher-facing printable
+materials. The implemented Python API creates
+`templates/printable_response_pages.pdf` for a generated batch of
+roster-aware writing-response pages. A dedicated printable-response CLI or
+teacher menu workflow is not yet implemented. The response-page contract is
+defined in
 [`printable_response_template.md`](printable_response_template.md).
 
 ### `scans/`
@@ -261,7 +276,8 @@ within Quillan's teacher-controlled review process.
 
 [`printable_response_template.md`](printable_response_template.md) defines the
 required structure, identity fields, PDS1 payload use, writing area, and
-intended `templates/` location for future printable writing-response pages.
+implemented `templates/printable_response_pages.pdf` output for printable
+writing-response pages.
 
 [`scan_routing_design.md`](scan_routing_design.md) defines how a future router
 should validate decoded response payloads, preserve scan evidence, and select

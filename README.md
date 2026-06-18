@@ -49,11 +49,13 @@ particular, Quillan does not currently provide:
 - QR extraction from scanned PDFs or images;
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
+- assignment creation and roster management workflows;
 - implemented requirements-checking, tagging, scoring, feedback, or
   production reporting workflows;
 - AI tagging, AI scoring, or AI feedback;
 - automatic grading; or
-- full teacher-facing terminal menu workflows.
+- full teacher-facing terminal menu workflows or a dedicated
+  printable-response command.
 
 The intended scan-routing rules and failure behavior are documented in
 [`docs/scan_routing_design.md`](docs/scan_routing_design.md), but that document

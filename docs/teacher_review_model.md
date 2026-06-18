@@ -12,6 +12,12 @@ teacher-approved language, and summarize confirmed records. It must not
 present an unconfirmed software judgment as a teacher evaluation or encourage
 review without reading the student's work.
 
+This document defines the review model and data boundaries. Quillan currently
+validates relevant data contracts and can prepare printable writing-response
+pages, but it does not yet implement complete requirements-checking, tagging,
+scoring, feedback, reporting, or teacher-facing menu workflows. AI tagging,
+AI scoring, AI feedback, and automatic grading are not implemented.
+
 ## Source Evidence
 
 Source evidence is the student-produced writing and the metadata needed to

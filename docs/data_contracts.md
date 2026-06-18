@@ -1,8 +1,16 @@
-# Quillan MVP Data Contracts
+# Quillan Data Contracts
 
 Quillan stores structured evidence about student writing using local files.
 
-These contracts describe the expected MVP file formats for standards profiles, assignments, submissions, requirements checks, tags, scores, feedback, and reports.
+These contracts describe the expected file formats for standards profiles,
+assignments, submissions, requirements checks, tags, scores, feedback, and
+reports.
+
+Standards profiles, assignment configurations, and submission metadata have
+implemented Python validation support. The writing-response payload contract
+is also implemented and used by printable PDF generation. Requirements,
+tagging, scoring, feedback, and reporting records remain contracts for
+teacher-controlled workflows that are not yet implemented end to end.
 
 For the expected workspace layout and file lifecycle of these records, see
 [`workspace_lifecycle.md`](workspace_lifecycle.md).
@@ -25,7 +33,7 @@ Quillan data should be:
 * human-readable where practical;
 * structured enough for validation and reporting;
 * subject-agnostic;
-* compatible with future Paper Data Suite shared data structures;
+* compatible with shared Paper Data Suite data structures;
 * auditable by a teacher.
 
 ## Standards Profile
@@ -302,8 +310,11 @@ The page number is a positive integer. Class, assignment, and student
 identifiers follow shared `pds-core` identifier validation.
 
 Printable response generation consumes validated `pds-core` roster records.
-Roster student IDs remain strings, including leading zeros, and visible names
-use the shared student display helper.
+The shared roster fields are `class_id`, `student_id`, `last_name`,
+`first_name`, and `period`. Roster student IDs remain strings, including
+leading zeros, and visible names use the shared student display helper.
+Quillan consumes these records for generation; it does not yet provide a
+teacher-facing roster management workflow.
 
 Example:
 
@@ -311,10 +322,13 @@ Example:
 PDS1|module=quillan|class=english12_p4|aid=personal_narrative|sid=1001|page=1|doc=response
 ```
 
-This contract identifies response documents only; QR image generation, paper
-forms, and scan routing are outside the current implementation. The printable
-page structure, identity fields, writing area, and future output location are
-defined in
+This contract identifies response documents only. The implemented printable
+generator embeds the payload in a QR code on each response page and writes the
+batch PDF to the assignment-local `templates/` directory. Student display
+names are printed for handling but are not included in the payload. QR
+extraction from later scans, scan routing, and OCR remain unimplemented. The
+printable page structure, identity fields, writing area, and output location
+are defined in
 [`printable_response_template.md`](printable_response_template.md).
 
 ## Requirements Check
