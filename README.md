@@ -156,8 +156,10 @@ routing the scan, and performing OCR are not.
 Launch the initial teacher-facing menu skeleton:
 
 ```powershell
-quillan menu
+quillan
 ```
+
+`quillan menu` launches the same menu as an explicit alias.
 
 The menu currently provides honest placeholders for assignment management,
 roster management, and printable response pages. Its Workspace Settings
@@ -165,10 +167,7 @@ section can show the same read-only workspace status as
 `quillan workspace show`, and its help summarizes Quillan's teacher-controlled
 purpose and safe-data expectations.
 
-Running bare `quillan` continues to print top-level CLI help; it does not launch
-the menu.
-
-Show CLI help:
+Show direct CLI help:
 
 ```powershell
 quillan --help
@@ -205,6 +204,7 @@ quillan validate-assignment <assignment.json>
 The current command surface is:
 
 ```powershell
+quillan
 quillan --help
 quillan validate-standards <standards-profile.json>
 quillan validate-assignment <assignment.json>

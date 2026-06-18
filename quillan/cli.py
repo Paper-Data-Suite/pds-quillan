@@ -34,7 +34,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "workspace" and args.workspace_command == "show":
         return _handle_workspace_show()
 
-    if args.command == "menu":
+    if args.command is None or args.command == "menu":
         return launch_menu(_handle_workspace_show)
 
     parser.print_help()

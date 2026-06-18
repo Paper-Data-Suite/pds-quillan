@@ -43,6 +43,7 @@ separate public Python API contract.
 The implemented command surface currently exposed through argparse is:
 
 ```powershell
+quillan
 quillan --help
 quillan validate-standards <path>
 quillan validate-assignment <path>
@@ -51,18 +52,18 @@ quillan workspace --help
 quillan menu
 ```
 
-Running `quillan` without a command currently prints top-level help and exits
-successfully. Running `quillan workspace` without `show` also prints
-top-level help and exits successfully. These no-operation forms do not
-validate data, inspect the workspace, or modify files.
+Running `quillan` without a command launches the initial teacher-facing
+terminal menu. Running `quillan workspace` without `show` prints top-level
+help and exits successfully; it does not inspect or modify the workspace.
 
-The canonical teacher-facing menu invocation is:
+The teacher-facing menu may also be launched explicitly:
 
 ```powershell
 quillan menu
 ```
 
-The explicit `menu` command is interactive. Direct commands remain
+Bare `quillan` and the explicit `menu` command launch the same interactive
+menu skeleton. Direct validation and workspace-status commands remain
 non-interactive.
 
 ### `validate-standards`
@@ -143,7 +144,9 @@ without the menu.
 
 ### Interactive menu
 
-The current menu is a small discovery and navigation shell. It provides:
+Bare `quillan` launches the current menu, which is a small discovery and
+navigation shell. `quillan menu` is an explicit alias for the same behavior.
+The menu provides:
 
 ```text
 1. Assignment Management
@@ -211,9 +214,9 @@ Command summaries should describe effects accurately, especially whether an
 operation reads, writes, or modifies workspace data. Planned commands belong
 in design or roadmap documentation, not active help output.
 
-During the current pre-1.0 period, running a parser level without selecting an
-operation may continue to print help and return `0`. If that policy changes
-to require a command, the behavior and tests should change together.
+During the current pre-1.0 period, a command-specific parser level without a
+selected operation may continue to print help and return `0`. The top-level
+parser is different: bare `quillan` launches the teacher-facing menu.
 
 ## Paths and Filesystem Behavior
 
@@ -287,7 +290,7 @@ The process exit status is part of the CLI contract:
 
 | Status | Meaning |
 | --- | --- |
-| `0` | The requested operation completed successfully, or help was requested or printed for a no-operation parser level. |
+| `0` | The requested operation or menu session completed successfully, or help was requested or printed for a no-operation command-specific parser level. |
 | `1` | The command was understood, but validation or an operational action failed. |
 | `2` | Command-line usage was invalid, as reported by `argparse`. |
 | Other nonzero | An unexpected failure or a future explicitly documented category. |
