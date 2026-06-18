@@ -6,6 +6,11 @@ This design describes how a future Quillan scan router should accept a scanned
 writing-response page with an already-decoded PDS1 payload, validate its page
 identity, and select a safe location in the Paper Data Suite workspace.
 
+Quillan currently generates printable response PDFs and embeds canonical PDS1
+Quillan response payloads in QR codes on those pages. That implemented output
+is the upstream artifact assumed by this design; Quillan does not yet extract
+those QR payloads from scanned PDFs or images.
+
 The PDS1 payload is the machine-readable source of class, assignment, student,
 and page identity. A successfully routed file is preserved as raw source
 evidence in the assignment-level `scans/` directory. Routing does not make the
@@ -132,11 +137,12 @@ Validation should happen before filesystem writes and in the following order.
    verify that it remains inside the resolved workspace root. Reject any path
    that escapes the root, including through traversal or filesystem links.
 
-Student roster membership is not an initial routing prerequisite because a
-production roster workflow is outside this design and may not be available.
-The student identifier must still be valid. A future roster-aware phase may
-flag an unknown student for review, but it must preserve the source evidence
-rather than infer a different identity.
+Student roster membership is not an initial routing prerequisite. Quillan
+already consumes shared `pds-core` roster records for printable generation,
+but it does not provide a production teacher-facing roster management
+workflow. A future roster-aware routing phase may flag an unknown student for
+review, but it must preserve the source evidence rather than infer a different
+identity. The student identifier must still be valid.
 
 Validation should return stable, machine-readable failure codes in addition to
 human-readable reasons. It must not attempt to repair identifiers, guess a

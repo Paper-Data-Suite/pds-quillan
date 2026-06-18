@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document defines the MVP contract for one generic printable Quillan
+This document defines the current contract for one generic printable Quillan
 writing-response page. It describes the information and page structure that the
 PDF generator produces so teachers can distribute identifiable
 paper writing surfaces and later connect captured pages to local Quillan
@@ -44,7 +44,7 @@ and page number.
 
 ## Page Format
 
-The MVP page format is:
+The current page format is:
 
 * US Letter;
 * 8.5 by 11 inches; and
@@ -55,7 +55,7 @@ printers. The identity area, QR code, writing area, and footer must not overlap
 or depend on edge-to-edge printing.
 
 Future contracts may add other paper sizes or orientations. Such options do
-not change the MVP default and are not layout modes defined here.
+not change the current default and are not layout modes defined here.
 
 ## Required Page Elements
 
@@ -126,9 +126,9 @@ for an already-decoded payload is defined in
 
 The QR code must be visually separate from the writing lines, printed with
 sufficient contrast, and given unobstructed whitespace so the page remains
-usable for future scanning. Exact QR sizing, rendering, error-correction
-settings, image generation, decoding, and scan routing belong to later
-implementation work.
+usable for future scanning. QR image generation and embedding are implemented
+by the current PDF generator. QR extraction or decoding from later scans and
+scan routing belong to future implementation work.
 
 Synthetic example:
 
@@ -147,12 +147,13 @@ page. It must:
 * avoid header, footer, or decorative elements that obscure writing lines.
 
 This contract does not require an exact line count, line spacing, margin
-width, or header height. Those measurements should be established and tested
-when PDF generation is implemented.
+width, or header height. The implementation chooses and tests practical
+measurements while this contract intentionally avoids making drawing
+coordinates public data contracts.
 
-The MVP has one writing-area layout. Cornell notes, graphic organizers,
-short-answer boxes, rubric grids, teacher scoring areas, and other specialized
-layouts are not variants of this contract.
+The current generator has one writing-area layout. Cornell notes, graphic
+organizers, short-answer boxes, rubric grids, teacher scoring areas, and other
+specialized layouts are not variants of this contract.
 
 ## Page Numbering
 
@@ -180,7 +181,7 @@ template directory:
 ```
 
 This location keeps teacher-distributed materials with the applicable local
-assignment. The MVP generator writes one batch PDF named
+assignment. The current generator writes one batch PDF named
 `printable_response_pages.pdf`, containing each requested page for each
 student.
 
@@ -191,6 +192,11 @@ Letter portrait pages with ReportLab and embeds QR codes with `qrcode[pil]`.
 `build_response_page_context()` exposes the validated human-readable identity
 and canonical PDS1 payload for one page so contract behavior can be tested
 without inspecting PDF drawing coordinates.
+
+`generate_printable_responses_for_roster()` loads shared `pds-core` roster
+records with `class_id`, `student_id`, `last_name`, `first_name`, and `period`.
+Student IDs remain strings so leading zeros are preserved. This API support
+does not provide a teacher-facing roster management workflow.
 
 ## Privacy and Synthetic Data
 
@@ -217,8 +223,8 @@ identifiers should follow the same validation rules as production identifiers.
 
 The synthetic paper-workflow fixtures in
 `tests/fixtures/paper_workflow/` provide repository-safe assignment,
-standards, student display, and submission data for future response-page
-generation tests. They include:
+standards, student display, and submission data for response-page tests. They
+include:
 
 * a valid `class_id`;
 * a valid `assignment_id`;
@@ -246,7 +252,9 @@ This contract does not implement or define:
 * assignment, submission, or standards model redesign;
 * requirements checking, tagging, scoring, feedback, or reporting;
 * AI tagging, scoring, feedback, or automatic grading; or
-* CLI, menu, or workspace-settings workflows.
+* a dedicated printable-response CLI or menu workflow;
+* assignment creation or roster management workflows; or
+* workspace configuration workflows.
 
 The field-level PDS1 contract remains documented in
 [`data_contracts.md`](data_contracts.md), and the intended assignment-local
