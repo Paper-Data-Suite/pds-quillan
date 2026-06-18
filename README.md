@@ -8,8 +8,9 @@ Quillan is part of the broader Paper Data Suite concept, alongside ScoreForm.
 
 ## Current Status
 
-Quillan is an early pre-1.0 foundation. It is developer- and CLI-oriented
-rather than a complete teacher-facing application.
+Quillan is an early pre-1.0 foundation. It provides direct CLI commands and
+an initial teacher-facing terminal menu skeleton, but it is not yet a complete
+teacher-facing application.
 
 Quillan currently supports:
 
@@ -28,8 +29,8 @@ Quillan currently supports:
 - synthetic examples and fixtures for safe testing and documentation.
 
 Printable response generation is implemented as a Python API in
-`quillan.printable_response`; it is not yet exposed as a complete teacher
-menu or dedicated CLI command.
+`quillan.printable_response`; it is not yet exposed as a teacher-facing menu
+workflow or dedicated CLI command.
 
 ## Core Principle
 
@@ -54,8 +55,9 @@ particular, Quillan does not currently provide:
   production reporting workflows;
 - AI tagging, AI scoring, or AI feedback;
 - automatic grading; or
-- full teacher-facing terminal menu workflows or a dedicated
-  printable-response command.
+- complete teacher-facing assignment, roster, printable-response, or review
+  workflows; or
+- a dedicated printable-response command.
 
 The intended scan-routing rules and failure behavior are documented in
 [`docs/scan_routing_design.md`](docs/scan_routing_design.md), but that document
@@ -151,6 +153,21 @@ routing the scan, and performing OCR are not.
 
 ## Running Quillan
 
+Launch the initial teacher-facing menu skeleton:
+
+```powershell
+quillan menu
+```
+
+The menu currently provides honest placeholders for assignment management,
+roster management, and printable response pages. Its Workspace Settings
+section can show the same read-only workspace status as
+`quillan workspace show`, and its help summarizes Quillan's teacher-controlled
+purpose and safe-data expectations.
+
+Running bare `quillan` continues to print top-level CLI help; it does not launch
+the menu.
+
 Show CLI help:
 
 ```powershell
@@ -192,6 +209,7 @@ quillan --help
 quillan validate-standards <standards-profile.json>
 quillan validate-assignment <assignment.json>
 quillan workspace show
+quillan menu
 ```
 
 Submission metadata validation and printable response generation currently

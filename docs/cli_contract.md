@@ -6,16 +6,16 @@ This document defines Quillan's command-line contract during pre-1.0
 development. It records:
 
 * the command surface that is implemented now;
-* the boundary between direct commands and a future interactive menu;
+* the boundary between direct commands and the initial interactive menu;
 * conventions for help, errors, paths, output, and exit status; and
 * the compatibility expectations contributors should use when changing the
   CLI.
 
-The CLI is currently a developer-oriented and scriptable interface, not a
-complete teacher-facing application. This contract describes implemented
-behavior separately from future design. A command documented elsewhere as
-planned is not part of the current CLI until it is implemented, tested, and
-added here.
+The CLI includes a developer-oriented, scriptable command layer and an initial
+teacher-facing menu skeleton. It is not a complete teacher-facing application.
+This contract describes implemented behavior separately from future design. A
+command or workflow documented elsewhere as planned is not part of the current
+CLI until it is implemented, tested, and added here.
 
 Quillan is pre-1.0. Command names, output, and conventions may evolve, but
 changes should be intentional, documented, and covered by tests.
@@ -48,12 +48,22 @@ quillan validate-standards <path>
 quillan validate-assignment <path>
 quillan workspace show
 quillan workspace --help
+quillan menu
 ```
 
 Running `quillan` without a command currently prints top-level help and exits
 successfully. Running `quillan workspace` without `show` also prints
 top-level help and exits successfully. These no-operation forms do not
 validate data, inspect the workspace, or modify files.
+
+The canonical teacher-facing menu invocation is:
+
+```powershell
+quillan menu
+```
+
+The explicit `menu` command is interactive. Direct commands remain
+non-interactive.
 
 ### `validate-standards`
 
@@ -111,9 +121,9 @@ This command reports status only. It does not create, select, repair, or
 change a workspace. A reported `no` value is status information and does not
 by itself make the command fail.
 
-## Direct CLI and Future Menu Boundary
+## Direct CLI and Menu Boundary
 
-Direct CLI commands and a future interactive menu serve different use cases.
+Direct CLI commands and the interactive menu serve different use cases.
 They may call the same application services, but neither should implement
 business rules independently.
 
@@ -129,28 +139,56 @@ A direct command should be preferred when the operation:
 
 Validation, status inspection, import/export, and other discrete operations
 are natural direct-command candidates. Direct commands should remain usable
-without the future menu.
+without the menu.
 
-### Future interactive menu
+### Interactive menu
 
-A future menu may guide teachers through multi-step work such as selecting a
-class and assignment, reviewing submissions, entering tags or scores, and
-confirming output. It may improve discoverability and preserve session
-context, but it should orchestrate reusable application functions rather than
-becoming the only route to core operations.
+The current menu is a small discovery and navigation shell. It provides:
 
-The menu is not currently implemented. In particular:
+```text
+1. Assignment Management
+2. Roster Management
+3. Printable Response Pages
+4. Workspace Settings
+5. Help
+6. Exit
+```
 
-* running `quillan` does not launch a menu;
-* no current command should prompt for missing required arguments;
-* documentation must not present planned menu workflows as available; and
-* adding a menu must not silently change an existing direct command into an
-  interactive workflow.
+Assignment Management and Roster Management state that their workflows are not
+implemented yet. Printable Response Pages states that PDF generation exists as
+a Python API but has no teacher-facing menu workflow yet. These sections do not
+prompt for files or create, edit, generate, route, review, score, or report
+data.
+
+Workspace Settings currently provides only:
+
+```text
+1. Show current workspace
+2. Back
+```
+
+Showing the workspace calls the same status behavior as
+`quillan workspace show`. It does not set, create, validate, reset, repair, or
+clean a workspace.
+
+Menu help describes Quillan as a local-first, teacher-controlled
+writing-evidence tool; keeps teacher judgment primary; states that Quillan is
+not automated grading software; identifies currently unsupported AI, OCR,
+scan-routing, and review workflows; and summarizes repository safe-data
+expectations and current direct commands.
+
+The menu clears the screen only when both standard input and standard output
+are interactive terminals. A normal exit or `KeyboardInterrupt` returns status
+`0`.
+
+A future menu may guide teachers through additional multi-step work after
+those workflows are actually implemented. It should orchestrate reusable
+application functions rather than becoming the only route to core operations.
 
 CLI parsing and presentation belong in `quillan/cli.py`. Validation, storage,
 workspace resolution, and other domain behavior belong in their relevant
 modules or in shared `pds-core` services. This separation allows direct
-commands and a future menu to share behavior and tests.
+commands and the menu to share behavior and tests.
 
 ## Help and Discoverability
 
@@ -294,7 +332,8 @@ explicitly outside the current end-to-end foundation:
 * requirements checking, tagging, scoring, feedback, and reporting
   workflows;
 * AI grading, scoring, tagging, or feedback; and
-* a teacher-facing interactive terminal menu.
+* complete teacher-facing assignment, roster, printable-response, submission
+  review, tagging, scoring, feedback, or reporting workflows.
 
 Their presence in design documents or Python modules does not add them to the
 CLI contract.

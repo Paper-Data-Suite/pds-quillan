@@ -12,6 +12,7 @@ from pds_core.workspace import (
 )
 
 from quillan.assignments import AssignmentConfigError, load_assignment_config
+from quillan.menu import launch_menu
 from quillan.standards import StandardsProfileError, load_standards_profile
 
 APP_DESCRIPTION = "Quillan: standards-based writing evidence capture"
@@ -32,6 +33,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "workspace" and args.workspace_command == "show":
         return _handle_workspace_show()
+
+    if args.command == "menu":
+        return launch_menu(_handle_workspace_show)
 
     parser.print_help()
     return 0
@@ -72,6 +76,11 @@ def _build_parser() -> argparse.ArgumentParser:
     workspace_subparsers.add_parser(
         "show",
         help="Show the active Paper Data Suite workspace status.",
+    )
+
+    subparsers.add_parser(
+        "menu",
+        help="Launch the teacher-facing interactive menu.",
     )
 
     return parser
