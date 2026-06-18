@@ -30,9 +30,13 @@ def _menu_input(
     monkeypatch.setattr("builtins.input", fake_input)
 
 
-def test_cli_prints_help(capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.parametrize("help_flag", ["--help", "-h"])
+def test_cli_prints_help(
+    help_flag: str,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     with pytest.raises(SystemExit) as error:
-        main(["--help"])
+        main([help_flag])
 
     captured = capsys.readouterr()
 
@@ -51,14 +55,23 @@ def test_cli_prints_help(capsys: pytest.CaptureFixture[str]) -> None:
     assert "show" in workspace_help.out
 
 
-def test_cli_without_command_preserves_help_only_behavior(
+def test_cli_without_command_displays_menu_options_and_exits(
     capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _menu_input(monkeypatch, ["6"])
+
     assert main([]) == 0
 
     output = capsys.readouterr().out
-    assert "Quillan: standards-based writing evidence capture" in output
-    assert "Launch the teacher-facing interactive menu" in output
+    assert "Quillan" in output
+    assert "Assignment Management" in output
+    assert "Roster Management" in output
+    assert "Printable Response Pages" in output
+    assert "Workspace Settings" in output
+    assert "Help" in output
+    assert "Exit" in output
+    assert "Goodbye." in output
 
 
 def test_cli_validates_standards_profile(

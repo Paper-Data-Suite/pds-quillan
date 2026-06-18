@@ -222,7 +222,7 @@ Responsible for:
 Current status:
 
 * implemented `validate-standards`;
-* implemented the initial `quillan menu` skeleton;
+* implemented the initial bare `quillan` / `quillan menu` skeleton;
 * covered by tests.
 
 ## Development Sequence
@@ -284,7 +284,8 @@ Completed work:
 
 * Add argparse-based CLI structure.
 * Add `validate-standards` command.
-* Add the initial `quillan menu` entry point and navigation skeleton.
+* Add the initial bare `quillan` menu entry point, explicit `quillan menu`
+  alias, and navigation skeleton.
 * Add CLI tests.
 
 Remaining possible work:
