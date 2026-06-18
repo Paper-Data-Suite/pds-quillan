@@ -48,13 +48,17 @@ quillan --help
 quillan validate-standards <path>
 quillan validate-assignment <path>
 quillan workspace show
+quillan workspace set <path>
+quillan workspace validate
+quillan workspace reset
 quillan workspace --help
 quillan menu
 ```
 
 Running `quillan` without a command launches the initial teacher-facing
-terminal menu. Running `quillan workspace` without `show` prints top-level
-help and exits successfully; it does not inspect or modify the workspace.
+terminal menu. Running `quillan workspace` without a subcommand prints
+top-level help and exits successfully; it does not inspect or modify the
+workspace.
 
 The teacher-facing menu may also be launched explicitly:
 
@@ -122,6 +126,42 @@ This command reports status only. It does not create, select, repair, or
 change a workspace. A reported `no` value is status information and does not
 by itself make the command fail.
 
+### `workspace set`
+
+```powershell
+quillan workspace set <path>
+```
+
+Uses shared `pds-core` behavior to validate/create the supplied workspace root
+and save it as the Paper Data Suite workspace preference. This operation does
+not move, copy, migrate, delete, archive, or reorganize existing Quillan or
+Paper Data Suite files. If `PDS_WORKSPACE_ROOT` is set, the environment value
+still takes precedence over the saved preference.
+
+### `workspace validate`
+
+```powershell
+quillan workspace validate
+```
+
+Resolves the active root using the shared precedence rules, creates the
+workspace and shared metadata if needed, and verifies that it is writable. It
+does not prompt for a different root or change the saved preference.
+
+### `workspace reset`
+
+```powershell
+quillan workspace reset
+```
+
+Clears only the saved Paper Data Suite workspace-root preference. It does not
+delete workspace directories or files. The command reports the newly resolved
+root after reset; `PDS_WORKSPACE_ROOT`, when set, still takes precedence.
+
+All workspace commands use shared `pds-core` APIs and configuration. Quillan
+does not maintain a separate workspace config. Expected workspace errors are
+reported as `Error: ...` without a traceback and return a nonzero status.
+
 ## Direct CLI and Menu Boundary
 
 Direct CLI commands and the interactive menu serve different use cases.
@@ -163,16 +203,27 @@ a Python API but has no teacher-facing menu workflow yet. These sections do not
 prompt for files or create, edit, generate, route, review, score, or report
 data.
 
-Workspace Settings currently provides only:
+Workspace Settings provides:
 
 ```text
 1. Show current workspace
-2. Back
+2. Set workspace folder
+3. Validate/create current workspace
+4. Reset saved workspace preference
+5. Back
 ```
 
 Showing the workspace calls the same status behavior as
-`quillan workspace show`. It does not set, create, validate, reset, repair, or
-clean a workspace.
+`quillan workspace show` and remains read-only. Setting prompts for a folder;
+blank input cancels without changing the saved preference. Nonblank input
+validates/creates the folder and saves it through shared `pds-core`
+configuration. Validate/create operates on the currently resolved root.
+Reset clears only the saved preference and then reports the current resolved
+root. The menu warns that setting does not migrate files, resetting does not
+delete files, and `PDS_WORKSPACE_ROOT` still takes precedence.
+
+The workspace submenu does not include school-year settings. The overall menu
+remains a guided shell rather than a complete teacher-facing application.
 
 Menu help describes Quillan as a local-first, teacher-controlled
 writing-evidence tool; keeps teacher judgment primary; states that Quillan is

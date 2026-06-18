@@ -163,9 +163,9 @@ quillan
 
 The menu currently provides honest placeholders for assignment management,
 roster management, and printable response pages. Its Workspace Settings
-section can show the same read-only workspace status as
-`quillan workspace show`, and its help summarizes Quillan's teacher-controlled
-purpose and safe-data expectations.
+section can show, set, validate/create, and reset the shared Paper Data Suite
+workspace root. Its help summarizes Quillan's teacher-controlled purpose and
+safe-data expectations.
 
 Show direct CLI help:
 
@@ -182,6 +182,21 @@ quillan workspace show
 This read-only command reports the resolved root, resolution source, config
 path, default root, and basic filesystem status using the shared `pds-core`
 workspace status API.
+
+The same shared workspace operations are also available directly:
+
+```powershell
+quillan workspace set <folder>
+quillan workspace validate
+quillan workspace reset
+```
+
+Quillan uses the shared `pds-core` workspace configuration; it does not create
+a Quillan-specific workspace config. Setting a root validates/creates it and
+saves the shared preference, but does not move or migrate existing files.
+Resetting clears only the saved preference and does not delete workspace
+files. In both cases, `PDS_WORKSPACE_ROOT` still takes precedence over the
+saved preference when it is set.
 
 Validate a standards profile:
 
