@@ -429,7 +429,6 @@ def test_menu_help_explains_teacher_control_and_safe_data(
     ("selection", "expected_message"),
     [
         ("1", "Assignment management workflows are not implemented yet."),
-        ("2", "Roster management workflows are not implemented yet."),
         (
             "3",
             "teacher-facing menu workflow is not implemented yet.",
@@ -446,6 +445,23 @@ def test_unsupported_menu_sections_are_honest_placeholders(
 
     assert main(["menu"]) == 0
     assert expected_message in capsys.readouterr().out
+
+
+def test_main_menu_opens_roster_management_submenu(
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(monkeypatch, ["2", "5", "6"])
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Roster Management" in output
+    assert "Create class roster" in output
+    assert "View class roster" in output
+    assert "Edit class roster" in output
+    assert "Validate class roster" in output
+    assert "Back" in output
+    assert "Goodbye." in output
 
 
 def test_workspace_menu_reuses_workspace_show_handler(

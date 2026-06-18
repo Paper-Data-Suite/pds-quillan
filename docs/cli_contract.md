@@ -12,7 +12,8 @@ development. It records:
   CLI.
 
 The CLI includes a developer-oriented, scriptable command layer and an initial
-teacher-facing menu skeleton. It is not a complete teacher-facing application.
+teacher-facing menu with shared-roster management. It is not a complete
+teacher-facing application.
 This contract describes implemented behavior separately from future design. A
 command or workflow documented elsewhere as planned is not part of the current
 CLI until it is implemented, tested, and added here.
@@ -197,11 +198,31 @@ The menu provides:
 6. Exit
 ```
 
-Assignment Management and Roster Management state that their workflows are not
-implemented yet. Printable Response Pages states that PDF generation exists as
-a Python API but has no teacher-facing menu workflow yet. These sections do not
-prompt for files or create, edit, generate, route, review, score, or report
-data.
+Roster Management provides:
+
+```text
+1. Create class roster
+2. View class roster
+3. Edit class roster
+4. Validate class roster
+5. Back
+```
+
+These menu-only workflows use shared `pds-core` class and roster APIs.
+Canonical rosters are stored at
+`<workspace_root>/classes/<class_id>/roster.csv`. Student IDs remain strings,
+including leading zeros, and existing optional columns remain in their
+original order. Viewing and validation are read-only.
+
+Editing stages shared immutable roster mutations in memory. Add, edit, and
+active-roster removal do not write immediately. Saving requires typing
+`SAVE`; canceling staged changes requires typing `DISCARD`. Active-roster
+removal never deletes assignments, submissions, printable PDFs, scans,
+reports, tags, scores, feedback, or historical evidence.
+
+Assignment Management states that its workflow is not implemented yet.
+Printable Response Pages states that PDF generation exists as a Python API but
+has no teacher-facing menu workflow yet.
 
 Workspace Settings provides:
 
@@ -386,7 +407,7 @@ explicitly outside the current end-to-end foundation:
 * requirements checking, tagging, scoring, feedback, and reporting
   workflows;
 * AI grading, scoring, tagging, or feedback; and
-* complete teacher-facing assignment, roster, printable-response, submission
+* complete teacher-facing assignment, printable-response, submission
   review, tagging, scoring, feedback, or reporting workflows.
 
 Their presence in design documents or Python modules does not add them to the
