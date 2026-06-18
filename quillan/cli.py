@@ -8,7 +8,11 @@ from pathlib import Path
 from pds_core.workspace import (
     WorkspaceRootError,
     WorkspaceStatus,
+    clear_saved_workspace_root,
+    ensure_workspace_root,
     inspect_workspace_root,
+    resolve_workspace_root,
+    save_workspace_root,
 )
 
 from quillan.assignments import AssignmentConfigError, load_assignment_config
@@ -34,8 +38,22 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "workspace" and args.workspace_command == "show":
         return _handle_workspace_show()
 
+    if args.command == "workspace" and args.workspace_command == "set":
+        return _handle_workspace_set(args.path)
+
+    if args.command == "workspace" and args.workspace_command == "validate":
+        return _handle_workspace_validate()
+
+    if args.command == "workspace" and args.workspace_command == "reset":
+        return _handle_workspace_reset()
+
     if args.command is None or args.command == "menu":
-        return launch_menu(_handle_workspace_show)
+        return launch_menu(
+            _handle_workspace_show,
+            _handle_workspace_set,
+            _handle_workspace_validate,
+            _handle_workspace_reset,
+        )
 
     parser.print_help()
     return 0
@@ -68,7 +86,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     workspace_parser = subparsers.add_parser(
         "workspace",
-        help="Inspect the shared PDS workspace with 'quillan workspace show'.",
+        help="Manage the shared Paper Data Suite workspace.",
     )
     workspace_subparsers = workspace_parser.add_subparsers(
         dest="workspace_command"
@@ -76,6 +94,23 @@ def _build_parser() -> argparse.ArgumentParser:
     workspace_subparsers.add_parser(
         "show",
         help="Show the active Paper Data Suite workspace status.",
+    )
+    workspace_set_parser = workspace_subparsers.add_parser(
+        "set",
+        help="Validate, create, and save a shared workspace root.",
+    )
+    workspace_set_parser.add_argument(
+        "path",
+        type=Path,
+        help="Folder to use as the shared Paper Data Suite workspace.",
+    )
+    workspace_subparsers.add_parser(
+        "validate",
+        help="Validate or create the currently resolved workspace root.",
+    )
+    workspace_subparsers.add_parser(
+        "reset",
+        help="Clear the saved workspace preference without deleting files.",
     )
 
     subparsers.add_parser(
@@ -115,6 +150,62 @@ def _handle_workspace_show() -> int:
         return 1
 
     _print_workspace_status(status)
+    return 0
+
+
+def _handle_workspace_set(path: str | Path) -> int:
+    """Validate, create, and save the shared workspace root."""
+    try:
+        workspace_root = ensure_workspace_root(path)
+        saved_root = save_workspace_root(workspace_root)
+    except WorkspaceRootError as error:
+        print(f"Error: {error}")
+        return 1
+
+    print("Saved PDS workspace root:")
+    print(saved_root)
+    print()
+    print("This does not move existing Quillan or Paper Data Suite files.")
+    print(
+        "If PDS_WORKSPACE_ROOT is set, it still takes precedence over "
+        "the saved preference."
+    )
+    return 0
+
+
+def _handle_workspace_validate() -> int:
+    """Validate or create the currently resolved shared workspace root."""
+    try:
+        workspace_root = resolve_workspace_root()
+        validated_root = ensure_workspace_root(workspace_root)
+    except WorkspaceRootError as error:
+        print(f"Error: {error}")
+        return 1
+
+    print("Workspace validated successfully:")
+    print(validated_root)
+    return 0
+
+
+def _handle_workspace_reset() -> int:
+    """Clear the saved shared workspace preference without deleting files."""
+    try:
+        was_cleared = clear_saved_workspace_root()
+        workspace_root = resolve_workspace_root()
+    except WorkspaceRootError as error:
+        print(f"Error: {error}")
+        return 1
+
+    if was_cleared:
+        print("Saved PDS workspace preference cleared.")
+    else:
+        print("No saved PDS workspace preference was set.")
+    print("No workspace files were deleted.")
+    print()
+    print("Current resolved PDS workspace root:")
+    print(workspace_root)
+    print()
+    print("If PDS_WORKSPACE_ROOT is set, it still takes precedence.")
     return 0
 
 

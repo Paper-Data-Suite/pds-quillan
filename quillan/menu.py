@@ -7,6 +7,8 @@ import sys
 from collections.abc import Callable
 
 WorkspaceShowHandler = Callable[[], int]
+WorkspaceSetHandler = Callable[[str], int]
+WorkspaceActionHandler = Callable[[], int]
 
 
 def clear_screen() -> None:
@@ -52,6 +54,9 @@ def print_menu_help() -> None:
     print("  quillan validate-standards <standards-profile.json>")
     print("  quillan validate-assignment <assignment.json>")
     print("  quillan workspace show")
+    print("  quillan workspace set <folder>")
+    print("  quillan workspace validate")
+    print("  quillan workspace reset")
     print("  quillan menu")
 
 
@@ -89,13 +94,21 @@ def launch_printable_response_menu() -> None:
     pause_for_user()
 
 
-def launch_workspace_menu(workspace_show: WorkspaceShowHandler) -> None:
-    """Launch the read-only workspace settings submenu."""
+def launch_workspace_menu(
+    workspace_show: WorkspaceShowHandler,
+    workspace_set: WorkspaceSetHandler,
+    workspace_validate: WorkspaceActionHandler,
+    workspace_reset: WorkspaceActionHandler,
+) -> None:
+    """Launch the shared Paper Data Suite workspace settings submenu."""
     while True:
         clear_screen()
         print_menu_header("Workspace Settings")
         print("1. Show current workspace")
-        print("2. Back")
+        print("2. Set workspace folder")
+        print("3. Validate/create current workspace")
+        print("4. Reset saved workspace preference")
+        print("5. Back")
         print()
 
         choice = input("Select an option: ").strip()
@@ -108,14 +121,44 @@ def launch_workspace_menu(workspace_show: WorkspaceShowHandler) -> None:
             print()
             pause_for_user()
         elif choice == "2":
+            clear_screen()
+            print_menu_header("Set Workspace Folder")
+            path = input(
+                "Workspace folder (leave blank to cancel): "
+            ).strip()
+            print()
+            if path:
+                workspace_set(path)
+            else:
+                print("Workspace selection canceled. No preference was changed.")
+            print()
+            pause_for_user()
+        elif choice == "3":
+            clear_screen()
+            print_menu_header("Validate Current Workspace")
+            workspace_validate()
+            print()
+            pause_for_user()
+        elif choice == "4":
+            clear_screen()
+            print_menu_header("Reset Workspace Preference")
+            workspace_reset()
+            print()
+            pause_for_user()
+        elif choice == "5":
             return
         else:
-            print("Invalid selection. Please enter 1 or 2.")
+            print("Invalid selection. Please enter a number from 1 to 5.")
             print()
             pause_for_user()
 
 
-def launch_menu(workspace_show: WorkspaceShowHandler) -> int:
+def launch_menu(
+    workspace_show: WorkspaceShowHandler,
+    workspace_set: WorkspaceSetHandler,
+    workspace_validate: WorkspaceActionHandler,
+    workspace_reset: WorkspaceActionHandler,
+) -> int:
     """Launch the Quillan teacher-facing menu skeleton."""
     try:
         while True:
@@ -139,7 +182,12 @@ def launch_menu(workspace_show: WorkspaceShowHandler) -> int:
             elif choice == "3":
                 launch_printable_response_menu()
             elif choice == "4":
-                launch_workspace_menu(workspace_show)
+                launch_workspace_menu(
+                    workspace_show,
+                    workspace_set,
+                    workspace_validate,
+                    workspace_reset,
+                )
             elif choice == "5":
                 clear_screen()
                 print_menu_help()

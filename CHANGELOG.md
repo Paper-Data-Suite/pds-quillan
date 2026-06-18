@@ -10,6 +10,9 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a full Workspace Settings menu and matching direct commands for
+  showing, setting, validating/creating, and resetting the shared Paper Data
+  Suite workspace root through `pds-core`.
 - Added a root security policy covering private classroom data, synthetic
   repository fixtures, local artifacts, concern reporting, and dependency
   updates.

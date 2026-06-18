@@ -25,10 +25,12 @@ the Quillan source checkout, the Python virtual environment used for
 development, and the location where the Quillan package is installed. None of
 those code or environment locations should be treated as the workspace root.
 
-Quillan currently inspects the resolved workspace through the shared
-`pds-core` workspace status API, exposed read-only by `quillan workspace show`.
-That command reports status; it does not create, select, repair, or populate a
-workspace.
+Quillan uses shared `pds-core` APIs to show, set, validate/create, and reset the
+Paper Data Suite workspace root through its Workspace Settings menu and
+matching direct commands. It does not maintain Quillan-specific workspace
+configuration. Setting a root does not migrate existing files, and resetting
+the saved preference does not delete workspace files. `PDS_WORKSPACE_ROOT`
+continues to take precedence over the saved preference when set.
 
 ## Core Directory Layout
 
