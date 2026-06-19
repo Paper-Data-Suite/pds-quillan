@@ -428,7 +428,6 @@ def test_menu_help_explains_teacher_control_and_safe_data(
 @pytest.mark.parametrize(
     ("selection", "expected_message"),
     [
-        ("1", "Assignment management workflows are not implemented yet."),
         (
             "3",
             "teacher-facing menu workflow is not implemented yet.",
@@ -445,6 +444,21 @@ def test_unsupported_menu_sections_are_honest_placeholders(
 
     assert main(["menu"]) == 0
     assert expected_message in capsys.readouterr().out
+
+
+def test_main_menu_opens_assignment_management_submenu(
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(monkeypatch, ["1", "3", "6"])
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Assignment Management" in output
+    assert "Create writing assignment" in output
+    assert "View/validate assignment" in output
+    assert "Back" in output
+    assert "Goodbye." in output
 
 
 def test_main_menu_opens_roster_management_submenu(

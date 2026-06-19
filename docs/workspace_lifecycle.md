@@ -89,6 +89,21 @@ The teacher-created assignment configuration. It defines the task, writing
 type, connected class IDs, standards profile reference, focus standards,
 basic requirements, tagging mode, and rubric reference.
 
+Quillan's Assignment Management menu can create this file from prompts after
+the teacher selects a class with an existing canonical roster. It uses the
+existing assignment validation contract and the shared assignment route:
+
+```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/assignment.json
+```
+
+The menu can also load, validate, and summarize an explicit assignment JSON
+path without rewriting it. Existing configs require exact `OVERWRITE`
+confirmation before replacement. This workflow does not edit or delete
+assignments and does not perform scoring, feedback, tagging execution,
+requirements checking, reporting, scan routing, OCR, AI, or printable packet
+generation.
+
 ### `templates/`
 
 A shared assignment-local directory for generated or teacher-facing printable

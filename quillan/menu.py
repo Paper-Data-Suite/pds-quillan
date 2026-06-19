@@ -61,14 +61,10 @@ def print_menu_help() -> None:
 
 
 def launch_assignment_menu() -> None:
-    """Display the current assignment-management boundary."""
-    clear_screen()
-    print_menu_header("Assignment Management")
-    print("Assignment management workflows are not implemented yet.")
-    print("Current direct CLI support:")
-    print("  quillan validate-assignment <assignment.json>")
-    print()
-    pause_for_user()
+    """Launch writing-assignment config workflows."""
+    from quillan.assignment_workflows import launch_assignment_menu as launch
+
+    launch()
 
 
 def launch_roster_menu() -> None:

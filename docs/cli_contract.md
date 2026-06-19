@@ -220,7 +220,24 @@ active-roster removal do not write immediately. Saving requires typing
 removal never deletes assignments, submissions, printable PDFs, scans,
 reports, tags, scores, feedback, or historical evidence.
 
-Assignment Management states that its workflow is not implemented yet.
+Assignment Management provides:
+
+```text
+1. Create writing assignment
+2. View/validate assignment
+3. Back
+```
+
+Creation selects one class with an existing canonical roster, prompts for the
+fields in the existing assignment config contract, and writes
+`<workspace_root>/classes/<class_id>/assignments/<assignment_id>/assignment.json`.
+An existing config is replaced only after exact `OVERWRITE` confirmation.
+View/validate accepts an explicit JSON path, uses the existing assignment
+loader and validator, prints a concise summary, and does not rewrite the file.
+These workflows do not add assignment editing, deletion, import, scoring,
+feedback, tagging execution, requirements checking, reports, scan routing,
+OCR, AI, or printable packet generation.
+
 Printable Response Pages states that PDF generation exists as a Python API but
 has no teacher-facing menu workflow yet.
 

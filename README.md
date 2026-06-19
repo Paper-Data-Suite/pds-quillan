@@ -26,6 +26,8 @@ Quillan currently supports:
   records and display-name helpers;
 - teacher-facing class roster creation, viewing, staged editing, and validation
   through the Roster Management menu;
+- teacher-facing writing assignment config creation and read-only validation
+  through the Assignment Management menu;
 - shared Paper Data Suite workspace status reporting;
 - assignment-local storage paths based on shared `pds-core` route helpers; and
 - synthetic examples and fixtures for safe testing and documentation.
@@ -155,6 +157,19 @@ only the active roster and does not delete assignments, submissions,
 printable PDFs, scans, reports, tags, scores, feedback, or historical
 evidence.
 
+The Assignment Management menu creates validated writing assignment configs
+from prompts and can view/validate an explicit existing assignment JSON file.
+Creation requires an existing canonical class roster and saves to:
+
+```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/assignment.json
+```
+
+Generated configs use Quillan's existing assignment validation contract. This
+menu does not edit, delete, import, score, tag, check requirements, generate
+feedback or reports, route scans, perform OCR or AI work, or generate printable
+response packets.
+
 Quillan also consumes the shared PDS1 payload conventions and helpers from
 `pds-core`. Each generated response page embeds a QR code containing a
 canonical payload such as:
@@ -176,11 +191,12 @@ quillan
 
 `quillan menu` launches the same menu as an explicit alias.
 
-The menu provides class roster creation, viewing, staged editing, and
-validation through Roster Management. Assignment Management and Printable
-Response Pages remain honest placeholders. Workspace Settings can show, set,
-validate/create, and reset the shared Paper Data Suite workspace root. Help
-summarizes Quillan's teacher-controlled purpose and safe-data expectations.
+The menu provides writing assignment config creation and validation through
+Assignment Management, plus class roster creation, viewing, staged editing,
+and validation through Roster Management. Printable Response Pages remains an
+honest placeholder. Workspace Settings can show, set, validate/create, and
+reset the shared Paper Data Suite workspace root. Help summarizes Quillan's
+teacher-controlled purpose and safe-data expectations.
 
 Show direct CLI help:
 

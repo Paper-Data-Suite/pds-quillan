@@ -15,6 +15,11 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a teacher-facing Assignment Management menu for creating validated
+  one-class writing assignment configs at the canonical shared assignment
+  route and viewing/validating existing configs without rewriting them.
+- Added exact overwrite confirmation for existing assignment configs and
+  roster-gated class selection for assignment creation.
 - Added a teacher-facing Roster Management menu for creating, viewing, staged
   editing, and validating canonical shared `pds-core` class rosters.
 - Added preservation of leading-zero student IDs and existing optional roster
