@@ -171,12 +171,12 @@ before routed-evidence writes, in the following order.
    verify that it remains inside the resolved workspace root. Reject any path
    that escapes the root, including through traversal or filesystem links.
 
-Student roster membership is not an initial routing prerequisite. Quillan
-consumes and manages shared `pds-core` roster records, but roster membership
-does not alter the routing contract described here. A future roster-aware
-routing phase may flag an unknown student for
-review, but it must preserve the source evidence rather than infer a different
-identity. The student identifier must still be valid.
+Quillan's decoded response route planner requires the canonical class roster
+to exist and validates exact student-ID membership before returning a route
+plan. An unknown student produces a structured `student_unknown` failure; the
+planner never substitutes a student based on names or other context. The
+planner only reads routing context and computes destination paths. It does not
+write routed evidence or review metadata.
 
 Validation should return stable, machine-readable failure codes in addition to
 human-readable reasons. It must not attempt to repair identifiers, guess a
