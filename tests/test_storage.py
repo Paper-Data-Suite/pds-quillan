@@ -7,6 +7,7 @@ from pathlib import Path
 from pds_core.routes import (
     assignment_config_path as pds_assignment_config_path,
     assignment_dir as pds_assignment_dir,
+    assignment_scans_dir as pds_assignment_scans_dir,
     assignment_submissions_dir as pds_assignment_submissions_dir,
     assignment_templates_dir as pds_assignment_templates_dir,
     student_submission_dir as pds_student_submission_dir,
@@ -15,6 +16,7 @@ from pds_core.routes import (
 from quillan.storage import (
     assignment_config_path,
     assignment_dir,
+    assignment_scans_dir,
     assignment_submissions_dir,
     assignment_templates_dir,
     feedback_path,
@@ -44,6 +46,9 @@ def test_assignment_paths_use_shared_pds_routes(tmp_path: Path) -> None:
     assert assignment_submissions_dir(
         tmp_path, CLASS_ID, ASSIGNMENT_ID
     ) == pds_assignment_submissions_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID)
+    assert assignment_scans_dir(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID
+    ) == pds_assignment_scans_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID)
     assert assignment_templates_dir(
         tmp_path, CLASS_ID, ASSIGNMENT_ID
     ) == pds_assignment_templates_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID)

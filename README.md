@@ -31,7 +31,10 @@ Quillan currently supports:
 - teacher-facing generation of one combined printable response class packet
   from an existing canonical roster and assignment config;
 - shared Paper Data Suite workspace status reporting;
-- assignment-local storage paths based on shared `pds-core` route helpers; and
+- assignment-local storage paths based on shared `pds-core` route helpers;
+- an internal, read-only decoded response-page route planner that validates
+  class, assignment, roster, and student relationships without writing files;
+  and
 - synthetic examples and fixtures for safe testing and documentation.
 
 Printable response generation is exposed through the teacher-facing menu and
@@ -52,7 +55,8 @@ The data contracts and design documents describe additional teacher-review
 and paper-ingest workflows that are not yet implemented end to end. In
 particular, Quillan does not currently provide:
 
-- production scan routing, copying, or filing;
+- production scan routing, copying, or filing (the internal decoded route
+  planner only computes a validated route decision);
 - QR extraction from scanned PDFs or images;
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
