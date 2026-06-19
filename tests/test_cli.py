@@ -425,25 +425,18 @@ def test_menu_help_explains_teacher_control_and_safe_data(
     assert "quillan menu" in output
 
 
-@pytest.mark.parametrize(
-    ("selection", "expected_message"),
-    [
-        (
-            "3",
-            "teacher-facing menu workflow is not implemented yet.",
-        ),
-    ],
-)
-def test_unsupported_menu_sections_are_honest_placeholders(
-    selection: str,
-    expected_message: str,
+def test_main_menu_opens_printable_response_submenu(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, [selection, "", "6"])
+    _menu_input(monkeypatch, ["3", "2", "6"])
 
     assert main(["menu"]) == 0
-    assert expected_message in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "Printable Response Pages" in output
+    assert "Generate class packet" in output
+    assert "Back" in output
+    assert "Goodbye." in output
 
 
 def test_main_menu_opens_assignment_management_submenu(

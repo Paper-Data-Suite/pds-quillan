@@ -20,6 +20,8 @@ Quillan currently has:
 * teacher-facing shared-roster creation, viewing, staged editing, and
   validation;
 * teacher-facing writing assignment config creation and read-only validation;
+* teacher-facing combined printable response class-packet generation from
+  existing canonical rosters and assignment configs;
 * automated tests for standards validation and CLI behavior;
 * configured development checks using `pytest`, `ruff`, and `mypy`.
 
@@ -154,9 +156,23 @@ Current responsibility:
 * view and validate existing assignment configs without rewriting them.
 
 The menu workflow requires an existing class roster and protects existing
-configs with exact `OVERWRITE` confirmation. Assignment editing, deletion,
-import, scoring, feedback, tagging execution, requirements checking, reports,
-scan routing, OCR, AI, and printable packet generation remain out of scope.
+configs with exact `OVERWRITE` confirmation. The Assignment Management menu
+does not edit, delete, or import assignments and does not perform scoring,
+feedback, tagging execution, requirements checking, reports, scan routing,
+OCR, AI, or printable packet generation.
+
+### `printable_response.py`
+
+Current responsibility:
+
+* generate one combined printable response class packet from validated
+  assignment data and shared `pds-core` roster records;
+* expose that supported mode through the Printable Response Pages menu; and
+* protect an existing stable output from menu-driven replacement unless the
+  teacher types exact `OVERWRITE`.
+
+Individual student PDFs, scan routing, OCR, review, scoring, feedback, reports,
+AI, and a direct printable CLI command remain out of scope.
 
 ### `submissions.py`
 
@@ -299,6 +315,8 @@ Completed work:
 * Add the initial bare `quillan` menu entry point, explicit `quillan menu`
   alias, and navigation skeleton.
 * Add the Roster Management submenu using shared `pds-core` contracts.
+* Add the Printable Response Pages submenu for combined class-packet
+  generation.
 * Add CLI tests.
 
 Remaining possible work:

@@ -107,10 +107,13 @@ generation.
 ### `templates/`
 
 A shared assignment-local directory for generated or teacher-facing printable
-materials. The implemented Python API creates
-`templates/printable_response_pages.pdf` for a generated batch of
-roster-aware writing-response pages. A dedicated printable-response CLI or
-teacher menu workflow is not yet implemented. The response-page contract is
+materials. The Python API and Printable Response Pages menu create
+`templates/printable_response_pages.pdf` as one combined class packet of
+roster-aware writing-response pages. The menu requires an existing canonical
+roster and assignment config and protects replacement with exact `OVERWRITE`
+confirmation. Generation does not rewrite either source file. Generated PDFs
+are local workspace artifacts and should not be committed. A dedicated
+printable-response CLI is not implemented. The response-page contract is
 defined in
 [`printable_response_template.md`](printable_response_template.md).
 

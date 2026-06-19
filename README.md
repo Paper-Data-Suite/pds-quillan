@@ -28,13 +28,15 @@ Quillan currently supports:
   through the Roster Management menu;
 - teacher-facing writing assignment config creation and read-only validation
   through the Assignment Management menu;
+- teacher-facing generation of one combined printable response class packet
+  from an existing canonical roster and assignment config;
 - shared Paper Data Suite workspace status reporting;
 - assignment-local storage paths based on shared `pds-core` route helpers; and
 - synthetic examples and fixtures for safe testing and documentation.
 
-Printable response generation is implemented as a Python API in
-`quillan.printable_response`; it is not yet exposed as a teacher-facing menu
-workflow or dedicated CLI command.
+Printable response generation is exposed through the teacher-facing menu and
+the Python API in `quillan.printable_response`. It is not exposed as a
+dedicated direct CLI command.
 
 ## Core Principle
 
@@ -59,8 +61,7 @@ particular, Quillan does not currently provide:
   production reporting workflows;
 - AI tagging, AI scoring, or AI feedback;
 - automatic grading; or
-- complete teacher-facing assignment, printable-response, or review
-  workflows; or
+- complete teacher-facing assignment editing or review workflows; or
 - a dedicated printable-response command.
 
 The intended scan-routing rules and failure behavior are documented in
@@ -167,8 +168,19 @@ Creation requires an existing canonical class roster and saves to:
 
 Generated configs use Quillan's existing assignment validation contract. This
 menu does not edit, delete, import, score, tag, check requirements, generate
-feedback or reports, route scans, perform OCR or AI work, or generate printable
-response packets.
+feedback or reports, route scans, or perform OCR or AI work.
+
+The Printable Response Pages menu selects an existing canonical class roster
+and assignment config, prompts for a positive number of pages per student, and
+generates one combined class packet at:
+
+```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/templates/printable_response_pages.pdf
+```
+
+Replacing an existing packet requires exact `OVERWRITE` confirmation.
+Generation does not alter the roster or assignment config. Generated PDFs are
+local workspace artifacts and should not be committed.
 
 Quillan also consumes the shared PDS1 payload conventions and helpers from
 `pds-core`. Each generated response page embeds a QR code containing a
@@ -192,11 +204,11 @@ quillan
 `quillan menu` launches the same menu as an explicit alias.
 
 The menu provides writing assignment config creation and validation through
-Assignment Management, plus class roster creation, viewing, staged editing,
-and validation through Roster Management. Printable Response Pages remains an
-honest placeholder. Workspace Settings can show, set, validate/create, and
-reset the shared Paper Data Suite workspace root. Help summarizes Quillan's
-teacher-controlled purpose and safe-data expectations.
+Assignment Management, class roster creation, viewing, staged editing, and
+validation through Roster Management, and combined class-packet generation
+through Printable Response Pages. Workspace Settings can show, set,
+validate/create, and reset the shared Paper Data Suite workspace root. Help
+summarizes Quillan's teacher-controlled purpose and safe-data expectations.
 
 Show direct CLI help:
 

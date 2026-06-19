@@ -15,6 +15,12 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a teacher-facing Printable Response Pages menu that generates one
+  combined class packet from an existing canonical roster and assignment
+  config using the existing roster-aware PDF generator.
+- Added positive pages-per-student validation, clear assignment validation and
+  class-mismatch errors, canonical output-path reporting, and exact
+  `OVERWRITE` protection for existing printable packets.
 - Added a teacher-facing Assignment Management menu for creating validated
   one-class writing assignment configs at the canonical shared assignment
   route and viewing/validating existing configs without rewriting them.
