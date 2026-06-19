@@ -47,16 +47,19 @@ def _roster(class_id: str = "synthetic_class") -> Roster:
 def _inputs(
     monkeypatch: pytest.MonkeyPatch,
     responses: list[str],
-) -> None:
+) -> list[str]:
     response_iterator: Iterator[str] = iter(responses)
+    prompts: list[str] = []
 
-    def fake_input(_prompt: str = "") -> str:
+    def fake_input(prompt: str = "") -> str:
+        prompts.append(prompt)
         try:
             return next(response_iterator)
         except StopIteration as error:
             raise AssertionError("Workflow requested unexpected input.") from error
 
     monkeypatch.setattr("builtins.input", fake_input)
+    return prompts
 
 
 def test_create_class_roster_uses_canonical_path_and_preserves_zero_id(
@@ -187,6 +190,69 @@ def test_add_and_edit_student_preserve_optional_schema_and_values() -> None:
     }
     assert edited.students[0].extra_fields == roster.students[0].extra_fields
     assert edited.students[0].period == "4"
+
+
+def test_add_student_accepts_shared_period_default_and_preserves_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    roster = _roster()
+    prompts = _inputs(
+        monkeypatch,
+        ["0099", "Person", "Taylor", "", "Tay", ""],
+    )
+
+    updated = workflows.prompt_add_student_to_roster(roster)
+
+    added = updated.students[-1]
+    assert "  period [3]: " in prompts
+    assert added.student_id == "0099"
+    assert isinstance(added.student_id, str)
+    assert added.period == "3"
+    assert added.extra_fields == {
+        "preferred_name": "Tay",
+        "notes": "",
+    }
+
+
+def test_add_student_can_override_shared_period_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _inputs(monkeypatch, ["0099", "Person", "Taylor", "4", "Tay", ""])
+
+    updated = workflows.prompt_add_student_to_roster(_roster())
+
+    assert updated.students[-1].period == "4"
+
+
+def test_add_student_requires_period_when_existing_periods_are_mixed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = _roster()
+    roster = replace_student_record(
+        original,
+        workflows.student_record_from_values(
+            original,
+            "0042",
+            {
+                "last_name": "Sample",
+                "first_name": "Morgan",
+                "period": "4",
+                "preferred_name": "",
+                "notes": "",
+            },
+        ),
+    )
+    prompts = _inputs(
+        monkeypatch,
+        ["0099", "Person", "Taylor", "5", "Tay", ""],
+    )
+
+    updated = workflows.prompt_add_student_to_roster(roster)
+
+    assert workflows.shared_roster_period(roster) is None
+    assert "  period: " in prompts
+    assert not any(prompt.startswith("  period [") for prompt in prompts)
+    assert updated.students[-1].period == "5"
 
 
 def test_remove_is_in_memory_only_and_does_not_touch_evidence(
