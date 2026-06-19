@@ -8,6 +8,11 @@ planning and do not by themselves represent releases.
 
 ## Unreleased
 
+### Changed
+
+- Adding a student to an existing single-period roster now offers that shared
+  period as the default while preserving explicit entry for mixed rosters.
+
 ### Added
 
 - Added a teacher-facing Roster Management menu for creating, viewing, staged

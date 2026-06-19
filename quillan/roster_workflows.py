@@ -39,6 +39,15 @@ def optional_roster_columns(roster: Roster) -> tuple[str, ...]:
     )
 
 
+def shared_roster_period(roster: Roster) -> str | None:
+    """Return the shared nonblank student period when it is unambiguous."""
+    periods = [student.period.strip() for student in roster.students]
+    if not periods or any(not period for period in periods):
+        return None
+    unique_periods = set(periods)
+    return next(iter(unique_periods)) if len(unique_periods) == 1 else None
+
+
 def format_roster_for_display(roster: Roster, roster_path: str | Path) -> str:
     """Return a readable roster summary including all roster columns."""
     columns = tuple(
@@ -209,7 +218,12 @@ def prompt_add_student_to_roster(roster: Roster) -> Roster:
     values = {
         field: _prompt_required(field)
         for field in _REQUIRED_STUDENT_FIELDS
+        if field != "period"
     }
+    values["period"] = _prompt_required(
+        "period",
+        default=shared_roster_period(roster),
+    )
     for column in optional_roster_columns(roster):
         values[column] = input(f"  {column} (optional): ").strip()
     student = student_record_from_values(roster, values["student_id"], values)
