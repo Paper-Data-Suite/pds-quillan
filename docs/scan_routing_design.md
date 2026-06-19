@@ -6,15 +6,23 @@ This design describes how a future Quillan scan router should accept a scanned
 writing-response page with an already-decoded PDS1 payload, validate its page
 identity, and select a safe location in the Paper Data Suite workspace.
 
+Future Quillan scan routing must follow the shared active scan contract defined
+by `pds-core` in `docs/active_scan_contract.md`. That contract owns active
+source retention, routing review, shared failure metadata, and provenance
+semantics. This document adds only Quillan-specific response-page validation,
+routed evidence, submission assembly, and teacher-review design.
+
 Quillan currently generates printable response PDFs and embeds canonical PDS1
 Quillan response payloads in QR codes on those pages. That implemented output
 is the upstream artifact assumed by this design; Quillan does not yet extract
 those QR payloads from scanned PDFs or images.
 
 The PDS1 payload is the machine-readable source of class, assignment, student,
-and page identity. A successfully routed file is preserved as raw source
-evidence in the assignment-level `scans/` directory. Routing does not make the
-page a complete submission and does not perform or imply teacher review.
+and page identity. A successfully routed file may be copied or derived as
+routed evidence in the assignment-level `scans/` directory. The canonical
+active retained source remains in `scans/source/YYYY-MM-DD/`. Routing does not
+make the page a complete submission and does not perform or imply teacher
+review.
 
 This document is a design spike only. It does not implement scan routing, QR
 extraction, image processing, or OCR.
@@ -30,10 +38,10 @@ The future router should:
 * use shared `pds-core` parsers, identifier validators, and route helpers where
   available;
 * keep every computed destination inside the resolved PDS workspace root;
-* preserve the original scan evidence and never silently overwrite it;
+* follow the shared copy-first, no-overwrite, and provenance requirements;
 * produce deterministic normal filenames and deterministic duplicate suffixes;
-* preserve failed inputs for teacher review when the workspace is available;
-  and
+* record routing failures under the shared `scans/review/` contract when the
+  workspace is available; and
 * leave scoring, feedback, and review status under teacher control.
 
 ## Non-Goals
@@ -48,20 +56,45 @@ Scan routing does not:
 * create scores, feedback, tags, or requirements results; or
 * mark a response as reviewed.
 
-## Assumed Input Contract
+## Shared Intake and Retention Prerequisite
 
-The routing boundary begins after QR extraction. A future routing operation
-should accept a value equivalent to:
+Before Quillan-specific parsing or routing, a future active scan workflow must
+follow the shared `pds-core` contract:
+
+1. Leave the teacher's original selected file untouched.
+2. Copy every readable selected source into
+   `scans/source/YYYY-MM-DD/`.
+3. Avoid silent overwrites of retained sources, review records, and routed
+   evidence.
+4. Process the retained source or keep explicit provenance back to it.
+5. Copy or derive Quillan evidence into assignment or student locations only
+   after source retention.
+6. Preserve provenance from every routed Quillan artifact back to the retained
+   source scan.
+
+`scans_inbox/` remains the shared teacher-facing intake/drop location. It is
+not the canonical retained source store. The exact retained-source naming,
+copying, and helper APIs belong to `pds-core`, not this Quillan design.
+
+## Assumed Quillan Routing Input
+
+The Quillan-specific routing boundary begins after shared source retention and
+QR extraction. A future routing operation should accept a value equivalent to:
 
 ```text
 source_file_path
+retained_source_identity_or_path
 decoded_pds1_payload
 optional source_page_index
 optional source_file_type
 ```
 
-`source_file_path` identifies the evidence to preserve. The path must refer to
-a readable regular file at routing time.
+`source_file_path` identifies the retained source or a derived page artifact to
+route. It must refer to a readable regular file at routing time.
+
+`retained_source_identity_or_path` provides the provenance link to the
+canonical active retained source in `scans/source/YYYY-MM-DD/`. The future
+shared contract implementation will determine the exact typed representation.
 
 `decoded_pds1_payload` is the decoded text, not a QR image or partially parsed
 field map. Keeping the canonical text at this boundary allows
@@ -76,9 +109,9 @@ stage. If it is absent, the router may infer the type from the source file
 extension. A future implementation must use a controlled extension mapping
 rather than append unchecked input to a destination filename.
 
-The routing result should report success or failure, the selected destination
-or review location, and whether duplicate naming was required. It should not
-mutate submission metadata.
+The routing result should report success or failure, the selected routed
+evidence destination or review record, retained-source provenance, and whether
+duplicate naming was required. It should not mutate submission metadata.
 
 ## PDS1 Payload Fields
 
@@ -105,7 +138,8 @@ not override decoded payload identity.
 
 ## Payload Validation
 
-Validation should happen before filesystem writes and in the following order.
+Quillan-specific validation should happen after shared source retention and
+before routed-evidence writes, in the following order.
 
 1. **Input validation.** Require a readable source file and a nonblank decoded
    payload string. Validate or map the source type to a supported, normalized
@@ -148,9 +182,9 @@ Validation should return stable, machine-readable failure codes in addition to
 human-readable reasons. It must not attempt to repair identifiers, guess a
 missing field, or route from printed names.
 
-## Normal Routing Destination
+## Routed Evidence Destination
 
-A valid page routes first to:
+A valid Quillan response page may route as evidence to:
 
 ```text
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/scans/
@@ -160,13 +194,11 @@ The future implementation should obtain this directory from
 `pds_core.routes.assignment_scans_dir()` rather than reconstruct the shared
 route in Quillan.
 
-The initial filesystem operation should be copy-first so the incoming source
-is not destroyed if routing or later review fails. Moving or deleting an
-ingest source requires a separate, explicit retention policy.
-
-The scans directory is deliberately assignment-level. It can contain
-individual pages, duplicates, rescans, missing-page sets, and damaged evidence
-without claiming that any student's response is complete.
+This assignment-level `scans/` directory contains routed scan evidence, not
+canonical source retention. It can contain individual pages, duplicates,
+rescans, missing-page sets, and damaged evidence without claiming that any
+student's response is complete. Every artifact must remain traceable to its
+retained source in `scans/source/YYYY-MM-DD/`.
 
 Student submission records remain under:
 
@@ -224,16 +256,16 @@ file automatically.
 ## Routing Failures
 
 When a page cannot be safely routed to an assignment, preserve it for review
-under the workspace-level directory:
+through the shared workspace-level review location:
 
 ```text
-<PDS workspace root>/routing_review/
+<PDS workspace root>/scans/review/
 ```
 
-This location is workspace-level because invalid scans may have no usable
-class or assignment identity. Failure handling should copy the source using a
-collision-safe review filename, leave the original source untouched, and
-return a failure result. It must not fall back to a guessed assignment.
+Canonical failure records live here because invalid scans may have no usable
+class or assignment identity. The shared contract may also permit problem
+artifacts in this location. Failure handling must preserve retained-source
+provenance, avoid overwrites, and never fall back to a guessed assignment.
 
 Failure cases include:
 
@@ -249,35 +281,34 @@ Failure cases include:
 * filesystem errors that prevent the normal route from being completed.
 
 If the workspace root itself cannot be resolved or written, the router cannot
-safely create a workspace review copy. It should leave the source untouched
-and return a hard failure with enough context for the caller to surface the
-problem. The exact review-folder filename pattern is deferred to the implementation ticket, but it should preserve the original extension when safe, avoid overwrites, and include enough stable context for teacher review.
+safely retain a source or create a shared review record. It should leave the
+teacher's original file untouched and return a hard failure with enough context
+for the caller to surface the problem. Exact review-record and optional
+problem-artifact naming belong to the shared `pds-core` contract and its future
+implementation.
 
 ## Routing Failure Metadata
 
-A future implementation should create structured metadata for each preserved
-failure, preferably as a JSON sidecar or append-only review index. The record
-should include:
+A future implementation must use the shared `pds-core` routing failure metadata
+shape and shared failure categories. Quillan must not define a parallel
+failure-record schema. Validated Quillan identity and payload information use
+the shared base fields where available; Quillan-only details, such as response
+page validation or submission completeness context, belong under:
 
-* a stable failure record identifier;
-* original source path and copied review path, when available;
-* decoded payload text, when available;
-* stable failure code and human-readable reason;
-* UTC timestamp;
-* source page index, when available;
-* original extension and detected or declared file type;
-* path or validation stage that failed;
-* whether the source was successfully preserved; and
-* a concise suggested teacher action.
+```text
+module_details
+```
 
+Canonical failure JSON records live in `scans/review/`. They must preserve
+provenance back to the retained source, use workspace-relative paths, avoid
+guessed identities, and follow the shared no-overwrite and path-safety rules.
 Failure metadata must not contain a score, feedback, or an inferred student
-identity. Metadata writes should follow the same no-overwrite and path-safety
-rules as scan files.
+identity.
 
 ## Relationship to Submissions
 
-A routed scan page is source evidence, not automatically a reviewed
-submission. Routing a page must not:
+A routed scan page is evidence derived or copied from a retained source scan,
+not automatically a reviewed submission. Routing a page must not:
 
 * score the response;
 * generate feedback;
@@ -289,25 +320,56 @@ A student response may have multiple pages, missing pages, duplicate pages,
 rescans, or damaged scans. Future submission assembly may link routed pages to
 a student submission only after page completeness, provenance, and teacher
 review requirements are defined. The original routed files should remain
-traceable after any such linking.
+traceable to the canonical retained source after any such linking.
+
+Quillan owns the future routed evidence layout inside
+`submissions/<student_id>/`, submission assembly, page completeness rules,
+teacher review and rescan decisions, and any future Quillan OCR policy. Those
+module decisions must continue to use the shared source-retention, provenance,
+and routing-review contract.
+
+## Ownership Boundaries
+
+`pds-core` owns the shared active source-scan and routing-review contract,
+including source and review paths, retained-source naming, base failure
+metadata, shared failure categories, copy-first behavior, no-overwrite rules,
+and provenance semantics.
+
+Quillan owns future module-specific behavior, including:
+
+* interpreting Quillan `PDS1` response payloads;
+* validating response pages;
+* QR extraction and PDF or image splitting for Quillan workflows;
+* deciding routed evidence layout inside student submission folders;
+* assembling student submissions and checking page completeness;
+* supporting teacher review and rescan decisions;
+* any future OCR decisions; and
+* Quillan-specific failure details stored under `module_details`.
+
+Inactive historical preservation and end-of-cycle archiving belong to future
+`pds-sunset` workflows, not active Quillan scan intake or routing.
 
 ## Future Implementation Phases
 
-1. **Decoded-payload routing helper.** Define typed inputs and results; parse
+1. **Shared retention integration.** Use future `pds-core` source-retention and
+   routing-review helpers without redefining their contracts in Quillan.
+2. **Decoded-payload routing helper.** Define typed inputs and results; parse
    PDS1; validate Quillan response identity, identifiers, assignment
-   relationships, extensions, filenames, and path containment without writing.
-2. **Filesystem copy behavior.** Create assignment scan destinations,
-   implement exclusive no-overwrite copies, and return normal or duplicate
-   routes. Any move or source cleanup policy remains explicit and separate.
-3. **QR extraction.** Add adapters that decode PDS1 text from scanned PDFs or
-   images and pass canonical routing inputs to the independent routing helper.
-4. **Duplicate and failure review metadata.** Preserve failed files, write
-   structured failure records, and expose duplicates and failures for teacher
-   review.
-5. **Submission assembly and linking.** Define page manifests, completeness
+   relationships, extensions, filenames, and path containment without writing
+   routed evidence.
+3. **Routed evidence writes.** Create assignment scan destinations, implement
+   exclusive no-overwrite copies or derived artifacts, and preserve provenance
+   to the retained source.
+4. **QR extraction and splitting.** Add Quillan adapters that decode PDS1 text
+   from scanned PDFs or images and pass canonical routing inputs to the
+   independent routing helper.
+5. **Duplicate and failure review metadata.** Use shared failure records and
+   categories, put Quillan-specific context under `module_details`, and expose
+   duplicates and failures for teacher review.
+6. **Submission assembly and linking.** Define page manifests, completeness
    checks, rescan selection, and traceable links from routed evidence to
    student submission records.
-6. **Teacher review integration.** Present assembled evidence to the teacher
+7. **Teacher review integration.** Present assembled evidence to the teacher
    and allow teacher-controlled lifecycle changes without automated judgment.
 
 Each phase should add focused tests for validation, traversal resistance,

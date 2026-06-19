@@ -174,6 +174,25 @@ Current responsibility:
 Individual student PDFs, scan routing, OCR, review, scoring, feedback, reports,
 AI, and a direct printable CLI command remain out of scope.
 
+### Future scan routing
+
+Future Quillan scan routing must use the shared active scan contract defined by
+`pds-core`. Canonical active retained sources belong in
+`scans/source/YYYY-MM-DD/`, routing failure records belong in
+`scans/review/`, and assignment-level `scans/` contains routed evidence rather
+than canonical source retention.
+
+`pds-core` owns shared source retention, review paths, failure metadata and
+categories, copy-first behavior, no-overwrite rules, and provenance semantics.
+Quillan owns interpretation of its `PDS1` response payloads, response-page
+validation, routed student evidence layout, submission assembly, completeness
+and rescan decisions, and any future OCR behavior. Quillan-specific failure
+details belong under the shared record's `module_details`.
+
+This remains design work only; scan intake, copying, QR extraction, PDF
+splitting, routing, failure writing, and submission assembly are not
+implemented.
+
 ### `submissions.py`
 
 Planned responsibility:

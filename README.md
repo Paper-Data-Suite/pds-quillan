@@ -66,7 +66,11 @@ particular, Quillan does not currently provide:
 
 The intended scan-routing rules and failure behavior are documented in
 [`docs/scan_routing_design.md`](docs/scan_routing_design.md), but that document
-is a design contract rather than an implemented router.
+is a design contract rather than an implemented router. Future routing must use
+the shared `pds-core` active scan contract: canonical retained sources belong
+in `scans/source/YYYY-MM-DD/`, canonical routing review records belong in
+`scans/review/`, and assignment-level `scans/` contains routed evidence rather
+than canonical source retention.
 
 ## Current Non-Goals
 
