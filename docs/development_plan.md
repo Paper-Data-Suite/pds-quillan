@@ -19,6 +19,7 @@ Quillan currently has:
 * initial CLI support;
 * teacher-facing shared-roster creation, viewing, staged editing, and
   validation;
+* teacher-facing writing assignment config creation and read-only validation;
 * automated tests for standards validation and CLI behavior;
 * configured development checks using `pytest`, `ruff`, and `mypy`.
 
@@ -143,12 +144,19 @@ contracts plus Quillan's `roster_workflows.py` menu orchestration:
 
 ### `assignments.py`
 
-Planned responsibility:
+Current responsibility:
 
-* define assignment configuration;
-* validate assignment requirements;
+* load and validate the existing assignment configuration contract;
 * connect assignments to standards profiles;
-* support writing type, focus standards, tagging mode, and rubric configuration.
+* support writing type, focus standards, tagging mode, and rubric configuration;
+* create one-class writing assignment configs from teacher prompts at the
+  canonical shared route; and
+* view and validate existing assignment configs without rewriting them.
+
+The menu workflow requires an existing class roster and protects existing
+configs with exact `OVERWRITE` confirmation. Assignment editing, deletion,
+import, scoring, feedback, tagging execution, requirements checking, reports,
+scan routing, OCR, AI, and printable packet generation remain out of scope.
 
 ### `submissions.py`
 
