@@ -15,8 +15,9 @@ workflows as well as writing captured directly as text. Quillan preserves
 student work as evidence, keeps teacher-review artifacts separate, and
 organizes files without substituting software decisions for teacher judgment.
 
-The shared `pds-core` route helpers define the assignment and submission
-locations. Quillan-specific files remain inside those shared routes.
+The shared `pds-core` contracts define assignment and submission locations as
+well as the active scan source-retention and routing-review layout.
+Quillan-specific files remain inside those shared routes.
 
 ## Workspace vs. Installation
 
@@ -38,7 +39,11 @@ The expected current and reserved layout is:
 
 ```text
 <PDS workspace root>/
-  routing_review/
+  scans_inbox/
+  scans/
+    source/
+      YYYY-MM-DD/
+    review/
   classes/
     <class_id>/
       roster.csv
@@ -62,11 +67,11 @@ The expected current and reserved layout is:
           debug/
 ```
 
-The assignment directory, `assignment.json`, `submissions/`, and each
-student's submission directory follow shared PDS route conventions. The other
-directories and files shown above are assignment-local Quillan records or
-reserved locations for future workflows. A directory does not need to exist
-until a workflow has a reason to create it.
+The active scan paths, assignment directory, `assignment.json`,
+`submissions/`, and each student's submission directory follow shared PDS
+contracts. The other directories and files shown above are assignment-local
+Quillan records or reserved locations for future workflows. A directory does
+not need to exist until a workflow has a reason to create it.
 
 ## File Responsibilities
 
@@ -117,19 +122,29 @@ printable-response CLI is not implemented. The response-page contract is
 defined in
 [`printable_response_template.md`](printable_response_template.md).
 
-### `scans/`
+### Workspace `scans/source/YYYY-MM-DD/`
 
-A reserved assignment-local directory for raw routed scan evidence. The future
-validation, naming, collision, and failure-routing behavior is defined in
+The shared canonical store for active retained source scans, date-bucketed by
+the PDS intake date in UTC. A future scan workflow must copy every readable
+selected source here before Quillan-specific parsing or routing, leave the
+teacher's original selected file untouched, avoid silent overwrites, and
+preserve provenance from routed evidence back to this retained source.
+
+### Workspace `scans/review/`
+
+The shared workspace-level location for canonical routing failure records and
+optional problem artifacts. Future Quillan failures must use the shared
+`pds-core` metadata shape and failure categories, with Quillan-specific details
+under `module_details`. Quillan does not currently create or process this
+directory.
+
+### Assignment `scans/`
+
+A reserved assignment-local directory for routed scan evidence. It is not the
+canonical retained source location. The future validation, naming, collision,
+provenance, and failure-review behavior is defined in
 [`scan_routing_design.md`](scan_routing_design.md). Its presence does not imply
 that Quillan currently routes scans, performs OCR, or files captured pages.
-
-### `routing_review/`
-
-A reserved workspace-level location for scan evidence that cannot be safely
-routed to an assignment. It is workspace-level because a failed payload may
-not contain valid class or assignment identity. Quillan does not currently
-create or process this directory.
 
 ### `submissions/<student_id>/submission.json`
 
@@ -291,11 +306,11 @@ The Quillan workspace described here contains active records for current
 instructional use. Normal capture, review, correction, supersession, and
 validation all occur within this active lifecycle.
 
-The term "archive" is reserved for a future inactive or historical
-preservation design. If long-term preservation is needed, it should be
-specified separately and may live outside Quillan's immediate active-year
-workflow. Moving a record into historical preservation must not be assumed
-from its current lifecycle status.
+The term "archive" is reserved for inactive historical preservation and future
+`pds-sunset` workflows. It does not describe active scan intake, retained
+source scans, routing review, or current-year teacher-working records. Moving a
+record into historical preservation must not be assumed from its current
+lifecycle status.
 
 ## Relationship to `docs/data_contracts.md`
 
@@ -314,6 +329,8 @@ implemented `templates/printable_response_pages.pdf` output for printable
 writing-response pages.
 
 [`scan_routing_design.md`](scan_routing_design.md) defines how a future router
-should validate decoded response payloads, preserve scan evidence, and select
-assignment-level `scans/` or workspace-level `routing_review/` destinations.
+should validate decoded response payloads and create Quillan routed evidence
+under the shared `pds-core` active scan contract. Canonical retained sources
+belong in `scans/source/YYYY-MM-DD/`, canonical failure records belong in
+`scans/review/`, and assignment-level `scans/` contains routed evidence.
 

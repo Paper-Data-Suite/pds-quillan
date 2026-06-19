@@ -10,6 +10,9 @@ planning and do not by themselves represent releases.
 
 ### Changed
 
+- Aligned the future Quillan scan-routing design with the shared `pds-core`
+  active scan contract, including source retention, routed evidence,
+  `scans/review/`, shared failure metadata, and ownership boundaries.
 - Adding a student to an existing single-period roster now offers that shared
   period as the default while preserving explicit entry for mixed rosters.
 
