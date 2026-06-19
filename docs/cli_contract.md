@@ -238,8 +238,30 @@ These workflows do not add assignment editing, deletion, import, scoring,
 feedback, tagging execution, requirements checking, reports, scan routing,
 OCR, AI, or printable packet generation.
 
-Printable Response Pages states that PDF generation exists as a Python API but
-has no teacher-facing menu workflow yet.
+Printable Response Pages provides:
+
+```text
+1. Generate class packet
+2. Back
+```
+
+Generation selects a class with an existing canonical roster, then selects a
+canonical assignment config for that class. Invalid configs are identified and
+cannot be selected; the assignment must include the selected class in
+`class_ids`. Blank pages-per-student input defaults to `1`, and nonblank input
+must be a positive integer.
+
+The current output mode is one combined class packet PDF:
+
+```text
+<workspace_root>/classes/<class_id>/assignments/<assignment_id>/templates/printable_response_pages.pdf
+```
+
+An existing packet is replaced only after exact `OVERWRITE` confirmation.
+The workflow uses the existing roster-aware printable generator and does not
+alter roster or assignment data. It does not add individual PDFs, scan
+routing, OCR, review, scoring, feedback, reports, AI, or a direct printable
+CLI command.
 
 Workspace Settings provides:
 

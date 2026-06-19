@@ -75,15 +75,12 @@ def launch_roster_menu() -> None:
 
 
 def launch_printable_response_menu() -> None:
-    """Display the current printable-response workflow boundary."""
-    clear_screen()
-    print_menu_header("Printable Response Pages")
-    print("Printable response PDF generation exists as a Python API, but the")
-    print("teacher-facing menu workflow is not implemented yet.")
-    print("Generated pages use PDS1 Quillan response payloads and shared pds-core")
-    print("roster records.")
-    print()
-    pause_for_user()
+    """Launch printable response packet workflows."""
+    from quillan.printable_response_workflows import (
+        launch_printable_response_menu as launch,
+    )
+
+    launch()
 
 
 def launch_workspace_menu(
