@@ -18,6 +18,10 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a direct `route-scan` command for already-decoded Quillan PDS1
+  payloads, including successful evidence filing, safe review preservation,
+  concise workspace-relative summaries, and documented handled/failure exit
+  codes.
 - Added a routing failure preservation API that writes shared `pds-core`
   failure metadata exclusively under `scans/review/`, adapts route-planning and
   evidence-filing failures, and records workspace-relative retained-source

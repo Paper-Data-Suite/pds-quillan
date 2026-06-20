@@ -199,8 +199,13 @@ Metadata-only failure preservation is implemented in `quillan.routing_review`.
 It writes shared `pds-core` failure records under `scans/review/`, preserves
 route failure and evidence filing context, and records workspace-relative
 retained-source provenance when available. It does not copy review artifacts.
-QR extraction, PDF splitting, OCR, CLI/menu integration, and submission
-assembly remain unimplemented.
+
+The direct
+`quillan route-scan <source-file> --payload "<PDS1|...>"` command is
+implemented for one selected source and an already-decoded payload. It
+orchestrates the existing parser, planner, evidence filer, and review adapters.
+QR extraction, PDF splitting, OCR, menu integration, batch routing, and
+submission assembly remain unimplemented.
 
 ### `submissions.py`
 
@@ -345,6 +350,7 @@ Completed work:
 * Add the Roster Management submenu using shared `pds-core` contracts.
 * Add the Printable Response Pages submenu for combined class-packet
   generation.
+* Add a direct `route-scan` command for already-decoded Quillan PDS1 payloads.
 * Add CLI tests.
 
 Remaining possible work:

@@ -40,7 +40,10 @@ Quillan currently supports:
   without assembling submissions;
 - an internal routing failure preservation API that writes shared `pds-core`
   failure metadata under `scans/review/`, including retained-source provenance
-  when available, without copying review artifacts; and
+  when available, without copying review artifacts;
+- a direct `route-scan` command for already-decoded payloads that orchestrates
+  the existing parser, route planner, evidence filer, and failure review
+  helpers; and
 - synthetic examples and fixtures for safe testing and documentation.
 
 Printable response generation is exposed through the teacher-facing menu and
@@ -61,8 +64,8 @@ The data contracts and design documents describe additional teacher-review
 and paper-ingest workflows that are not yet implemented end to end. In
 particular, Quillan does not currently provide:
 
-- end-to-end production scan intake and routing (the internal APIs require an
-  already-selected readable source file and caller-managed orchestration);
+- end-to-end production scan intake and routing (the direct command requires
+  an already-selected source file and caller-supplied decoded payload);
 - QR extraction from scanned PDFs or images;
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
@@ -80,8 +83,8 @@ route planner, successful filing helper, and failure preservation helper follow
 the shared `pds-core` active scan contract: canonical retained sources belong
 in `scans/source/YYYY-MM-DD/`, canonical routing review records belong in
 `scans/review/`, and assignment-level `scans/` contains routed evidence rather
-than canonical source retention. QR extraction, PDF splitting, OCR, CLI routing,
-and submission assembly remain outside these internal APIs.
+than canonical source retention. QR extraction, PDF splitting, OCR, and
+submission assembly remain outside the direct command and internal APIs.
 
 ## Current Non-Goals
 
@@ -205,8 +208,9 @@ canonical payload such as:
 PDS1|module=quillan|class=<class_id>|aid=<assignment_id>|sid=<student_id>|page=<page_number>|doc=response
 ```
 
-Generating this QR code is implemented. Extracting it from a later scan,
-routing the scan, and performing OCR are not.
+Generating this QR code is implemented. A caller can route a selected scan
+after separately decoding its payload, but Quillan does not extract QR codes,
+split PDFs, or perform OCR.
 
 ## Running Quillan
 
@@ -274,6 +278,23 @@ Validate an assignment configuration:
 quillan validate-assignment <assignment.json>
 ```
 
+Route one selected scan using an already-decoded Quillan PDS1 payload:
+
+```powershell
+quillan route-scan <source-file> --payload "PDS1|module=quillan|class=<class_id>|aid=<assignment_id>|sid=<student_id>|page=<page>|doc=response"
+```
+
+Successful routing retains the selected source under
+`scans/source/YYYY-MM-DD/` and files response evidence under the assignment
+`scans/` directory. Payload, planning, and filing failures are preserved under
+`scans/review/` when possible. Exit code `0` means the input was routed or
+safely preserved for review; exit code `1` means it could not be handled
+safely.
+
+This direct developer/teacher primitive requires already-decoded payload text.
+It does not extract QR codes, split PDFs, run OCR, assemble submissions, score,
+tag, generate feedback, or create reports.
+
 The current command surface is:
 
 ```powershell
@@ -281,6 +302,7 @@ quillan
 quillan --help
 quillan validate-standards <standards-profile.json>
 quillan validate-assignment <assignment.json>
+quillan route-scan <source-file> --payload "<PDS1|...>"
 quillan workspace show
 quillan menu
 ```

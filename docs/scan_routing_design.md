@@ -31,8 +31,10 @@ source into `scans/source/YYYY-MM-DD/`, files the retained source or a
 caller-supplied page artifact into assignment `scans/`, preserves duplicates,
 and returns provenance. Quillan also implements metadata-only failure
 preservation through `quillan.routing_review`, writing shared failure records
-under `scans/review/`. These slices do not implement QR extraction, PDF
-splitting, submission assembly, image processing, OCR, or a CLI workflow.
+under `scans/review/`. The direct
+`quillan route-scan <source-file> --payload "<PDS1|...>"` command orchestrates
+these slices for a caller-supplied decoded payload. It does not implement QR
+extraction, PDF splitting, submission assembly, image processing, or OCR.
 
 ## Design Goals
 
@@ -371,17 +373,20 @@ Inactive historical preservation and end-of-cycle archiving belong to future
 3. **Routed evidence writes.** Implemented for successful routes: create
    assignment scan destinations, use exclusive no-overwrite copies, preserve
    duplicate evidence, and return provenance to the retained source.
-4. **QR extraction and splitting.** Add Quillan adapters that decode PDS1 text
+4. **Direct decoded-payload command.** Implemented as `quillan route-scan` for
+   one selected source file and an already-decoded payload, with safe review
+   preservation and no submission assembly.
+5. **QR extraction and splitting.** Add Quillan adapters that decode PDS1 text
    from scanned PDFs or images and pass canonical routing inputs to the
    independent routing helper.
-5. **Duplicate and failure review workflows.** Metadata-only failure preservation
+6. **Duplicate and failure review workflows.** Metadata-only failure preservation
    is implemented with shared `pds-core` records under `scans/review/`.
    Future work should expose preserved failures and duplicate routed evidence
    for teacher review.
-6. **Submission assembly and linking.** Define page manifests, completeness
+7. **Submission assembly and linking.** Define page manifests, completeness
    checks, rescan selection, and traceable links from routed evidence to
    student submission records.
-7. **Teacher review integration.** Present assembled evidence to the teacher
+8. **Teacher review integration.** Present assembled evidence to the teacher
    and allow teacher-controlled lifecycle changes without automated judgment.
 
 Each phase should add focused tests for validation, traversal resistance,
@@ -390,13 +395,13 @@ submission mutations.
 
 ## Out of Scope
 
-The current successful-write slice does not implement:
+The current direct decoded-payload routing slice does not implement:
 
-* end-to-end scan routing or intake orchestration;
+* end-to-end production scan intake automation;
 * QR detection or extraction;
 * PDF splitting, image processing, or OCR;
 * submission assembly or production roster workflows;
 * requirements checking, tagging, scoring, feedback, or reporting;
 * AI tagging, scoring, feedback, or automatic grading;
-* CLI, menu, or workspace-settings workflows; or
+* menu or workspace-settings routing workflows; or
 * changes to `pds-core`, `pds-scoreform`, or Python behavior.
