@@ -29,9 +29,10 @@ Quillan now implements the first successful-write slice through
 source file and an existing successful `RoutePlan`, it exclusively copies the
 source into `scans/source/YYYY-MM-DD/`, files the retained source or a
 caller-supplied page artifact into assignment `scans/`, preserves duplicates,
-and returns provenance. It does not implement QR extraction, PDF splitting,
-failure preservation, submission assembly, image processing, OCR, or a CLI
-workflow.
+and returns provenance. Quillan also implements metadata-only failure
+preservation through `quillan.routing_review`, writing shared failure records
+under `scans/review/`. These slices do not implement QR extraction, PDF
+splitting, submission assembly, image processing, OCR, or a CLI workflow.
 
 ## Design Goals
 
@@ -289,17 +290,19 @@ Failure cases include:
 If the workspace root itself cannot be resolved or written, the router cannot
 safely retain a source or create a shared review record. It should leave the
 teacher's original file untouched and return a hard failure with enough context
-for the caller to surface the problem. Exact review-record and optional
-problem-artifact naming belong to the shared `pds-core` contract and its future
-implementation.
+for the caller to surface the problem. Review-record naming and exclusive JSON
+writes use the shared `pds-core` contract. Quillan does not currently create or
+copy optional problem artifacts.
 
 ## Routing Failure Metadata
 
-A future implementation must use the shared `pds-core` routing failure metadata
-shape and shared failure categories. Quillan must not define a parallel
-failure-record schema. Validated Quillan identity and payload information use
-the shared base fields where available; Quillan-only details, such as response
-page validation or submission completeness context, belong under:
+`quillan.routing_review` implements metadata-only failure preservation using
+the shared `pds-core` routing failure metadata model, writer, paths, and failure
+categories. It accepts general failures and provides adapters for `RouteFailure`
+and `EvidenceFilingError`; it does not re-run planning or successful evidence
+filing. Quillan does not define a parallel failure-record schema. Validated
+Quillan identity and payload information use the shared base fields where
+available; Quillan-only details belong under:
 
 ```text
 module_details
@@ -309,7 +312,9 @@ Canonical failure JSON records live in `scans/review/`. They must preserve
 provenance back to the retained source, use workspace-relative paths, avoid
 guessed identities, and follow the shared no-overwrite and path-safety rules.
 Failure metadata must not contain a score, feedback, or an inferred student
-identity.
+identity. Retained-source provenance is recorded only when available, and a
+supplied review artifact path is recorded only as workspace-relative metadata;
+the helper does not copy that artifact.
 
 ## Relationship to Submissions
 
@@ -357,9 +362,10 @@ Inactive historical preservation and end-of-cycle archiving belong to future
 
 ## Future Implementation Phases
 
-1. **Shared retention integration.** Partially implemented for successful
-   writes using `pds-core` retained-source naming and path helpers. Shared
-   routing-review integration remains future work.
+1. **Shared retention and routing-review integration.** Partially implemented
+   through successful retained-source filing with `pds-core` retained-source
+   naming/path helpers and metadata-only failure preservation through shared
+   `pds-core` routing failure records under `scans/review/`.
 2. **Decoded-payload routing helper.** Implemented as the read-only
    `RoutePlan`/`RouteFailure` planner for already-decoded response-page data.
 3. **Routed evidence writes.** Implemented for successful routes: create
@@ -368,9 +374,10 @@ Inactive historical preservation and end-of-cycle archiving belong to future
 4. **QR extraction and splitting.** Add Quillan adapters that decode PDS1 text
    from scanned PDFs or images and pass canonical routing inputs to the
    independent routing helper.
-5. **Duplicate and failure review metadata.** Use shared failure records and
-   categories, put Quillan-specific context under `module_details`, and expose
-   duplicates and failures for teacher review.
+5. **Duplicate and failure review workflows.** Metadata-only failure preservation
+   is implemented with shared `pds-core` records under `scans/review/`.
+   Future work should expose preserved failures and duplicate routed evidence
+   for teacher review.
 6. **Submission assembly and linking.** Define page manifests, completeness
    checks, rescan selection, and traceable links from routed evidence to
    student submission records.

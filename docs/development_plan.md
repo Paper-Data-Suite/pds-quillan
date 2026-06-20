@@ -193,8 +193,14 @@ The first successful-write helper is implemented in `quillan.evidence_filing`.
 It accepts an existing successful `RoutePlan`, retains the selected source
 under `scans/source/YYYY-MM-DD/`, files the retained source or a supplied page
 artifact under assignment `scans/`, preserves duplicate copies, and returns
-provenance. QR extraction, PDF splitting, routing failure records, CLI/menu
-integration, and submission assembly remain unimplemented.
+provenance.
+
+Metadata-only failure preservation is implemented in `quillan.routing_review`.
+It writes shared `pds-core` failure records under `scans/review/`, preserves
+route failure and evidence filing context, and records workspace-relative
+retained-source provenance when available. It does not copy review artifacts.
+QR extraction, PDF splitting, OCR, CLI/menu integration, and submission
+assembly remain unimplemented.
 
 ### `submissions.py`
 
