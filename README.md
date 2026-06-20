@@ -37,7 +37,10 @@ Quillan currently supports:
 - an internal successful-route evidence filing helper that retains selected
   source scans under `scans/source/YYYY-MM-DD/`, files routed copies under the
   assignment `scans/` directory, and returns source and route provenance
-  without assembling submissions; and
+  without assembling submissions;
+- an internal routing failure preservation API that writes shared `pds-core`
+  failure metadata under `scans/review/`, including retained-source provenance
+  when available, without copying review artifacts; and
 - synthetic examples and fixtures for safe testing and documentation.
 
 Printable response generation is exposed through the teacher-facing menu and
@@ -59,8 +62,7 @@ and paper-ingest workflows that are not yet implemented end to end. In
 particular, Quillan does not currently provide:
 
 - end-to-end production scan intake and routing (the internal APIs require an
-  already-selected readable source file and an already-successful route plan);
-- routing failure preservation under `scans/review/`;
+  already-selected readable source file and caller-managed orchestration);
 - QR extraction from scanned PDFs or images;
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
@@ -68,17 +70,18 @@ particular, Quillan does not currently provide:
 - implemented requirements-checking, tagging, scoring, feedback, or
   production reporting workflows;
 - AI tagging, AI scoring, or AI feedback;
-- automatic grading; or
+- automatic grading;
 - complete teacher-facing assignment editing or review workflows; or
 - a dedicated printable-response command.
 
 The intended scan-routing rules and failure behavior are documented in
-[`docs/scan_routing_design.md`](docs/scan_routing_design.md), but that document
-is a design contract rather than an implemented router. Future routing must use
+[`docs/scan_routing_design.md`](docs/scan_routing_design.md). The implemented
+route planner, successful filing helper, and failure preservation helper follow
 the shared `pds-core` active scan contract: canonical retained sources belong
 in `scans/source/YYYY-MM-DD/`, canonical routing review records belong in
 `scans/review/`, and assignment-level `scans/` contains routed evidence rather
-than canonical source retention.
+than canonical source retention. QR extraction, PDF splitting, OCR, CLI routing,
+and submission assembly remain outside these internal APIs.
 
 ## Current Non-Goals
 

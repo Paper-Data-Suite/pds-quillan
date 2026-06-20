@@ -18,6 +18,10 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a routing failure preservation API that writes shared `pds-core`
+  failure metadata exclusively under `scans/review/`, adapts route-planning and
+  evidence-filing failures, and records workspace-relative retained-source
+  provenance when available without copying review artifacts.
 - Added a successful-route evidence filing API that exclusively retains source
   scans under `scans/source/YYYY-MM-DD/`, files response evidence under
   assignment `scans/`, preserves duplicate rescans, and returns retained-source
