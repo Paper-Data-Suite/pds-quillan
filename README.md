@@ -34,7 +34,10 @@ Quillan currently supports:
 - assignment-local storage paths based on shared `pds-core` route helpers;
 - an internal, read-only decoded response-page route planner that validates
   class, assignment, roster, and student relationships without writing files;
-  and
+- an internal successful-route evidence filing helper that retains selected
+  source scans under `scans/source/YYYY-MM-DD/`, files routed copies under the
+  assignment `scans/` directory, and returns source and route provenance
+  without assembling submissions; and
 - synthetic examples and fixtures for safe testing and documentation.
 
 Printable response generation is exposed through the teacher-facing menu and
@@ -55,8 +58,9 @@ The data contracts and design documents describe additional teacher-review
 and paper-ingest workflows that are not yet implemented end to end. In
 particular, Quillan does not currently provide:
 
-- production scan routing, copying, or filing (the internal decoded route
-  planner only computes a validated route decision);
+- end-to-end production scan intake and routing (the internal APIs require an
+  already-selected readable source file and an already-successful route plan);
+- routing failure preservation under `scans/review/`;
 - QR extraction from scanned PDFs or images;
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
