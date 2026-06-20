@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 from pathlib import Path
 
+from pds_core.pds1 import Pds1PayloadError, parse_pds1_payload
 from pds_core.workspace import (
     WorkspaceRootError,
     WorkspaceStatus,
@@ -16,7 +18,24 @@ from pds_core.workspace import (
 )
 
 from quillan.assignments import AssignmentConfigError, load_assignment_config
+from quillan.evidence_filing import (
+    EvidenceFilingError,
+    RoutedEvidenceFile,
+    file_routed_response_evidence,
+)
 from quillan.menu import launch_menu
+from quillan.route_planning import (
+    DecodedResponsePage,
+    RouteFailure,
+    plan_decoded_response_page_route,
+)
+from quillan.routing_review import (
+    RoutingReviewError,
+    RoutingReviewRecord,
+    preserve_evidence_filing_error_for_review,
+    preserve_route_failure_for_review,
+    preserve_routing_failure_for_review,
+)
 from quillan.standards import StandardsProfileError, load_standards_profile
 
 APP_DESCRIPTION = "Quillan: standards-based writing evidence capture"
@@ -34,6 +53,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "validate-assignment":
         _handle_validate_assignment(args.path)
         return 0
+
+    if args.command == "route-scan":
+        return _handle_route_scan(args.source_file, args.payload)
 
     if args.command == "workspace" and args.workspace_command == "show":
         return _handle_workspace_show()
@@ -82,6 +104,26 @@ def _build_parser() -> argparse.ArgumentParser:
         "path",
         type=Path,
         help="Path to the assignment config JSON file.",
+    )
+
+    route_scan_parser = subparsers.add_parser(
+        "route-scan",
+        help="Route a scan using an already-decoded Quillan PDS1 payload.",
+        description=(
+            "Route a scan file using an already-decoded Quillan PDS1 payload. "
+            "Exit 0 means the file was routed or safely preserved for review; "
+            "exit 1 means the input could not be handled safely."
+        ),
+    )
+    route_scan_parser.add_argument(
+        "source_file",
+        type=Path,
+        help="Path to the selected source scan file.",
+    )
+    route_scan_parser.add_argument(
+        "--payload",
+        required=True,
+        help="Already-decoded canonical PDS1 payload text.",
     )
 
     workspace_parser = subparsers.add_parser(
@@ -139,6 +181,190 @@ def _handle_validate_assignment(path: Path) -> None:
         raise SystemExit(f"Invalid assignment config: {error}") from error
 
     print(f"Valid assignment config: {assignment['assignment_id']}")
+
+
+def _handle_route_scan(source_file: Path, payload_text: str) -> int:
+    """Route one source scan from caller-supplied decoded PDS1 text."""
+    intake_timestamp = datetime.now(timezone.utc)
+    try:
+        workspace_root = resolve_workspace_root()
+    except WorkspaceRootError as error:
+        print(f"Error: could not resolve the PDS workspace: {error}")
+        return 1
+    except Exception as error:
+        print(f"Error: unexpected workspace resolution failure: {error}")
+        return 1
+
+    if not _validate_route_scan_source_file(source_file):
+        return 1
+
+    try:
+        payload = parse_pds1_payload(payload_text)
+    except Pds1PayloadError as error:
+        return _preserve_payload_parse_failure(
+            workspace_root,
+            source_file=source_file,
+            payload_text=payload_text,
+            error=error,
+            created_at=intake_timestamp,
+        )
+    except Exception as error:
+        print(f"Error: unexpected PDS1 payload parsing failure: {error}")
+        return 1
+
+    decoded_page = DecodedResponsePage(
+        module=payload.module,
+        document_type=payload.metadata.get("doc"),
+        class_id=payload.class_id,
+        assignment_id=payload.assignment_id,
+        student_id=payload.student_id,
+        page_number=payload.page,
+        raw_payload=payload_text,
+    )
+
+    try:
+        route_result = plan_decoded_response_page_route(
+            workspace_root,
+            decoded_page,
+        )
+        if isinstance(route_result, RouteFailure):
+            review_record = preserve_route_failure_for_review(
+                workspace_root,
+                route_failure=route_result,
+                source_filename=source_file.name,
+                created_at=intake_timestamp,
+            )
+            _print_route_failure_review(route_result, review_record)
+            return 0
+
+        try:
+            filed_evidence = file_routed_response_evidence(
+                workspace_root,
+                route_plan=route_result,
+                source_file_path=source_file,
+                intake_timestamp=intake_timestamp,
+            )
+        except EvidenceFilingError as error:
+            review_record = preserve_evidence_filing_error_for_review(
+                workspace_root,
+                error=error,
+                route_plan=route_result,
+                source_filename=source_file.name,
+                created_at=intake_timestamp,
+            )
+            _print_evidence_filing_review(error, review_record)
+            return 0
+    except RoutingReviewError as error:
+        print(f"Error: could not preserve scan routing failure for review: {error}")
+        return 1
+    except Exception as error:
+        print(f"Error: unexpected route-scan failure: {error}")
+        return 1
+
+    _print_routed_evidence(filed_evidence)
+    return 0
+
+
+def _validate_route_scan_source_file(source_file: Path) -> bool:
+    """Return whether the selected scan is an existing readable file."""
+    try:
+        if not source_file.is_file():
+            print(
+                "Error: source file must be an existing regular file: "
+                f"{source_file}"
+            )
+            return False
+        with source_file.open("rb"):
+            pass
+    except OSError as error:
+        print(f"Error: source file is not readable: {error}")
+        return False
+    return True
+
+
+def _preserve_payload_parse_failure(
+    workspace_root: Path,
+    *,
+    source_file: Path,
+    payload_text: str,
+    error: Pds1PayloadError,
+    created_at: datetime,
+) -> int:
+    """Preserve malformed payload context without inventing route identity."""
+    try:
+        review_record = preserve_routing_failure_for_review(
+            workspace_root,
+            failure_category="payload_invalid",
+            failure_message=str(error),
+            source_filename=source_file.name,
+            module="quillan",
+            detected_payload=payload_text,
+            module_details={
+                "failure_origin": "payload_parse",
+                "parse_error": str(error),
+            },
+            created_at=created_at,
+        )
+    except RoutingReviewError as review_error:
+        print(
+            "Error: payload was invalid and could not be preserved for review: "
+            f"{review_error}"
+        )
+        return 1
+    except Exception as unexpected_error:
+        print(
+            "Error: unexpected failure while preserving invalid payload: "
+            f"{unexpected_error}"
+        )
+        return 1
+
+    print("Quillan response page was not routed; preserved for review.")
+    print(f"Reason: {error}")
+    print("Category: payload_invalid")
+    print(f"Review record: {review_record.failure_metadata_relative_path}")
+    return 0
+
+
+def _print_routed_evidence(filed_evidence: RoutedEvidenceFile) -> None:
+    """Print a concise successful-route summary."""
+    duplicate = (
+        "no"
+        if filed_evidence.duplicate_number is None
+        else f"yes (__dup_{filed_evidence.duplicate_number:03d})"
+    )
+    print("Routed Quillan response page.")
+    print(
+        "Retained source: "
+        f"{filed_evidence.retained_source.retained_source_relative_path}"
+    )
+    print(f"Routed evidence: {filed_evidence.routed_evidence_relative_path}")
+    print(f"Class: {filed_evidence.class_id}")
+    print(f"Assignment: {filed_evidence.assignment_id}")
+    print(f"Student: {filed_evidence.student_id}")
+    print(f"Page: {filed_evidence.page_number}")
+    print(f"Duplicate: {duplicate}")
+
+
+def _print_route_failure_review(
+    route_failure: RouteFailure,
+    review_record: RoutingReviewRecord,
+) -> None:
+    """Print a safely preserved route-planning failure summary."""
+    print("Quillan response page was not routed; preserved for review.")
+    print(f"Reason: {route_failure.failure_message}")
+    print(f"Category: {route_failure.failure_category}")
+    print(f"Review record: {review_record.failure_metadata_relative_path}")
+
+
+def _print_evidence_filing_review(
+    error: EvidenceFilingError,
+    review_record: RoutingReviewRecord,
+) -> None:
+    """Print a safely preserved evidence-filing failure summary."""
+    print("Quillan response page could not be filed; preserved for review.")
+    print(f"Reason: {error}")
+    print("Category: evidence_write_failed")
+    print(f"Review record: {review_record.failure_metadata_relative_path}")
 
 
 def _handle_workspace_show() -> int:
