@@ -174,7 +174,7 @@ Current responsibility:
 Individual student PDFs, scan routing, OCR, review, scoring, feedback, reports,
 AI, and a direct printable CLI command remain out of scope.
 
-### Future scan routing
+### Scan routing
 
 Future Quillan scan routing must use the shared active scan contract defined by
 `pds-core`. Canonical active retained sources belong in
@@ -189,9 +189,12 @@ validation, routed student evidence layout, submission assembly, completeness
 and rescan decisions, and any future OCR behavior. Quillan-specific failure
 details belong under the shared record's `module_details`.
 
-This remains design work only; scan intake, copying, QR extraction, PDF
-splitting, routing, failure writing, and submission assembly are not
-implemented.
+The first successful-write helper is implemented in `quillan.evidence_filing`.
+It accepts an existing successful `RoutePlan`, retains the selected source
+under `scans/source/YYYY-MM-DD/`, files the retained source or a supplied page
+artifact under assignment `scans/`, preserves duplicate copies, and returns
+provenance. QR extraction, PDF splitting, routing failure records, CLI/menu
+integration, and submission assembly remain unimplemented.
 
 ### `submissions.py`
 

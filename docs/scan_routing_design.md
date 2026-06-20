@@ -24,8 +24,14 @@ active retained source remains in `scans/source/YYYY-MM-DD/`. Routing does not
 make the page a complete submission and does not perform or imply teacher
 review.
 
-This document is a design spike only. It does not implement scan routing, QR
-extraction, image processing, or OCR.
+Quillan now implements the first successful-write slice through
+`quillan.evidence_filing.file_routed_response_evidence()`. Given a readable
+source file and an existing successful `RoutePlan`, it exclusively copies the
+source into `scans/source/YYYY-MM-DD/`, files the retained source or a
+caller-supplied page artifact into assignment `scans/`, preserves duplicates,
+and returns provenance. It does not implement QR extraction, PDF splitting,
+failure preservation, submission assembly, image processing, OCR, or a CLI
+workflow.
 
 ## Design Goals
 
@@ -351,15 +357,14 @@ Inactive historical preservation and end-of-cycle archiving belong to future
 
 ## Future Implementation Phases
 
-1. **Shared retention integration.** Use future `pds-core` source-retention and
-   routing-review helpers without redefining their contracts in Quillan.
-2. **Decoded-payload routing helper.** Define typed inputs and results; parse
-   PDS1; validate Quillan response identity, identifiers, assignment
-   relationships, extensions, filenames, and path containment without writing
-   routed evidence.
-3. **Routed evidence writes.** Create assignment scan destinations, implement
-   exclusive no-overwrite copies or derived artifacts, and preserve provenance
-   to the retained source.
+1. **Shared retention integration.** Partially implemented for successful
+   writes using `pds-core` retained-source naming and path helpers. Shared
+   routing-review integration remains future work.
+2. **Decoded-payload routing helper.** Implemented as the read-only
+   `RoutePlan`/`RouteFailure` planner for already-decoded response-page data.
+3. **Routed evidence writes.** Implemented for successful routes: create
+   assignment scan destinations, use exclusive no-overwrite copies, preserve
+   duplicate evidence, and return provenance to the retained source.
 4. **QR extraction and splitting.** Add Quillan adapters that decode PDS1 text
    from scanned PDFs or images and pass canonical routing inputs to the
    independent routing helper.
@@ -378,9 +383,9 @@ submission mutations.
 
 ## Out of Scope
 
-This spike does not implement:
+The current successful-write slice does not implement:
 
-* scan routing, copying, moving, or filing;
+* end-to-end scan routing or intake orchestration;
 * QR detection or extraction;
 * PDF splitting, image processing, or OCR;
 * submission assembly or production roster workflows;

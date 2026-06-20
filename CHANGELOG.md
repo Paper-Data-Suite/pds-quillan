@@ -18,6 +18,10 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a successful-route evidence filing API that exclusively retains source
+  scans under `scans/source/YYYY-MM-DD/`, files response evidence under
+  assignment `scans/`, preserves duplicate rescans, and returns retained-source
+  and routed-evidence provenance.
 - Added a teacher-facing Printable Response Pages menu that generates one
   combined class packet from an existing canonical roster and assignment
   config using the existing roster-aware PDF generator.
