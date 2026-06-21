@@ -189,12 +189,13 @@ validation, routed student evidence layout, submission assembly, completeness
 and rescan decisions, and any future OCR behavior. Quillan-specific failure
 details belong under the shared record's `module_details`.
 
-The first version `1` reviewable-evidence submission manifest contract is now
-documented. It defines page entries, duplicate and replacement candidates,
-teacher-controlled selection and review states, retained-source provenance,
-workspace-relative paths, and timezone-aware timestamps. This milestone is
-descriptive only; manifest loading, validation, writing, path helpers, and
-assembly remain unimplemented.
+The first version `1` reviewable-evidence submission manifest contract is
+documented, with loading, validation, canonical Quillan-owned path helpers,
+and safe writing for caller-provided manifests implemented. It defines page
+entries, duplicate and replacement candidates, teacher-controlled selection
+and review states, retained-source provenance, workspace-relative paths, and
+timezone-aware timestamps. Assembly from routed evidence remains
+unimplemented.
 
 Target milestone:
 

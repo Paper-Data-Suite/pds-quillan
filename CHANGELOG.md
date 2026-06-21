@@ -18,6 +18,10 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added Quillan-owned helpers for canonical version `1` submission manifest
+  paths and safe writing of caller-provided manifests, with validation,
+  parent-directory creation, readable UTF-8 JSON, and overwrite protection.
+  Submission assembly remains future work.
 - Added a distinct v0.6 reviewable-evidence submission manifest loader and
   validator with page, evidence, retained-source, selection, path, timestamp,
   state, and identifier validation. The legacy text-oriented loader remains
