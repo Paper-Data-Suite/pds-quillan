@@ -326,20 +326,34 @@ not automatically a reviewed submission. Routing a page must not:
 * score the response;
 * generate feedback;
 * create requirements results or evidence tags;
-* mark work as `needs_review` or `reviewed`; or
+* set a submission manifest's `submission_state`; or
 * necessarily create or update `submission.json`.
 
 A student response may have multiple pages, missing pages, duplicate pages,
-rescans, or damaged scans. Future submission assembly may link routed pages to
-a student submission only after page completeness, provenance, and teacher
-review requirements are defined. The original routed files should remain
-traceable to the canonical retained source after any such linking.
+rescans, or damaged scans. The draft version `1` submission manifest contract
+in [`data_contracts.md`](data_contracts.md#submission-manifest) represents
+those conditions without guessing which evidence the teacher intends to use.
+Future submission assembly may link routed pages to that record. The original
+routed files must remain traceable to the canonical retained source after any
+such linking.
 
-Quillan owns the future routed evidence layout inside
-`submissions/<student_id>/`, submission assembly, page completeness rules,
-teacher review and rescan decisions, and any future Quillan OCR policy. Those
-module decisions must continue to use the shared source-retention, provenance,
-and routing-review contract.
+The future canonical record location is:
+
+```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
+```
+
+The manifest stores workspace-relative routed-evidence and retained-source
+paths, page and evidence states, nullable teacher selection, and provenance.
+It preserves duplicate, replacement, damaged, and excluded evidence rather
+than overwriting or deleting candidates. Defining that contract does not add
+manifest loading, validation, writing, path helpers, assembly, teacher review
+commands, or changes to `route-scan`.
+
+Quillan owns the manifest contract, future submission assembly, page
+completeness rules, teacher review and rescan decisions, and any future
+Quillan OCR policy. Those module decisions must continue to use the shared
+source-retention, provenance, and routing-review contract.
 
 ## Ownership Boundaries
 
@@ -383,9 +397,10 @@ Inactive historical preservation and end-of-cycle archiving belong to future
    is implemented with shared `pds-core` records under `scans/review/`.
    Future work should expose preserved failures and duplicate routed evidence
    for teacher review.
-7. **Submission assembly and linking.** Define page manifests, completeness
-   checks, rescan selection, and traceable links from routed evidence to
-   student submission records.
+7. **Submission assembly and linking.** The first page-oriented submission
+   manifest contract is defined. Loading, validation, path helpers,
+   completeness checks, rescan selection workflows, and assembly of traceable
+   routed evidence links remain future implementation work.
 8. **Teacher review integration.** Present assembled evidence to the teacher
    and allow teacher-controlled lifecycle changes without automated judgment.
 

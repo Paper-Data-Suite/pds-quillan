@@ -18,6 +18,11 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Documented the draft version `1` reviewable-evidence `submission.json`
+  contract, including page and evidence states, duplicate and replacement
+  preservation, retained-source provenance, safe relative paths, and a fully
+  synthetic three-page example. Loading, validation, writing, and assembly
+  remain future work.
 - Added a direct `route-scan` command for already-decoded Quillan PDS1
   payloads, including successful evidence filing, safe review preservation,
   concise workspace-relative summaries, and documented handled/failure exit

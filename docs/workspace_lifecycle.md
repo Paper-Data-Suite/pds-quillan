@@ -148,10 +148,15 @@ that Quillan currently routes scans, performs OCR, or files captured pages.
 
 ### `submissions/<student_id>/submission.json`
 
-Submission metadata for the student's writing artifact. It identifies the
-assignment, class, student, source type, text file, capture time, lifecycle
-status, and version. It describes provenance and workflow state without
-containing scores or feedback.
+The future Quillan version `1` submission manifest for one student's routed
+evidence for one assignment. It identifies the class, assignment, and student;
+represents expected, missing, duplicate, replacement, damaged, or excluded
+pages; preserves retained-source provenance; and records teacher-controlled
+review state without containing scores, tags, or feedback.
+
+The manifest contract is documented, but loading, validation, writing,
+assembly, and state-changing workflows are not yet implemented. The current
+Python loader accepts an earlier text-oriented metadata shape.
 
 ### `submissions/<student_id>/submission.txt`
 
@@ -201,64 +206,17 @@ needed. Debug files are operational aids and must not be treated as
 authoritative instructional records, source evidence, scores, feedback, or
 reports.
 
-## File Lifecycle States
+## Submission Review States
 
-The `status` field in `submission.json` describes whether a submission record
-is usable and where it is in the teacher-controlled review workflow. A status
-change does not, by itself, require moving the submission to another
-directory.
+The version `1` manifest's `submission_state` is one of `unreviewed`,
+`in_progress`, `needs_rescan`, or `reviewed`. Page and evidence entries carry
+their own narrower evidence-management states. Replacement, duplicate,
+damaged, and excluded artifacts remain in the manifest for traceability.
 
-### `captured`
-
-The writing evidence has been collected or imported and has submission
-metadata. Capture establishes the record and its provenance; it does not mean
-that teacher review is complete.
-
-### `needs_review`
-
-The submission exists but still requires teacher review. This may be used
-after capture when the record is ready to enter the teacher's review queue.
-
-### `reviewed`
-
-The teacher has reviewed the submission or confirmed the relevant review
-artifacts. This state represents teacher confirmation, not a software-made
-judgment about achievement.
-
-### `superseded`
-
-A newer version or corrected record has replaced this record for current use.
-The older record may remain in place so its provenance and relationship to
-later records can be traced.
-
-### `invalid`
-
-The record should not be used for scoring or reporting because it is
-incomplete, misfiled, corrupt, mismatched, or otherwise unusable. Retaining an
-invalid record may still be useful for diagnosis and traceability.
-
-These are the active MVP lifecycle states. `archived` is not an active
-submission status.
-
-## Versioning and Supersession
-
-The `version` field in `submission.json` is a positive integer that identifies
-the version of the submission record. A newer version may supersede an older
-version when writing is recaptured, corrected, or replaced.
-
-At MVP level:
-
-* version numbers begin at `1` and remain positive integers;
-* a higher version can replace a lower version for current instructional use;
-* an older record can be marked `superseded` and retained for traceability;
-* version and status should be read together rather than assuming every
-  higher number is automatically teacher-approved; and
-* no versioned directory structure or automatic file movement is required.
-
-Because the current shared route is student-local, this contract does not
-prescribe how multiple retained versions must be named or arranged inside the
-student directory. That routing decision requires a separate design before
-implementation.
+These states do not encode a score, grade, rubric result, feedback status,
+tagging status, OCR result, AI judgment, or automatic grading decision. See
+[`data_contracts.md`](data_contracts.md#submission-manifest) for the complete
+contract.
 
 ## Source Evidence vs. Teacher-Review Artifacts
 
@@ -266,15 +224,16 @@ Quillan keeps three record categories distinct.
 
 ### Source Evidence
 
-Source evidence is the student-produced writing and the metadata needed to
-identify what was submitted and how it entered the workflow:
+Source evidence is the student-produced work and the manifest needed to
+identify routed artifacts and their retained-source provenance:
 
 * `submission.txt`
 * `submission.json`
 
-The metadata is part of the evidentiary record because it establishes identity,
-provenance, status, and version. It does not contain the teacher's score or
-feedback.
+`submission.txt` remains an optional text-oriented evidence artifact for
+workflows that use it. The manifest is part of the evidentiary record because
+it establishes identity, provenance, page state, and teacher-controlled review
+state. It does not contain the teacher's score, tags, or feedback.
 
 ### Teacher-Review Artifacts
 

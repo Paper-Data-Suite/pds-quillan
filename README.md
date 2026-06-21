@@ -16,8 +16,10 @@ Quillan currently supports:
 
 - assignment configuration validation;
 - standards profile loading and validation;
-- submission metadata validation;
+- validation of the legacy text-oriented submission metadata shape;
 - documented writing-evidence and teacher-review data contracts;
+- a documented, contract-only version `1` reviewable-evidence submission
+  manifest;
 - printable writing-response PDF generation with student, class, assignment,
   and page identity;
 - QR codes containing canonical PDS1 Quillan response payloads on printable
@@ -69,6 +71,8 @@ particular, Quillan does not currently provide:
 - QR extraction from scanned PDFs or images;
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
+- loading, validating, writing, or assembling version `1` submission
+  manifests;
 - assignment creation workflows;
 - implemented requirements-checking, tagging, scoring, feedback, or
   production reporting workflows;
@@ -307,8 +311,9 @@ quillan workspace show
 quillan menu
 ```
 
-Submission metadata validation and printable response generation currently
-use Python APIs rather than dedicated CLI commands.
+Legacy text-oriented submission metadata validation and printable response
+generation currently use Python APIs rather than dedicated CLI commands. The
+version `1` reviewable-evidence manifest is documented but not implemented.
 
 ## Quality Checks
 
