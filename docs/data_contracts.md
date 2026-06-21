@@ -6,10 +6,10 @@ These contracts describe the expected file formats for standards profiles,
 assignments, submissions, requirements checks, tags, scores, feedback, and
 reports.
 
-Standards profiles, assignment configurations, and the legacy text-oriented
-submission metadata shape have implemented Python validation support. The
-reviewable-evidence submission manifest defined below is a contract only and
-is not yet loaded, validated, written, or assembled by Quillan. The
+Standards profiles, assignment configurations, the legacy text-oriented
+submission metadata shape, and the reviewable-evidence submission manifest
+have implemented Python validation support. Manifest writing, assembly,
+selection, and state-changing workflows are not implemented. The
 writing-response payload contract is implemented and used by printable PDF
 generation. Requirements, tagging, scoring, feedback, and reporting records
 remain contracts for teacher-controlled workflows that are not yet
@@ -243,10 +243,11 @@ The future canonical location is:
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
 ```
 
-This section defines draft schema version `1`. It is contract-only: the
-existing `quillan.submissions` loader still accepts an earlier text-oriented
-metadata shape and does not load or validate this manifest. Path helpers,
-writing, assembly, selection, and state-changing workflows are future work.
+This section defines draft schema version `1`. The distinct
+`quillan.submission_manifest` module loads and validates this contract. The
+existing `quillan.submissions` loader remains responsible for an earlier
+text-oriented metadata shape. Path helpers, writing, assembly, selection, and
+state-changing workflows are future work.
 
 ### Top-Level Structure
 
@@ -381,8 +382,8 @@ the resolved PDS workspace root. Manifest paths must not contain:
 * null bytes; or
 * any resolution outside the workspace root.
 
-These requirements apply to routed evidence and retained-source paths.
-Validation is intentionally deferred to a later issue.
+These requirements apply to routed evidence and retained-source paths and are
+enforced by `quillan.submission_manifest`.
 
 All timestamps use ISO 8601 strings with a timezone offset, such as
 `2026-06-20T00:00:00+00:00`. Naive timestamps are not part of this contract.
@@ -397,8 +398,8 @@ This contract does not define or implement scoring, tagging, requirements
 checking, feedback, reports, OCR, handwriting recognition, AI suggestions, AI
 scoring, AI feedback drafting, or automatic grading. Those concerns remain
 separate from the evidence manifest and teacher-controlled review state. It
-also does not implement manifest loading, validation, writing, submission
-assembly, path helpers, file opening, review commands, or state updates.
+also does not implement manifest writing, submission assembly, path helpers,
+file opening, review commands, or state updates.
 
 ## Writing-Response Payload
 

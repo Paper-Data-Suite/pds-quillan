@@ -226,11 +226,10 @@ Current responsibility:
 
 * load and validate the earlier text-oriented submission metadata shape.
 
-Future v0.6 reviewable-evidence manifest work should use a distinct
-loader/module, likely `quillan.submission_manifest` in
-`quillan/submission_manifest.py`, unless a deliberate migration or deprecation
-decision is made later. The legacy metadata loader should not be silently
-repurposed into the page-oriented submission manifest loader.
+The v0.6 reviewable-evidence manifest loader is implemented separately as
+`quillan.submission_manifest` in `quillan/submission_manifest.py`. The legacy
+metadata loader remains distinct and has not been repurposed into the
+page-oriented submission manifest loader.
 
 ### `requirements.py`
 
