@@ -20,6 +20,8 @@ Quillan currently supports:
 - documented writing-evidence and teacher-review data contracts;
 - loading and validation for the version `1` reviewable-evidence submission
   manifest through the distinct `quillan.submission_manifest` module;
+- canonical active submission manifest path helpers and safe writing of
+  caller-provided, validated manifests without submission assembly;
 - printable writing-response PDF generation with student, class, assignment,
   and page identity;
 - QR codes containing canonical PDS1 Quillan response payloads on printable
@@ -71,7 +73,7 @@ particular, Quillan does not currently provide:
 - QR extraction from scanned PDFs or images;
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
-- writing or assembling version `1` submission manifests;
+- automatic assembly of version `1` submission manifests from routed evidence;
 - assignment creation workflows;
 - implemented requirements-checking, tagging, scoring, feedback, or
   production reporting workflows;

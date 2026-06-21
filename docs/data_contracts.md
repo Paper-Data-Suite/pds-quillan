@@ -244,10 +244,17 @@ The future canonical location is:
 ```
 
 This section defines draft schema version `1`. The distinct
-`quillan.submission_manifest` module loads and validates this contract. The
-existing `quillan.submissions` loader remains responsible for an earlier
-text-oriented metadata shape. Path helpers, writing, assembly, selection, and
-state-changing workflows are future work.
+`quillan.submission_manifest` module loads and validates this contract, and
+`quillan.submission_manifest_paths` computes its canonical active path and
+safely writes a caller-provided manifest. Writes validate before filesystem
+changes, create missing parent directories, and refuse overwrites by default.
+The existing `quillan.submissions` loader remains responsible for an earlier
+text-oriented metadata shape. Manifest assembly from routed evidence,
+selection, and state-changing workflows are future work.
+
+The active path is currently a Quillan-owned artifact contract rather than a
+`pds-core` route. Inactive-preservation tooling such as `pds-sunset` may later
+consume or preserve it without owning Quillan's active layout.
 
 ### Top-Level Structure
 
