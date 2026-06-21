@@ -1,0 +1,83 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "submission_manifest",
+  "class_id": "english12_p3_synthetic",
+  "assignment_id": "essay_01_synthetic",
+  "student_id": "00107",
+  "expected_pages": 3,
+  "submission_state": "unreviewed",
+  "pages": [
+    {
+      "page_number": 1,
+      "page_state": "present",
+      "selected_evidence_id": "evidence_001",
+      "evidence": [
+        {
+          "evidence_id": "evidence_001",
+          "routed_evidence_path": "classes/english12_p3_synthetic/assignments/essay_01_synthetic/scans/response_00107_pg_001.pdf",
+          "evidence_role": "selected",
+          "evidence_state": "active",
+          "duplicate_number": null,
+          "created_at": "2026-06-20T00:01:00+00:00",
+          "retained_source": {
+            "source_scan_id": "scan_20260620T000000000000Z__teacher_scan__abc123def456",
+            "source_filename": "teacher_scan.pdf",
+            "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "retained_source_path": "scans/source/2026-06-20/20260620T000000000000Z__teacher_scan__abc123def456.pdf",
+            "source_page_number": 1
+          },
+          "module_details": {}
+        }
+      ]
+    },
+    {
+      "page_number": 2,
+      "page_state": "missing",
+      "selected_evidence_id": null,
+      "evidence": []
+    },
+    {
+      "page_number": 3,
+      "page_state": "duplicate",
+      "selected_evidence_id": null,
+      "evidence": [
+        {
+          "evidence_id": "evidence_002",
+          "routed_evidence_path": "classes/english12_p3_synthetic/assignments/essay_01_synthetic/scans/response_00107_pg_003.pdf",
+          "evidence_role": "candidate",
+          "evidence_state": "active",
+          "duplicate_number": null,
+          "created_at": "2026-06-20T00:03:00+00:00",
+          "retained_source": {
+            "source_scan_id": "scan_20260620T000000000000Z__teacher_scan__abc123def456",
+            "source_filename": "teacher_scan.pdf",
+            "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "retained_source_path": "scans/source/2026-06-20/20260620T000000000000Z__teacher_scan__abc123def456.pdf",
+            "source_page_number": 3
+          },
+          "module_details": {}
+        },
+        {
+          "evidence_id": "evidence_003",
+          "routed_evidence_path": "classes/english12_p3_synthetic/assignments/essay_01_synthetic/scans/response_00107_pg_003__dup_001.pdf",
+          "evidence_role": "candidate",
+          "evidence_state": "active",
+          "duplicate_number": 1,
+          "created_at": "2026-06-20T00:08:00+00:00",
+          "retained_source": {
+            "source_scan_id": "scan_20260620T000700000000Z__teacher_rescan__def456abc123",
+            "source_filename": "teacher_rescan.pdf",
+            "source_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "retained_source_path": "scans/source/2026-06-20/20260620T000700000000Z__teacher_rescan__def456abc123.pdf",
+            "source_page_number": 1
+          },
+          "module_details": {}
+        }
+      ]
+    }
+  ],
+  "created_at": "2026-06-20T00:10:00+00:00",
+  "updated_at": "2026-06-20T00:10:00+00:00",
+  "module_details": {}
+}

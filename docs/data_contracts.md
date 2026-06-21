@@ -6,11 +6,14 @@ These contracts describe the expected file formats for standards profiles,
 assignments, submissions, requirements checks, tags, scores, feedback, and
 reports.
 
-Standards profiles, assignment configurations, and submission metadata have
-implemented Python validation support. The writing-response payload contract
-is also implemented and used by printable PDF generation. Requirements,
-tagging, scoring, feedback, and reporting records remain contracts for
-teacher-controlled workflows that are not yet implemented end to end.
+Standards profiles, assignment configurations, and the legacy text-oriented
+submission metadata shape have implemented Python validation support. The
+reviewable-evidence submission manifest defined below is a contract only and
+is not yet loaded, validated, written, or assembled by Quillan. The
+writing-response payload contract is implemented and used by printable PDF
+generation. Requirements, tagging, scoring, feedback, and reporting records
+remain contracts for teacher-controlled workflows that are not yet
+implemented end to end.
 
 For the expected workspace layout and file lifecycle of these records, see
 [`workspace_lifecycle.md`](workspace_lifecycle.md).
@@ -226,76 +229,176 @@ Example:
 }
 ```
 
-## Submission
+## Submission Manifest
 
-A submission preserves student-produced writing as evidence and records how
-that writing entered the teacher's review workflow. The writing and its
-metadata are stored separately:
+A Quillan submission manifest is a local, teacher-controlled review record for
+one student and one assignment. It connects class, assignment, and student
+identity to routed evidence, retained-source provenance, and explicit review
+state. Routed evidence alone does not establish that a submission is complete,
+reviewed, scored, tagged, or ready for feedback.
+
+The future canonical location is:
 
 ```text
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.txt
 ```
 
-`submission.txt` contains the student writing. `submission.json` organizes the
-artifact and its provenance without adding scores, feedback, or software-made
-judgments.
+This section defines draft schema version `1`. It is contract-only: the
+existing `quillan.submissions` loader still accepts an earlier text-oriented
+metadata shape and does not load or validate this manifest. Path helpers,
+writing, assembly, selection, and state-changing workflows are future work.
 
-Required submission metadata fields:
+### Top-Level Structure
 
-* `submission_id`
-* `assignment_id`
-* `class_id`
-* `student_id`
-* `source_type`
-* `text_file`
-* `captured_at`
-* `status`
-* `version`
-
-Allowed MVP `source_type` values:
-
-* `manual_entry`
-* `typed_text`
-* `pasted_text`
-* `file_import`
-* `paper_scan`
-* `ocr_scan`
-* `google_doc_export`
-
-Allowed MVP `status` values:
-
-* `captured`
-* `needs_review`
-* `reviewed`
-* `superseded`
-* `invalid`
-
-Example `submission.json`:
+Every version `1` manifest contains:
 
 ```json
 {
-  "submission_id": "sub_stu_0001_v1",
-  "assignment_id": "villainy_final_essay_synthetic",
-  "class_id": "english12_period3_synthetic",
-  "student_id": "stu_0001",
-  "source_type": "manual_entry",
-  "text_file": "submission.txt",
-  "captured_at": "2026-06-07T12:00:00",
-  "status": "captured",
-  "version": 1
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "submission_manifest",
+  "class_id": "english12_p3_synthetic",
+  "assignment_id": "essay_01_synthetic",
+  "student_id": "00107",
+  "expected_pages": null,
+  "submission_state": "unreviewed",
+  "pages": [],
+  "created_at": "2026-06-20T00:00:00+00:00",
+  "updated_at": "2026-06-20T00:00:00+00:00",
+  "module_details": {}
 }
 ```
 
-The metadata identifiers follow shared `pds-core` identifier validation.
-`text_file` must be a relative path contained within the submission record;
-absolute paths and parent-directory traversal are not allowed. `version` is a
-positive integer.
+Field requirements are:
 
-Requirements checks, teacher tags, teacher notes, rubric scores entered or
-confirmed by the teacher, and feedback records remain separate artifacts.
-Software may organize and validate these records, but the student text remains
-the evidence and teacher review remains central.
+* `schema_version`: the string `"1"`;
+* `module`: the string `"quillan"`;
+* `record_type`: the string `"submission_manifest"`;
+* `class_id`, `assignment_id`, and `student_id`: the routed identity;
+* `expected_pages`: `null` when unknown, otherwise a positive integer;
+* `submission_state`: one of the values below;
+* `pages`: an array of structured page entries;
+* `created_at` and `updated_at`: timezone-aware ISO 8601 strings; and
+* `module_details`: an object reserved for compatible Quillan extensions.
+
+Initial `submission_state` values are:
+
+* `unreviewed`: evidence exists or may exist, but teacher review has not begun;
+* `in_progress`: the teacher has started reviewing the submission;
+* `needs_rescan`: the teacher has decided that the submission or at least one
+  page requires correction or another scan; and
+* `reviewed`: the teacher has completed review at the submission-management
+  level.
+
+Submission state is an explicit workflow record. It must not be inferred from
+the number of evidence files and is not a grade, rubric result, feedback
+status, tag status, or automatic judgment.
+
+### Page Entries
+
+Each item in `pages` contains:
+
+```json
+{
+  "page_number": 1,
+  "page_state": "present",
+  "selected_evidence_id": null,
+  "evidence": []
+}
+```
+
+`page_number` is a positive integer and is unique within the manifest.
+`selected_evidence_id` is either `null` or the ID of an evidence candidate in
+the same page entry. It remains nullable so ambiguous duplicate evidence can
+wait for a teacher decision. A non-null selection does not delete or replace
+the other candidates. When it is non-null, the referenced candidate has the
+`selected` role and no other candidate on that page does. When it is `null`,
+no candidate on that page has the `selected` role.
+
+Initial `page_state` values are:
+
+* `present`: at least one evidence candidate exists and no special problem is
+  marked;
+* `missing`: an expected page currently has no routed evidence;
+* `duplicate`: multiple candidates represent the same logical page;
+* `needs_rescan`: the teacher has marked the page for correction or rescan;
+  and
+* `excluded`: the teacher has intentionally removed the page from the active
+  review set while preserving its evidence.
+
+Page state records evidence-management status only. Known pages may be listed
+with an empty `evidence` array, including missing pages.
+
+### Evidence Candidates
+
+A page may have zero, one, or many evidence candidates. Every candidate
+contains:
+
+* `evidence_id`: a stable string unique within the manifest;
+* `routed_evidence_path`: a workspace-relative path to the routed artifact;
+* `evidence_role`: one of the role values below;
+* `evidence_state`: one of the state values below;
+* `duplicate_number`: `null` when not assigned, otherwise a positive integer;
+* `created_at`: a timezone-aware ISO 8601 association timestamp;
+* `retained_source`: retained-source provenance, or `null` when unavailable;
+  and
+* `module_details`: an object reserved for compatible Quillan extensions.
+
+Initial `evidence_role` values are:
+
+* `candidate`: available but not explicitly selected;
+* `selected`: currently selected as the review copy for its page;
+* `replacement`: a rescan or replacement candidate; and
+* `excluded`: preserved but intentionally outside the active review set.
+
+Initial `evidence_state` values are:
+
+* `active`: usable unless the teacher later records otherwise;
+* `needs_rescan`: should be replaced or supplemented;
+* `damaged`: preserved but visibly or technically flawed; and
+* `excluded`: preserved but outside active review.
+
+When `retained_source` is present, it contains:
+
+* `source_scan_id`: the retained source scan identifier;
+* `source_filename`: the original source filename;
+* `source_sha256`: the source SHA-256 digest;
+* `retained_source_path`: the workspace-relative retained source path; and
+* `source_page_number`: `null` when unavailable, otherwise a positive integer.
+
+Evidence candidates are append-and-preserve records. Duplicate, replacement,
+damaged, selected, or excluded candidates remain represented rather than
+being silently overwritten or deleted.
+
+### Path and Timestamp Policy
+
+Every stored artifact path is a workspace-relative string interpreted from
+the resolved PDS workspace root. Manifest paths must not contain:
+
+* an absolute or rooted path;
+* a Windows drive-letter path;
+* `.` or `..` path components;
+* null bytes; or
+* any resolution outside the workspace root.
+
+These requirements apply to routed evidence and retained-source paths.
+Validation is intentionally deferred to a later issue.
+
+All timestamps use ISO 8601 strings with a timezone offset, such as
+`2026-06-20T00:00:00+00:00`. Naive timestamps are not part of this contract.
+
+### Synthetic Example
+
+A complete fake example with one present page, one missing page, one duplicate
+page, and retained-source provenance is stored in
+[`submission_manifest_synthetic.json`](../examples/submissions/submission_manifest_synthetic.json).
+
+This contract does not define or implement scoring, tagging, requirements
+checking, feedback, reports, OCR, handwriting recognition, AI suggestions, AI
+scoring, AI feedback drafting, or automatic grading. Those concerns remain
+separate from the evidence manifest and teacher-controlled review state. It
+also does not implement manifest loading, validation, writing, submission
+assembly, path helpers, file opening, review commands, or state updates.
 
 ## Writing-Response Payload
 

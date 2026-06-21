@@ -189,6 +189,19 @@ validation, routed student evidence layout, submission assembly, completeness
 and rescan decisions, and any future OCR behavior. Quillan-specific failure
 details belong under the shared record's `module_details`.
 
+The first version `1` reviewable-evidence submission manifest contract is now
+documented. It defines page entries, duplicate and replacement candidates,
+teacher-controlled selection and review states, retained-source provenance,
+workspace-relative paths, and timezone-aware timestamps. This milestone is
+descriptive only; manifest loading, validation, writing, path helpers, and
+assembly remain unimplemented.
+
+Target milestone:
+
+```text
+v0.6.0 — Reviewable Evidence and Submission Assembly
+```
+
 The first successful-write helper is implemented in `quillan.evidence_filing`.
 It accepts an existing successful `RoutePlan`, retains the selected source
 under `scans/source/YYYY-MM-DD/`, files the retained source or a supplied page
@@ -209,12 +222,15 @@ submission assembly remain unimplemented.
 
 ### `submissions.py`
 
-Planned responsibility:
+Current responsibility:
 
-* load plain-text submissions;
-* manage submission metadata;
-* store or reference student writing;
-* support manual subdivision setup.
+* load and validate the earlier text-oriented submission metadata shape.
+
+Future v0.6 reviewable-evidence manifest work should use a distinct
+loader/module, likely `quillan.submission_manifest` in
+`quillan/submission_manifest.py`, unless a deliberate migration or deprecation
+decision is made later. The legacy metadata loader should not be silently
+repurposed into the page-oriented submission manifest loader.
 
 ### `requirements.py`
 
@@ -382,7 +398,15 @@ Likely first commands:
 
 Planned work:
 
-* Load plain-text submissions.
+* Implement loading and validation for the documented version `1` submission
+  manifest.
+* Add canonical submission path helpers.
+* Assemble routed evidence into teacher-controlled manifests.
+* Represent missing, duplicate, replacement, damaged, and excluded evidence
+  without deleting candidates.
+* Add teacher-controlled evidence selection and review-state updates.
+* Preserve retained-source provenance and workspace-relative artifact paths.
+* Continue supporting plain-text writing evidence where applicable.
 * Count words.
 * Count paragraphs.
 * Manually enter or store subdivision count.
