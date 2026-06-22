@@ -409,6 +409,9 @@ Inactive historical preservation and end-of-cycle archiving belong to future
    provenance reconstruction, and rescan selection remain future work.
 8. **Teacher review integration.** Present assembled evidence to the teacher
    and allow teacher-controlled lifecycle changes without automated judgment.
+   A low-level `quillan open-evidence` command now validates one existing file
+   inside the active workspace and delegates opening to `pds-core`. It does not
+   select evidence, locate student submissions, or update review state.
 
 Each phase should add focused tests for validation, traversal resistance,
 collision races, preservation on failure, and the absence of unintended

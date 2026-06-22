@@ -23,6 +23,10 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added `quillan open-evidence` and a focused evidence-opening API for safely
+  opening an existing workspace-relative evidence file through the shared
+  `pds-core` system opener, without inspecting or modifying evidence or review
+  state.
 - Added read-only `quillan list-submissions` status reporting for validated
   assignment manifests and routed evidence, including submission/page states,
   present-but-unselected pages, students needing assembly, unassembled routed
