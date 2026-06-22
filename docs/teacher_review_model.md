@@ -13,11 +13,12 @@ present an unconfirmed software judgment as a teacher evaluation or encourage
 review without reading the student's work.
 
 This document defines the review model and data boundaries. Quillan currently
-validates relevant data contracts and can prepare printable writing-response
-pages, but it does not yet implement complete requirements-checking, tagging,
-scoring, feedback, reporting, or teacher-facing review workflows. Its initial
-terminal menu is a navigation skeleton rather than a review implementation.
-AI tagging, AI scoring, AI feedback, and automatic grading are not implemented.
+validates relevant data contracts, can prepare printable writing-response
+pages, and supports direct teacher-entered quick notes and structured tags.
+It does not yet implement complete requirements-checking, scoring, feedback,
+reporting, or terminal-menu review workflows. Its initial terminal menu is a
+navigation skeleton rather than a review implementation. AI tagging, AI
+scoring, AI feedback, and automatic grading are not implemented.
 
 ## Source Evidence
 

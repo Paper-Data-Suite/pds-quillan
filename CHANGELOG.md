@@ -33,6 +33,12 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added `quillan add-tag` and a focused structured-tag API for appending
+  teacher-entered tags to canonical `review.json` records. The workflow
+  validates tag fields, timestamps, pages, evidence IDs, locations, assignment
+  standards, and reusable profile comments; assigns stable sequential IDs;
+  preserves existing review content and later review states; and never mutates
+  submission manifests or evidence.
 - Added `quillan add-note` and a focused quick-note API for appending
   timestamped, teacher-entered notes to a student's canonical `review.json`.
   The workflow requires a valid matching `submission.json`, creates a missing

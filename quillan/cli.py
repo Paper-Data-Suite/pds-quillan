@@ -46,6 +46,11 @@ from quillan.review_notes import (
     ReviewNoteError,
     add_review_note,
 )
+from quillan.review_tags import (
+    AddedReviewTag,
+    ReviewTagError,
+    add_review_tag,
+)
 from quillan.standards import StandardsProfileError, load_standards_profile
 from quillan.submission_status import (
     AssignmentSubmissionStatus,
@@ -120,6 +125,23 @@ def main(argv: list[str] | None = None) -> int:
             args.assignment_id,
             args.student_id,
             args.text,
+        )
+
+    if args.command == "add-tag":
+        return _handle_add_tag(
+            args.class_id,
+            args.assignment_id,
+            args.student_id,
+            label=args.label,
+            polarity=args.polarity,
+            standard_code=args.standard,
+            comment_id=args.comment_id,
+            severity=args.severity,
+            teacher_note=args.note,
+            page_number=args.page,
+            evidence_id=args.evidence_id,
+            location_type=args.location_type,
+            location_value=args.location_value,
         )
 
     if args.command == "workspace" and args.workspace_command == "show":
@@ -301,6 +323,57 @@ def _build_parser() -> argparse.ArgumentParser:
         "--text",
         required=True,
         help="Non-empty teacher note text.",
+    )
+
+    add_tag_parser = subparsers.add_parser(
+        "add-tag",
+        help="Add a structured teacher tag to one student review record.",
+        description=(
+            "Append one teacher-entered structured tag to the canonical "
+            "review.json for a student submission. Creates review.json when "
+            "the adjacent submission.json exists and validates."
+        ),
+    )
+    add_tag_parser.add_argument("class_id", help="Class identifier.")
+    add_tag_parser.add_argument("assignment_id", help="Assignment identifier.")
+    add_tag_parser.add_argument("student_id", help="Student identifier.")
+    add_tag_parser.add_argument("--label", required=True, help="Teacher tag label.")
+    add_tag_parser.add_argument(
+        "--polarity",
+        required=True,
+        help="Tag polarity: positive, developing, negative, or neutral.",
+    )
+    add_tag_parser.add_argument(
+        "--standard",
+        help="Optional standards-profile code.",
+    )
+    add_tag_parser.add_argument(
+        "--comment-id",
+        help="Optional reusable comment ID under --standard.",
+    )
+    add_tag_parser.add_argument(
+        "--severity",
+        type=_non_negative_integer_argument,
+        help="Optional non-negative organizational severity.",
+    )
+    add_tag_parser.add_argument("--note", help="Optional teacher note for the tag.")
+    add_tag_parser.add_argument(
+        "--page",
+        type=_positive_integer_argument,
+        help="Optional submission page number.",
+    )
+    add_tag_parser.add_argument(
+        "--evidence-id",
+        help="Optional evidence ID from submission.json.",
+    )
+    add_tag_parser.add_argument(
+        "--location-type",
+        help="Optional controlled location type.",
+    )
+    add_tag_parser.add_argument(
+        "--location-value",
+        type=_location_value_argument,
+        help="Optional positive integer or non-empty location value.",
     )
 
     workspace_parser = subparsers.add_parser(
@@ -612,6 +685,61 @@ def _print_added_review_note(added: AddedReviewNote) -> None:
     print(f"Review record: {added.review_record_relative_path}")
 
 
+def _handle_add_tag(
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    label: str,
+    polarity: str,
+    standard_code: str | None,
+    comment_id: str | None,
+    severity: int | None,
+    teacher_note: str | None,
+    page_number: int | None,
+    evidence_id: str | None,
+    location_type: str | None,
+    location_value: int | str | None,
+) -> int:
+    """Append one structured teacher tag to a canonical review record."""
+    try:
+        workspace_root = resolve_workspace_root()
+        added = add_review_tag(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            label=label,
+            polarity=polarity,
+            standard_code=standard_code,
+            comment_id=comment_id,
+            severity=severity,
+            teacher_note=teacher_note,
+            page_number=page_number,
+            evidence_id=evidence_id,
+            location_type=location_type,
+            location_value=location_value,
+        )
+    except (WorkspaceRootError, ReviewTagError) as error:
+        print(f"Error: could not add review tag: {error}")
+        return 1
+
+    _print_added_review_tag(added)
+    return 0
+
+
+def _print_added_review_tag(added: AddedReviewTag) -> None:
+    """Print a concise teacher-facing tag summary."""
+    print("Added review tag:")
+    print(f"Class: {added.class_id}")
+    print(f"Assignment: {added.assignment_id}")
+    print(f"Student: {added.student_id}")
+    print(f"Tag: {added.tag_id}")
+    print(f"Polarity: {added.polarity}")
+    print(f"Review state: {added.review_state}")
+    print(f"Review record: {added.review_record_relative_path}")
+
+
 def _print_assignment_submission_status(
     result: AssignmentSubmissionStatus,
     workspace_root: Path,
@@ -849,6 +977,28 @@ def _positive_integer_argument(value: str) -> int:
     if parsed < 1:
         raise argparse.ArgumentTypeError("must be a positive integer")
     return parsed
+
+
+def _non_negative_integer_argument(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(
+            "must be a non-negative integer"
+        ) from error
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("must be a non-negative integer")
+    return parsed
+
+
+def _location_value_argument(value: str) -> int | str:
+    stripped = value.strip()
+    if not stripped:
+        raise argparse.ArgumentTypeError("must be a non-empty value")
+    try:
+        return int(stripped)
+    except ValueError:
+        return stripped
 
 
 def _validate_route_scan_source_file(source_file: Path) -> bool:
