@@ -22,6 +22,10 @@ Quillan currently has:
 * teacher-facing writing assignment config creation and read-only validation;
 * teacher-facing combined printable response class-packet generation from
   existing canonical rosters and assignment configs;
+* retained source scan routing and routed assignment evidence filing;
+* student submission manifest assembly and read-only status listing;
+* local evidence opening and student submission opening;
+* teacher-controlled lightweight review-state updates;
 * automated tests for standards validation and CLI behavior;
 * configured development checks using `pytest`, `ruff`, and `mypy`.
 
@@ -202,13 +206,36 @@ automatically. Assignment-level filename discovery and assembly from existing
 routed evidence is implemented through `quillan assemble-submissions`.
 Assembly does not inspect evidence contents, reconstruct retained-source
 provenance, merge manifests, or preserve prior teacher review state during
-overwrite; teacher selection and review-state updates remain future workflows.
+overwrite. Evidence selection remains a future workflow; lightweight
+review-state updates are implemented as a separate teacher-controlled,
+metadata-only command.
 
 Target milestone:
 
 ```text
 v0.6.0 — Reviewable Evidence and Submission Assembly
 ```
+
+The completed/current v0.6 workflow includes:
+
+* retained source scan routing into the active source scan store;
+* routed evidence filing under assignment `scans/`;
+* student submission manifest assembly from routed evidence;
+* read-only submission and evidence status listing;
+* workspace-safe local evidence opening;
+* student submission opening for exactly one selected evidence item;
+* lightweight review-state updates limited to `submission_state` and
+  `updated_at`; and
+* end-to-end workflow documentation.
+
+Smoke testing remains pending after the documentation update. v0.6 does not
+include OCR, handwriting recognition, PDF text extraction, automatic evidence
+selection, automatic grading, automatic review-state updates, AI scoring, AI
+feedback, AI suggestions, rubric scoring, tagging, comment entry, feedback
+export, or report generation.
+
+Teacher tags, teacher comments, rubric/score entry, feedback export, and
+reporting remain likely v0.7 work rather than v0.6 scope.
 
 The first successful-write helper is implemented in `quillan.evidence_filing`.
 It accepts an existing successful `RoutePlan`, retains the selected source
@@ -375,6 +402,8 @@ Completed work:
 * Add the Printable Response Pages submenu for combined class-packet
   generation.
 * Add a direct `route-scan` command for already-decoded Quillan PDS1 payloads.
+* Add `assemble-submissions`, `list-submissions`, `open-evidence`,
+  `open-submission`, and `set-review-state`.
 * Add CLI tests.
 
 Remaining possible work:
@@ -404,7 +433,7 @@ Likely first commands:
 
 ### Phase 6 — Submissions and Requirements
 
-Planned work:
+Completed reviewable-evidence work:
 
 * Implement loading and validation for the documented version `1` submission
   manifest.
@@ -412,10 +441,8 @@ Planned work:
 * Assemble routed evidence into teacher-controlled manifests.
 * Represent missing, duplicate, replacement, damaged, and excluded evidence
   without deleting candidates.
-* Add teacher-controlled evidence selection and review-state updates.
-  Lightweight review-state updates are implemented through
-  `quillan set-review-state`, which changes only `submission_state` and
-  `updated_at`; evidence selection remains future work.
+* Add lightweight review-state updates through `quillan set-review-state`,
+  changing only `submission_state` and `updated_at`.
 * Preserve retained-source provenance and workspace-relative artifact paths.
 * Open individual workspace-relative evidence files safely through the shared
   `pds-core` local opener. Implemented as a low-level helper,
@@ -423,6 +450,10 @@ Planned work:
   `quillan open-submission`, which currently requires exactly one selected
   evidence item and does not update review state. State changes occur only
   through the explicit `quillan set-review-state` command.
+
+Remaining requirements and review work:
+
+* Add teacher-controlled evidence selection and duplicate resolution.
 * Continue supporting plain-text writing evidence where applicable.
 * Count words.
 * Count paragraphs.

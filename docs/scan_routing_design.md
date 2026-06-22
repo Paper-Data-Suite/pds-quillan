@@ -2,11 +2,13 @@
 
 ## Overview
 
-This design describes how a future Quillan scan router should accept a scanned
-writing-response page with an already-decoded PDS1 payload, validate its page
-identity, and select a safe location in the Paper Data Suite workspace.
+This design describes how Quillan accepts a selected writing-response scan with
+an already-decoded PDS1 payload, validates its page identity, retains the active
+source copy, and files routed evidence in the Paper Data Suite workspace. It
+also describes how that evidence feeds the v0.6 student submission and review
+workflow.
 
-Future Quillan scan routing must follow the shared active scan contract defined
+Quillan scan routing follows the shared active scan contract defined
 by `pds-core` in `docs/active_scan_contract.md`. That contract owns active
 source retention, routing review, shared failure metadata, and provenance
 semantics. This document adds only Quillan-specific response-page validation,
@@ -34,7 +36,8 @@ preservation through `quillan.routing_review`, writing shared failure records
 under `scans/review/`. The direct
 `quillan route-scan <source-file> --payload "<PDS1|...>"` command orchestrates
 these slices for a caller-supplied decoded payload. It does not implement QR
-extraction, PDF splitting, submission assembly, image processing, or OCR.
+extraction, PDF splitting, image processing, or OCR. Submission assembly is a
+separate implemented step through `quillan assemble-submissions`.
 
 ## Design Goals
 
@@ -318,7 +321,7 @@ identity. Retained-source provenance is recorded only when available, and a
 supplied review artifact path is recorded only as workspace-relative metadata;
 the helper does not copy that artifact.
 
-## Relationship to Submissions
+## Relationship to Reviewable Evidence and Submissions
 
 A routed scan page is evidence derived or copied from a retained source scan,
 not automatically a reviewed submission. Routing a page must not:
@@ -337,9 +340,12 @@ The focused submission assembly API can create that record from
 caller-provided routed evidence metadata, automatically selecting only
 unambiguous ordinary active pages and preserving replacement, damaged,
 needs-rescan, excluded, and duplicate evidence for later review. Explicit
-candidate roles also remain unselected. It does not scan folders, infer teacher
-choice from recency or role, or update an existing review record. The original
-routed files remain traceable to the canonical retained source after linking.
+candidate roles also remain unselected. The `quillan assemble-submissions`
+command discovers supported routed filenames in the assignment `scans/`
+directory and creates missing manifests. It does not inspect evidence contents,
+infer teacher choice among ambiguous duplicates, merge existing manifests, or
+update review metadata. The original routed files remain traceable to the
+canonical retained source after linking when that provenance is available.
 
 The canonical record location is:
 
@@ -352,7 +358,28 @@ paths, page and evidence states, nullable teacher selection, and provenance.
 It preserves duplicate, replacement, damaged, and excluded evidence rather
 than overwriting or deleting candidates. Loading, validation, path helpers,
 safe writing, and focused new-manifest assembly are implemented independently
-of `route-scan`; teacher review commands and state updates are not.
+of `route-scan`.
+
+The supported review sequence after routing and assembly is deliberately
+small:
+
+1. `quillan list-submissions <class_id> <assignment_id>` reports manifests,
+   routed evidence, missing pages, duplicate pages, needs-rescan pages,
+   excluded pages, present-but-unselected evidence, and students needing
+   assembly without modifying files.
+2. `quillan open-evidence <path>` opens a specific workspace-relative evidence
+   file as a low-level local helper; it has no student-submission context.
+3. `quillan open-submission <class_id> <assignment_id> <student_id>` loads the
+   canonical manifest and opens its evidence only when exactly one item is
+   selected.
+4. The teacher reviews the evidence in the system viewer.
+5. `quillan set-review-state <class_id> <assignment_id> <student_id> <state>`
+   may then set `unreviewed`, `in_progress`, `needs_rescan`, or `reviewed`.
+
+Opening evidence and updating review state are separate actions. The
+review-state command is teacher-controlled and metadata-only: it changes only
+`submission_state` and `updated_at`. Routed evidence never automatically
+implies reviewed work.
 
 Quillan owns the manifest contract, submission assembly, page
 completeness rules, teacher review and rescan decisions, and any future
@@ -428,13 +455,16 @@ submission mutations.
 
 ## Out of Scope
 
-The current direct decoded-payload routing slice does not implement:
+The v0.6 reviewable-evidence workflow does not implement:
 
 * end-to-end production scan intake automation;
 * QR detection or extraction;
-* PDF splitting, image processing, or OCR;
-* submission assembly or production roster workflows;
-* requirements checking, tagging, scoring, feedback, or reporting;
-* AI tagging, scoring, feedback, or automatic grading;
+* PDF splitting, PDF text extraction, image processing, OCR, or handwriting
+  recognition;
+* automatic evidence selection among duplicates;
+* automatic review-state updates;
+* requirements checking, rubric scoring, tagging, teacher comment entry,
+  feedback export, or report generation;
+* AI suggestions, AI scoring, AI feedback, or automatic grading;
 * menu or workspace-settings routing workflows; or
 * changes to `pds-core`, `pds-scoreform`, or Python behavior.
