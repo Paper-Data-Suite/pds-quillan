@@ -134,7 +134,8 @@ The supported teacher/developer sequence is:
    `review.json`.
 10. `add-tag` appends a teacher-entered structured observation to that review
     record.
-11. `set-review-state` records lightweight submission-manifest progress when
+11. `set-score` sets or updates one explicitly teacher-entered criterion score.
+12. `set-review-state` records lightweight submission-manifest progress when
     the teacher chooses.
 
 Opening evidence and updating review state are separate teacher-controlled
@@ -150,6 +151,7 @@ quillan open-evidence <workspace-relative-evidence-path>
 quillan open-submission <class_id> <assignment_id> <student_id>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity developing
+quillan set-score <class_id> <assignment_id> <student_id> --criterion evidence --label "Evidence" --score 3 --max-score 4
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 ```
 
@@ -174,6 +176,10 @@ quillan set-review-state <class_id> <assignment_id> <student_id> <state>
   may reference a validated standard, reusable profile comment, page,
   evidence ID, or writing location, but they do not score work, prove mastery,
   or generate feedback.
+- `set-score` sets one teacher-entered criterion score in `review.json`.
+  Existing criteria update by `criterion_id`; unrelated review data is
+  preserved. Criterion IDs are not yet validated against rubric profiles, and
+  no overall score is calculated.
 - `set-review-state` updates only the manifest's `submission_state` and
   `updated_at`; it does not inspect evidence or make a review decision.
 
@@ -431,6 +437,25 @@ Tags remain teacher-entered review artifacts. Adding one does not mutate the
 submission manifest or evidence, calculate a score, establish standard
 mastery, analyze writing, or generate feedback.
 
+Set or update one teacher-entered criterion score:
+
+```powershell
+quillan set-score <class_id> <assignment_id> <student_id> --criterion evidence --label "Evidence" --score 3 --max-score 4
+```
+
+Scores are stored in the `scores` array of the student's canonical
+`review.json`. A missing review record is created only when the adjacent
+`submission.json` validates and matches the requested identity. Repeating the
+command for the same `criterion_id` preserves its score ID, updates that
+criterion, and preserves unrelated notes, tags, scores, comments, and
+metadata. Optional `--scale` and `--note` values describe the latest explicit
+teacher input; omitting them during an update removes stale prior values.
+
+Quillan does not derive scores from student writing, tags, notes, comments,
+requirements, standards references, or evidence metadata. This command does
+not calculate totals, weighted scores, percentages, grades, mastery, or any
+other overall score. Rubric-profile criterion validation is future work.
+
 Validate a standards profile:
 
 ```powershell
@@ -507,6 +532,7 @@ quillan open-evidence <workspace-relative-path>
 quillan open-submission <class_id> <assignment_id> <student_id>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity developing
+quillan set-score <class_id> <assignment_id> <student_id> --criterion <criterion_id> --label "..." --score <number> --max-score <number>
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan workspace show
 quillan menu

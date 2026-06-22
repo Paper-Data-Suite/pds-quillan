@@ -33,6 +33,14 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added `quillan set-score` and a focused criterion-score API for setting
+  teacher-entered scores in canonical `review.json` records. New criteria
+  receive stable sequential IDs; existing criteria update in place by
+  `criterion_id` while preserving their IDs and unrelated review data.
+  Inputs, timestamps, identities, and complete proposed records validate
+  before atomic writes. The workflow does not infer scores, calculate an
+  overall score, validate against a rubric profile, or mutate submission
+  manifests or evidence.
 - Added `quillan add-tag` and a focused structured-tag API for appending
   teacher-entered tags to canonical `review.json` records. The workflow
   validates tag fields, timestamps, pages, evidence IDs, locations, assignment

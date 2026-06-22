@@ -140,6 +140,13 @@ Tags and requirements results may inform a score, but they do not calculate
 or compel one. Quillan must not automatically determine or generate scores. A
 score record represents teacher judgment, not software judgment.
 
+Quillan's direct `set-score` workflow records one criterion at a time in the
+canonical `review.json`. It updates an existing record by `criterion_id` or
+appends a new one without disturbing unrelated review data. Criterion IDs are
+accepted as explicit teacher input; rubric-profile lookup is not yet
+implemented. The workflow does not calculate an overall score, percentage,
+grade, weighted result, or mastery result.
+
 ## Feedback Philosophy
 
 Feedback is student-readable teacher communication. It may draw on:

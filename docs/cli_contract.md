@@ -374,6 +374,25 @@ review state, and workspace-relative review-record path. The command never
 mutates the submission manifest, routed evidence, or retained source scans,
 and it does not score, analyze, or generate feedback.
 
+## Criterion Scores
+
+```powershell
+quillan set-score <class_id> <assignment_id> <student_id> --criterion <criterion_id> --label "..." --score <number> --max-score <number>
+```
+
+This direct command sets or updates one explicitly teacher-entered criterion
+score in canonical `review.json`. Optional flags are `--scale` and `--note`.
+The command creates a missing review record only when the adjacent
+`submission.json` validates and matches the requested identity.
+
+Success returns `0` and reports the class, assignment, student, criterion,
+score and maximum, score ID, created-or-updated action, review state, and
+workspace-relative review-record path. Handled workspace, score, and record
+failures return `1`. Updating by `criterion_id` preserves the existing score
+ID and unrelated review sections. The command does not validate criteria
+against a rubric profile, calculate an overall score, infer scores, or mutate
+the submission manifest or evidence.
+
 ## Output and Error Handling
 
 Human-readable command results are the current output contract. Quillan does
