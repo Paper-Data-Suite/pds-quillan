@@ -321,6 +321,19 @@ contents or reconstruct retained-source provenance. Existing manifests are
 skipped by default; `--overwrite` fully regenerates them without preserving
 prior review state or teacher selections.
 
+List current manifest and routed-evidence status without changing any files:
+
+```powershell
+quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
+```
+
+The status includes submission and page states, present-but-unselected pages,
+students with routed evidence but no manifest, unassembled routed files, and
+skipped malformed or unrelated scan filenames. Existing manifests are loaded
+and validated; an invalid manifest is an error. The command does not open
+evidence, assemble or update manifests, select evidence, score, tag, run OCR,
+or generate feedback.
+
 The current command surface is:
 
 ```powershell
@@ -330,6 +343,7 @@ quillan validate-standards <standards-profile.json>
 quillan validate-assignment <assignment.json>
 quillan route-scan <source-file> --payload "<PDS1|...>"
 quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
+quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 quillan workspace show
 quillan menu
 ```

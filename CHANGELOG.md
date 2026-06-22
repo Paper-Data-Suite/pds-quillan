@@ -23,6 +23,11 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added read-only `quillan list-submissions` status reporting for validated
+  assignment manifests and routed evidence, including submission/page states,
+  present-but-unselected pages, students needing assembly, unassembled routed
+  files, skipped filenames, and optional expected-page visibility without
+  creating or modifying manifests.
 - Added `quillan assemble-submissions` and an assignment-level assembly API
   that discover routed PDF/image evidence by filename convention, group it by
   student, write canonical version `1` manifests, report malformed or

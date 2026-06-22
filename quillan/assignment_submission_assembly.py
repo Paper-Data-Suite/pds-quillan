@@ -61,7 +61,9 @@ class AssignmentSubmissionAssemblyResult:
 
 
 @dataclass(frozen=True, slots=True)
-class _DiscoveryResult:
+class AssignmentRoutedEvidenceDiscovery:
+    """Read-only routed-evidence discovery for one assignment."""
+
     evidence_by_student: dict[str, list[RoutedSubmissionEvidence]]
     skipped_files: tuple[SkippedRoutedEvidenceFile, ...]
 
@@ -75,6 +77,17 @@ def discover_assignment_routed_evidence(
     return _discover_assignment_routed_evidence(
         workspace_root, class_id, assignment_id
     ).evidence_by_student
+
+
+def discover_assignment_routed_evidence_status(
+    workspace_root: str | Path,
+    class_id: str,
+    assignment_id: str,
+) -> AssignmentRoutedEvidenceDiscovery:
+    """Discover routed evidence plus files excluded from discovery."""
+    return _discover_assignment_routed_evidence(
+        workspace_root, class_id, assignment_id
+    )
 
 
 def assemble_assignment_submissions(
@@ -147,13 +160,13 @@ def _discover_assignment_routed_evidence(
     workspace_root: str | Path,
     class_id: str,
     assignment_id: str,
-) -> _DiscoveryResult:
+) -> AssignmentRoutedEvidenceDiscovery:
     validate_identifier(class_id, "class_id")
     validate_identifier(assignment_id, "assignment_id")
     root = Path(workspace_root).resolve(strict=False)
     scans_dir = assignment_scans_dir(root, class_id, assignment_id)
     if not scans_dir.exists():
-        return _DiscoveryResult({}, ())
+        return AssignmentRoutedEvidenceDiscovery({}, ())
     if not scans_dir.is_dir():
         raise NotADirectoryError(
             f"Assignment scans path is not a directory: {scans_dir}"
@@ -233,7 +246,7 @@ def _discover_assignment_routed_evidence(
         )
         for student_id in sorted(grouped)
     }
-    return _DiscoveryResult(ordered, tuple(skipped))
+    return AssignmentRoutedEvidenceDiscovery(ordered, tuple(skipped))
 
 
 def _unmatched_filename_reason(filename: str) -> str:
