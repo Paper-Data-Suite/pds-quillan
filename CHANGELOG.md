@@ -27,6 +27,9 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a synthetic v0.6 reviewable-evidence smoke test covering routed
+  evidence, submission assembly, manifest validation, status listing, mocked
+  submission opening, review-state updates, and non-destructive behavior.
 - Added `quillan set-review-state` and a focused API for explicit
   teacher-controlled updates to a validated submission manifest's
   `submission_state` and `updated_at`, supporting only `unreviewed`,
