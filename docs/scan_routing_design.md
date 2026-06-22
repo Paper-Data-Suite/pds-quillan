@@ -416,7 +416,11 @@ Inactive historical preservation and end-of-cycle archiving belong to future
    through that same helper. It does not select evidence, update review state,
    score, tag, inspect, OCR, or generate feedback. Missing, duplicate,
    needs-rescan, and unselected submissions should be inspected with
-   `quillan list-submissions` first.
+   `quillan list-submissions` first. The separate teacher-controlled
+   `quillan set-review-state` command can explicitly set `unreviewed`,
+   `in_progress`, `needs_rescan`, or `reviewed`; it changes only
+   `submission_state` and `updated_at` and does not inspect evidence or perform
+   automated judgment.
 
 Each phase should add focused tests for validation, traversal resistance,
 collision races, preservation on failure, and the absence of unintended

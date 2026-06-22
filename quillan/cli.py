@@ -51,6 +51,11 @@ from quillan.submission_review_opening import (
     SubmissionReviewOpeningError,
     open_student_submission_for_review,
 )
+from quillan.submission_review_state import (
+    SubmissionReviewStateError,
+    UpdatedSubmissionReviewState,
+    update_submission_review_state,
+)
 
 APP_DESCRIPTION = "Quillan: standards-based writing evidence capture"
 
@@ -94,6 +99,14 @@ def main(argv: list[str] | None = None) -> int:
             args.class_id,
             args.assignment_id,
             args.student_id,
+        )
+
+    if args.command == "set-review-state":
+        return _handle_set_review_state(
+            args.class_id,
+            args.assignment_id,
+            args.student_id,
+            args.state,
         )
 
     if args.command == "workspace" and args.workspace_command == "show":
@@ -238,6 +251,26 @@ def _build_parser() -> argparse.ArgumentParser:
         "assignment_id", help="Assignment identifier."
     )
     open_submission_parser.add_argument("student_id", help="Student identifier.")
+
+    review_state_parser = subparsers.add_parser(
+        "set-review-state",
+        help="Update one student submission's lightweight review state.",
+        description=(
+            "Update only submission_state and updated_at in one canonical "
+            "student submission manifest."
+        ),
+    )
+    review_state_parser.add_argument("class_id", help="Class identifier.")
+    review_state_parser.add_argument(
+        "assignment_id", help="Assignment identifier."
+    )
+    review_state_parser.add_argument("student_id", help="Student identifier.")
+    review_state_parser.add_argument(
+        "state",
+        help=(
+            "Review state: unreviewed, in_progress, needs_rescan, or reviewed."
+        ),
+    )
 
     workspace_parser = subparsers.add_parser(
         "workspace",
@@ -474,6 +507,43 @@ def _print_opened_submission_review(opened: OpenedSubmissionReview) -> None:
     print(f"Evidence: {opened.evidence_id}")
     print(f"Path: {opened.evidence_relative_path}")
     print(f"Manifest: {opened.manifest_relative_path}")
+
+
+def _handle_set_review_state(
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    state: str,
+) -> int:
+    """Update one canonical submission's lightweight review state."""
+    try:
+        workspace_root = resolve_workspace_root()
+        updated = update_submission_review_state(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            state,
+        )
+    except (WorkspaceRootError, SubmissionReviewStateError) as error:
+        print(f"Error: could not update submission review state: {error}")
+        return 1
+
+    _print_updated_submission_review_state(updated)
+    return 0
+
+
+def _print_updated_submission_review_state(
+    updated: UpdatedSubmissionReviewState,
+) -> None:
+    """Print a concise teacher-facing review-state update."""
+    print("Updated submission review state:")
+    print(f"Class: {updated.class_id}")
+    print(f"Assignment: {updated.assignment_id}")
+    print(f"Student: {updated.student_id}")
+    print(f"Previous state: {updated.previous_state}")
+    print(f"New state: {updated.new_state}")
+    print(f"Manifest: {updated.manifest_relative_path}")
 
 
 def _print_assignment_submission_status(

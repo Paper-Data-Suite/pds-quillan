@@ -413,12 +413,16 @@ Planned work:
 * Represent missing, duplicate, replacement, damaged, and excluded evidence
   without deleting candidates.
 * Add teacher-controlled evidence selection and review-state updates.
+  Lightweight review-state updates are implemented through
+  `quillan set-review-state`, which changes only `submission_state` and
+  `updated_at`; evidence selection remains future work.
 * Preserve retained-source provenance and workspace-relative artifact paths.
 * Open individual workspace-relative evidence files safely through the shared
   `pds-core` local opener. Implemented as a low-level helper,
   `quillan open-evidence`, and the read-only student-aware
   `quillan open-submission`, which currently requires exactly one selected
-  evidence item and does not update review state.
+  evidence item and does not update review state. State changes occur only
+  through the explicit `quillan set-review-state` command.
 * Continue supporting plain-text writing evidence where applicable.
 * Count words.
 * Count paragraphs.

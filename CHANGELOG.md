@@ -23,6 +23,11 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added `quillan set-review-state` and a focused API for explicit
+  teacher-controlled updates to a validated submission manifest's
+  `submission_state` and `updated_at`, supporting only `unreviewed`,
+  `in_progress`, `needs_rescan`, and `reviewed` while preserving all evidence,
+  selection, provenance, and other manifest content.
 - Added read-only `quillan open-submission` support for locating and validating
   one student's canonical submission manifest, requiring exactly one selected
   evidence item, and opening its routed evidence through Quillan's existing
