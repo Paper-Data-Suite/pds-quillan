@@ -22,8 +22,10 @@ particular, `review.json` references evidence by `evidence_id` and optional
 page number rather than copying routed evidence paths.
 
 This document defines submission review schema version `1` for the v0.7
-contract. Runtime loading, validation, safe writing, commands, and exports are
-not implemented by this contract.
+contract. Runtime loading and validation are implemented by
+`quillan.review_record`. Canonical path computation and safe writing are
+implemented by `quillan.review_record_paths`. Teacher-facing commands and
+exports remain future work.
 
 ## Top-Level Structure
 
@@ -408,8 +410,29 @@ not contain:
 
 Schema version `1` stores only `submission_manifest_path`. It does not copy
 routed evidence paths, retained-source paths, export paths, or report paths.
-Full runtime enforcement belongs to the review-record validation issue that
-follows this contract.
+Runtime validation rejects unsafe paths and requires the canonical manifest
+path matching the record's own class, assignment, and student identifiers.
+
+## Runtime API
+
+`quillan.review_record` provides:
+
+* `load_review_record(path)` for UTF-8 JSON loading and complete validation;
+* `validate_review_record(record)` for isolated schema validation; and
+* `ReviewRecordError` for review-record loading and validation failures.
+
+`quillan.review_record_paths` provides:
+
+* `review_record_dir(...)` and `review_record_path(...)` for canonical active
+  paths;
+* `write_review_record(path, record, overwrite=False)` for validated,
+  atomic, readable UTF-8 JSON writes; and
+* `ReviewRecordPathError` for path and write failures.
+
+Version `1` rejects unknown fields in the top-level and defined nested record
+shapes. Module-specific extension data belongs in each record's
+`module_details` object. The writer creates missing parent directories and
+refuses to replace an existing file unless `overwrite=True`.
 
 ## Mutation and Preservation Policy
 
@@ -455,7 +478,6 @@ selected comment is stored in
 
 This contract does not implement:
 
-* review-record loading, validation, path computation, or safe writing;
 * `add-note`, `add-tag`, `set-score`, or other review commands;
 * comment-bank lookup or reusable-comment management;
 * feedback, class-summary, or standards-summary export;
