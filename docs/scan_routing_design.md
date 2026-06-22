@@ -410,8 +410,13 @@ Inactive historical preservation and end-of-cycle archiving belong to future
 8. **Teacher review integration.** Present assembled evidence to the teacher
    and allow teacher-controlled lifecycle changes without automated judgment.
    A low-level `quillan open-evidence` command now validates one existing file
-   inside the active workspace and delegates opening to `pds-core`. It does not
-   select evidence, locate student submissions, or update review state.
+   inside the active workspace and delegates opening to `pds-core`. The
+   read-only `quillan open-submission` command locates a student's canonical
+   validated manifest and opens its single selected routed evidence item
+   through that same helper. It does not select evidence, update review state,
+   score, tag, inspect, OCR, or generate feedback. Missing, duplicate,
+   needs-rescan, and unselected submissions should be inspected with
+   `quillan list-submissions` first.
 
 Each phase should add focused tests for validation, traversal resistance,
 collision races, preservation on failure, and the absence of unintended

@@ -282,7 +282,20 @@ The path must be relative to and remain inside the active PDS workspace.
 Quillan validates that it identifies an existing file, then delegates the
 platform-specific opening behavior to `pds-core`. This command does not
 inspect, parse, modify, select, score, tag, review, or generate feedback from
-the evidence. Student-aware submission lookup and opening remain future work.
+the evidence.
+
+Open the selected routed evidence for one student's canonical submission:
+
+```powershell
+quillan open-submission <class_id> <assignment_id> <student_id>
+```
+
+Quillan loads and validates the student's manifest, verifies its identity, and
+uses the same local evidence-opening support as `open-evidence`. Exactly one
+selected evidence item is currently required. Use `list-submissions` first for
+missing, duplicate, needs-rescan, or unselected submissions. Opening is
+read-only: it does not change review state or select, score, tag, evaluate,
+inspect, OCR, or generate feedback from evidence.
 
 Validate a standards profile:
 
@@ -356,6 +369,8 @@ quillan validate-assignment <assignment.json>
 quillan route-scan <source-file> --payload "<PDS1|...>"
 quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
+quillan open-evidence <workspace-relative-path>
+quillan open-submission <class_id> <assignment_id> <student_id>
 quillan workspace show
 quillan menu
 ```

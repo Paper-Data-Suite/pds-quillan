@@ -46,6 +46,11 @@ from quillan.submission_status import (
     AssignmentSubmissionStatus,
     list_assignment_submission_status,
 )
+from quillan.submission_review_opening import (
+    OpenedSubmissionReview,
+    SubmissionReviewOpeningError,
+    open_student_submission_for_review,
+)
 
 APP_DESCRIPTION = "Quillan: standards-based writing evidence capture"
 
@@ -83,6 +88,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "open-evidence":
         return _handle_open_evidence(args.evidence_path)
+
+    if args.command == "open-submission":
+        return _handle_open_submission(
+            args.class_id,
+            args.assignment_id,
+            args.student_id,
+        )
 
     if args.command == "workspace" and args.workspace_command == "show":
         return _handle_workspace_show()
@@ -211,6 +223,21 @@ def _build_parser() -> argparse.ArgumentParser:
         "evidence_path",
         help="Workspace-relative path to an existing local evidence file.",
     )
+
+    open_submission_parser = subparsers.add_parser(
+        "open-submission",
+        help="Open the selected evidence for one student submission.",
+        description=(
+            "Load one canonical student submission manifest and open its single "
+            "selected routed evidence file. This command is read-only and "
+            "requires exactly one selected evidence item."
+        ),
+    )
+    open_submission_parser.add_argument("class_id", help="Class identifier.")
+    open_submission_parser.add_argument(
+        "assignment_id", help="Assignment identifier."
+    )
+    open_submission_parser.add_argument("student_id", help="Student identifier.")
 
     workspace_parser = subparsers.add_parser(
         "workspace",
@@ -411,6 +438,42 @@ def _handle_open_evidence(evidence_path: str | Path) -> int:
     print("Opened evidence file:")
     print(opened.evidence_relative_path)
     return 0
+
+
+def _handle_open_submission(
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> int:
+    """Open the selected evidence for one canonical student submission."""
+    try:
+        workspace_root = resolve_workspace_root()
+        opened = open_student_submission_for_review(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+        )
+    except (WorkspaceRootError, SubmissionReviewOpeningError) as error:
+        print(f"Error: could not open student submission: {error}")
+        return 1
+
+    _print_opened_submission_review(opened)
+    return 0
+
+
+def _print_opened_submission_review(opened: OpenedSubmissionReview) -> None:
+    """Print concise teacher-facing context for opened submission evidence."""
+    print("Opened submission evidence for review:")
+    print(f"Class: {opened.class_id}")
+    print(f"Assignment: {opened.assignment_id}")
+    print(f"Student: {opened.student_id}")
+    print(f"Submission state: {opened.submission_state}")
+    print(f"Page: {opened.page_number}")
+    print(f"Page state: {opened.page_state}")
+    print(f"Evidence: {opened.evidence_id}")
+    print(f"Path: {opened.evidence_relative_path}")
+    print(f"Manifest: {opened.manifest_relative_path}")
 
 
 def _print_assignment_submission_status(

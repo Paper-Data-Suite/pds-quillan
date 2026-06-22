@@ -23,6 +23,10 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added read-only `quillan open-submission` support for locating and validating
+  one student's canonical submission manifest, requiring exactly one selected
+  evidence item, and opening its routed evidence through Quillan's existing
+  workspace-safe local evidence opener without changing review state.
 - Added `quillan open-evidence` and a focused evidence-opening API for safely
   opening an existing workspace-relative evidence file through the shared
   `pds-core` system opener, without inspecting or modifying evidence or review
