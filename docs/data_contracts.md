@@ -8,12 +8,13 @@ reports.
 
 Standards profiles, assignment configurations, the legacy text-oriented
 submission metadata shape, and the reviewable-evidence submission manifest
-have implemented Python validation support. Manifest writing, assembly,
-selection, and state-changing workflows are not implemented. The
-writing-response payload contract is implemented and used by printable PDF
-generation. Requirements, tagging, scoring, feedback, and reporting records
-remain contracts for teacher-controlled workflows that are not yet
-implemented end to end.
+have implemented Python validation support. New-manifest writing and assembly
+from caller-provided evidence metadata are implemented; evidence discovery,
+merging, and state-changing review workflows are not. The writing-response
+payload contract is implemented and used by printable PDF generation.
+Requirements, tagging, scoring, feedback, and reporting records remain
+contracts for teacher-controlled workflows that are not yet implemented end
+to end.
 
 For the expected workspace layout and file lifecycle of these records, see
 [`workspace_lifecycle.md`](workspace_lifecycle.md).
@@ -237,7 +238,7 @@ identity to routed evidence, retained-source provenance, and explicit review
 state. Routed evidence alone does not establish that a submission is complete,
 reviewed, scored, tagged, or ready for feedback.
 
-The future canonical location is:
+The canonical location is:
 
 ```text
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
@@ -248,9 +249,13 @@ This section defines draft schema version `1`. The distinct
 `quillan.submission_manifest_paths` computes its canonical active path and
 safely writes a caller-provided manifest. Writes validate before filesystem
 changes, create missing parent directories, and refuse overwrites by default.
+`quillan.submission_assembly` can build and write a new manifest from
+caller-provided routed evidence metadata. It automatically selects only
+unambiguous pages, leaves duplicate pages unselected, represents expected
+missing pages, and preserves complete retained-source provenance.
 The existing `quillan.submissions` loader remains responsible for an earlier
-text-oriented metadata shape. Manifest assembly from routed evidence,
-selection, and state-changing workflows are future work.
+text-oriented metadata shape. The assembly API does not discover scan-folder
+evidence, merge with an existing manifest, or update teacher review state.
 
 The active path is currently a Quillan-owned artifact contract rather than a
 `pds-core` route. Inactive-preservation tooling such as `pds-sunset` may later
@@ -405,8 +410,8 @@ This contract does not define or implement scoring, tagging, requirements
 checking, feedback, reports, OCR, handwriting recognition, AI suggestions, AI
 scoring, AI feedback drafting, or automatic grading. Those concerns remain
 separate from the evidence manifest and teacher-controlled review state. It
-also does not implement manifest writing, submission assembly, path helpers,
-file opening, review commands, or state updates.
+also does not implement evidence discovery, manifest merging, file opening,
+review commands, or state updates.
 
 ## Writing-Response Payload
 

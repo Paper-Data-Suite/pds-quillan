@@ -20,8 +20,10 @@ Quillan currently supports:
 - documented writing-evidence and teacher-review data contracts;
 - loading and validation for the version `1` reviewable-evidence submission
   manifest through the distinct `quillan.submission_manifest` module;
-- canonical active submission manifest path helpers and safe writing of
-  caller-provided, validated manifests without submission assembly;
+- assembly of new version `1` submission manifests from caller-provided routed
+  evidence metadata, including deterministic evidence IDs, missing and
+  duplicate page representation, retained-source provenance, canonical paths,
+  validation, and overwrite protection;
 - printable writing-response PDF generation with student, class, assignment,
   and page identity;
 - QR codes containing canonical PDS1 Quillan response payloads on printable
@@ -73,7 +75,8 @@ particular, Quillan does not currently provide:
 - QR extraction from scanned PDFs or images;
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
-- automatic assembly of version `1` submission manifests from routed evidence;
+- automatic discovery of routed evidence from scan folders or merging new
+  evidence into existing teacher review state;
 - assignment creation workflows;
 - implemented requirements-checking, tagging, scoring, feedback, or
   production reporting workflows;
@@ -89,7 +92,8 @@ the shared `pds-core` active scan contract: canonical retained sources belong
 in `scans/source/YYYY-MM-DD/`, canonical routing review records belong in
 `scans/review/`, and assignment-level `scans/` contains routed evidence rather
 than canonical source retention. QR extraction, PDF splitting, OCR, and
-submission assembly remain outside the direct command and internal APIs.
+scan-folder discovery and review-state updates remain outside the direct
+command and assembly API.
 
 ## Current Non-Goals
 

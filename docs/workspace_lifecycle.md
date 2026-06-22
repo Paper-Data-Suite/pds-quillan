@@ -148,15 +148,16 @@ that Quillan currently routes scans, performs OCR, or files captured pages.
 
 ### `submissions/<student_id>/submission.json`
 
-The future Quillan version `1` submission manifest for one student's routed
+The Quillan version `1` submission manifest for one student's routed
 evidence for one assignment. It identifies the class, assignment, and student;
 represents expected, missing, duplicate, replacement, damaged, or excluded
 pages; preserves retained-source provenance; and records teacher-controlled
 review state without containing scores, tags, or feedback.
 
-The manifest contract is documented, but loading, validation, writing,
-assembly, and state-changing workflows are not yet implemented. The current
-Python loader accepts an earlier text-oriented metadata shape.
+Loading, validation, canonical path computation, safe writing, and
+new-manifest assembly from caller-provided evidence metadata are implemented
+in modules distinct from the legacy text-oriented loader. Scan-folder
+discovery, merging, and state-changing review workflows are not implemented.
 
 ### `submissions/<student_id>/submission.txt`
 
