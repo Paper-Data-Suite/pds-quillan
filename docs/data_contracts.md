@@ -383,6 +383,16 @@ Evidence candidates are append-and-preserve records. Duplicate, replacement,
 damaged, selected, or excluded candidates remain represented rather than
 being silently overwritten or deleted.
 
+The focused new-manifest assembly API accepts caller-provided `candidate`,
+`replacement`, and `excluded` roles. Callers cannot provide `selected`;
+assembly reserves that role for the single ordinary active evidence item on an
+otherwise unambiguous page. An explicit candidate remains unselected, a lone
+replacement or damaged/needs-rescan item produces a `needs_rescan` page, and a
+page containing only excluded evidence produces an `excluded` page. Multiple
+items remain a `duplicate` page unless all are excluded. No timestamp,
+duplicate number, replacement role, or ordering is treated as teacher intent.
+All evidence remains represented for a later teacher-selection workflow.
+
 ### Path and Timestamp Policy
 
 Every stored artifact path is a workspace-relative string interpreted from

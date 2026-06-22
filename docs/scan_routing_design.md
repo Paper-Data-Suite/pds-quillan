@@ -335,9 +335,11 @@ in [`data_contracts.md`](data_contracts.md#submission-manifest) represents
 those conditions without guessing which evidence the teacher intends to use.
 The focused submission assembly API can create that record from
 caller-provided routed evidence metadata, automatically selecting only
-unambiguous pages and preserving duplicates for later review. It does not scan
-folders or update an existing review record. The original routed files remain
-traceable to the canonical retained source after linking.
+unambiguous ordinary active pages and preserving replacement, damaged,
+needs-rescan, excluded, and duplicate evidence for later review. Explicit
+candidate roles also remain unselected. It does not scan folders, infer teacher
+choice from recency or role, or update an existing review record. The original
+routed files remain traceable to the canonical retained source after linking.
 
 The canonical record location is:
 

@@ -10,6 +10,11 @@ planning and do not by themselves represent releases.
 
 ### Changed
 
+- Refined routed-evidence assembly so callers can preserve candidate,
+  replacement, and excluded roles plus active, damaged, needs-rescan, and
+  excluded states. Only a single ordinary active item with no explicit role is
+  auto-selected; replacement, problematic, excluded, and ambiguous evidence
+  remains preserved and unselected for later teacher choice.
 - Aligned the future Quillan scan-routing design with the shared `pds-core`
   active scan contract, including source retention, routed evidence,
   `scans/review/`, shared failure metadata, and ownership boundaries.

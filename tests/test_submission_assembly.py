@@ -126,6 +126,121 @@ def test_duplicate_page_is_ambiguous_and_deterministically_ordered(
     validate_submission_manifest(manifest)
 
 
+def test_single_replacement_is_preserved_without_selection(
+    tmp_path: Path,
+) -> None:
+    manifest = _build(
+        tmp_path, [_evidence(1, evidence_role="replacement")]
+    )
+
+    page = manifest["pages"][0]
+    assert page["page_state"] == "needs_rescan"
+    assert page["selected_evidence_id"] is None
+    assert page["evidence"][0]["evidence_role"] == "replacement"
+    validate_submission_manifest(manifest)
+
+
+def test_original_and_replacement_remain_ambiguous(tmp_path: Path) -> None:
+    manifest = _build(
+        tmp_path,
+        [
+            _evidence(1, "pages/original.pdf"),
+            _evidence(
+                1,
+                "pages/replacement.pdf",
+                evidence_role="replacement",
+            ),
+        ],
+    )
+
+    page = manifest["pages"][0]
+    assert page["page_state"] == "duplicate"
+    assert page["selected_evidence_id"] is None
+    assert [item["evidence_role"] for item in page["evidence"]] == [
+        "candidate",
+        "replacement",
+    ]
+    assert len(page["evidence"]) == 2
+    validate_submission_manifest(manifest)
+
+
+@pytest.mark.parametrize("evidence_state", ["damaged", "needs_rescan"])
+def test_problematic_single_evidence_requires_rescan(
+    tmp_path: Path, evidence_state: str
+) -> None:
+    manifest = _build(
+        tmp_path, [_evidence(1, evidence_state=evidence_state)]
+    )
+
+    page = manifest["pages"][0]
+    assert page["page_state"] == "needs_rescan"
+    assert page["selected_evidence_id"] is None
+    assert page["evidence"][0]["evidence_state"] == evidence_state
+    assert page["evidence"][0]["evidence_role"] == "candidate"
+    validate_submission_manifest(manifest)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"evidence_role": "excluded"},
+        {"evidence_state": "excluded"},
+    ],
+)
+def test_single_excluded_evidence_is_preserved(
+    tmp_path: Path, kwargs: dict[str, Any]
+) -> None:
+    manifest = _build(tmp_path, [_evidence(1, **kwargs)])
+
+    page = manifest["pages"][0]
+    assert page["page_state"] == "excluded"
+    assert page["selected_evidence_id"] is None
+    assert page["evidence"][0]["evidence_role"] == "excluded"
+    assert len(page["evidence"]) == 1
+    validate_submission_manifest(manifest)
+
+
+@pytest.mark.parametrize(
+    "problematic",
+    [
+        {"evidence_state": "damaged"},
+        {"evidence_role": "excluded"},
+    ],
+)
+def test_mixed_evidence_preserves_all_candidates_without_selection(
+    tmp_path: Path, problematic: dict[str, Any]
+) -> None:
+    manifest = _build(
+        tmp_path,
+        [
+            _evidence(1, "pages/active.pdf"),
+            _evidence(1, "pages/problematic.pdf", **problematic),
+        ],
+    )
+
+    page = manifest["pages"][0]
+    assert page["page_state"] == "duplicate"
+    assert page["selected_evidence_id"] is None
+    assert len(page["evidence"]) == 2
+    assert {item["routed_evidence_path"] for item in page["evidence"]} == {
+        "pages/active.pdf",
+        "pages/problematic.pdf",
+    }
+    validate_submission_manifest(manifest)
+
+
+def test_explicit_candidate_remains_unselected(tmp_path: Path) -> None:
+    manifest = _build(
+        tmp_path, [_evidence(1, evidence_role="candidate")]
+    )
+
+    page = manifest["pages"][0]
+    assert page["page_state"] == "present"
+    assert page["selected_evidence_id"] is None
+    assert page["evidence"][0]["evidence_role"] == "candidate"
+    validate_submission_manifest(manifest)
+
+
 def test_full_retained_source_is_preserved_with_nullable_source_page(
     tmp_path: Path,
 ) -> None:
@@ -361,6 +476,14 @@ def test_invalid_evidence_state_and_module_details_raise(tmp_path: Path) -> None
         _build(tmp_path, [_evidence(1, evidence_state="reviewed")])
     with pytest.raises(SubmissionAssemblyError, match="JSON-compatible"):
         _build(tmp_path, [_evidence(1, module_details={"bad": object()})])
+
+
+@pytest.mark.parametrize("value", ["selected", "primary", "", 1])
+def test_invalid_caller_evidence_role_raises(
+    tmp_path: Path, value: Any
+) -> None:
+    with pytest.raises(SubmissionAssemblyError, match="evidence_role"):
+        _build(tmp_path, [_evidence(1, evidence_role=value)])
 
 
 @pytest.mark.parametrize(

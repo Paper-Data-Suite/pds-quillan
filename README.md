@@ -22,8 +22,10 @@ Quillan currently supports:
   manifest through the distinct `quillan.submission_manifest` module;
 - assembly of new version `1` submission manifests from caller-provided routed
   evidence metadata, including deterministic evidence IDs, missing and
-  duplicate page representation, retained-source provenance, canonical paths,
-  validation, and overwrite protection;
+  duplicate page representation, replacement, damaged, needs-rescan, and
+  excluded evidence semantics, retained-source provenance, canonical paths,
+  validation, and overwrite protection without choosing among ambiguous
+  evidence;
 - printable writing-response PDF generation with student, class, assignment,
   and page identity;
 - QR codes containing canonical PDS1 Quillan response payloads on printable
