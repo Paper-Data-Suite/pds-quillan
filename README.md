@@ -18,6 +18,8 @@ Quillan currently supports:
 - standards profile loading and validation;
 - validation of the legacy text-oriented submission metadata shape;
 - documented writing-evidence and teacher-review data contracts;
+- a documented shared reusable comment bank contract with a synthetic
+  example; runtime bank activation and comment selection remain future work;
 - loading and validation for the version `1` reviewable-evidence submission
   manifest through the distinct `quillan.submission_manifest` module;
 - assembly of new version `1` submission manifests from caller-provided routed
@@ -308,6 +310,13 @@ generates one combined class packet at:
 Replacing an existing packet requires exact `OVERWRITE` confirmation.
 Generation does not alter the roster or assignment config. Generated PDFs are
 local workspace artifacts and should not be committed.
+
+Reusable teacher-authored comment banks are designed to live at
+`shared/comment_banks/<bank_id>.json`. The version `1` source-data contract,
+category and comment shapes, future assignment activation, and snapshot
+boundary with `review.json.comments` are documented in
+[`docs/comment_bank_contract.md`](docs/comment_bank_contract.md). Quillan does
+not yet load banks or select comments from them.
 
 Quillan also consumes the shared PDS1 payload conventions and helpers from
 `pds-core`. Each generated response page embeds a QR code containing a

@@ -3,8 +3,8 @@
 Quillan stores structured evidence about student writing using local files.
 
 These contracts describe the expected file formats for standards profiles,
-assignments, submissions, teacher review, requirements checks, feedback
-exports, and reports.
+shared comment banks, assignments, submissions, teacher review, requirements
+checks, feedback exports, and reports.
 
 Standards profiles, assignment configurations, the legacy text-oriented
 submission metadata shape, and the reviewable-evidence submission manifest
@@ -26,6 +26,11 @@ scores, feedback, and reports, see
 For the canonical v0.7 `review.json` schema, including notes, tags, scores,
 comments, state, paths, timestamps, and mutation policy, see
 [`review_record_contract.md`](review_record_contract.md).
+
+For reusable teacher-authored feedback language stored at
+`shared/comment_banks/<bank_id>.json`, including categories, writing-type
+filters, standards and criterion links, and future assignment activation, see
+[`comment_bank_contract.md`](comment_bank_contract.md).
 
 For the required structure and human-readable elements of a printable
 writing-response page, see
@@ -174,6 +179,27 @@ Example:
   ]
 }
 ```
+
+## Shared Comment Bank
+
+A shared comment bank is reusable teacher-authored source data stored at:
+
+```text
+shared/comment_banks/<bank_id>.json
+```
+
+It organizes comments with writing types, categories, subcategories,
+standards and criterion references, polarity, severity defaults, search
+metadata, and student-facing controls. Banks are not student records, do not
+grade work, and do not generate feedback by themselves.
+
+Future assignments may optionally activate banks through
+`comment_bank_ids`. Future selection should copy the chosen language into
+`review.json.comments` with `source: "comment_bank"` so the student review is
+a stable snapshot rather than a live reference. The complete version `1`
+shape and validation rules are defined in
+[`comment_bank_contract.md`](comment_bank_contract.md). Runtime validation,
+assignment activation, and selection are not implemented.
 
 ## Assignment
 
