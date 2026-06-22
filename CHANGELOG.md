@@ -10,6 +10,12 @@ planning and do not by themselves represent releases.
 
 ### Changed
 
+- Defined the v0.7 canonical `review.json` contract, separating
+  teacher-entered notes, tags, criterion scores, selected comments, and
+  `review_state` from the `submission.json` evidence manifest.
+- Reconciled older `tags.json`, `scores.json`, and `feedback.md` design
+  language: the first two are historical concepts, while feedback and summary
+  files are derived exports from the canonical review record.
 - Documented the v0.6 reviewable-evidence workflow, including retained source
   scans, routed evidence, student submission manifests, local evidence opening,
   student submission opening, status listing, and lightweight review-state
@@ -27,6 +33,9 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a synthetic submission review record demonstrating notes, positive and
+  developing tags, a criterion score, selected reusable feedback language,
+  evidence references, and timezone-aware timestamps.
 - Added a synthetic v0.6 reviewable-evidence smoke test covering routed
   evidence, submission assembly, manifest validation, status listing, mocked
   submission opening, review-state updates, and non-destructive behavior.

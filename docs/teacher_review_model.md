@@ -6,7 +6,7 @@ Quillan's review model is teacher-controlled. Quillan preserves student
 writing, organizes teacher-review artifacts, and reduces clerical friction,
 but it does not replace the teacher's professional judgment.
 
-The model keeps source evidence, teacher-review artifacts, and derived reports
+The model keeps source evidence, teacher-review artifacts, and derived exports
 distinct. Software may validate records, organize observations, format
 teacher-approved language, and summarize confirmed records. It must not
 present an unconfirmed software judgment as a teacher evaluation or encourage
@@ -28,8 +28,9 @@ identify and preserve it:
 * `submission.json`
 
 The writing is the student's work. The metadata records its identity,
-provenance, capture time, lifecycle status, and version. Source evidence does
-not contain teacher tags, scores, feedback, or reports.
+provenance, capture time, evidence-management state, and version. Source
+evidence does not contain teacher notes, tags, scores, selected comments,
+feedback exports, or reports.
 
 Keeping source evidence separate allows a teacher to compare later review
 artifacts with the writing that was actually submitted.
@@ -40,25 +41,30 @@ Teacher-review artifacts are records created by the teacher or confirmed
 through teacher review:
 
 * `requirements.json`
-* `tags.json`
-* `scores.json`
+* `review.json`
+
+`review.json` is the canonical active v0.7 record for teacher-entered notes,
+tags, criterion scores, and teacher-selected comments. It is adjacent to and
+references `submission.json`, but remains separate so teacher judgment does
+not alter the student's original work. `requirements.json` remains a
+separate, reserved structural-check support artifact.
+
+Earlier designs named separate `tags.json` and `scores.json` files. Those are
+historical concepts, not alternate active v0.7 records. Their content belongs
+in `review.json`.
+
+## Derived Exports and Reports
+
+Derived outputs are generated from teacher-reviewed records:
+
 * `feedback.md`
-
-These records describe structural checks, observations, decisions, and
-communication associated with a submission. They remain connected to, but
-separate from, the source evidence so teacher judgment does not alter the
-student's original work.
-
-## Derived Reports
-
-Derived reports are aggregations generated from teacher-reviewed records:
-
 * `reports/standards_summary.csv`
 * `reports/class_summary.csv`
 
-Reports are not independent evidence. They summarize existing
-teacher-confirmed observations and decisions and should remain traceable to
-the records from which they were derived.
+`feedback.md` is a possible student-readable export. CSV reports are
+aggregations. These outputs are not independent evidence or substitutes for
+`review.json`; they should remain traceable to the teacher-confirmed records
+from which they were derived.
 
 ## Tag Philosophy
 
@@ -146,8 +152,9 @@ Feedback is student-readable teacher communication. It may draw on:
 Feedback remains teacher-controlled. Future tooling may help select
 teacher-approved language, draft text, or format a feedback file, but the
 teacher must review and confirm the communication before it is treated as a
-teacher-review artifact. Quillan must not present authoritative AI-generated
-feedback.
+teacher export. Selected reusable or custom comments are stored in
+`review.json`; a rendered `feedback.md` remains a derived artifact. Quillan
+must not present authoritative AI-generated feedback.
 
 ## Report Philosophy
 
@@ -169,6 +176,10 @@ reviewing the underlying records.
 [`data_contracts.md`](data_contracts.md) defines the fields and formats of
 individual Quillan records. This document defines the review philosophy and
 the conceptual relationships among those records.
+
+[`review_record_contract.md`](review_record_contract.md) defines the canonical
+v0.7 `review.json` shape and its identity, state, timestamp, path, reference,
+and mutation rules.
 
 [`workspace_lifecycle.md`](workspace_lifecycle.md) defines where records live
 in the shared PDS workspace and how active records relate over time. It does

@@ -1,0 +1,82 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "submission_review",
+  "class_id": "english12_p3_synthetic",
+  "assignment_id": "essay_01_synthetic",
+  "student_id": "00107",
+  "submission_manifest_path": "classes/english12_p3_synthetic/assignments/essay_01_synthetic/submissions/00107/submission.json",
+  "review_state": "in_progress",
+  "notes": [
+    {
+      "note_id": "note_0001",
+      "text": "The essay has a clear central claim but needs stronger evidence explanation.",
+      "created_at": "2026-06-22T13:30:00-04:00",
+      "updated_at": "2026-06-22T13:30:00-04:00",
+      "module_details": {}
+    }
+  ],
+  "tags": [
+    {
+      "tag_id": "tag_0001",
+      "standard_code": "W.AW.11-12.1",
+      "comment_id": "clear_claim",
+      "label": "Clear central claim",
+      "polarity": "positive",
+      "page_number": 1,
+      "evidence_id": "evidence_001",
+      "location": {
+        "type": "paragraph",
+        "value": 1
+      },
+      "created_at": "2026-06-22T13:32:00-04:00",
+      "module_details": {}
+    },
+    {
+      "tag_id": "tag_0002",
+      "standard_code": "W.AW.11-12.1",
+      "comment_id": "evidence_needs_explanation",
+      "label": "Evidence needs more explanation",
+      "polarity": "developing",
+      "severity": 2,
+      "teacher_note": "The quotation is relevant, but the analysis does not explain how it supports the claim.",
+      "page_number": 1,
+      "evidence_id": "evidence_001",
+      "location": {
+        "type": "paragraph",
+        "value": 2
+      },
+      "created_at": "2026-06-22T13:35:00-04:00",
+      "module_details": {}
+    }
+  ],
+  "scores": [
+    {
+      "score_id": "score_0001",
+      "criterion_id": "evidence",
+      "label": "Evidence",
+      "score": 3,
+      "max_score": 4,
+      "scale": "4_point",
+      "teacher_note": "Evidence is relevant but unevenly explained.",
+      "updated_at": "2026-06-22T13:40:00-04:00",
+      "module_details": {}
+    }
+  ],
+  "comments": [
+    {
+      "comment_record_id": "comment_0001",
+      "comment_id": "evidence_needs_explanation",
+      "standard_code": "W.AW.11-12.1",
+      "label": "Evidence needs more explanation",
+      "text": "The evidence is relevant, but the explanation needs to show more clearly how it supports the claim.",
+      "source": "standards_profile",
+      "include_in_feedback": true,
+      "created_at": "2026-06-22T13:42:00-04:00",
+      "module_details": {}
+    }
+  ],
+  "created_at": "2026-06-22T13:25:00-04:00",
+  "updated_at": "2026-06-22T13:42:00-04:00",
+  "module_details": {}
+}
