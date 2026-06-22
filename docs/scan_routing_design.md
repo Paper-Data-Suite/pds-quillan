@@ -403,8 +403,10 @@ Inactive historical preservation and end-of-cycle archiving belong to future
    for teacher review.
 7. **Submission assembly and linking.** The first page-oriented submission
    manifest contract, loader, validator, path helpers, safe writer, and focused
-   assembly API are implemented. Evidence discovery, completeness workflows,
-   merging, and rescan selection remain future work.
+   assembly API are implemented. Assignment-level filename discovery and direct
+   assembly are implemented through `quillan assemble-submissions`, including
+   optional expected-page completeness reporting. Manifest merging, retained
+   provenance reconstruction, and rescan selection remain future work.
 8. **Teacher review integration.** Present assembled evidence to the teacher
    and allow teacher-controlled lifecycle changes without automated judgment.
 

@@ -26,6 +26,9 @@ Quillan currently supports:
   excluded evidence semantics, retained-source provenance, canonical paths,
   validation, and overwrite protection without choosing among ambiguous
   evidence;
+- assignment-level discovery and assembly of already-routed response evidence
+  through `quillan assemble-submissions`, with existing manifests skipped by
+  default and explicit full regeneration through `--overwrite`;
 - printable writing-response PDF generation with student, class, assignment,
   and page identity;
 - QR codes containing canonical PDS1 Quillan response payloads on printable
@@ -77,8 +80,7 @@ particular, Quillan does not currently provide:
 - QR extraction from scanned PDFs or images;
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
-- automatic discovery of routed evidence from scan folders or merging new
-  evidence into existing teacher review state;
+- merging newly routed evidence into existing teacher review state;
 - assignment creation workflows;
 - implemented requirements-checking, tagging, scoring, feedback, or
   production reporting workflows;
@@ -94,8 +96,7 @@ the shared `pds-core` active scan contract: canonical retained sources belong
 in `scans/source/YYYY-MM-DD/`, canonical routing review records belong in
 `scans/review/`, and assignment-level `scans/` contains routed evidence rather
 than canonical source retention. QR extraction, PDF splitting, OCR, and
-scan-folder discovery and review-state updates remain outside the direct
-command and assembly API.
+review-state updates remain outside the direct routing and assembly commands.
 
 ## Current Non-Goals
 
@@ -303,8 +304,22 @@ safely preserved for review; exit code `1` means it could not be handled
 safely.
 
 This direct developer/teacher primitive requires already-decoded payload text.
-It does not extract QR codes, split PDFs, run OCR, assemble submissions, score,
-tag, generate feedback, or create reports.
+It does not extract QR codes, split PDFs, run OCR, score, tag, generate
+feedback, or create reports.
+
+Assemble all student manifests discoverable from routed filenames in an
+assignment's `scans/` directory:
+
+```powershell
+quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
+```
+
+Discovery recognizes routed PDF and image filenames such as
+`response_00107_pg_003.pdf` and
+`response_00107_pg_003__dup_001.png`. It does not inspect evidence file
+contents or reconstruct retained-source provenance. Existing manifests are
+skipped by default; `--overwrite` fully regenerates them without preserving
+prior review state or teacher selections.
 
 The current command surface is:
 
@@ -314,13 +329,13 @@ quillan --help
 quillan validate-standards <standards-profile.json>
 quillan validate-assignment <assignment.json>
 quillan route-scan <source-file> --payload "<PDS1|...>"
+quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
 quillan workspace show
 quillan menu
 ```
 
 Legacy text-oriented submission metadata validation and printable response
-generation currently use Python APIs rather than dedicated CLI commands. The
-version `1` reviewable-evidence manifest is documented but not implemented.
+generation currently use Python APIs rather than dedicated CLI commands.
 
 ## Quality Checks
 

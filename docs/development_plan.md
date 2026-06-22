@@ -198,9 +198,11 @@ provenance, workspace-relative paths, and timezone-aware timestamps. Assembly
 preserves explicit candidate, replacement, and excluded roles plus damaged,
 needs-rescan, and excluded states without choosing among ambiguous evidence.
 Only a single ordinary active item with no explicit role is selected
-automatically. Assembly does not discover scan folders, merge manifests, or
-preserve prior teacher review state during overwrite; teacher selection and
-review-state updates remain future workflows.
+automatically. Assignment-level filename discovery and assembly from existing
+routed evidence is implemented through `quillan assemble-submissions`.
+Assembly does not inspect evidence contents, reconstruct retained-source
+provenance, merge manifests, or preserve prior teacher review state during
+overwrite; teacher selection and review-state updates remain future workflows.
 
 Target milestone:
 
@@ -223,9 +225,9 @@ The direct
 `quillan route-scan <source-file> --payload "<PDS1|...>"` command is
 implemented for one selected source and an already-decoded payload. It
 orchestrates the existing parser, planner, evidence filer, and review adapters.
-QR extraction, PDF splitting, OCR, menu integration, batch routing, and
-automatic evidence discovery remain unimplemented. Submission assembly is
-available as a focused Python API and is not part of `route-scan`.
+QR extraction, PDF splitting, OCR, menu integration, and batch routing remain
+unimplemented. Assignment submission assembly is available through a focused
+Python API and `quillan assemble-submissions`; it is not part of `route-scan`.
 
 ### `submissions.py`
 
