@@ -33,6 +33,12 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added `quillan add-note` and a focused quick-note API for appending
+  timestamped, teacher-entered notes to a student's canonical `review.json`.
+  The workflow requires a valid matching `submission.json`, creates a missing
+  review record in `in_progress`, advances only `not_started` records, preserves
+  later review states and all existing review sections, and never mutates the
+  submission manifest or student evidence.
 - Added Quillan-owned version `1` review-record infrastructure with strict
   loading and validation for identities, canonical manifest references,
   review states, timestamps, notes, tags, locations, scores, comments, and

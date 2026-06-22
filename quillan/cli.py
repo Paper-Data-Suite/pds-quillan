@@ -41,6 +41,11 @@ from quillan.routing_review import (
     preserve_route_failure_for_review,
     preserve_routing_failure_for_review,
 )
+from quillan.review_notes import (
+    AddedReviewNote,
+    ReviewNoteError,
+    add_review_note,
+)
 from quillan.standards import StandardsProfileError, load_standards_profile
 from quillan.submission_status import (
     AssignmentSubmissionStatus,
@@ -107,6 +112,14 @@ def main(argv: list[str] | None = None) -> int:
             args.assignment_id,
             args.student_id,
             args.state,
+        )
+
+    if args.command == "add-note":
+        return _handle_add_note(
+            args.class_id,
+            args.assignment_id,
+            args.student_id,
+            args.text,
         )
 
     if args.command == "workspace" and args.workspace_command == "show":
@@ -270,6 +283,24 @@ def _build_parser() -> argparse.ArgumentParser:
         help=(
             "Review state: unreviewed, in_progress, needs_rescan, or reviewed."
         ),
+    )
+
+    add_note_parser = subparsers.add_parser(
+        "add-note",
+        help="Add a teacher note to one student review record.",
+        description=(
+            "Append one teacher-entered note to the canonical review.json for "
+            "a student submission. Creates review.json when the adjacent "
+            "submission.json exists and validates."
+        ),
+    )
+    add_note_parser.add_argument("class_id", help="Class identifier.")
+    add_note_parser.add_argument("assignment_id", help="Assignment identifier.")
+    add_note_parser.add_argument("student_id", help="Student identifier.")
+    add_note_parser.add_argument(
+        "--text",
+        required=True,
+        help="Non-empty teacher note text.",
     )
 
     workspace_parser = subparsers.add_parser(
@@ -544,6 +575,41 @@ def _print_updated_submission_review_state(
     print(f"Previous state: {updated.previous_state}")
     print(f"New state: {updated.new_state}")
     print(f"Manifest: {updated.manifest_relative_path}")
+
+
+def _handle_add_note(
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    text: str,
+) -> int:
+    """Append one teacher note to a canonical review record."""
+    try:
+        workspace_root = resolve_workspace_root()
+        added = add_review_note(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            text,
+        )
+    except (WorkspaceRootError, ReviewNoteError) as error:
+        print(f"Error: could not add teacher note: {error}")
+        return 1
+
+    _print_added_review_note(added)
+    return 0
+
+
+def _print_added_review_note(added: AddedReviewNote) -> None:
+    """Print a concise teacher-facing note summary."""
+    print("Added teacher note:")
+    print(f"Class: {added.class_id}")
+    print(f"Assignment: {added.assignment_id}")
+    print(f"Student: {added.student_id}")
+    print(f"Note: {added.note_id}")
+    print(f"Review state: {added.review_state}")
+    print(f"Review record: {added.review_record_relative_path}")
 
 
 def _print_assignment_submission_status(

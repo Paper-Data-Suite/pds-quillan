@@ -130,8 +130,10 @@ The supported teacher/developer sequence is:
 6. `list-submissions` reports assignment status without writing files.
 7. `open-submission` opens the selected evidence for a specific student.
 8. The teacher reads and evaluates the evidence in the local system viewer.
-9. `set-review-state` records lightweight review progress when the teacher
-   chooses.
+9. `add-note` appends a teacher-entered observation to the student's canonical
+   `review.json`.
+10. `set-review-state` records lightweight submission-manifest progress when
+    the teacher chooses.
 
 Opening evidence and updating review state are separate teacher-controlled
 actions. Opening a file never marks a submission reviewed.
@@ -144,6 +146,7 @@ quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 quillan open-evidence <workspace-relative-evidence-path>
 quillan open-submission <class_id> <assignment_id> <student_id>
+quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 ```
 
@@ -160,6 +163,10 @@ quillan set-review-state <class_id> <assignment_id> <student_id> <state>
   low-level helper; it does not determine which student submission to review.
 - `open-submission` opens one student's selected evidence and requires exactly
   one selected evidence item; it does not update review metadata.
+- `add-note` appends teacher-entered text to `review.json`, creating that
+  record only when the adjacent `submission.json` exists, validates, and
+  matches the requested student submission. It does not mutate evidence or
+  the submission manifest.
 - `set-review-state` updates only the manifest's `submission_state` and
   `updated_at`; it does not inspect evidence or make a review decision.
 
@@ -167,10 +174,12 @@ Allowed review states are `unreviewed`, `in_progress`, `needs_rescan`, and
 `reviewed`. The review-state update is metadata-only and occurs only when the
 teacher explicitly requests it.
 
-Quillan v0.6 does not perform OCR, handwriting recognition, PDF text
+Quillan does not perform OCR, handwriting recognition, PDF text
 extraction, AI scoring, AI feedback, AI suggestions, automatic grading,
 automatic review-state updates, automatic evidence selection among duplicates,
-rubric scoring, tagging, comment entry, feedback export, or report generation.
+rubric scoring, structured tagging, reusable comment selection, feedback
+export, or report generation. Quick notes are freeform teacher-entered records;
+they do not score, tag, or generate feedback by themselves.
 The teacher remains responsible for reading and evaluating student work.
 
 ## Current Non-Goals
@@ -382,6 +391,19 @@ Allowed states are `unreviewed`, `in_progress`, `needs_rescan`, and `reviewed`.
 The command changes only `submission_state` and `updated_at` in the validated
 manifest. Opening a submission does not update its state. This command does
 not open or inspect evidence, score, tag, evaluate, run OCR, or generate
+feedback.
+
+Append a quick teacher note to one student's canonical review record:
+
+```powershell
+quillan add-note <class_id> <assignment_id> <student_id> --text "Strong claim, but evidence explanation needs work."
+```
+
+Notes are stored in `review.json` with stable local IDs and timezone-aware
+timestamps. If `review.json` does not exist, Quillan creates it only after the
+adjacent `submission.json` validates and matches the requested class,
+assignment, and student. Adding a note never mutates `submission.json`, routed
+evidence, or retained source scans, and it does not score, tag, or generate
 feedback.
 
 Validate a standards profile:

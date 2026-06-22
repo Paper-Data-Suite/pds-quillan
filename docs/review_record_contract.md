@@ -450,6 +450,28 @@ level:
 No command may silently discard teacher-entered records. Editing or deleting
 append-only records requires a future, explicit contract and workflow.
 
+## Quick Teacher Notes
+
+The direct quick-note command is:
+
+```powershell
+quillan add-note <class_id> <assignment_id> <student_id> --text "..."
+```
+
+It appends one teacher-entered note to the canonical `review.json`. A missing
+review record is created only after the adjacent canonical `submission.json`
+loads, validates, and matches the requested identity. New records begin in
+`in_progress`; an existing `not_started` record advances to `in_progress`, while
+`in_progress`, `ready_for_export`, and `exported` are preserved.
+
+Quick notes receive sequential local IDs such as `note_0001`, trim surrounding
+whitespace from non-empty teacher text, and use one timezone-aware timestamp
+for the note's initial `created_at` and `updated_at`. The operation preserves
+existing notes, tags, scores, comments, module details, and top-level
+`created_at`, validates the complete proposed record before an atomic write,
+and does not mutate the submission manifest, routed evidence, or retained
+source scans.
+
 ## Derived Artifacts and Historical Names
 
 `review.json` is the canonical active v0.7 teacher-review record for notes,
