@@ -327,7 +327,9 @@ record reflects the latest explicit teacher input.
 ## Comments
 
 `comments` contains teacher-selected reusable language or teacher-entered
-custom language intended for possible feedback export.
+custom language intended for possible feedback export. Reusable source
+comments may come from a standards profile or from a shared comment bank
+defined by [`comment_bank_contract.md`](comment_bank_contract.md).
 
 Each comment contains:
 
@@ -375,6 +377,14 @@ Comments are teacher-selected or teacher-entered; they are not generated from
 student writing or supplied as AI judgments. Comments are append-only for the
 MVP. Editing, deletion, and toggling export inclusion are reserved for future
 explicit workflows, which must not silently erase other comment records.
+
+For a future shared-bank selection, `source` must be `"comment_bank"`.
+`label` and `text` must be copied into this record rather than resolved as a
+live display reference. The selected record is a submission-specific
+snapshot, so later edits to the shared bank cannot silently alter an existing
+review or export. The current strict version `1` comment record does not
+contain `bank_id`; first-class bank provenance requires an explicit later
+review-contract change rather than an undeclared field.
 
 ## Timestamp Policy
 

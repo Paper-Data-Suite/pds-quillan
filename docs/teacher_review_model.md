@@ -155,7 +155,7 @@ Feedback is student-readable teacher communication. It may draw on:
 * teacher notes;
 * score records;
 * requirements checks; and
-* standards profile comments.
+* teacher-approved standards profile or shared comment bank comments.
 
 Feedback remains teacher-controlled. Future tooling may help select
 teacher-approved language, draft text, or format a feedback file, but the
@@ -163,6 +163,15 @@ teacher must review and confirm the communication before it is treated as a
 teacher export. Selected reusable or custom comments are stored in
 `review.json`; a rendered `feedback.md` remains a derived artifact. Quillan
 must not present authoritative AI-generated feedback.
+
+Shared comment banks are reusable teacher-authored source data stored at
+`shared/comment_banks/<bank_id>.json`. They are not student records and do
+not grade, evaluate, or generate feedback by themselves. A future selection
+workflow should copy a comment's teacher-approved language into
+`review.json.comments` as a snapshot with `source: "comment_bank"`. This
+prevents later bank edits from silently changing an existing student review.
+The source contract and future assignment-activation design are defined in
+[`comment_bank_contract.md`](comment_bank_contract.md).
 
 ## Report Philosophy
 
@@ -188,6 +197,9 @@ the conceptual relationships among those records.
 [`review_record_contract.md`](review_record_contract.md) defines the canonical
 v0.7 `review.json` shape and its identity, state, timestamp, path, reference,
 and mutation rules.
+
+[`comment_bank_contract.md`](comment_bank_contract.md) defines reusable shared
+comment source data and its boundary from selected review comments.
 
 [`workspace_lifecycle.md`](workspace_lifecycle.md) defines where records live
 in the shared PDS workspace and how active records relate over time. It does

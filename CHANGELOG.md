@@ -33,6 +33,13 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Defined the version `1` shared reusable comment bank contract at
+  `shared/comment_banks/<bank_id>.json`, including writing-type filters,
+  categories, standards and criterion links, polarity, severity defaults,
+  search metadata, student-facing controls, future assignment activation,
+  and snapshot semantics for selected `review.json.comments`. Added a
+  synthetic multi-category example without implementing runtime loading,
+  selection, export, grading, or AI behavior.
 - Added `quillan set-score` and a focused criterion-score API for setting
   teacher-entered scores in canonical `review.json` records. New criteria
   receive stable sequential IDs; existing criteria update in place by
