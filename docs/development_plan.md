@@ -191,11 +191,12 @@ details belong under the shared record's `module_details`.
 
 The first version `1` reviewable-evidence submission manifest contract is
 documented, with loading, validation, canonical Quillan-owned path helpers,
-and safe writing for caller-provided manifests implemented. It defines page
-entries, duplicate and replacement candidates, teacher-controlled selection
-and review states, retained-source provenance, workspace-relative paths, and
-timezone-aware timestamps. Assembly from routed evidence remains
-unimplemented.
+safe writing, and new-manifest assembly from caller-provided routed evidence
+metadata implemented. It defines page entries, duplicate and replacement
+candidates, teacher-controlled selection and review states, retained-source
+provenance, workspace-relative paths, and timezone-aware timestamps. Assembly
+does not discover scan folders, merge manifests, or preserve prior teacher
+review state during overwrite.
 
 Target milestone:
 
@@ -219,7 +220,8 @@ The direct
 implemented for one selected source and an already-decoded payload. It
 orchestrates the existing parser, planner, evidence filer, and review adapters.
 QR extraction, PDF splitting, OCR, menu integration, batch routing, and
-submission assembly remain unimplemented.
+automatic evidence discovery remain unimplemented. Submission assembly is
+available as a focused Python API and is not part of `route-scan`.
 
 ### `submissions.py`
 

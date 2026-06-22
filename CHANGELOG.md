@@ -18,10 +18,13 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a focused routed-evidence assembly API for building and safely writing
+  new version `1` submission manifests. It preserves workspace-relative source
+  provenance, represents expected missing pages and ambiguous duplicates,
+  assigns deterministic evidence IDs, and refuses overwrites by default.
 - Added Quillan-owned helpers for canonical version `1` submission manifest
   paths and safe writing of caller-provided manifests, with validation,
   parent-directory creation, readable UTF-8 JSON, and overwrite protection.
-  Submission assembly remains future work.
 - Added a distinct v0.6 reviewable-evidence submission manifest loader and
   validator with page, evidence, retained-source, selection, path, timestamp,
   state, and identifier validation. The legacy text-oriented loader remains
@@ -29,7 +32,7 @@ planning and do not by themselves represent releases.
 - Documented the draft version `1` reviewable-evidence `submission.json`
   contract, including page and evidence states, duplicate and replacement
   preservation, retained-source provenance, safe relative paths, and a fully
-  synthetic three-page example. Writing and assembly remain future work.
+  synthetic three-page example.
 - Added a direct `route-scan` command for already-decoded Quillan PDS1
   payloads, including successful evidence filing, safe review preservation,
   concise workspace-relative summaries, and documented handled/failure exit
