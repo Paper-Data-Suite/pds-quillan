@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -46,6 +47,11 @@ from quillan.review_notes import (
     ReviewNoteError,
     add_review_note,
 )
+from quillan.review_scores import (
+    ReviewScoreError,
+    UpdatedReviewScore,
+    set_review_score,
+)
 from quillan.review_tags import (
     AddedReviewTag,
     ReviewTagError,
@@ -70,10 +76,18 @@ from quillan.submission_review_state import (
 APP_DESCRIPTION = "Quillan: standards-based writing evidence capture"
 
 
+class _ScoreArgumentError(Exception):
+    """Raised for handled set-score numeric argument failures."""
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the Quillan command-line interface."""
     parser = _build_parser()
-    args = parser.parse_args(argv)
+    try:
+        args = parser.parse_args(argv)
+    except _ScoreArgumentError as error:
+        print(f"Error: could not set review score: {error}")
+        return 1
 
     if args.command == "validate-standards":
         _handle_validate_standards(args.path)
@@ -142,6 +156,19 @@ def main(argv: list[str] | None = None) -> int:
             evidence_id=args.evidence_id,
             location_type=args.location_type,
             location_value=args.location_value,
+        )
+
+    if args.command == "set-score":
+        return _handle_set_score(
+            args.class_id,
+            args.assignment_id,
+            args.student_id,
+            criterion_id=args.criterion,
+            label=args.label,
+            score=args.score,
+            max_score=args.max_score,
+            scale=args.scale,
+            teacher_note=args.note,
         )
 
     if args.command == "workspace" and args.workspace_command == "show":
@@ -374,6 +401,49 @@ def _build_parser() -> argparse.ArgumentParser:
         "--location-value",
         type=_location_value_argument,
         help="Optional positive integer or non-empty location value.",
+    )
+
+    set_score_parser = subparsers.add_parser(
+        "set-score",
+        help="Set one teacher-entered criterion score in a student review record.",
+        description=(
+            "Set or update one teacher-entered criterion score in the canonical "
+            "review.json for a student submission. Creates review.json when "
+            "the adjacent submission.json exists and validates."
+        ),
+    )
+    set_score_parser.add_argument("class_id", help="Class identifier.")
+    set_score_parser.add_argument("assignment_id", help="Assignment identifier.")
+    set_score_parser.add_argument("student_id", help="Student identifier.")
+    set_score_parser.add_argument(
+        "--criterion",
+        required=True,
+        help="Non-empty criterion identifier.",
+    )
+    set_score_parser.add_argument(
+        "--label",
+        required=True,
+        help="Teacher-readable criterion label.",
+    )
+    set_score_parser.add_argument(
+        "--score",
+        required=True,
+        type=_non_negative_number_argument,
+        help="Finite criterion score greater than or equal to zero.",
+    )
+    set_score_parser.add_argument(
+        "--max-score",
+        required=True,
+        type=_positive_number_argument,
+        help="Finite maximum criterion score greater than zero.",
+    )
+    set_score_parser.add_argument(
+        "--scale",
+        help="Optional descriptive score scale.",
+    )
+    set_score_parser.add_argument(
+        "--note",
+        help="Optional teacher note for this criterion score.",
     )
 
     workspace_parser = subparsers.add_parser(
@@ -740,6 +810,58 @@ def _print_added_review_tag(added: AddedReviewTag) -> None:
     print(f"Review record: {added.review_record_relative_path}")
 
 
+def _handle_set_score(
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    criterion_id: str,
+    label: str,
+    score: int | float,
+    max_score: int | float,
+    scale: str | None,
+    teacher_note: str | None,
+) -> int:
+    """Set one teacher-entered criterion score in a review record."""
+    try:
+        workspace_root = resolve_workspace_root()
+        updated = set_review_score(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            criterion_id=criterion_id,
+            label=label,
+            score=score,
+            max_score=max_score,
+            scale=scale,
+            teacher_note=teacher_note,
+        )
+    except (WorkspaceRootError, ReviewScoreError) as error:
+        print(f"Error: could not set review score: {error}")
+        return 1
+
+    _print_updated_review_score(updated)
+    return 0
+
+
+def _print_updated_review_score(updated: UpdatedReviewScore) -> None:
+    """Print a concise teacher-facing criterion-score summary."""
+    print("Set review score:")
+    print(f"Class: {updated.class_id}")
+    print(f"Assignment: {updated.assignment_id}")
+    print(f"Student: {updated.student_id}")
+    print(f"Criterion: {updated.criterion_id}")
+    print(
+        f"Score: {_format_number(updated.score)} / "
+        f"{_format_number(updated.max_score)}"
+    )
+    print(f"Score record: {updated.score_id}")
+    print(f"Action: {'created' if updated.was_created else 'updated'}")
+    print(f"Review state: {updated.review_state}")
+    print(f"Review record: {updated.review_record_relative_path}")
+
+
 def _print_assignment_submission_status(
     result: AssignmentSubmissionStatus,
     workspace_root: Path,
@@ -999,6 +1121,44 @@ def _location_value_argument(value: str) -> int | str:
         return int(stripped)
     except ValueError:
         return stripped
+
+
+def _non_negative_number_argument(value: str) -> int | float:
+    try:
+        parsed = _finite_number_argument(value)
+    except argparse.ArgumentTypeError as error:
+        raise _ScoreArgumentError(str(error)) from error
+    if parsed < 0:
+        raise _ScoreArgumentError(
+            "must be a finite number greater than or equal to zero"
+        )
+    return parsed
+
+
+def _positive_number_argument(value: str) -> int | float:
+    try:
+        parsed = _finite_number_argument(value)
+    except argparse.ArgumentTypeError as error:
+        raise _ScoreArgumentError(str(error)) from error
+    if parsed <= 0:
+        raise _ScoreArgumentError(
+            "must be a finite number greater than zero"
+        )
+    return parsed
+
+
+def _finite_number_argument(value: str) -> int | float:
+    try:
+        parsed = float(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be a finite number") from error
+    if not math.isfinite(parsed):
+        raise argparse.ArgumentTypeError("must be a finite number")
+    return int(parsed) if parsed.is_integer() else parsed
+
+
+def _format_number(value: int | float) -> str:
+    return f"{value:g}"
 
 
 def _validate_route_scan_source_file(source_file: Path) -> bool:

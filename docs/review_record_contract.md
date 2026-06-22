@@ -302,8 +302,8 @@ Optional score fields are:
 Score field rules are:
 
 * `score_id` is unique within `scores`.
-* `criterion_id` is non-empty and unique within `scores`. When a rubric is
-  available, it should reference one rubric criterion.
+* `criterion_id` is non-empty and unique within `scores`. Schema version `1`
+  validates this field intrinsically; rubric-profile lookup is future work.
 * `label` is a non-empty, teacher-readable string.
 * `score` is a finite number greater than or equal to zero.
 * `max_score` is a finite number greater than zero.
@@ -316,11 +316,13 @@ Scores are teacher-entered or teacher-confirmed decisions. Quillan must not
 infer a score from student writing, tags, requirements, comments, or other
 records.
 
-Scores are mutable by `criterion_id` for the MVP. A later set-score workflow
+Scores are mutable by `criterion_id` for the MVP. The `set-score` workflow
 updates the matching criterion record and its `updated_at`, preserves its
 `score_id`, and updates top-level `updated_at`. It appends a new score only
-when the criterion is not already present. It must not replace the entire
-`scores` array or erase unrelated criteria.
+when the criterion is not already present. It does not replace the entire
+`scores` array or erase unrelated criteria. Omitting optional `scale` or
+`teacher_note` values removes prior values from the updated criterion so the
+record reflects the latest explicit teacher input.
 
 ## Comments
 
@@ -493,6 +495,32 @@ record validation, safe-write, preservation, and non-mutation policies as
 quick notes. Tags organize teacher judgment only; they do not calculate
 scores, prove mastery, analyze student writing, or generate feedback.
 
+## Teacher-Entered Criterion Scores
+
+The direct score command is:
+
+```powershell
+quillan set-score <class_id> <assignment_id> <student_id> --criterion evidence --label "Evidence" --score 3 --max-score 4
+```
+
+Optional `--scale` and `--note` values are descriptive teacher-entered
+metadata. A new criterion receives the next stable local ID such as
+`score_0001`. An existing criterion updates in place by `criterion_id`,
+preserves its `score_id`, and does not move or replace unrelated scores.
+
+The workflow requires a valid matching adjacent `submission.json`, creates a
+missing review record in `in_progress`, advances only `not_started` to
+`in_progress`, and preserves `ready_for_export` and `exported`. It preserves
+unrelated notes, tags, scores, comments, top-level metadata, and
+`created_at`; validates the complete proposed record before an atomic write;
+and never mutates submission manifests, routed evidence, or retained scans.
+
+Criterion IDs are validated only as non-empty local identifiers in this
+workflow. The assignment's `rubric_id` does not provide a criterion contract;
+rubric-profile loading and criterion lookup remain future work. Quillan does
+not infer criterion scores or calculate an overall, weighted, percentage,
+grade, or mastery score.
+
 ## Derived Artifacts and Historical Names
 
 `review.json` is the canonical active v0.7 teacher-review record for notes,
@@ -521,7 +549,8 @@ selected comment is stored in
 
 This contract does not implement:
 
-* `set-score` or other review commands beyond `add-note` and `add-tag`;
+* rubric-profile loading, validation, or criterion lookup;
+* overall, weighted, percentage, grade, or mastery score calculation;
 * standalone comment-bank lookup or reusable-comment management;
 * feedback, class-summary, or standards-summary export;
 * terminal-menu review workflows or review CLI commands beyond those listed;
