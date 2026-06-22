@@ -3,8 +3,8 @@
 Quillan stores structured evidence about student writing using local files.
 
 These contracts describe the expected file formats for standards profiles,
-assignments, submissions, requirements checks, tags, scores, feedback, and
-reports.
+assignments, submissions, teacher review, requirements checks, feedback
+exports, and reports.
 
 Standards profiles, assignment configurations, the legacy text-oriented
 submission metadata shape, and the reviewable-evidence submission manifest
@@ -12,9 +12,9 @@ have implemented Python validation support. New-manifest writing and assembly
 from caller-provided evidence metadata are implemented; evidence discovery,
 merging, and state-changing review workflows are not. The writing-response
 payload contract is implemented and used by printable PDF generation.
-Requirements, tagging, scoring, feedback, and reporting records remain
-contracts for teacher-controlled workflows that are not yet implemented end
-to end.
+Requirements, teacher-review records, feedback exports, and reporting records
+remain contracts for teacher-controlled workflows that are not yet
+implemented end to end.
 
 For the expected workspace layout and file lifecycle of these records, see
 [`workspace_lifecycle.md`](workspace_lifecycle.md).
@@ -22,6 +22,10 @@ For the expected workspace layout and file lifecycle of these records, see
 For the teacher-controlled relationship among evidence, review artifacts,
 scores, feedback, and reports, see
 [`teacher_review_model.md`](teacher_review_model.md).
+
+For the canonical v0.7 `review.json` schema, including notes, tags, scores,
+comments, state, paths, timestamps, and mutation policy, see
+[`review_record_contract.md`](review_record_contract.md).
 
 For the required structure and human-readable elements of a printable
 writing-response page, see
@@ -232,11 +236,11 @@ Example:
 
 ## Submission Manifest
 
-A Quillan submission manifest is a local, teacher-controlled review record for
-one student and one assignment. It connects class, assignment, and student
-identity to routed evidence, retained-source provenance, and explicit review
-state. Routed evidence alone does not establish that a submission is complete,
-reviewed, scored, tagged, or ready for feedback.
+A Quillan submission manifest is a local, teacher-controlled evidence record
+for one student and one assignment. It connects class, assignment, and student
+identity to routed evidence, retained-source provenance, and explicit
+submission-management state. Routed evidence alone does not establish that a
+submission is complete, reviewed, scored, tagged, or ready for feedback.
 
 The canonical location is:
 
@@ -255,7 +259,8 @@ unambiguous pages, leaves duplicate pages unselected, represents expected
 missing pages, and preserves complete retained-source provenance.
 The existing `quillan.submissions` loader remains responsible for an earlier
 text-oriented metadata shape. The assembly API does not discover scan-folder
-evidence, merge with an existing manifest, or update teacher review state.
+evidence, merge with an existing manifest, or update submission-management
+state.
 
 The active path is currently a Quillan-owned artifact contract rather than a
 `pds-core` route. Inactive-preservation tooling such as `pds-sunset` may later
@@ -419,9 +424,31 @@ page, and retained-source provenance is stored in
 This contract does not define or implement scoring, tagging, requirements
 checking, feedback, reports, OCR, handwriting recognition, AI suggestions, AI
 scoring, AI feedback drafting, or automatic grading. Those concerns remain
-separate from the evidence manifest and teacher-controlled review state. It
-also does not implement evidence discovery, manifest merging, file opening,
-review commands, or state updates.
+separate from the evidence manifest. Teacher-entered notes, tags, scores,
+selected comments, and their distinct `review_state` belong in the adjacent
+`review.json` defined by
+[`review_record_contract.md`](review_record_contract.md). This manifest
+contract also does not implement evidence discovery, manifest merging, file
+opening, review commands, or state updates.
+
+## Submission Review Record
+
+The canonical active v0.7 teacher-review artifact is:
+
+```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
+```
+
+It stores teacher-entered notes, tags, criterion scores, selected comments,
+and a `review_state` that is independent of the evidence manifest's
+`submission_state`. All required fields, nested record shapes, identifier and
+reference rules, controlled vocabularies, timestamp policy,
+workspace-relative path policy, and append-versus-update behavior are defined
+in [`review_record_contract.md`](review_record_contract.md).
+
+The adjacent `submission.json` remains the canonical evidence manifest.
+`review.json` references that manifest and its evidence IDs without copying
+routed evidence paths.
 
 ## Writing-Response Payload
 
@@ -507,15 +534,15 @@ Example:
 }
 ```
 
-## Tag Record
+## Tag Record (Historical Design)
 
-A tag record connects a teacher-created or teacher-confirmed observation to a
-location in the writing, a standard, and a structured comment. A tag is not an
-automatic mark, a score, or proof that a standard was met or missed. Tags can
-support review consistency and reporting, but they do not mechanically
-determine scores.
+This section preserves the earlier separate-file design for historical
+context. It is not an active v0.7 contract. Canonical tag records are items in
+the `tags` array of `review.json`, with their current shape defined in
+[`review_record_contract.md`](review_record_contract.md). Implementations must
+not create or mirror active tag data in `tags.json`.
 
-Suggested path:
+Historical suggested path (not active in v0.7):
 
 ```text
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/tags.json
@@ -581,14 +608,15 @@ Example:
 ]
 ```
 
-## Score Record
+## Score Record (Historical Design)
 
-A score record stores a teacher-entered or teacher-confirmed scoring decision.
-Scores may be informed by source evidence, rubric criteria, requirements
-checks, tags, and teacher notes, but they are not automatically generated or
-determined by those records.
+This section preserves the earlier aggregate score-file design for historical
+context. It is not an active v0.7 contract. Canonical criterion score records
+are items in the `scores` array of `review.json`. Scores remain
+teacher-entered or teacher-confirmed decisions and are never automatically
+generated or determined by tags or other records.
 
-Suggested path:
+Historical suggested path (not active in v0.7):
 
 ```text
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/scores.json
@@ -615,14 +643,19 @@ Example:
 }
 ```
 
-## Feedback File
+## Feedback File (Derived Export)
 
-A feedback file stores student-readable teacher communication. It may draw on
+A future feedback file may store exported student-readable teacher
+communication. It may draw on
 teacher-reviewed tags, notes, score records, requirements checks, and
 teacher-approved standards profile comments. Any future drafting or formatting
 support must remain teacher-reviewed and teacher-controlled.
 
-Suggested path:
+Unlike the historical `tags.json` and `scores.json` concepts, `feedback.md`
+may remain a derived export path. It is not the canonical review record and
+must not replace `review.json`.
+
+Reserved export path:
 
 ```text
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/feedback.md

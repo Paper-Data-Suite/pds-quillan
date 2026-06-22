@@ -505,6 +505,9 @@ Run the complete validation sequence, including the diff whitespace check:
 Quillan's data contracts are documented in
 [`docs/data_contracts.md`](docs/data_contracts.md).
 
+The canonical v0.7 teacher-review `review.json` contract is documented in
+[`docs/review_record_contract.md`](docs/review_record_contract.md).
+
 The printable response contract and implemented generator are described in
 [`docs/printable_response_template.md`](docs/printable_response_template.md).
 

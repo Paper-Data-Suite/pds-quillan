@@ -58,8 +58,7 @@ The expected current and reserved layout is:
               submission.json
               submission.txt
               requirements.json
-              tags.json
-              scores.json
+              review.json
               feedback.md
           reports/
             standards_summary.csv
@@ -85,8 +84,8 @@ student IDs remain strings. Menu edits are staged until explicit `SAVE`, and
 discarded edits are not written.
 
 Removing a student from this active roster does not delete or modify
-assignments, submissions, printable PDFs, scans, reports, tags, scores,
-feedback, or historical evidence.
+assignments, submissions, printable PDFs, scans, review records, reports,
+feedback exports, or historical evidence.
 
 ### `assignment.json`
 
@@ -152,7 +151,8 @@ The Quillan version `1` submission manifest for one student's routed
 evidence for one assignment. It identifies the class, assignment, and student;
 represents expected, missing, duplicate, replacement, damaged, or excluded
 pages; preserves retained-source provenance; and records teacher-controlled
-review state without containing scores, tags, or feedback.
+submission-management state without containing notes, scores, tags, selected
+comments, or feedback exports.
 
 Loading, validation, canonical path computation, safe writing, and
 new-manifest assembly from caller-provided evidence metadata are implemented
@@ -172,25 +172,27 @@ requirements. It should record whether requirements were met, partially met,
 not met, or not checked. It is a teacher-review support artifact, not a score.
 Requirements checking is not implemented by this document.
 
-### `submissions/<student_id>/tags.json`
+### `submissions/<student_id>/review.json`
 
-A future collection of teacher-review evidence tags. Each tag should connect a
-teacher observation to a location in the writing, a standard, a reusable
-comment, and a polarity. Tags organize reviewed evidence; they do not
-determine a score. Tagging is not implemented by this document.
+The canonical active v0.7 teacher-review record for one submission. It stores
+teacher-entered notes, tags, criterion scores, selected reusable or custom
+comments, and an explicit `review_state`. It references the adjacent
+`submission.json` and evidence IDs without copying routed evidence paths.
 
-### `submissions/<student_id>/scores.json`
+`review_state` is independent of `submission_state`; neither state
+automatically determines the other. The complete record contract is defined
+in [`review_record_contract.md`](review_record_contract.md). Loading, writing,
+review commands, and exports are not implemented by this document.
 
-A future teacher scoring record. Scores are teacher judgment artifacts and are
-not automatically determined by tags, requirement results, or other software
-outputs. Scoring is not implemented by this document.
+Earlier separate `tags.json` and `scores.json` designs are historical and are
+not alternate active v0.7 paths.
 
 ### `submissions/<student_id>/feedback.md`
 
-A future student-readable feedback record reflecting teacher review. It should
-remain traceable to the teacher-reviewed submission and should not be treated
-as a replacement for teacher judgment. Feedback generation is not implemented
-by this document.
+A reserved future student-readable export derived from teacher-controlled
+review data. It should remain traceable to `review.json` and must not be
+treated as an independent review record or a replacement for teacher
+judgment. Feedback export is not implemented by this document.
 
 ### `reports/`
 
@@ -233,8 +235,9 @@ identify routed artifacts and their retained-source provenance:
 
 `submission.txt` remains an optional text-oriented evidence artifact for
 workflows that use it. The manifest is part of the evidentiary record because
-it establishes identity, provenance, page state, and teacher-controlled review
-state. It does not contain the teacher's score, tags, or feedback.
+it establishes identity, provenance, page state, and teacher-controlled
+submission-management state. It does not contain the teacher's notes, score,
+tags, selected comments, or feedback export.
 
 ### Teacher-Review Artifacts
 
@@ -242,23 +245,24 @@ Teacher-review artifacts are records created by the teacher or confirmed
 through teacher review:
 
 * `requirements.json`
-* `tags.json`
-* `scores.json`
-* `feedback.md`
+* `review.json`
 
 These records support efficient review while preserving the teacher as the
 source of evaluative judgment. They should remain connected to, but separate
-from, the source evidence.
+from, the source evidence. `review.json` is the canonical active v0.7
+container for notes, tags, criterion scores, and selected comments.
 
-### Derived Reports
+### Derived Exports and Reports
 
-Derived reports aggregate teacher-reviewed records:
+Derived outputs are generated from teacher-reviewed records:
 
+* `feedback.md`
 * `reports/standards_summary.csv`
 * `reports/class_summary.csv`
 
-Reports should be reproducible from the applicable reviewed records and should
-not become the sole copy of submission evidence or teacher decisions.
+Exports and reports should be reproducible from the applicable reviewed
+records and should not become the sole copy of submission evidence or teacher
+decisions.
 
 ## Active Records vs. Historical Preservation
 
