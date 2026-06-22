@@ -41,6 +41,10 @@ from quillan.routing_review import (
     preserve_routing_failure_for_review,
 )
 from quillan.standards import StandardsProfileError, load_standards_profile
+from quillan.submission_status import (
+    AssignmentSubmissionStatus,
+    list_assignment_submission_status,
+)
 
 APP_DESCRIPTION = "Quillan: standards-based writing evidence capture"
 
@@ -67,6 +71,13 @@ def main(argv: list[str] | None = None) -> int:
             args.assignment_id,
             expected_pages=args.expected_pages,
             overwrite=args.overwrite,
+        )
+
+    if args.command == "list-submissions":
+        return _handle_list_submissions(
+            args.class_id,
+            args.assignment_id,
+            expected_pages=args.expected_pages,
         )
 
     if args.command == "workspace" and args.workspace_command == "show":
@@ -161,6 +172,25 @@ def _build_parser() -> argparse.ArgumentParser:
         help=(
             "Fully regenerate existing manifests without preserving prior "
             "review state or teacher selections."
+        ),
+    )
+
+    status_parser = subparsers.add_parser(
+        "list-submissions",
+        help="List read-only assignment submission and evidence status.",
+        description=(
+            "Load existing submission manifests and discover routed response "
+            "evidence without creating or modifying any files."
+        ),
+    )
+    status_parser.add_argument("class_id", help="Class identifier.")
+    status_parser.add_argument("assignment_id", help="Assignment identifier.")
+    status_parser.add_argument(
+        "--expected-pages",
+        type=_positive_integer_argument,
+        help=(
+            "Expected page count used only to show missing pages for students "
+            "with routed evidence but no manifest."
         ),
     )
 
@@ -326,6 +356,141 @@ def _handle_assemble_submissions(
 
     _print_assignment_submission_assembly(result, workspace_root)
     return 0
+
+
+def _handle_list_submissions(
+    class_id: str,
+    assignment_id: str,
+    *,
+    expected_pages: int | None,
+) -> int:
+    """List read-only status for one class assignment."""
+    try:
+        workspace_root = resolve_workspace_root()
+        result = list_assignment_submission_status(
+            workspace_root,
+            class_id,
+            assignment_id,
+            expected_pages=expected_pages,
+        )
+    except Exception as error:
+        print(f"Error: could not list submission status: {error}")
+        return 1
+
+    _print_assignment_submission_status(result, workspace_root)
+    return 0
+
+
+def _print_assignment_submission_status(
+    result: AssignmentSubmissionStatus,
+    workspace_root: Path,
+) -> None:
+    """Print a deterministic teacher-facing assignment status summary."""
+    submission_states = (
+        "unreviewed",
+        "in_progress",
+        "needs_rescan",
+        "reviewed",
+    )
+    page_states = ("present", "missing", "duplicate", "needs_rescan", "excluded")
+    submission_counts = {
+        state: sum(
+            status.submission_state == state
+            for status in result.student_statuses
+        )
+        for state in submission_states
+    }
+    page_counts = {
+        state: sum(
+            page.page_state == state
+            for status in result.student_statuses
+            for page in status.pages
+        )
+        for state in page_states
+    }
+    page_counts["missing"] += sum(
+        len(status.missing_pages)
+        for status in result.student_statuses
+        if status.manifest_path is None
+    )
+    unselected_count = sum(
+        len(status.unselected_present_pages)
+        for status in result.student_statuses
+    )
+
+    print(
+        f"Submission status for assignment {result.assignment_id}"
+    )
+    print()
+    print(f"Students with manifests: {len(result.students_with_manifests)}")
+    print(
+        "Students with routed evidence: "
+        f"{len(result.students_with_routed_evidence)}"
+    )
+    print(
+        f"Students needing assembly: {len(result.students_without_manifests)}"
+    )
+    print(
+        f"Unassembled routed files: {len(result.unassembled_routed_files)}"
+    )
+    print(f"Skipped routed files: {len(result.skipped_routed_files)}")
+    print()
+    print("Submission states:")
+    for state in submission_states:
+        print(f"- {state}: {submission_counts[state]}")
+    print()
+    print("Page states:")
+    for state in page_states:
+        print(f"- {state}: {page_counts[state]}")
+    print(f"- present but unselected: {unselected_count}")
+
+    if result.student_statuses:
+        print()
+        print("Students:")
+        for status in result.student_statuses:
+            if status.manifest_path is None:
+                routed_details = "routed evidence exists; no manifest"
+                if status.missing_pages:
+                    routed_details += (
+                        "; missing="
+                        f"{_format_page_numbers(status.missing_pages)}"
+                    )
+                print(f"- {status.student_id}: {routed_details}")
+                continue
+
+            counts = {
+                state: sum(page.page_state == state for page in status.pages)
+                for state in page_states
+            }
+            detail_parts = [
+                f"{state}={counts[state]}"
+                for state in page_states
+                if counts[state]
+            ]
+            if status.unselected_present_pages:
+                detail_parts.append(
+                    "present-but-unselected="
+                    f"{len(status.unselected_present_pages)}"
+                )
+            suffix = ", ".join(detail_parts) if detail_parts else "no pages"
+            print(
+                f"- {status.student_id}: {status.submission_state}; {suffix}"
+            )
+
+    if result.skipped_routed_files:
+        print()
+        print("Skipped routed files:")
+        for skipped in result.skipped_routed_files:
+            print(
+                f"- {_workspace_relative_display(skipped.path, workspace_root)}"
+                f" — {skipped.reason}"
+            )
+
+    if result.unassembled_routed_files:
+        print()
+        print("Unassembled routed files:")
+        for path in result.unassembled_routed_files:
+            print(f"- {_workspace_relative_display(path, workspace_root)}")
 
 
 def _print_assignment_submission_assembly(
