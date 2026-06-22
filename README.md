@@ -272,6 +272,18 @@ Resetting clears only the saved preference and does not delete workspace
 files. In both cases, `PDS_WORKSPACE_ROOT` still takes precedence over the
 saved preference when it is set.
 
+Open one local evidence file with the system default application:
+
+```powershell
+quillan open-evidence classes/<class_id>/assignments/<assignment_id>/scans/<file>
+```
+
+The path must be relative to and remain inside the active PDS workspace.
+Quillan validates that it identifies an existing file, then delegates the
+platform-specific opening behavior to `pds-core`. This command does not
+inspect, parse, modify, select, score, tag, review, or generate feedback from
+the evidence. Student-aware submission lookup and opening remain future work.
+
 Validate a standards profile:
 
 ```powershell

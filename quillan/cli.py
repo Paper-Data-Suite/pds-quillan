@@ -27,6 +27,7 @@ from quillan.evidence_filing import (
     RoutedEvidenceFile,
     file_routed_response_evidence,
 )
+from quillan.evidence_opening import EvidenceOpeningError, open_workspace_evidence
 from quillan.menu import launch_menu
 from quillan.route_planning import (
     DecodedResponsePage,
@@ -79,6 +80,9 @@ def main(argv: list[str] | None = None) -> int:
             args.assignment_id,
             expected_pages=args.expected_pages,
         )
+
+    if args.command == "open-evidence":
+        return _handle_open_evidence(args.evidence_path)
 
     if args.command == "workspace" and args.workspace_command == "show":
         return _handle_workspace_show()
@@ -192,6 +196,20 @@ def _build_parser() -> argparse.ArgumentParser:
             "Expected page count used only to show missing pages for students "
             "with routed evidence but no manifest."
         ),
+    )
+
+    open_evidence_parser = subparsers.add_parser(
+        "open-evidence",
+        help="Open a local evidence file from the active PDS workspace.",
+        description=(
+            "Open one workspace-relative local evidence file with the system "
+            "default application. The path must remain inside the active PDS "
+            "workspace."
+        ),
+    )
+    open_evidence_parser.add_argument(
+        "evidence_path",
+        help="Workspace-relative path to an existing local evidence file.",
     )
 
     workspace_parser = subparsers.add_parser(
@@ -378,6 +396,20 @@ def _handle_list_submissions(
         return 1
 
     _print_assignment_submission_status(result, workspace_root)
+    return 0
+
+
+def _handle_open_evidence(evidence_path: str | Path) -> int:
+    """Open one workspace-relative evidence file with the system viewer."""
+    try:
+        workspace_root = resolve_workspace_root()
+        opened = open_workspace_evidence(workspace_root, evidence_path)
+    except (WorkspaceRootError, EvidenceOpeningError) as error:
+        print(f"Error: could not open evidence file: {error}")
+        return 1
+
+    print("Opened evidence file:")
+    print(opened.evidence_relative_path)
     return 0
 
 

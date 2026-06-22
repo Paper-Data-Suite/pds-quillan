@@ -414,6 +414,10 @@ Planned work:
   without deleting candidates.
 * Add teacher-controlled evidence selection and review-state updates.
 * Preserve retained-source provenance and workspace-relative artifact paths.
+* Open individual workspace-relative evidence files safely through the shared
+  `pds-core` local opener. Implemented as a low-level helper and
+  `quillan open-evidence`; student-aware submission opening remains future
+  work.
 * Continue supporting plain-text writing evidence where applicable.
 * Count words.
 * Count paragraphs.
