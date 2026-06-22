@@ -17,6 +17,10 @@ from pds_core.workspace import (
     save_workspace_root,
 )
 
+from quillan.assignment_submission_assembly import (
+    AssignmentSubmissionAssemblyResult,
+    assemble_assignment_submissions,
+)
 from quillan.assignments import AssignmentConfigError, load_assignment_config
 from quillan.evidence_filing import (
     EvidenceFilingError,
@@ -56,6 +60,14 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "route-scan":
         return _handle_route_scan(args.source_file, args.payload)
+
+    if args.command == "assemble-submissions":
+        return _handle_assemble_submissions(
+            args.class_id,
+            args.assignment_id,
+            expected_pages=args.expected_pages,
+            overwrite=args.overwrite,
+        )
 
     if args.command == "workspace" and args.workspace_command == "show":
         return _handle_workspace_show()
@@ -124,6 +136,32 @@ def _build_parser() -> argparse.ArgumentParser:
         "--payload",
         required=True,
         help="Already-decoded canonical PDS1 payload text.",
+    )
+
+    assemble_parser = subparsers.add_parser(
+        "assemble-submissions",
+        help="Assemble assignment submission manifests from routed evidence.",
+        description=(
+            "Discover routed response evidence already filed under an "
+            "assignment's scans directory and assemble one submission manifest "
+            "per student. Existing manifests are skipped unless --overwrite is "
+            "given."
+        ),
+    )
+    assemble_parser.add_argument("class_id", help="Class identifier.")
+    assemble_parser.add_argument("assignment_id", help="Assignment identifier.")
+    assemble_parser.add_argument(
+        "--expected-pages",
+        type=_positive_integer_argument,
+        help="Expected number of response pages per student.",
+    )
+    assemble_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help=(
+            "Fully regenerate existing manifests without preserving prior "
+            "review state or teacher selections."
+        ),
     )
 
     workspace_parser = subparsers.add_parser(
@@ -263,6 +301,158 @@ def _handle_route_scan(source_file: Path, payload_text: str) -> int:
 
     _print_routed_evidence(filed_evidence)
     return 0
+
+
+def _handle_assemble_submissions(
+    class_id: str,
+    assignment_id: str,
+    *,
+    expected_pages: int | None,
+    overwrite: bool,
+) -> int:
+    """Assemble all routed evidence for one class assignment."""
+    try:
+        workspace_root = resolve_workspace_root()
+        result = assemble_assignment_submissions(
+            workspace_root,
+            class_id,
+            assignment_id,
+            expected_pages=expected_pages,
+            overwrite=overwrite,
+        )
+    except Exception as error:
+        print(f"Error: could not assemble submission manifests: {error}")
+        return 1
+
+    _print_assignment_submission_assembly(result, workspace_root)
+    return 0
+
+
+def _print_assignment_submission_assembly(
+    result: AssignmentSubmissionAssemblyResult,
+    workspace_root: Path,
+) -> None:
+    """Print a concise assignment assembly summary."""
+    missing = sum(
+        len(summary.missing_pages) for summary in result.student_summaries
+    )
+    duplicate = sum(
+        len(summary.duplicate_pages) for summary in result.student_summaries
+    )
+    needs_rescan = sum(
+        len(summary.needs_rescan_pages) for summary in result.student_summaries
+    )
+    excluded = sum(
+        len(summary.excluded_pages) for summary in result.student_summaries
+    )
+
+    print(
+        "Assembled submission manifests for assignment "
+        f"{result.assignment_id}."
+    )
+    print()
+    print(f"Students with routed evidence: {len(result.students_with_evidence)}")
+    print(f"Created manifests: {len(result.written_manifests)}")
+    print(
+        "Skipped existing manifests: "
+        f"{len(result.skipped_existing_manifests)}"
+    )
+    print(f"Skipped files: {len(result.skipped_files)}")
+    print(f"Missing pages: {missing}")
+    print(f"Duplicate pages: {duplicate}")
+    print(f"Needs-rescan pages: {needs_rescan}")
+    print(f"Excluded pages: {excluded}")
+    print("Failures: 0")
+
+    _print_path_section(
+        "Created", result.written_manifests, workspace_root
+    )
+    _print_path_section(
+        "Skipped existing",
+        result.skipped_existing_manifests,
+        workspace_root,
+    )
+    if result.skipped_files:
+        print()
+        print("Skipped files:")
+        for skipped in result.skipped_files:
+            print(
+                f"- {_workspace_relative_display(skipped.path, workspace_root)}"
+                f" — {skipped.reason}"
+            )
+
+    state_details = [
+        (
+            summary.student_id,
+            summary.missing_pages,
+            summary.duplicate_pages,
+            summary.needs_rescan_pages,
+            summary.excluded_pages,
+        )
+        for summary in result.student_summaries
+        if (
+            summary.missing_pages
+            or summary.duplicate_pages
+            or summary.needs_rescan_pages
+            or summary.excluded_pages
+        )
+    ]
+    if state_details:
+        print()
+        print("Page-state details:")
+        for student_id, missing_pages, duplicate_pages, rescan_pages, excluded_pages in (
+            state_details
+        ):
+            details = []
+            if missing_pages:
+                details.append(f"missing={_format_page_numbers(missing_pages)}")
+            if duplicate_pages:
+                details.append(
+                    f"duplicate={_format_page_numbers(duplicate_pages)}"
+                )
+            if rescan_pages:
+                details.append(
+                    f"needs-rescan={_format_page_numbers(rescan_pages)}"
+                )
+            if excluded_pages:
+                details.append(
+                    f"excluded={_format_page_numbers(excluded_pages)}"
+                )
+            print(f"- {student_id}: {', '.join(details)}")
+
+
+def _print_path_section(
+    heading: str, paths: tuple[Path, ...], workspace_root: Path
+) -> None:
+    if not paths:
+        return
+    print()
+    print(f"{heading}:")
+    for path in paths:
+        print(f"- {_workspace_relative_display(path, workspace_root)}")
+
+
+def _workspace_relative_display(path: Path, workspace_root: Path) -> str:
+    try:
+        return path.resolve(strict=False).relative_to(
+            workspace_root.resolve(strict=False)
+        ).as_posix()
+    except (OSError, ValueError):
+        return str(path)
+
+
+def _format_page_numbers(page_numbers: tuple[int, ...]) -> str:
+    return ",".join(str(page_number) for page_number in page_numbers)
+
+
+def _positive_integer_argument(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be a positive integer") from error
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
 
 
 def _validate_route_scan_source_file(source_file: Path) -> bool:

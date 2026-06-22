@@ -23,6 +23,11 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added `quillan assemble-submissions` and an assignment-level assembly API
+  that discover routed PDF/image evidence by filename convention, group it by
+  student, write canonical version `1` manifests, report malformed or
+  unrelated files plus missing and duplicate pages, skip existing manifests
+  by default, and support explicit full regeneration with `--overwrite`.
 - Added a focused routed-evidence assembly API for building and safely writing
   new version `1` submission manifests. It preserves workspace-relative source
   provenance, represents expected missing pages and ambiguous duplicates,
