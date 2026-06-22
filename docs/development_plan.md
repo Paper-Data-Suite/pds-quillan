@@ -195,8 +195,12 @@ safe writing, and new-manifest assembly from caller-provided routed evidence
 metadata implemented. It defines page entries, duplicate and replacement
 candidates, teacher-controlled selection and review states, retained-source
 provenance, workspace-relative paths, and timezone-aware timestamps. Assembly
-does not discover scan folders, merge manifests, or preserve prior teacher
-review state during overwrite.
+preserves explicit candidate, replacement, and excluded roles plus damaged,
+needs-rescan, and excluded states without choosing among ambiguous evidence.
+Only a single ordinary active item with no explicit role is selected
+automatically. Assembly does not discover scan folders, merge manifests, or
+preserve prior teacher review state during overwrite; teacher selection and
+review-state updates remain future workflows.
 
 Target milestone:
 

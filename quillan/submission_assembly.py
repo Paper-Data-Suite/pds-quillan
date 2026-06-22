@@ -26,6 +26,9 @@ _RETAINED_SOURCE_FIELDS: Final[tuple[str, ...]] = (
     "source_sha256",
     "retained_source_path",
 )
+_ALLOWED_CALLER_EVIDENCE_ROLES: Final[frozenset[str]] = frozenset(
+    {"candidate", "replacement", "excluded"}
+)
 _SHA256_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[0-9A-Fa-f]{64}$")
 
 
@@ -48,6 +51,7 @@ class RoutedSubmissionEvidence:
     created_at: datetime | str | None = None
     evidence_state: str = "active"
     module_details: dict[str, Any] | None = None
+    evidence_role: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +62,7 @@ class _NormalizedEvidence:
     duplicate_number: int | None
     created_at: str
     evidence_state: str
+    evidence_role: str | None
     module_details: dict[str, Any]
 
 
@@ -175,6 +180,18 @@ def _normalize_evidence(
             f"Invalid evidence_state {item.evidence_state!r}. "
             f"Allowed values: {allowed}."
         )
+    if (
+        item.evidence_role is not None
+        and (
+            not isinstance(item.evidence_role, str)
+            or item.evidence_role not in _ALLOWED_CALLER_EVIDENCE_ROLES
+        )
+    ):
+        allowed = ", ".join(sorted(_ALLOWED_CALLER_EVIDENCE_ROLES))
+        raise SubmissionAssemblyError(
+            f"Invalid evidence_role {item.evidence_role!r}. "
+            f"Allowed caller-provided values: {allowed}."
+        )
 
     module_details = {} if item.module_details is None else item.module_details
     _validate_json_object(module_details, "module_details")
@@ -192,6 +209,7 @@ def _normalize_evidence(
             default=manifest_created_at,
         ),
         evidence_state=item.evidence_state,
+        evidence_role=item.evidence_role,
         module_details=module_details.copy(),
     )
 
@@ -269,12 +287,14 @@ def _build_page(
             "evidence": [],
         }
 
-    unambiguous = len(items) == 1
+    auto_selected = len(items) == 1 and _can_auto_select(items[0][1])
     evidence = [
         {
             "evidence_id": evidence_id,
             "routed_evidence_path": item.routed_evidence_path,
-            "evidence_role": "selected" if unambiguous else "candidate",
+            "evidence_role": (
+                "selected" if auto_selected else _manifest_evidence_role(item)
+            ),
             "evidence_state": item.evidence_state,
             "duplicate_number": item.duplicate_number,
             "created_at": item.created_at,
@@ -283,12 +303,46 @@ def _build_page(
         }
         for evidence_id, item in items
     ]
+    if all(_is_excluded(item) for _, item in items):
+        page_state = "excluded"
+    elif len(items) > 1:
+        page_state = "duplicate"
+    elif _requires_rescan(items[0][1]):
+        page_state = "needs_rescan"
+    else:
+        page_state = "present"
+
     return {
         "page_number": page_number,
-        "page_state": "present" if unambiguous else "duplicate",
-        "selected_evidence_id": items[0][0] if unambiguous else None,
+        "page_state": page_state,
+        "selected_evidence_id": items[0][0] if auto_selected else None,
         "evidence": evidence,
     }
+
+
+def _can_auto_select(item: _NormalizedEvidence) -> bool:
+    return item.evidence_role is None and item.evidence_state == "active"
+
+
+def _manifest_evidence_role(item: _NormalizedEvidence) -> str:
+    if item.evidence_role is not None:
+        return item.evidence_role
+    if item.evidence_state == "excluded":
+        return "excluded"
+    return "candidate"
+
+
+def _is_excluded(item: _NormalizedEvidence) -> bool:
+    return (
+        item.evidence_role == "excluded" or item.evidence_state == "excluded"
+    )
+
+
+def _requires_rescan(item: _NormalizedEvidence) -> bool:
+    return (
+        item.evidence_role == "replacement"
+        or item.evidence_state in {"damaged", "needs_rescan"}
+    )
 
 
 def _evidence_sort_key(item: _NormalizedEvidence) -> tuple[Any, ...]:
@@ -300,6 +354,7 @@ def _evidence_sort_key(item: _NormalizedEvidence) -> tuple[Any, ...]:
         item.routed_evidence_path,
         item.created_at,
         item.evidence_state,
+        item.evidence_role or "",
         retained.get("retained_source_path", ""),
         retained.get("source_scan_id", ""),
         retained.get("source_filename", ""),
