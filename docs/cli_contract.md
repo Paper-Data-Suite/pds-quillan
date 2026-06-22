@@ -356,6 +356,24 @@ A future command that writes files must document its destination, overwrite
 policy, and partial-failure behavior before that behavior is treated as
 stable.
 
+## Structured Review Tags
+
+```powershell
+quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity developing
+```
+
+This direct command appends one teacher-entered tag to the canonical
+`review.json`, creating that record only when the adjacent `submission.json`
+exists, validates, and matches the requested identity. Optional flags are
+`--standard`, `--comment-id`, `--severity`, `--note`, `--page`,
+`--evidence-id`, `--location-type`, and `--location-value`.
+
+Handled workspace, record, and tag-validation failures return `1`. Success
+returns `0` and reports the class, assignment, student, tag ID, polarity,
+review state, and workspace-relative review-record path. The command never
+mutates the submission manifest, routed evidence, or retained source scans,
+and it does not score, analyze, or generate feedback.
+
 ## Output and Error Handling
 
 Human-readable command results are the current output contract. Quillan does

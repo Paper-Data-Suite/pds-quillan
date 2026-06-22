@@ -472,6 +472,27 @@ existing notes, tags, scores, comments, module details, and top-level
 and does not mutate the submission manifest, routed evidence, or retained
 source scans.
 
+## Structured Teacher Tags
+
+The direct structured-tag command is:
+
+```powershell
+quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity developing
+```
+
+It appends one teacher-entered tag to `tags`, using sequential IDs such as
+`tag_0001`. Optional references to pages and evidence IDs are validated
+against the adjacent submission manifest. Optional standard and comment
+references are validated through the assignment config and the canonical
+`shared/standards/<profile_id>.json` profile. Standards present in the profile
+are accepted even when they are outside `focus_standards`; reusable comment
+labels and polarities must match their stored profile values.
+
+The command follows the same creation, timestamp, state-transition, complete
+record validation, safe-write, preservation, and non-mutation policies as
+quick notes. Tags organize teacher judgment only; they do not calculate
+scores, prove mastery, analyze student writing, or generate feedback.
+
 ## Derived Artifacts and Historical Names
 
 `review.json` is the canonical active v0.7 teacher-review record for notes,
@@ -500,10 +521,10 @@ selected comment is stored in
 
 This contract does not implement:
 
-* `add-note`, `add-tag`, `set-score`, or other review commands;
-* comment-bank lookup or reusable-comment management;
+* `set-score` or other review commands beyond `add-note` and `add-tag`;
+* standalone comment-bank lookup or reusable-comment management;
 * feedback, class-summary, or standards-summary export;
-* CLI or terminal-menu review workflows;
+* terminal-menu review workflows or review CLI commands beyond those listed;
 * editing or deletion of append-only review artifacts;
 * AI scoring, feedback, comments, suggestions, or automated grading;
 * automatic standard detection;

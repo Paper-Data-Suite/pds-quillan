@@ -132,7 +132,9 @@ The supported teacher/developer sequence is:
 8. The teacher reads and evaluates the evidence in the local system viewer.
 9. `add-note` appends a teacher-entered observation to the student's canonical
    `review.json`.
-10. `set-review-state` records lightweight submission-manifest progress when
+10. `add-tag` appends a teacher-entered structured observation to that review
+    record.
+11. `set-review-state` records lightweight submission-manifest progress when
     the teacher chooses.
 
 Opening evidence and updating review state are separate teacher-controlled
@@ -147,6 +149,7 @@ quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 quillan open-evidence <workspace-relative-evidence-path>
 quillan open-submission <class_id> <assignment_id> <student_id>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
+quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity developing
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 ```
 
@@ -167,6 +170,10 @@ quillan set-review-state <class_id> <assignment_id> <student_id> <state>
   record only when the adjacent `submission.json` exists, validates, and
   matches the requested student submission. It does not mutate evidence or
   the submission manifest.
+- `add-tag` appends a teacher-entered structured tag to `review.json`. Tags
+  may reference a validated standard, reusable profile comment, page,
+  evidence ID, or writing location, but they do not score work, prove mastery,
+  or generate feedback.
 - `set-review-state` updates only the manifest's `submission_state` and
   `updated_at`; it does not inspect evidence or make a review decision.
 
@@ -177,9 +184,9 @@ teacher explicitly requests it.
 Quillan does not perform OCR, handwriting recognition, PDF text
 extraction, AI scoring, AI feedback, AI suggestions, automatic grading,
 automatic review-state updates, automatic evidence selection among duplicates,
-rubric scoring, structured tagging, reusable comment selection, feedback
-export, or report generation. Quick notes are freeform teacher-entered records;
-they do not score, tag, or generate feedback by themselves.
+rubric scoring, reusable comment selection into feedback, feedback export, or
+report generation. Quick notes and structured tags are teacher-entered
+records; they do not score or generate feedback by themselves.
 The teacher remains responsible for reading and evaluating student work.
 
 ## Current Non-Goals
@@ -406,6 +413,24 @@ assignment, and student. Adding a note never mutates `submission.json`, routed
 evidence, or retained source scans, and it does not score, tag, or generate
 feedback.
 
+Append a structured teacher tag:
+
+```powershell
+quillan add-tag <class_id> <assignment_id> <student_id> --label "Evidence needs more explanation" --polarity developing
+```
+
+Tags are stored in the `tags` array of the student's canonical `review.json`.
+Optional flags can reference a standard (`--standard`), profile comment
+(`--comment-id`), severity, teacher note, page, evidence ID, and controlled
+location. Standard and comment references use the assignment config and
+`shared/standards/<profile_id>.json`; standards in the profile are allowed
+even when they are not assignment focus standards. A missing review record is
+created only for a valid matching `submission.json`.
+
+Tags remain teacher-entered review artifacts. Adding one does not mutate the
+submission manifest or evidence, calculate a score, establish standard
+mastery, analyze writing, or generate feedback.
+
 Validate a standards profile:
 
 ```powershell
@@ -480,6 +505,8 @@ quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 quillan open-evidence <workspace-relative-path>
 quillan open-submission <class_id> <assignment_id> <student_id>
+quillan add-note <class_id> <assignment_id> <student_id> --text "..."
+quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity developing
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan workspace show
 quillan menu
