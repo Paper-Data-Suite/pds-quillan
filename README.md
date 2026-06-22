@@ -297,6 +297,18 @@ missing, duplicate, needs-rescan, or unselected submissions. Opening is
 read-only: it does not change review state or select, score, tag, evaluate,
 inspect, OCR, or generate feedback from evidence.
 
+Explicitly update one submission's lightweight teacher review state:
+
+```powershell
+quillan set-review-state <class_id> <assignment_id> <student_id> <state>
+```
+
+Allowed states are `unreviewed`, `in_progress`, `needs_rescan`, and `reviewed`.
+The command changes only `submission_state` and `updated_at` in the validated
+manifest. Opening a submission does not update its state. This command does
+not open or inspect evidence, score, tag, evaluate, run OCR, or generate
+feedback.
+
 Validate a standards profile:
 
 ```powershell
@@ -371,6 +383,7 @@ quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 quillan open-evidence <workspace-relative-path>
 quillan open-submission <class_id> <assignment_id> <student_id>
+quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan workspace show
 quillan menu
 ```
