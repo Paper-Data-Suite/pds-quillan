@@ -10,6 +10,10 @@ planning and do not by themselves represent releases.
 
 ### Changed
 
+- Documented the v0.6 reviewable-evidence workflow, including retained source
+  scans, routed evidence, student submission manifests, local evidence opening,
+  student submission opening, status listing, and lightweight review-state
+  updates.
 - Refined routed-evidence assembly so callers can preserve candidate,
   replacement, and excluded roles plus active, damaged, needs-rescan, and
   excluded states. Only a single ordinary active item with no explicit role is

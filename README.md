@@ -54,7 +54,11 @@ Quillan currently supports:
   when available, without copying review artifacts;
 - a direct `route-scan` command for already-decoded payloads that orchestrates
   the existing parser, route planner, evidence filer, and failure review
-  helpers; and
+  helpers;
+- read-only assignment submission status listing, workspace-safe local evidence
+  opening, and student-aware selected-evidence opening; and
+- explicit, teacher-controlled lightweight submission review-state updates
+  that change only review metadata;
 - synthetic examples and fixtures for safe testing and documentation.
 
 Printable response generation is exposed through the teacher-facing menu and
@@ -97,6 +101,77 @@ in `scans/source/YYYY-MM-DD/`, canonical routing review records belong in
 `scans/review/`, and assignment-level `scans/` contains routed evidence rather
 than canonical source retention. QR extraction, PDF splitting, OCR, and
 review-state updates remain outside the direct routing and assembly commands.
+
+## Reviewable Evidence Workflow
+
+Quillan's v0.6 workflow separates retained source scans, routed evidence, and
+student submission manifests.
+
+A **retained source scan** is the canonical active source copy Quillan keeps in
+the source scan store during active scan intake. **Routed evidence** is a file
+copied or derived from retained source material and filed under an assignment's
+`scans/` directory for student/assignment review. A **student submission
+manifest** is the structured record connecting one student and assignment to
+pages, page states, one or more evidence records, selected evidence, and
+provenance.
+
+A routed evidence file by itself is not a complete student submission. Routing
+does not mean that work is complete, reviewed, scored, or ready for feedback.
+
+The supported teacher/developer sequence is:
+
+1. The teacher obtains or selects a local source file.
+2. Quillan receives an already-decoded Quillan PDS1 payload.
+3. `route-scan` retains the source scan and files routed assignment evidence.
+4. If routing cannot safely complete, Quillan preserves failure metadata under
+   `scans/review/` rather than silently discarding the failure.
+5. `assemble-submissions` creates missing student submission manifests from
+   routed evidence.
+6. `list-submissions` reports assignment status without writing files.
+7. `open-submission` opens the selected evidence for a specific student.
+8. The teacher reads and evaluates the evidence in the local system viewer.
+9. `set-review-state` records lightweight review progress when the teacher
+   chooses.
+
+Opening evidence and updating review state are separate teacher-controlled
+actions. Opening a file never marks a submission reviewed.
+
+The commands in this workflow are:
+
+```powershell
+quillan route-scan <source-file> --payload "<PDS1 payload>"
+quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
+quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
+quillan open-evidence <workspace-relative-evidence-path>
+quillan open-submission <class_id> <assignment_id> <student_id>
+quillan set-review-state <class_id> <assignment_id> <student_id> <state>
+```
+
+- `route-scan` retains one selected source scan and files routed evidence from
+  an already-decoded payload; it does not decode QR codes or assemble a
+  submission.
+- `assemble-submissions` creates missing manifests from routed filenames, or
+  fully regenerates them with `--overwrite`; it does not inspect file contents
+  or choose among ambiguous duplicate evidence.
+- `list-submissions` gives a read-only overview of manifests, routed evidence,
+  missing, duplicate, needs-rescan, and excluded pages, present-but-unselected
+  evidence, and students needing assembly; it does not create or modify files.
+- `open-evidence` opens one workspace-relative local evidence file as a
+  low-level helper; it does not determine which student submission to review.
+- `open-submission` opens one student's selected evidence and requires exactly
+  one selected evidence item; it does not update review metadata.
+- `set-review-state` updates only the manifest's `submission_state` and
+  `updated_at`; it does not inspect evidence or make a review decision.
+
+Allowed review states are `unreviewed`, `in_progress`, `needs_rescan`, and
+`reviewed`. The review-state update is metadata-only and occurs only when the
+teacher explicitly requests it.
+
+Quillan v0.6 does not perform OCR, handwriting recognition, PDF text
+extraction, AI scoring, AI feedback, AI suggestions, automatic grading,
+automatic review-state updates, automatic evidence selection among duplicates,
+rubric scoring, tagging, comment entry, feedback export, or report generation.
+The teacher remains responsible for reading and evaluating student work.
 
 ## Current Non-Goals
 
