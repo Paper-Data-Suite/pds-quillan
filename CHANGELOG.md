@@ -33,6 +33,11 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added Quillan-owned version `1` review-record infrastructure with strict
+  loading and validation for identities, canonical manifest references,
+  review states, timestamps, notes, tags, locations, scores, comments, and
+  extension objects, plus canonical `review.json` path helpers and atomic
+  UTF-8 writing with explicit overwrite protection.
 - Added a synthetic submission review record demonstrating notes, positive and
   developing tags, a criterion score, selected reusable feedback language,
   evidence references, and timezone-aware timestamps.
