@@ -56,9 +56,9 @@ Quillan currently supports:
 - an internal routing failure preservation API that writes shared `pds-core`
   failure metadata under `scans/review/`, including retained-source provenance
   when available, without copying review artifacts;
-- a direct `route-scan` command for already-decoded payloads that orchestrates
-  the existing parser, route planner, evidence filer, and failure review
-  helpers;
+- a direct `route-scan` command for already-decoded payloads or one supported
+  QR-bearing image that orchestrates the existing parser, QR decoder, payload
+  validator, route planner, evidence filer, and failure review helpers;
 - read-only assignment submission status listing, workspace-safe local evidence
   opening, and student-aware selected-evidence opening; and
 - explicit, teacher-controlled lightweight submission review-state updates
@@ -181,6 +181,7 @@ The commands in this workflow are:
 
 ```powershell
 quillan route-scan <source-file> --payload "<PDS1 payload>"
+quillan route-scan <source-image> --decode-qr
 quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 quillan open-evidence <workspace-relative-evidence-path>
@@ -196,8 +197,8 @@ quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 ```
 
 - `route-scan` retains one selected source scan and files routed evidence from
-  an already-decoded payload; it does not decode QR codes or assemble a
-  submission.
+  either an already-decoded payload or one supported QR-bearing image; it does
+  not convert PDFs, batch-ingest folders, or assemble a submission.
 - `assemble-submissions` creates missing manifests from routed filenames, or
   fully regenerates them with `--overwrite`; it does not inspect file contents
   or choose among ambiguous duplicate evidence.
@@ -563,16 +564,25 @@ Route one selected scan using an already-decoded Quillan PDS1 payload:
 quillan route-scan <source-file> --payload "PDS1|module=quillan|class=<class_id>|aid=<assignment_id>|sid=<student_id>|page=<page>|doc=response"
 ```
 
+Or route one supported local image by decoding its Quillan response-page QR
+payload:
+
+```powershell
+quillan route-scan <source-image> --decode-qr
+```
+
 Successful routing retains the selected source under
 `scans/source/YYYY-MM-DD/` and files response evidence under the assignment
-`scans/` directory. Payload, planning, and filing failures are preserved under
-`scans/review/` when possible. Exit code `0` means the input was routed or
-safely preserved for review; exit code `1` means it could not be handled
-safely.
+`scans/` directory. Decode, payload, planning, and filing failures are
+preserved under `scans/review/` when possible. Exit code `0` means the input
+was routed or safely preserved for review; exit code `1` means it could not be
+handled safely.
 
-This direct developer/teacher primitive requires already-decoded payload text.
-It does not extract QR codes, split PDFs, run OCR, score, tag, generate
-feedback, or create reports.
+This direct developer/teacher primitive is single-scan only. QR-aware intake
+supports `.png`, `.jpg`, `.jpeg`, `.tif`, and `.tiff` images. It does not
+convert PDFs, batch-ingest folders, split multi-page scans, run OCR, score,
+tag, generate feedback, assemble submissions, create review records, or create
+reports.
 
 Assemble all student manifests discoverable from routed filenames in an
 assignment's `scans/` directory:
@@ -609,6 +619,7 @@ quillan --help
 quillan validate-standards <standards-profile.json>
 quillan validate-assignment <assignment.json>
 quillan route-scan <source-file> --payload "<PDS1|...>"
+quillan route-scan <source-image> --decode-qr
 quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 quillan open-evidence <workspace-relative-path>
