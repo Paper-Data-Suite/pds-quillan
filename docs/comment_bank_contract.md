@@ -303,23 +303,24 @@ The bank and the review record serve different purposes:
   with one student submission.
 
 A future selection operation should copy the selected `label` and `text`,
-set `source` to `"comment_bank"`, preserve the source `comment_id`, apply the
-teacher's `include_in_feedback` choice, and create a new local
-`comment_record_id` and timestamp. Copying display language is essential:
-later edits to a shared bank must not silently change an existing student's
-review or exported feedback.
+set `source` to `"comment_bank"`, preserve the source `bank_id` and
+`comment_id`, apply the teacher's `include_in_feedback` choice, and create a
+new local `comment_record_id` and timestamp. A `comment_id` is unique only
+within its bank, so `bank_id + comment_id` identifies the reusable source
+comment. Copying display language is essential: provenance is not a live
+reference, and later edits to a shared bank must not silently change an
+existing student's review or exported feedback.
 
 Source `standard_codes` and `criterion_ids` are filtering and alignment
 metadata. A future workflow may copy the specifically applicable
 `standard_code`, but it must not treat either reference as a score or mastery
 decision.
 
-The current strict version `1` `review.json.comments` shape supports
-`comment_id`, optional `standard_code`, snapshotted `label` and `text`,
-`source`, `include_in_feedback`, `created_at`, and `module_details`. It does
-not yet contain `bank_id`. Adding first-class bank provenance to selected
-comments requires an explicit later review-contract change or version; this
-contract does not silently extend `review.json`.
+The strict version `1` `review.json.comments` shape requires `bank_id` and
+`comment_id` for `source: "comment_bank"`, along with snapshotted `label` and
+`text`, `include_in_feedback`, `created_at`, and `module_details`. The
+`bank_id` records provenance at `shared/comment_banks/<bank_id>.json`; review
+validation does not load that file or perform selection.
 
 Standards-profile comments remain a separate reusable source with
 `source: "standards_profile"`. Teacher-entered language uses

@@ -73,7 +73,7 @@ REQUIRED_COMMENT_FIELDS: Final[frozenset[str]] = frozenset(
     }
 )
 OPTIONAL_COMMENT_FIELDS: Final[frozenset[str]] = frozenset(
-    {"comment_id", "standard_code"}
+    {"bank_id", "comment_id", "standard_code"}
 )
 
 ALLOWED_REVIEW_STATES: Final[frozenset[str]] = frozenset(
@@ -346,15 +346,52 @@ def _validate_comments(value: Any) -> None:
         for field in ("comment_id", "standard_code"):
             if field in item:
                 _validate_non_empty_string(item[field], f"{context}.{field}")
-        _validate_allowed_value(
+        if "bank_id" in item:
+            _validate_identifier(item["bank_id"], f"{context}.bank_id")
+        source = _validate_allowed_value(
             item["source"], f"{context}.source", ALLOWED_COMMENT_SOURCES
         )
+        _validate_comment_provenance(item, source, context)
         if not isinstance(item["include_in_feedback"], bool):
             raise ReviewRecordError(
                 f"Field '{context}.include_in_feedback' must be a boolean."
             )
         _validate_timestamp(item["created_at"], f"{context}.created_at")
         _validate_json_object(item["module_details"], f"{context}.module_details")
+
+
+def _validate_comment_provenance(
+    item: dict[str, Any], source: str, context: str
+) -> None:
+    if source == "comment_bank":
+        for field in ("bank_id", "comment_id"):
+            if field not in item:
+                raise ReviewRecordError(
+                    f"Field '{context}.{field}' is required when "
+                    f"'{context}.source' is 'comment_bank'."
+                )
+        return
+
+    if source == "standards_profile":
+        if "bank_id" in item:
+            raise ReviewRecordError(
+                f"Field '{context}.bank_id' must be absent when "
+                f"'{context}.source' is 'standards_profile'."
+            )
+        for field in ("comment_id", "standard_code"):
+            if field not in item:
+                raise ReviewRecordError(
+                    f"Field '{context}.{field}' is required when "
+                    f"'{context}.source' is 'standards_profile'."
+                )
+        return
+
+    for field in ("bank_id", "comment_id", "standard_code"):
+        if field in item:
+            raise ReviewRecordError(
+                f"Field '{context}.{field}' must be absent when "
+                f"'{context}.source' is 'custom'."
+            )
 
 
 def _validate_workspace_relative_path(value: Any, field: str) -> None:

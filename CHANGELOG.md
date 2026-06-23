@@ -10,6 +10,12 @@ planning and do not by themselves represent releases.
 
 ### Changed
 
+- Added explicit shared-bank provenance to selected version `1` review
+  comments. `comment_bank` snapshots now require a valid `bank_id` and
+  `comment_id`; standards-profile snapshots require `standard_code` and
+  `comment_id`; and custom comments reject source identifiers. Bank provenance
+  does not perform lookup or turn snapshotted label and text into live
+  references.
 - Defined the v0.7 canonical `review.json` contract, separating
   teacher-entered notes, tags, criterion scores, selected comments, and
   `review_state` from the `submission.json` evidence manifest.

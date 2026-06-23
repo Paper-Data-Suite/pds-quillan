@@ -96,6 +96,30 @@ def _comment(comment_record_id: str = "comment_0001") -> dict[str, Any]:
     }
 
 
+def _comment_bank_comment() -> dict[str, Any]:
+    comment = _comment()
+    comment.update(
+        {
+            "source": "comment_bank",
+            "bank_id": "general_writing",
+            "comment_id": "evidence_needs_explanation",
+        }
+    )
+    return comment
+
+
+def _standards_profile_comment() -> dict[str, Any]:
+    comment = _comment()
+    comment.update(
+        {
+            "source": "standards_profile",
+            "comment_id": "evidence_needs_explanation",
+            "standard_code": "W.AW.11-12.1",
+        }
+    )
+    return comment
+
+
 def _write_json(path: Path, value: Any) -> Path:
     path.write_text(json.dumps(value), encoding="utf-8")
     return path
@@ -399,6 +423,73 @@ def test_invalid_comment_source_is_rejected() -> None:
     record["comments"] = [comment]
 
     with pytest.raises(ReviewRecordError, match="source"):
+        validate_review_record(record)
+
+
+@pytest.mark.parametrize(
+    "comment_factory",
+    [_comment_bank_comment, _standards_profile_comment, _comment],
+)
+def test_valid_comment_source_provenance_is_accepted(
+    comment_factory: Any,
+) -> None:
+    record = _record()
+    record["comments"] = [comment_factory()]
+
+    validate_review_record(record)
+
+
+@pytest.mark.parametrize("field", ["bank_id", "comment_id"])
+def test_comment_bank_requires_source_identifiers(field: str) -> None:
+    record = _record()
+    comment = _comment_bank_comment()
+    del comment[field]
+    record["comments"] = [comment]
+
+    with pytest.raises(ReviewRecordError, match=field):
+        validate_review_record(record)
+
+
+@pytest.mark.parametrize("bank_id", ["", " ", "General Writing", "../unsafe"])
+def test_comment_bank_rejects_invalid_bank_id(bank_id: str) -> None:
+    record = _record()
+    comment = _comment_bank_comment()
+    comment["bank_id"] = bank_id
+    record["comments"] = [comment]
+
+    with pytest.raises(ReviewRecordError, match="bank_id"):
+        validate_review_record(record)
+
+
+@pytest.mark.parametrize("field", ["comment_id", "standard_code"])
+def test_standards_profile_requires_source_identifiers(field: str) -> None:
+    record = _record()
+    comment = _standards_profile_comment()
+    del comment[field]
+    record["comments"] = [comment]
+
+    with pytest.raises(ReviewRecordError, match=field):
+        validate_review_record(record)
+
+
+def test_standards_profile_rejects_bank_id() -> None:
+    record = _record()
+    comment = _standards_profile_comment()
+    comment["bank_id"] = "general_writing"
+    record["comments"] = [comment]
+
+    with pytest.raises(ReviewRecordError, match="bank_id"):
+        validate_review_record(record)
+
+
+@pytest.mark.parametrize("field", ["bank_id", "comment_id", "standard_code"])
+def test_custom_comment_rejects_source_identifiers(field: str) -> None:
+    record = _record()
+    comment = _comment()
+    comment[field] = "general_writing"
+    record["comments"] = [comment]
+
+    with pytest.raises(ReviewRecordError, match=field):
         validate_review_record(record)
 
 
