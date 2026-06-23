@@ -29,6 +29,11 @@ from quillan.evidence_filing import (
     file_routed_response_evidence,
 )
 from quillan.evidence_opening import EvidenceOpeningError, open_workspace_evidence
+from quillan.feedback_export import (
+    ExportedFeedback,
+    FeedbackExportError,
+    export_student_feedback,
+)
 from quillan.menu import launch_menu
 from quillan.route_planning import (
     DecodedResponsePage,
@@ -185,6 +190,14 @@ def main(argv: list[str] | None = None) -> int:
             max_score=args.max_score,
             scale=args.scale,
             teacher_note=args.note,
+        )
+
+    if args.command == "export-feedback":
+        return _handle_export_feedback(
+            args.class_id,
+            args.assignment_id,
+            args.student_id,
+            overwrite=args.overwrite,
         )
 
     if args.command == "workspace" and args.workspace_command == "show":
@@ -501,6 +514,28 @@ def _build_parser() -> argparse.ArgumentParser:
     set_score_parser.add_argument(
         "--note",
         help="Optional teacher note for this criterion score.",
+    )
+
+    export_feedback_parser = subparsers.add_parser(
+        "export-feedback",
+        help="Export student-facing feedback from one review record.",
+        description=(
+            "Generate a student-facing Markdown feedback file from the "
+            "canonical review.json for one student submission. The export "
+            "includes selected feedback comments and teacher-entered criterion "
+            "scores. It does not mutate the review record, submission manifest, "
+            "evidence files, or source comment banks."
+        ),
+    )
+    export_feedback_parser.add_argument("class_id", help="Class identifier.")
+    export_feedback_parser.add_argument(
+        "assignment_id", help="Assignment identifier."
+    )
+    export_feedback_parser.add_argument("student_id", help="Student identifier.")
+    export_feedback_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace an existing exports/feedback.md file.",
     )
 
     workspace_parser = subparsers.add_parser(
@@ -962,6 +997,43 @@ def _print_updated_review_score(updated: UpdatedReviewScore) -> None:
     print(f"Action: {'created' if updated.was_created else 'updated'}")
     print(f"Review state: {updated.review_state}")
     print(f"Review record: {updated.review_record_relative_path}")
+
+
+def _handle_export_feedback(
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    overwrite: bool,
+) -> int:
+    """Export one student-facing Markdown feedback artifact."""
+    try:
+        workspace_root = resolve_workspace_root()
+        exported = export_student_feedback(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            overwrite=overwrite,
+        )
+    except (WorkspaceRootError, FeedbackExportError) as error:
+        print(f"Error: could not export student feedback: {error}")
+        return 1
+
+    _print_exported_feedback(exported)
+    return 0
+
+
+def _print_exported_feedback(exported: ExportedFeedback) -> None:
+    """Print a concise student-feedback export summary."""
+    print("Exported student feedback:")
+    print(f"Class: {exported.class_id}")
+    print(f"Assignment: {exported.assignment_id}")
+    print(f"Student: {exported.student_id}")
+    print(f"Included comments: {exported.included_comment_count}")
+    print(f"Scores: {exported.score_count}")
+    print(f"Overwrote existing: {_format_bool(exported.overwrote_existing)}")
+    print(f"Feedback file: {exported.feedback_relative_path}")
 
 
 def _print_assignment_submission_status(

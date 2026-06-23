@@ -558,13 +558,25 @@ Those names are historical design background, not alternate active v0.7
 contracts. Implementations must not split or mirror canonical review data
 across those files.
 
-`feedback.md`, `reports/class_summary.csv`, and
+`submissions/<student_id>/exports/feedback.md`,
+`reports/class_summary.csv`, and
 `reports/standards_summary.csv` are derived export artifacts. They may be
-generated from teacher-controlled review records in later issues, but they do
+generated from teacher-controlled review records, but they do
 not replace `review.json` and are not authoritative independent evidence.
 `requirements.json` remains a separate reserved structural-check record
 because requirements checks are not teacher evaluation artifacts in this
 schema.
+
+The Markdown feedback export requires valid matching canonical
+`submission.json` and `review.json` records and uses only snapshotted review
+content. It includes criterion scores and comments whose
+`include_in_feedback` value is `true`; it excludes notes, tags, score
+`teacher_note` values, excluded comments, and source/provenance fields. Source
+comment banks are neither required nor read.
+
+Export does not mutate the review record, update timestamps, or advance
+`review_state` to `exported`. It writes only the derived feedback file and
+refuses to replace an existing file unless overwrite is explicitly requested.
 
 ## Synthetic Example
 
@@ -579,7 +591,7 @@ This contract does not implement:
 * rubric-profile loading, validation, or criterion lookup;
 * overall, weighted, percentage, grade, or mastery score calculation;
 * standalone comment-bank lookup or reusable-comment management;
-* feedback, class-summary, or standards-summary export;
+* class-summary or standards-summary export;
 * terminal-menu review workflows or review CLI commands beyond those listed;
 * editing or deletion of append-only review artifacts;
 * AI scoring, feedback, comments, suggestions, or automated grading;

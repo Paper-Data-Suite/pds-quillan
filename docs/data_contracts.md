@@ -673,41 +673,27 @@ Example:
 
 ## Feedback File (Derived Export)
 
-A future feedback file may store exported student-readable teacher
-communication. It may draw on
-teacher-reviewed tags, notes, score records, requirements checks, and
-teacher-approved standards profile comments. Any future drafting or formatting
-support must remain teacher-reviewed and teacher-controlled.
+The feedback file stores student-readable teacher communication derived from a
+valid matching canonical `review.json`. Unlike the historical `tags.json` and
+`scores.json` concepts, it is not a canonical review record and must not
+replace `review.json`.
 
-Unlike the historical `tags.json` and `scores.json` concepts, `feedback.md`
-may remain a derived export path. It is not the canonical review record and
-must not replace `review.json`.
-
-Reserved export path:
+Canonical export path:
 
 ```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/feedback.md
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
-Example:
+The Markdown contains class, assignment, student, generation timestamp,
+teacher-entered criterion scores, and snapshotted text for comments marked
+`include_in_feedback: true`. Score and included-comment order follow
+`review.json`.
 
-```markdown
-# Feedback — Villainy Final Essay
-
-## Strengths
-
-- Your essay has a clear central claim.
-- You chose relevant evidence from the texts and films.
-
-## Areas for Growth
-
-- Some evidence needs more explanation.
-- Several comparisons would be stronger if you explained the moral significance of each example.
-
-## Teacher Summary
-
-The essay has a clear central claim and relevant evidence, but several body paragraphs need stronger explanation.
-```
+The export excludes private notes, score `teacher_note` values, structured
+tags, excluded comments, and comment source/provenance metadata. It does not
+read source comment banks, mutate canonical records or evidence, change
+`review_state`, or mark a review exported. Replacing an existing feedback file
+requires explicit overwrite approval.
 
 ## Standards Summary Report
 

@@ -1,0 +1,101 @@
+"""CLI tests for student-facing feedback export."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+import quillan.cli
+from quillan.cli import main
+from quillan.feedback_export import feedback_export_path
+from tests.test_review_scores import _write_manifest, _write_review
+from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID, _review
+
+
+def test_cli_exports_feedback_and_prints_summary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_manifest(tmp_path)
+    review = _review()
+    review["comments"].append(
+        {
+            "comment_record_id": "comment_0002",
+            "label": "Private",
+            "text": "Excluded comment.",
+            "source": "custom",
+            "include_in_feedback": False,
+            "created_at": review["created_at"],
+            "module_details": {},
+        }
+    )
+    review_path = _write_review(tmp_path, review)
+    review_before = review_path.read_bytes()
+    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+
+    assert main(
+        ["export-feedback", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]
+    ) == 0
+
+    output = capsys.readouterr().out
+    assert "Exported student feedback:" in output
+    assert f"Class: {CLASS_ID}" in output
+    assert f"Assignment: {ASSIGNMENT_ID}" in output
+    assert f"Student: {STUDENT_ID}" in output
+    assert "Included comments: 1" in output
+    assert "Scores: 1" in output
+    assert "Overwrote existing: no" in output
+    relative = (
+        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+        f"{STUDENT_ID}/exports/feedback.md"
+    )
+    assert f"Feedback file: {relative}" in output
+    content = feedback_export_path(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    ).read_text(encoding="utf-8")
+    assert "Existing selected language." in content
+    assert "Excluded comment." not in content
+    assert "- Evidence: 3 / 4" in content
+    assert review_path.read_bytes() == review_before
+
+
+def test_cli_missing_review_returns_one(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_manifest(tmp_path)
+    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    assert main(
+        ["export-feedback", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]
+    ) == 1
+    assert "Review record does not exist" in capsys.readouterr().out
+
+
+def test_cli_overwrite_flag_controls_replacement(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_manifest(tmp_path)
+    review_path = _write_review(tmp_path, _review())
+    review_before = review_path.read_bytes()
+    output_path = feedback_export_path(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    )
+    output_path.parent.mkdir(parents=True)
+    output_path.write_text("manual edit", encoding="utf-8")
+    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    command = ["export-feedback", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]
+
+    assert main(command) == 1
+    assert output_path.read_text(encoding="utf-8") == "manual edit"
+    assert main([*command, "--overwrite"]) == 0
+
+    output = capsys.readouterr().out
+    assert "Use --overwrite" in output
+    assert "Overwrote existing: yes" in output
+    assert output_path.read_text(encoding="utf-8").startswith("# Feedback")
+    assert review_path.read_bytes() == review_before
