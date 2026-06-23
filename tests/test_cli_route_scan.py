@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
+from pds_core.scan_failure_metadata import validate_routing_failure_metadata
 
 from quillan.cli import main
 import quillan.cli_app.handlers.routing as cli_routing
@@ -85,6 +86,7 @@ def _review_metadata(workspace: Path) -> dict[str, object]:
     assert len(records) == 1
     loaded = json.loads(records[0].read_text(encoding="utf-8"))
     assert isinstance(loaded, dict)
+    validate_routing_failure_metadata(loaded)
     return loaded
 
 
@@ -162,6 +164,10 @@ def test_route_scan_preserves_route_planning_failure(
     assert result == 0
     assert metadata["failure_category"] == "class_unknown"
     assert metadata["detected_payload"] == payload
+    module_details = metadata["module_details"]
+    assert isinstance(module_details, dict)
+    assert module_details["failure_origin"] == "route_planning"
+    assert module_details["reason"] == "class_unknown"
     assert not list(workspace.rglob("response_*.pdf"))
     assert not list(workspace.rglob("submissions"))
     assert "preserved for review" in output
@@ -184,6 +190,8 @@ def test_route_scan_preserves_payload_parse_failure(
     assert result == 0
     assert metadata["failure_category"] == "payload_invalid"
     assert metadata["detected_payload"] == malformed_payload
+    assert metadata["module"] is None
+    assert metadata["payload_page_number"] is None
     assert metadata["class_id"] is None
     assert metadata["assignment_id"] is None
     assert metadata["student_id"] is None
@@ -280,9 +288,14 @@ def test_route_scan_preserves_evidence_filing_error(
     metadata = _review_metadata(workspace)
     assert result == 0
     assert metadata["failure_category"] == "evidence_write_failed"
+    assert metadata["module"] == "quillan"
     assert metadata["class_id"] == CLASS_ID
     assert metadata["assignment_id"] == ASSIGNMENT_ID
     assert metadata["student_id"] == STUDENT_ID
+    assert metadata["payload_page_number"] == 2
+    module_details = metadata["module_details"]
+    assert isinstance(module_details, dict)
+    assert module_details["failure_origin"] == "evidence_filing"
     assert "could not be filed; preserved for review" in output
 
 

@@ -20,6 +20,8 @@ from quillan.evidence_filing import (
     EvidenceFilingError,
     RetainedSourceScan,
 )
+from quillan.payload_validation import ResponsePayloadValidationFailure
+from quillan.qr_decode import QrImageDecodeResult
 from quillan.route_planning import RouteFailure, RoutePlan
 
 _FAILURE_ID_DIGEST_LENGTH = 12
@@ -160,6 +162,9 @@ def preserve_route_failure_for_review(
     if not isinstance(route_failure, RouteFailure):
         raise RoutingReviewError("route_failure must be a RouteFailure.")
 
+    module_details: dict[str, object] = {"failure_origin": "route_planning"}
+    module_details.update(route_failure.module_details)
+
     return preserve_routing_failure_for_review(
         workspace_root,
         failure_category=route_failure.failure_category,
@@ -184,7 +189,73 @@ def preserve_route_failure_for_review(
         class_id=route_failure.class_id,
         assignment_id=route_failure.assignment_id,
         student_id=route_failure.student_id,
-        module_details=route_failure.module_details,
+        module_details=module_details,
+        created_at=created_at,
+    )
+
+
+def preserve_decode_failure_for_review(
+    workspace_root: str | Path,
+    *,
+    decode_result: QrImageDecodeResult,
+    source_filename: str,
+    created_at: datetime | None = None,
+) -> RoutingReviewRecord:
+    """Preserve source/QR decode failure context without invented identity."""
+    if not isinstance(decode_result, QrImageDecodeResult):
+        raise RoutingReviewError("decode_result must be a QrImageDecodeResult.")
+
+    category = decode_result.failure_category or "processing_error"
+    message = decode_result.failure_message or "QR decoding failed."
+    return preserve_routing_failure_for_review(
+        workspace_root,
+        failure_category=category,
+        failure_message=message,
+        source_filename=source_filename,
+        module=None,
+        detected_payload=None,
+        payload_page_number=None,
+        class_id=None,
+        assignment_id=None,
+        student_id=None,
+        module_details={
+            "failure_origin": "qr_decode",
+            "decode_attempt": decode_result.successful_attempt,
+        },
+        created_at=created_at,
+    )
+
+
+def preserve_payload_validation_failure_for_review(
+    workspace_root: str | Path,
+    *,
+    failure: ResponsePayloadValidationFailure,
+    source_filename: str,
+    created_at: datetime | None = None,
+) -> RoutingReviewRecord:
+    """Preserve decoded-payload validation failure context for review."""
+    if not isinstance(failure, ResponsePayloadValidationFailure):
+        raise RoutingReviewError(
+            "failure must be a ResponsePayloadValidationFailure."
+        )
+
+    module_details: dict[str, object] = {
+        "failure_origin": "payload_validation",
+    }
+    module_details.update(failure.module_details)
+
+    return preserve_routing_failure_for_review(
+        workspace_root,
+        failure_category=failure.failure_category,
+        failure_message=failure.failure_message,
+        source_filename=source_filename,
+        module=failure.module,
+        detected_payload=failure.raw_payload,
+        payload_page_number=failure.page_number,
+        class_id=failure.class_id,
+        assignment_id=failure.assignment_id,
+        student_id=failure.student_id,
+        module_details=module_details,
         created_at=created_at,
     )
 

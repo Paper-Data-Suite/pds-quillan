@@ -34,7 +34,9 @@ from quillan.route_planning import (
 from quillan.routing_review import (
     RoutingReviewRecord,
     RoutingReviewError,
+    preserve_decode_failure_for_review,
     preserve_evidence_filing_error_for_review,
+    preserve_payload_validation_failure_for_review,
     preserve_route_failure_for_review,
     preserve_routing_failure_for_review,
 )
@@ -234,7 +236,7 @@ def _preserve_payload_parse_failure(
             failure_category="payload_invalid",
             failure_message=str(error),
             source_filename=source_file.name,
-            module="quillan",
+            module=None,
             detected_payload=payload_text,
             module_details={
                 "failure_origin": "payload_parse",
@@ -270,20 +272,11 @@ def _preserve_decode_failure(
     created_at: datetime,
 ) -> int:
     """Preserve source/QR decode failure context for teacher review."""
-    category = decode_result.failure_category or "processing_error"
-    message = decode_result.failure_message or "QR decoding failed."
     try:
-        review_record = preserve_routing_failure_for_review(
+        review_record = preserve_decode_failure_for_review(
             workspace_root,
-            failure_category=category,
-            failure_message=message,
+            decode_result=decode_result,
             source_filename=source_file.name,
-            module=None,
-            detected_payload=None,
-            module_details={
-                "failure_origin": "qr_decode",
-                "decode_attempt": decode_result.successful_attempt,
-            },
             created_at=created_at,
         )
     except RoutingReviewError as review_error:
@@ -300,8 +293,8 @@ def _preserve_decode_failure(
         return 1
 
     _print_preserved_intake_failure(
-        reason=message,
-        category=category,
+        reason=review_record.failure_message,
+        category=review_record.failure_category,
         review_record=review_record,
     )
     return 0
@@ -315,23 +308,11 @@ def _preserve_payload_validation_failure(
     created_at: datetime,
 ) -> int:
     """Preserve decoded-payload validation failure context for review."""
-    module_details: dict[str, object] = {
-        "failure_origin": "payload_validation",
-    }
-    module_details.update(failure.module_details)
     try:
-        review_record = preserve_routing_failure_for_review(
+        review_record = preserve_payload_validation_failure_for_review(
             workspace_root,
-            failure_category=failure.failure_category,
-            failure_message=failure.failure_message,
             source_filename=source_file.name,
-            module=failure.module,
-            detected_payload=failure.raw_payload,
-            payload_page_number=failure.page_number,
-            class_id=failure.class_id,
-            assignment_id=failure.assignment_id,
-            student_id=failure.student_id,
-            module_details=module_details,
+            failure=failure,
             created_at=created_at,
         )
     except RoutingReviewError as review_error:
