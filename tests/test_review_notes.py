@@ -10,8 +10,8 @@ from typing import Any
 
 import pytest
 
-import quillan.cli
 from quillan.cli import main
+import quillan.cli_app.handlers.review as cli_review
 from quillan.review_notes import (
     AddedReviewNote,
     ReviewNoteError,
@@ -475,7 +475,7 @@ def test_cli_success_creates_note_and_prints_teacher_context(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write_manifest(tmp_path)
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         [
@@ -516,7 +516,7 @@ def test_cli_handled_failure_returns_one(
 ) -> None:
     if prepare_submission:
         _write_manifest(tmp_path)
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
     text = " " if prepare_submission else "A note."
 
     result = main(
@@ -541,7 +541,7 @@ def test_cli_append_preserves_existing_sections(
     _write_manifest(tmp_path)
     original = _review("ready_for_export")
     path = _write_review(tmp_path, copy.deepcopy(original))
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         [

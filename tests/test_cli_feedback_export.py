@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-import quillan.cli
 from quillan.cli import main
+import quillan.cli_app.handlers.exports as cli_exports
 from quillan.feedback_export import feedback_export_path
 from tests.test_review_scores import _write_manifest, _write_review
 from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID, _review
@@ -33,7 +33,7 @@ def test_cli_exports_feedback_and_prints_summary(
     )
     review_path = _write_review(tmp_path, review)
     review_before = review_path.read_bytes()
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         ["export-feedback", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]
@@ -67,7 +67,7 @@ def test_cli_missing_review_returns_one(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write_manifest(tmp_path)
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
     assert main(
         ["export-feedback", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]
     ) == 1
@@ -87,7 +87,7 @@ def test_cli_overwrite_flag_controls_replacement(
     )
     output_path.parent.mkdir(parents=True)
     output_path.write_text("manual edit", encoding="utf-8")
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
     command = ["export-feedback", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]
 
     assert main(command) == 1

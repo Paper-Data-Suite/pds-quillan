@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-import quillan.cli
 from quillan.cli import main
+import quillan.cli_app.handlers.review as cli_review
 from quillan.review_record_paths import review_record_path
 from tests.test_review_scores import _write_manifest, _write_review
 from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID, _review
@@ -21,7 +21,7 @@ def test_cli_success_creates_score_and_prints_context(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write_manifest(tmp_path)
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         [
@@ -86,7 +86,7 @@ def test_cli_update_replaces_matching_criterion_and_preserves_other_data(
         }
     )
     path = _write_review(tmp_path, copy.deepcopy(original))
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         [
@@ -142,7 +142,7 @@ def test_cli_invalid_score_returns_one_without_mutation(
     _write_manifest(tmp_path)
     path = _write_review(tmp_path, _review())
     original = path.read_bytes()
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         [
@@ -174,7 +174,7 @@ def test_cli_blank_text_and_missing_submission_return_one(
     label: str,
 ) -> None:
     _write_manifest(tmp_path)
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         [
@@ -200,7 +200,7 @@ def test_cli_missing_submission_returns_one(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         [

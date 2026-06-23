@@ -10,6 +10,9 @@ planning and do not by themselves represent releases.
 
 ### Changed
 
+- Split the CLI implementation into smaller internal parser, argument,
+  output, and command-handler modules. Public command behavior and the
+  `quillan.cli:main` console-script entrypoint remain unchanged.
 - Added explicit shared-bank provenance to selected version `1` review
   comments. `comment_bank` snapshots now require a valid `bank_id` and
   `comment_id`; standards-profile snapshots require `standard_code` and

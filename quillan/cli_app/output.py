@@ -1,0 +1,449 @@
+"""Stable user-facing output formatting for CLI command results."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from pds_core.workspace import WorkspaceStatus
+
+from quillan.assignment_submission_assembly import (
+    AssignmentSubmissionAssemblyResult,
+)
+from quillan.class_summary_export import ExportedClassSummary
+from quillan.evidence_filing import EvidenceFilingError, RoutedEvidenceFile
+from quillan.feedback_export import ExportedFeedback
+from quillan.review_comments import AddedReviewComment
+from quillan.review_notes import AddedReviewNote
+from quillan.review_scores import UpdatedReviewScore
+from quillan.review_tags import AddedReviewTag
+from quillan.route_planning import RouteFailure
+from quillan.routing_review import RoutingReviewRecord
+from quillan.standards_summary_export import ExportedStandardsSummary
+from quillan.submission_review_opening import OpenedSubmissionReview
+from quillan.submission_review_state import UpdatedSubmissionReviewState
+from quillan.submission_status import AssignmentSubmissionStatus
+
+
+def print_opened_submission_review(opened: OpenedSubmissionReview) -> None:
+    """Print concise teacher-facing context for opened submission evidence."""
+    print("Opened submission evidence for review:")
+    print(f"Class: {opened.class_id}")
+    print(f"Assignment: {opened.assignment_id}")
+    print(f"Student: {opened.student_id}")
+    print(f"Submission state: {opened.submission_state}")
+    print(f"Page: {opened.page_number}")
+    print(f"Page state: {opened.page_state}")
+    print(f"Evidence: {opened.evidence_id}")
+    print(f"Path: {opened.evidence_relative_path}")
+    print(f"Manifest: {opened.manifest_relative_path}")
+
+
+def print_updated_submission_review_state(
+    updated: UpdatedSubmissionReviewState,
+) -> None:
+    """Print a concise teacher-facing review-state update."""
+    print("Updated submission review state:")
+    print(f"Class: {updated.class_id}")
+    print(f"Assignment: {updated.assignment_id}")
+    print(f"Student: {updated.student_id}")
+    print(f"Previous state: {updated.previous_state}")
+    print(f"New state: {updated.new_state}")
+    print(f"Manifest: {updated.manifest_relative_path}")
+
+
+def print_added_review_note(added: AddedReviewNote) -> None:
+    """Print a concise teacher-facing note summary."""
+    print("Added teacher note:")
+    print(f"Class: {added.class_id}")
+    print(f"Assignment: {added.assignment_id}")
+    print(f"Student: {added.student_id}")
+    print(f"Note: {added.note_id}")
+    print(f"Review state: {added.review_state}")
+    print(f"Review record: {added.review_record_relative_path}")
+
+
+def print_added_review_tag(added: AddedReviewTag) -> None:
+    """Print a concise teacher-facing tag summary."""
+    print("Added review tag:")
+    print(f"Class: {added.class_id}")
+    print(f"Assignment: {added.assignment_id}")
+    print(f"Student: {added.student_id}")
+    print(f"Tag: {added.tag_id}")
+    print(f"Polarity: {added.polarity}")
+    print(f"Review state: {added.review_state}")
+    print(f"Review record: {added.review_record_relative_path}")
+
+
+def print_added_review_comment(added: AddedReviewComment) -> None:
+    """Print a concise teacher-facing selected-comment summary."""
+    print("Selected review comment:")
+    print(f"Class: {added.class_id}")
+    print(f"Assignment: {added.assignment_id}")
+    print(f"Student: {added.student_id}")
+    print(f"Bank: {added.bank_id}")
+    print(f"Source comment: {added.comment_id}")
+    print(f"Review comment: {added.comment_record_id}")
+    print(f"Include in feedback: {format_bool(added.include_in_feedback)}")
+    print(f"Review state: {added.review_state}")
+    print(f"Review record: {added.review_record_relative_path}")
+
+
+def print_updated_review_score(updated: UpdatedReviewScore) -> None:
+    """Print a concise teacher-facing criterion-score summary."""
+    print("Set review score:")
+    print(f"Class: {updated.class_id}")
+    print(f"Assignment: {updated.assignment_id}")
+    print(f"Student: {updated.student_id}")
+    print(f"Criterion: {updated.criterion_id}")
+    print(
+        f"Score: {format_number(updated.score)} / "
+        f"{format_number(updated.max_score)}"
+    )
+    print(f"Score record: {updated.score_id}")
+    print(f"Action: {'created' if updated.was_created else 'updated'}")
+    print(f"Review state: {updated.review_state}")
+    print(f"Review record: {updated.review_record_relative_path}")
+
+
+def print_exported_feedback(exported: ExportedFeedback) -> None:
+    """Print a concise student-feedback export summary."""
+    print("Exported student feedback:")
+    print(f"Class: {exported.class_id}")
+    print(f"Assignment: {exported.assignment_id}")
+    print(f"Student: {exported.student_id}")
+    print(f"Included comments: {exported.included_comment_count}")
+    print(f"Scores: {exported.score_count}")
+    print(f"Overwrote existing: {format_bool(exported.overwrote_existing)}")
+    print(f"Feedback file: {exported.feedback_relative_path}")
+
+
+def print_exported_class_summary(exported: ExportedClassSummary) -> None:
+    """Print a concise teacher-facing class summary export result."""
+    print("Exported class review summary:")
+    print(f"Class: {exported.class_id}")
+    print(f"Assignment: {exported.assignment_id}")
+    print(f"Rows: {exported.row_count}")
+    print(f"Ready: {exported.ready_count}")
+    print(f"Missing review: {exported.missing_review_count}")
+    print(f"Invalid review: {exported.invalid_review_count}")
+    print(f"Missing submission: {exported.missing_submission_count}")
+    print(f"Invalid submission: {exported.invalid_submission_count}")
+    print(f"Identity mismatch: {exported.identity_mismatch_count}")
+    print(f"Overwrote existing: {format_bool(exported.overwrote_existing)}")
+    print(f"Summary file: {exported.summary_relative_path}")
+
+
+def print_exported_standards_summary(
+    exported: ExportedStandardsSummary,
+) -> None:
+    """Print a concise teacher-facing standards summary export result."""
+    print("Exported standards summary:")
+    print(f"Class: {exported.class_id}")
+    print(f"Assignment: {exported.assignment_id}")
+    print(f"Rows: {exported.row_count}")
+    print(f"Standards: {exported.standard_count}")
+    print(f"Valid reviews: {exported.review_count}")
+    print(f"Missing review: {exported.missing_review_count}")
+    print(f"Invalid review: {exported.invalid_review_count}")
+    print(f"Missing submission: {exported.missing_submission_count}")
+    print(f"Invalid submission: {exported.invalid_submission_count}")
+    print(f"Identity mismatch: {exported.identity_mismatch_count}")
+    print(f"Overwrote existing: {format_bool(exported.overwrote_existing)}")
+    print(f"Summary file: {exported.summary_relative_path}")
+
+
+def print_assignment_submission_status(
+    result: AssignmentSubmissionStatus,
+    workspace_root: Path,
+) -> None:
+    """Print a deterministic teacher-facing assignment status summary."""
+    submission_states = (
+        "unreviewed",
+        "in_progress",
+        "needs_rescan",
+        "reviewed",
+    )
+    page_states = ("present", "missing", "duplicate", "needs_rescan", "excluded")
+    submission_counts = {
+        state: sum(
+            status.submission_state == state
+            for status in result.student_statuses
+        )
+        for state in submission_states
+    }
+    page_counts = {
+        state: sum(
+            page.page_state == state
+            for status in result.student_statuses
+            for page in status.pages
+        )
+        for state in page_states
+    }
+    page_counts["missing"] += sum(
+        len(status.missing_pages)
+        for status in result.student_statuses
+        if status.manifest_path is None
+    )
+    unselected_count = sum(
+        len(status.unselected_present_pages)
+        for status in result.student_statuses
+    )
+
+    print(f"Submission status for assignment {result.assignment_id}")
+    print()
+    print(f"Students with manifests: {len(result.students_with_manifests)}")
+    print(
+        "Students with routed evidence: "
+        f"{len(result.students_with_routed_evidence)}"
+    )
+    print(f"Students needing assembly: {len(result.students_without_manifests)}")
+    print(f"Unassembled routed files: {len(result.unassembled_routed_files)}")
+    print(f"Skipped routed files: {len(result.skipped_routed_files)}")
+    print()
+    print("Submission states:")
+    for state in submission_states:
+        print(f"- {state}: {submission_counts[state]}")
+    print()
+    print("Page states:")
+    for state in page_states:
+        print(f"- {state}: {page_counts[state]}")
+    print(f"- present but unselected: {unselected_count}")
+
+    if result.student_statuses:
+        print()
+        print("Students:")
+        for status in result.student_statuses:
+            if status.manifest_path is None:
+                routed_details = "routed evidence exists; no manifest"
+                if status.missing_pages:
+                    routed_details += (
+                        "; missing="
+                        f"{format_page_numbers(status.missing_pages)}"
+                    )
+                print(f"- {status.student_id}: {routed_details}")
+                continue
+
+            counts = {
+                state: sum(page.page_state == state for page in status.pages)
+                for state in page_states
+            }
+            detail_parts = [
+                f"{state}={counts[state]}"
+                for state in page_states
+                if counts[state]
+            ]
+            if status.unselected_present_pages:
+                detail_parts.append(
+                    "present-but-unselected="
+                    f"{len(status.unselected_present_pages)}"
+                )
+            suffix = ", ".join(detail_parts) if detail_parts else "no pages"
+            print(f"- {status.student_id}: {status.submission_state}; {suffix}")
+
+    if result.skipped_routed_files:
+        print()
+        print("Skipped routed files:")
+        for skipped in result.skipped_routed_files:
+            print(
+                f"- {workspace_relative_display(skipped.path, workspace_root)}"
+                f" — {skipped.reason}"
+            )
+
+    if result.unassembled_routed_files:
+        print()
+        print("Unassembled routed files:")
+        for path in result.unassembled_routed_files:
+            print(f"- {workspace_relative_display(path, workspace_root)}")
+
+
+def print_assignment_submission_assembly(
+    result: AssignmentSubmissionAssemblyResult,
+    workspace_root: Path,
+) -> None:
+    """Print a concise assignment assembly summary."""
+    missing = sum(
+        len(summary.missing_pages) for summary in result.student_summaries
+    )
+    duplicate = sum(
+        len(summary.duplicate_pages) for summary in result.student_summaries
+    )
+    needs_rescan = sum(
+        len(summary.needs_rescan_pages) for summary in result.student_summaries
+    )
+    excluded = sum(
+        len(summary.excluded_pages) for summary in result.student_summaries
+    )
+
+    print(
+        "Assembled submission manifests for assignment "
+        f"{result.assignment_id}."
+    )
+    print()
+    print(f"Students with routed evidence: {len(result.students_with_evidence)}")
+    print(f"Created manifests: {len(result.written_manifests)}")
+    print(
+        "Skipped existing manifests: "
+        f"{len(result.skipped_existing_manifests)}"
+    )
+    print(f"Skipped files: {len(result.skipped_files)}")
+    print(f"Missing pages: {missing}")
+    print(f"Duplicate pages: {duplicate}")
+    print(f"Needs-rescan pages: {needs_rescan}")
+    print(f"Excluded pages: {excluded}")
+    print("Failures: 0")
+
+    _print_path_section("Created", result.written_manifests, workspace_root)
+    _print_path_section(
+        "Skipped existing",
+        result.skipped_existing_manifests,
+        workspace_root,
+    )
+    if result.skipped_files:
+        print()
+        print("Skipped files:")
+        for skipped in result.skipped_files:
+            print(
+                f"- {workspace_relative_display(skipped.path, workspace_root)}"
+                f" — {skipped.reason}"
+            )
+
+    state_details = [
+        (
+            summary.student_id,
+            summary.missing_pages,
+            summary.duplicate_pages,
+            summary.needs_rescan_pages,
+            summary.excluded_pages,
+        )
+        for summary in result.student_summaries
+        if (
+            summary.missing_pages
+            or summary.duplicate_pages
+            or summary.needs_rescan_pages
+            or summary.excluded_pages
+        )
+    ]
+    if state_details:
+        print()
+        print("Page-state details:")
+        for (
+            student_id,
+            missing_pages,
+            duplicate_pages,
+            rescan_pages,
+            excluded_pages,
+        ) in state_details:
+            details = []
+            if missing_pages:
+                details.append(f"missing={format_page_numbers(missing_pages)}")
+            if duplicate_pages:
+                details.append(
+                    f"duplicate={format_page_numbers(duplicate_pages)}"
+                )
+            if rescan_pages:
+                details.append(
+                    f"needs-rescan={format_page_numbers(rescan_pages)}"
+                )
+            if excluded_pages:
+                details.append(
+                    f"excluded={format_page_numbers(excluded_pages)}"
+                )
+            print(f"- {student_id}: {', '.join(details)}")
+
+
+def print_routed_evidence(filed_evidence: RoutedEvidenceFile) -> None:
+    """Print a concise successful-route summary."""
+    duplicate = (
+        "no"
+        if filed_evidence.duplicate_number is None
+        else f"yes (__dup_{filed_evidence.duplicate_number:03d})"
+    )
+    print("Routed Quillan response page.")
+    print(
+        "Retained source: "
+        f"{filed_evidence.retained_source.retained_source_relative_path}"
+    )
+    print(f"Routed evidence: {filed_evidence.routed_evidence_relative_path}")
+    print(f"Class: {filed_evidence.class_id}")
+    print(f"Assignment: {filed_evidence.assignment_id}")
+    print(f"Student: {filed_evidence.student_id}")
+    print(f"Page: {filed_evidence.page_number}")
+    print(f"Duplicate: {duplicate}")
+
+
+def print_route_failure_review(
+    route_failure: RouteFailure,
+    review_record: RoutingReviewRecord,
+) -> None:
+    """Print a safely preserved route-planning failure summary."""
+    print("Quillan response page was not routed; preserved for review.")
+    print(f"Reason: {route_failure.failure_message}")
+    print(f"Category: {route_failure.failure_category}")
+    print(f"Review record: {review_record.failure_metadata_relative_path}")
+
+
+def print_evidence_filing_review(
+    error: EvidenceFilingError,
+    review_record: RoutingReviewRecord,
+) -> None:
+    """Print a safely preserved evidence-filing failure summary."""
+    print("Quillan response page could not be filed; preserved for review.")
+    print(f"Reason: {error}")
+    print("Category: evidence_write_failed")
+    print(f"Review record: {review_record.failure_metadata_relative_path}")
+
+
+def print_workspace_status(status: WorkspaceStatus) -> None:
+    """Print a stable, user-facing workspace status summary."""
+    print("Current PDS workspace root:")
+    print(status.root)
+    print("\nSource:")
+    print(status.source)
+    print("\nExists:")
+    print(format_bool(status.exists))
+    print("\nDirectory:")
+    print(format_bool(status.is_dir))
+    print("\nWritable:")
+    print(format_bool(status.is_writable))
+    print("\nConfig file:")
+    print(status.config_path)
+    print("\nDefault workspace root:")
+    print(status.default_root)
+
+
+def format_bool(value: bool) -> str:
+    """Format a boolean for stable CLI output."""
+    return "yes" if value else "no"
+
+
+def format_number(value: int | float) -> str:
+    """Format an integer or floating-point score compactly."""
+    return f"{value:g}"
+
+
+def format_page_numbers(page_numbers: tuple[int, ...]) -> str:
+    """Format page numbers as a comma-separated list."""
+    return ",".join(str(page_number) for page_number in page_numbers)
+
+
+def workspace_relative_display(path: Path, workspace_root: Path) -> str:
+    """Display a path relative to the workspace when possible."""
+    try:
+        return path.resolve(strict=False).relative_to(
+            workspace_root.resolve(strict=False)
+        ).as_posix()
+    except (OSError, ValueError):
+        return str(path)
+
+
+def _print_path_section(
+    heading: str,
+    paths: tuple[Path, ...],
+    workspace_root: Path,
+) -> None:
+    if not paths:
+        return
+    print()
+    print(f"{heading}:")
+    for path in paths:
+        print(f"- {workspace_relative_display(path, workspace_root)}")

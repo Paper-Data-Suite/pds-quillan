@@ -8,9 +8,9 @@ from typing import Any
 
 import pytest
 
-import quillan.cli
 import quillan.submission_review_opening
 from quillan.cli import main
+import quillan.cli_app.handlers.submissions as cli_submissions
 from quillan.evidence_opening import EvidenceOpeningError, OpenedEvidence
 from quillan.submission_manifest_paths import (
     submission_manifest_path,
@@ -315,9 +315,11 @@ def test_cli_success_prints_teacher_context(
         submission_state="unreviewed",
         page_state="present",
     )
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
     monkeypatch.setattr(
-        quillan.cli,
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
+    monkeypatch.setattr(
+        cli_submissions,
         "open_student_submission_for_review",
         lambda *_args: opened,
     )
@@ -346,12 +348,16 @@ def test_cli_failure_returns_one(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
 
     def fail(*_args: object) -> OpenedSubmissionReview:
         raise SubmissionReviewOpeningError("manifest is unavailable")
 
-    monkeypatch.setattr(quillan.cli, "open_student_submission_for_review", fail)
+    monkeypatch.setattr(
+        cli_submissions, "open_student_submission_for_review", fail
+    )
 
     assert (
         main(["open-submission", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 1
@@ -366,7 +372,9 @@ def test_cli_missing_manifest_returns_one(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
 
     assert (
         main(["open-submission", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 1

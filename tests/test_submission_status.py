@@ -7,8 +7,8 @@ from typing import Any
 
 import pytest
 
-import quillan.cli
 from quillan.cli import main
+import quillan.cli_app.handlers.submissions as cli_submissions
 from quillan.submission_assembly import (
     RoutedSubmissionEvidence,
     build_submission_manifest,
@@ -240,7 +240,9 @@ def test_cli_prints_status_students_skips_and_relative_paths(
     _touch_routed(tmp_path, "response_00107_pg_001.pdf")
     _touch_routed(tmp_path, "response_00108_pg_002.pdf")
     _touch_routed(tmp_path, "notes.txt")
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
     before = {
         path: path.read_bytes()
         for path in tmp_path.rglob("*")
@@ -287,7 +289,9 @@ def test_cli_invalid_manifest_exits_nonzero_and_bad_expected_pages_parse(
     )
     path.parent.mkdir(parents=True)
     path.write_text("[]", encoding="utf-8")
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
 
     assert main(["list-submissions", CLASS_ID, ASSIGNMENT_ID]) == 1
     assert "could not list submission status" in capsys.readouterr().out

@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-import quillan.cli
 from quillan.cli import main
+import quillan.cli_app.handlers.review as cli_review
 from quillan.review_record_paths import review_record_path
 from tests.test_review_tags import (
     ASSIGNMENT_ID,
@@ -28,7 +28,7 @@ def test_cli_success_creates_tag_and_prints_context(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write_manifest(tmp_path)
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         [
@@ -97,7 +97,7 @@ def test_cli_handled_failure_returns_one(
 ) -> None:
     if prepare_submission:
         _write_manifest(tmp_path)
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     result = main(
         [
@@ -123,7 +123,7 @@ def test_cli_append_preserves_existing_sections(
     _write_manifest(tmp_path)
     original = _review("ready_for_export")
     path = _write_review(tmp_path, copy.deepcopy(original))
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         [
@@ -153,7 +153,7 @@ def test_cli_does_not_mutate_submission_manifest(
 ) -> None:
     manifest_path = _write_manifest(tmp_path, _manifest())
     original = manifest_path.read_bytes()
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         [

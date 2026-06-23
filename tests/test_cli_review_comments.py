@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-import quillan.cli
 from quillan.cli import main
+import quillan.cli_app.handlers.review as cli_review
 from quillan.review_record_paths import review_record_path
 from tests.test_review_comments import BANK_ID, _write_bank
 from tests.test_review_scores import _write_manifest
@@ -22,7 +22,7 @@ def test_cli_selects_comment_and_prints_context(
 ) -> None:
     _write_manifest(tmp_path)
     _write_bank(tmp_path)
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         [
@@ -70,7 +70,7 @@ def test_cli_handled_failure_returns_one_without_review(
 ) -> None:
     _write_manifest(tmp_path)
     _write_bank(tmp_path)
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_review, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
         [

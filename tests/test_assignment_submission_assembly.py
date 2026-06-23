@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
-import quillan.cli
 from quillan.assignment_submission_assembly import (
     assemble_assignment_submissions,
     discover_assignment_routed_evidence,
 )
 from quillan.cli import main
+import quillan.cli_app.handlers.submissions as cli_submissions
 from quillan.submission_manifest import load_submission_manifest
 
 CLASS_ID = "english12_p3_synthetic"
@@ -215,7 +215,9 @@ def test_cli_assembles_and_prints_workspace_relative_summary(
     _touch_evidence(tmp_path, "response_00107_pg_001.pdf")
     _touch_evidence(tmp_path, "response_00107_pg_001__dup_001.pdf")
     _touch_evidence(tmp_path, "notes.txt")
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
 
     result = main(
         [
@@ -254,7 +256,9 @@ def test_cli_handles_empty_assignment_and_rejects_invalid_expected_pages(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
 
     assert main(["assemble-submissions", CLASS_ID, ASSIGNMENT_ID]) == 0
     output = capsys.readouterr().out
