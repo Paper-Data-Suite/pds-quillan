@@ -76,9 +76,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     route_scan_parser = subparsers.add_parser(
         "route-scan",
-        help="Route a scan using an already-decoded Quillan PDS1 payload.",
+        help="Route one Quillan response scan from payload text or image QR.",
         description=(
-            "Route a scan file using an already-decoded Quillan PDS1 payload. "
+            "Route one scan file using either an already-decoded Quillan PDS1 "
+            "payload or a QR payload decoded from a supported local image. "
             "Exit 0 means the file was routed or safely preserved for review; "
             "exit 1 means the input could not be handled safely."
         ),
@@ -88,10 +89,17 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Path to the selected source scan file.",
     )
-    route_scan_parser.add_argument(
+    payload_group = route_scan_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    payload_group.add_argument(
         "--payload",
-        required=True,
         help="Already-decoded canonical PDS1 payload text.",
+    )
+    payload_group.add_argument(
+        "--decode-qr",
+        action="store_true",
+        help="Decode the Quillan response-page QR payload from the source image.",
     )
     route_scan_parser.set_defaults(handler=handle_route_scan)
 

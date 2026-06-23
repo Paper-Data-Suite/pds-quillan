@@ -10,6 +10,13 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added QR-aware single-image intake to `quillan route-scan` through
+  `--decode-qr`. The command decodes one supported local image, validates the
+  decoded Quillan `doc=response` PDS1 payload, routes through existing
+  route-planning and evidence-filing layers, preserves decode, payload,
+  routing, and filing failures under scan review metadata, and keeps
+  `--payload` mode supported. PDF, folder/batch intake, submission assembly,
+  and automatic review-record creation remain out of scope.
 - Added a decode-only `quillan decode-scan` diagnostic command that reads one
   supported local image, reports QR decode and Quillan response-page validation
   details, distinguishes decode and payload failures with exit codes, and does
