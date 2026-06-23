@@ -8,6 +8,12 @@ planning and do not by themselves represent releases.
 
 ## Unreleased
 
+### Added
+
+- Added an internal, local OpenCV QR image decoder for supported response-page
+  image files. It returns structured decode results without routing scans,
+  validating PDS1 payloads, writing diagnostics, or mutating workspaces.
+
 ### Changed
 
 - Validated the repository documentation against the completed v0.7.0

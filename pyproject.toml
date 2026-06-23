@@ -9,6 +9,8 @@ authors = [
     { name = "Stephen Severino" }
 ]
 dependencies = [
+    "numpy<2.5",
+    "opencv-python",
     "qrcode[pil]",
     "reportlab",
 ]
