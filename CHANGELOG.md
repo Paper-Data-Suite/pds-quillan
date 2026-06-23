@@ -10,6 +10,8 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added Quillan assignment validation support for the shared pds-core
+  standards library contract.
 - Added QR-aware PDF page intake to `quillan route-scan --decode-qr`. The
   command converts each PDF page to an image, decodes and validates each page
   independently, files routed page evidence as PNG files, preserves page-level

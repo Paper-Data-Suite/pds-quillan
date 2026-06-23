@@ -7,6 +7,11 @@ from pathlib import Path
 from typing import Any, cast
 
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
+from pds_core.standards import (
+    StandardsLibrary,
+    StandardsValidationError,
+    validate_profile_standard_selection,
+)
 
 ALLOWED_TAGGING_MODES = {"focus", "focus_plus_past", "benchmark", "custom"}
 
@@ -69,6 +74,35 @@ def validate_assignment_config(assignment: dict[str, Any]) -> None:
     _validate_focus_standards(assignment["focus_standards"])
     _validate_basic_requirements(assignment["basic_requirements"])
     _validate_non_empty_string(assignment["rubric_id"], "rubric_id")
+
+
+def validate_assignment_standards_selection(
+    assignment: dict[str, Any],
+    standards_library: StandardsLibrary,
+) -> tuple[str, ...]:
+    """Validate assignment standards against a shared pds-core library.
+
+    The returned values are normalized shared ``standard_id`` references.
+    Structural assignment validation remains available separately through
+    ``validate_assignment_config`` for callers that do not have a workspace
+    standards library loaded.
+    """
+    validate_assignment_config(assignment)
+
+    profile_id = cast(str, assignment["standards_profile_id"])
+    focus_standards = cast(list[str], assignment["focus_standards"])
+
+    try:
+        return validate_profile_standard_selection(
+            standards_library,
+            profile_id=profile_id,
+            selected_standard_ids=focus_standards,
+        )
+    except StandardsValidationError as error:
+        raise AssignmentConfigError(
+            "Invalid assignment standards selection for "
+            f"standards_profile_id {profile_id!r} and focus_standards: {error}"
+        ) from error
 
 
 def _validate_class_ids(class_ids: Any) -> None:
