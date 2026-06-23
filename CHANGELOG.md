@@ -39,6 +39,14 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added `quillan export-feedback` and a focused read-only API for generating
+  `submissions/<student_id>/exports/feedback.md` from valid matching
+  `submission.json` and `review.json` records. The Markdown includes ordered
+  teacher-entered criterion scores and snapshotted comments marked for
+  feedback, excludes private notes, tags, score notes, excluded comments, and
+  provenance, and never reads source comment banks. Existing exports require
+  `--overwrite`; canonical records, evidence, timestamps, and `review_state`
+  remain unchanged.
 - Added `quillan add-comment` and a focused reusable-comment selection API.
   Shared comment banks are fully validated before selection; student-facing
   comments are appended to `review.json.comments` with sequential local IDs,

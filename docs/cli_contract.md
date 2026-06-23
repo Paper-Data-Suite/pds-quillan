@@ -48,6 +48,7 @@ quillan
 quillan --help
 quillan validate-standards <path>
 quillan validate-assignment <path>
+quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
 quillan workspace show
 quillan workspace set <path>
 quillan workspace validate
@@ -392,6 +393,26 @@ failures return `1`. Updating by `criterion_id` preserves the existing score
 ID and unrelated review sections. The command does not validate criteria
 against a rubric profile, calculate an overall score, infer scores, or mutate
 the submission manifest or evidence.
+
+## Student Feedback Export
+
+```powershell
+quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
+```
+
+This direct command requires valid matching canonical `submission.json` and
+`review.json` records, then writes the derived
+`submissions/<student_id>/exports/feedback.md` artifact. It includes ordered
+criterion scores and snapshotted comments marked `include_in_feedback: true`.
+It excludes private notes, score notes, structured tags, excluded comments,
+and comment source/provenance fields, and it does not read source comment
+banks.
+
+Success returns `0` and reports the identity, included-comment count, score
+count, overwrite status, and workspace-relative feedback path. Handled
+workspace, validation, missing-record, and overwrite failures return `1`.
+Without `--overwrite`, an existing feedback file is preserved. The command
+does not mutate review state, timestamps, canonical records, or evidence.
 
 ## Output and Error Handling
 

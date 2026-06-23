@@ -157,12 +157,23 @@ Feedback is student-readable teacher communication. It may draw on:
 * requirements checks; and
 * teacher-approved standards profile or shared comment bank comments.
 
-Feedback remains teacher-controlled. Future tooling may help select
-teacher-approved language, draft text, or format a feedback file, but the
-teacher must review and confirm the communication before it is treated as a
-teacher export. Selected reusable or custom comments are stored in
-`review.json`; a rendered `feedback.md` remains a derived artifact. Quillan
-must not present authoritative AI-generated feedback.
+Feedback remains teacher-controlled. The direct `export-feedback` workflow
+formats already-selected teacher-authored comments and teacher-entered
+criterion scores as Markdown; it does not draft, infer, select, or grade
+anything. Selected reusable or custom comments are stored in `review.json`;
+the rendered `submissions/<student_id>/exports/feedback.md` is derived.
+
+The export preserves score and included-comment order. It includes only
+comments marked `include_in_feedback: true` and uses their snapshotted text,
+without reading source comment banks or standards profiles. Private notes,
+score `teacher_note` values, structured tags, excluded comments, and comment
+provenance are omitted.
+
+Export does not change `review_state`, mark a review `exported`, update
+timestamps, or mutate `review.json`, `submission.json`, evidence, retained
+scans, or source banks. Existing feedback is protected unless the teacher
+explicitly supplies `--overwrite`. Quillan must not present authoritative
+AI-generated feedback.
 
 Shared comment banks are reusable teacher-authored source data stored at
 `shared/comment_banks/<bank_id>.json`. They are not student records and do
@@ -174,7 +185,7 @@ language into
 identifies the reusable source comment. The copied label and text remain
 stable if the bank later changes; provenance does not create a live reference.
 The bank feedback default may be overridden by the teacher at selection time.
-Teacher-only bank comments are rejected, and selection does not export
+Teacher-only bank comments are rejected, and selection does not itself export
 feedback.
 The source contract and future assignment-activation design are defined in
 [`comment_bank_contract.md`](comment_bank_contract.md).
