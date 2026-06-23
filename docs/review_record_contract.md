@@ -359,32 +359,42 @@ Required comment fields are:
 
 Optional comment fields are:
 
+* `bank_id`;
 * `comment_id`; and
 * `standard_code`.
 
 Comment field rules are:
 
 * `comment_record_id` is unique within `comments`.
-* `comment_id` may identify reusable language in a standards profile or
-  comment bank.
-* `standard_code` may identify the associated profile standard.
+* `bank_id`, when present, is a valid shared identifier naming the source at
+  `shared/comment_banks/<bank_id>.json`.
+* `comment_id` identifies reusable language within its source bank or
+  standards profile; it is not globally unique across comment banks.
+* `standard_code` identifies the associated profile standard.
 * `label` and `text` are non-empty strings.
 * `source` is one of `standards_profile`, `comment_bank`, or `custom`.
 * `include_in_feedback` is a boolean expressing the teacher's export choice.
 * `module_details` is an object.
+
+Source-specific rules are:
+
+* `comment_bank` comments require both `bank_id` and `comment_id`;
+  `bank_id + comment_id` identifies the reusable source comment.
+* `standards_profile` comments require `comment_id` and `standard_code` and
+  must omit `bank_id`.
+* `custom` comments must omit `bank_id`, `comment_id`, and `standard_code`.
 
 Comments are teacher-selected or teacher-entered; they are not generated from
 student writing or supplied as AI judgments. Comments are append-only for the
 MVP. Editing, deletion, and toggling export inclusion are reserved for future
 explicit workflows, which must not silently erase other comment records.
 
-For a future shared-bank selection, `source` must be `"comment_bank"`.
+For a shared-bank selection, `source` must be `"comment_bank"`. `bank_id` is
+provenance metadata only: validation does not load or look up the bank file.
 `label` and `text` must be copied into this record rather than resolved as a
-live display reference. The selected record is a submission-specific
-snapshot, so later edits to the shared bank cannot silently alter an existing
-review or export. The current strict version `1` comment record does not
-contain `bank_id`; first-class bank provenance requires an explicit later
-review-contract change rather than an undeclared field.
+live display reference. The selected record is a submission-specific snapshot,
+so later edits to the shared bank cannot silently alter an existing review or
+export.
 
 ## Timestamp Policy
 

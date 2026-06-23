@@ -195,7 +195,9 @@ grade work, and do not generate feedback by themselves.
 
 Future assignments may optionally activate banks through
 `comment_bank_ids`. Future selection should copy the chosen language into
-`review.json.comments` with `source: "comment_bank"` so the student review is
+`review.json.comments` with `source: "comment_bank"`, `bank_id`, and
+`comment_id`. Because comment IDs are unique only within a bank, the pair
+preserves source provenance. The copied label and text make the student review
 a stable snapshot rather than a live reference. The complete version `1`
 shape and validation rules are defined in
 [`comment_bank_contract.md`](comment_bank_contract.md). Runtime validation,

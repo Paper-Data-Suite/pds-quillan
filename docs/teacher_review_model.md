@@ -168,8 +168,10 @@ Shared comment banks are reusable teacher-authored source data stored at
 `shared/comment_banks/<bank_id>.json`. They are not student records and do
 not grade, evaluate, or generate feedback by themselves. A future selection
 workflow should copy a comment's teacher-approved language into
-`review.json.comments` as a snapshot with `source: "comment_bank"`. This
-prevents later bank edits from silently changing an existing student review.
+`review.json.comments` as a snapshot with `source: "comment_bank"`, the source
+`bank_id`, and the source `comment_id`. Comment IDs are bank-local, so the pair
+identifies the reusable source comment. The copied label and text remain
+stable if the bank later changes; provenance does not create a live reference.
 The source contract and future assignment-activation design are defined in
 [`comment_bank_contract.md`](comment_bank_contract.md).
 
