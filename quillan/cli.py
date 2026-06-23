@@ -73,6 +73,11 @@ from quillan.review_tags import (
     add_review_tag,
 )
 from quillan.standards import StandardsProfileError, load_standards_profile
+from quillan.standards_summary_export import (
+    ExportedStandardsSummary,
+    StandardsSummaryExportError,
+    export_standards_summary,
+)
 from quillan.submission_status import (
     AssignmentSubmissionStatus,
     list_assignment_submission_status,
@@ -207,6 +212,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "export-class-summary":
         return _handle_export_class_summary(
+            args.class_id,
+            args.assignment_id,
+            overwrite=args.overwrite,
+        )
+
+    if args.command == "export-standards-summary":
+        return _handle_export_standards_summary(
             args.class_id,
             args.assignment_id,
             overwrite=args.overwrite,
@@ -571,6 +583,28 @@ def _build_parser() -> argparse.ArgumentParser:
         "--overwrite",
         action="store_true",
         help="Replace an existing exports/class_summary.csv file.",
+    )
+
+    export_standards_summary_parser = subparsers.add_parser(
+        "export-standards-summary",
+        help="Export a standards-focused review summary CSV for one assignment.",
+        description=(
+            "Generate a teacher-facing CSV summary of standards-linked review "
+            "tags and selected comments across one class assignment. The "
+            "export reads existing review records and does not mutate "
+            "canonical records, evidence, or source comment banks."
+        ),
+    )
+    export_standards_summary_parser.add_argument(
+        "class_id", help="Class identifier."
+    )
+    export_standards_summary_parser.add_argument(
+        "assignment_id", help="Assignment identifier."
+    )
+    export_standards_summary_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace an existing exports/standards_summary.csv file.",
     )
 
     workspace_parser = subparsers.add_parser(
@@ -1101,6 +1135,48 @@ def _print_exported_class_summary(exported: ExportedClassSummary) -> None:
     print(f"Assignment: {exported.assignment_id}")
     print(f"Rows: {exported.row_count}")
     print(f"Ready: {exported.ready_count}")
+    print(f"Missing review: {exported.missing_review_count}")
+    print(f"Invalid review: {exported.invalid_review_count}")
+    print(f"Missing submission: {exported.missing_submission_count}")
+    print(f"Invalid submission: {exported.invalid_submission_count}")
+    print(f"Identity mismatch: {exported.identity_mismatch_count}")
+    print(f"Overwrote existing: {_format_bool(exported.overwrote_existing)}")
+    print(f"Summary file: {exported.summary_relative_path}")
+
+
+def _handle_export_standards_summary(
+    class_id: str,
+    assignment_id: str,
+    *,
+    overwrite: bool,
+) -> int:
+    """Export one teacher-facing assignment standards summary CSV."""
+    try:
+        workspace_root = resolve_workspace_root()
+        exported = export_standards_summary(
+            workspace_root,
+            class_id,
+            assignment_id,
+            overwrite=overwrite,
+        )
+    except (WorkspaceRootError, StandardsSummaryExportError) as error:
+        print(f"Error: could not export standards summary: {error}")
+        return 1
+
+    _print_exported_standards_summary(exported)
+    return 0
+
+
+def _print_exported_standards_summary(
+    exported: ExportedStandardsSummary,
+) -> None:
+    """Print a concise teacher-facing standards summary export result."""
+    print("Exported standards summary:")
+    print(f"Class: {exported.class_id}")
+    print(f"Assignment: {exported.assignment_id}")
+    print(f"Rows: {exported.row_count}")
+    print(f"Standards: {exported.standard_count}")
+    print(f"Valid reviews: {exported.review_count}")
     print(f"Missing review: {exported.missing_review_count}")
     print(f"Invalid review: {exported.invalid_review_count}")
     print(f"Missing submission: {exported.missing_submission_count}")

@@ -560,7 +560,8 @@ across those files.
 
 `submissions/<student_id>/exports/feedback.md`,
 `assignments/<assignment_id>/exports/class_summary.csv`, and
-`reports/standards_summary.csv` are derived export artifacts. They may be
+`assignments/<assignment_id>/exports/standards_summary.csv` are derived export
+artifacts. They may be
 generated from teacher-controlled review records, but they do
 not replace `review.json` and are not authoritative independent evidence.
 `requirements.json` remains a separate reserved structural-check record
@@ -583,6 +584,13 @@ mutating them. It reports missing, invalid, and identity-mismatched records as
 CSV status rows and includes only simple counts and arithmetic totals from
 teacher-entered review data. It does not inspect evidence or comment banks,
 calculate grades or mastery, or perform standards or roster reporting.
+
+The standards summary export validates the same per-student canonical records
+and aggregates only tags and selected comments that contain `standard_code`.
+It reports tag polarity, comment feedback inclusion, distinct-student counts,
+and assignment-level missing/invalid counts. It excludes scores and notes and
+does not load standards profiles, inspect evidence, read comment banks, infer
+mastery, calculate grades, use a roster, or mutate canonical records.
 
 ## Synthetic Example
 
