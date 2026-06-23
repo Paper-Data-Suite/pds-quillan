@@ -136,8 +136,10 @@ The supported teacher/developer sequence is:
    `review.json`.
 10. `add-tag` appends a teacher-entered structured observation to that review
     record.
-11. `set-score` sets or updates one explicitly teacher-entered criterion score.
-12. `set-review-state` records lightweight submission-manifest progress when
+11. `add-comment` selects student-facing teacher-authored language from a
+    shared comment bank into that review record as a stable snapshot.
+12. `set-score` sets or updates one explicitly teacher-entered criterion score.
+13. `set-review-state` records lightweight submission-manifest progress when
     the teacher chooses.
 
 Opening evidence and updating review state are separate teacher-controlled
@@ -153,6 +155,7 @@ quillan open-evidence <workspace-relative-evidence-path>
 quillan open-submission <class_id> <assignment_id> <student_id>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity developing
+quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id>
 quillan set-score <class_id> <assignment_id> <student_id> --criterion evidence --label "Evidence" --score 3 --max-score 4
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 ```
@@ -178,6 +181,12 @@ quillan set-review-state <class_id> <assignment_id> <student_id> <state>
   may reference a validated standard, reusable profile comment, page,
   evidence ID, or writing location, but they do not score work, prove mastery,
   or generate feedback.
+- `add-comment` validates a shared bank and appends one student-facing source
+  comment to `review.json.comments`. The selected record stores
+  `bank_id + comment_id` provenance and copies label and text, so later bank
+  edits do not change an existing review. Feedback inclusion uses the bank
+  default unless explicitly included or excluded; this command does not
+  export feedback.
 - `set-score` sets one teacher-entered criterion score in `review.json`.
   Existing criteria update by `criterion_id`; unrelated review data is
   preserved. Criterion IDs are not yet validated against rubric profiles, and
@@ -192,7 +201,7 @@ teacher explicitly requests it.
 Quillan does not perform OCR, handwriting recognition, PDF text
 extraction, AI scoring, AI feedback, AI suggestions, automatic grading,
 automatic review-state updates, automatic evidence selection among duplicates,
-rubric scoring, reusable comment selection into feedback, feedback export, or
+rubric scoring, feedback export, or
 report generation. Quick notes and structured tags are teacher-entered
 records; they do not score or generate feedback by themselves.
 The teacher remains responsible for reading and evaluating student work.

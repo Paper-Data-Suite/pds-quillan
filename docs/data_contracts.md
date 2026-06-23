@@ -194,7 +194,7 @@ metadata, and student-facing controls. Banks are not student records, do not
 grade work, and do not generate feedback by themselves.
 
 Future assignments may optionally activate banks through
-`comment_bank_ids`. Future selection should copy the chosen language into
+`comment_bank_ids`. Direct shared-bank selection copies the chosen language into
 `review.json.comments` with `source: "comment_bank"`, `bank_id`, and
 `comment_id`. Because comment IDs are unique only within a bank, the pair
 preserves source provenance. The copied label and text make the student review
