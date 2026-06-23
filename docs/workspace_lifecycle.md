@@ -59,7 +59,8 @@ The expected current and reserved layout is:
               submission.txt
               requirements.json
               review.json
-              feedback.md
+              exports/
+                feedback.md
           exports/
             standards_summary.csv
             class_summary.csv
@@ -124,26 +125,28 @@ defined in
 ### Workspace `scans/source/YYYY-MM-DD/`
 
 The shared canonical store for active retained source scans, date-bucketed by
-the PDS intake date in UTC. A future scan workflow must copy every readable
-selected source here before Quillan-specific parsing or routing, leave the
-teacher's original selected file untouched, avoid silent overwrites, and
-preserve provenance from routed evidence back to this retained source.
+the PDS intake date in UTC. The direct `route-scan` workflow copies its
+selected readable source here before Quillan-specific routing, leaves the
+teacher's original selected file untouched, avoids silent overwrites, and
+preserves provenance from routed evidence back to this retained source.
 
 ### Workspace `scans/review/`
 
 The shared workspace-level location for canonical routing failure records and
-optional problem artifacts. Future Quillan failures must use the shared
-`pds-core` metadata shape and failure categories, with Quillan-specific details
-under `module_details`. Quillan does not currently create or process this
-directory.
+optional problem artifacts. The direct `route-scan` workflow uses the shared
+`pds-core` metadata shape and failure categories, with Quillan-specific
+details under `module_details`, when a routing input can be safely preserved
+for teacher review.
 
 ### Assignment `scans/`
 
-A reserved assignment-local directory for routed scan evidence. It is not the
-canonical retained source location. The future validation, naming, collision,
-provenance, and failure-review behavior is defined in
-[`scan_routing_design.md`](scan_routing_design.md). Its presence does not imply
-that Quillan currently routes scans, performs OCR, or files captured pages.
+The assignment-local directory for routed scan evidence. It is not the
+canonical retained source location. The direct `route-scan` workflow files a
+selected source here only when the caller supplies an already-decoded
+canonical PDS1 payload. The validation, naming, collision, provenance, and
+failure-review behavior is defined in
+[`scan_routing_design.md`](scan_routing_design.md). Quillan does not inspect
+raw scans for QR codes, split PDFs, batch-ingest folders, or perform OCR.
 
 ### `submissions/<student_id>/submission.json`
 
@@ -156,8 +159,11 @@ comments, or feedback exports.
 
 Loading, validation, canonical path computation, safe writing, and
 new-manifest assembly from caller-provided evidence metadata are implemented
-in modules distinct from the legacy text-oriented loader. Scan-folder
-discovery, merging, and state-changing review workflows are not implemented.
+in modules distinct from the legacy text-oriented loader. The direct
+`assemble-submissions` command discovers already-routed evidence by filename
+and creates missing manifests; it does not merge into existing manifests or
+choose among ambiguous duplicates. `set-review-state` provides an explicit,
+metadata-only teacher-controlled state update.
 
 ### `submissions/<student_id>/submission.txt`
 
@@ -182,17 +188,19 @@ comments, and an explicit `review_state`. It references the adjacent
 `review_state` is independent of `submission_state`; neither state
 automatically determines the other. The complete record contract is defined
 in [`review_record_contract.md`](review_record_contract.md). Loading, writing,
-review commands, and exports are not implemented by this document.
+direct review commands, and derived exports are implemented by the runtime;
+guided teacher-facing menu review is not.
 
 Earlier separate `tags.json` and `scores.json` designs are historical and are
 not alternate active v0.7 paths.
 
-### `submissions/<student_id>/feedback.md`
+### `submissions/<student_id>/exports/feedback.md`
 
-A reserved future student-readable export derived from teacher-controlled
-review data. It should remain traceable to `review.json` and must not be
-treated as an independent review record or a replacement for teacher
-judgment. Feedback export is not implemented by this document.
+The implemented student-readable Markdown export derived from a valid matching
+`submission.json` and `review.json`. It remains traceable to `review.json` and
+must not be treated as an independent review record or a replacement for
+teacher judgment. Existing output is protected unless overwrite is explicitly
+requested.
 
 ### `exports/`
 
@@ -255,7 +263,7 @@ container for notes, tags, criterion scores, and selected comments.
 
 Derived outputs are generated from teacher-reviewed records:
 
-* `feedback.md`
+* `submissions/<student_id>/exports/feedback.md`
 * `exports/standards_summary.csv`
 * `exports/class_summary.csv`
 
@@ -291,9 +299,11 @@ required structure, identity fields, PDS1 payload use, writing area, and
 implemented `templates/printable_response_pages.pdf` output for printable
 writing-response pages.
 
-[`scan_routing_design.md`](scan_routing_design.md) defines how a future router
-should validate decoded response payloads and create Quillan routed evidence
-under the shared `pds-core` active scan contract. Canonical retained sources
-belong in `scans/source/YYYY-MM-DD/`, canonical failure records belong in
-`scans/review/`, and assignment-level `scans/` contains routed evidence.
+[`scan_routing_design.md`](scan_routing_design.md) defines how decoded response
+payloads are validated and how Quillan routed evidence fits the shared
+`pds-core` active scan contract. The direct `route-scan` command implements the
+caller-supplied decoded-payload slice. Canonical retained sources belong in
+`scans/source/YYYY-MM-DD/`, canonical failure records belong in
+`scans/review/`, and assignment-level `scans/` contains routed evidence. QR
+recognition, PDF splitting, batch raw-scan intake, and OCR remain future work.
 

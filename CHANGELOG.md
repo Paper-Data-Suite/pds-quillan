@@ -10,6 +10,13 @@ planning and do not by themselves represent releases.
 
 ### Changed
 
+- Validated the repository documentation against the completed v0.7.0
+  milestone implementation. The docs now distinguish direct CLI/API review
+  and export support from the current teacher-facing menu, use the canonical
+  `review.json` and export paths consistently, and keep QR recognition,
+  production scan intake, OCR, AI, automatic grading, and guided menu review
+  workflows identified as future work. This is milestone documentation
+  validation, not a published v0.7.0 package release.
 - Split the CLI implementation into smaller internal parser, argument,
   output, and command-handler modules. Public command behavior and the
   `quillan.cli:main` console-script entrypoint remain unchanged.

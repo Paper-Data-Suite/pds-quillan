@@ -8,9 +8,11 @@ Quillan is part of the broader Paper Data Suite concept, alongside ScoreForm.
 
 ## Current Status
 
-Quillan is an early pre-1.0 foundation. It provides direct CLI commands and
-an initial teacher-facing terminal menu skeleton, but it is not yet a complete
-teacher-facing application.
+Quillan is an early pre-1.0 foundation. The v0.7.0 milestone provides a
+teacher-controlled review and export foundation through direct CLI commands
+and Python APIs. The teacher-facing terminal menu currently covers assignment
+management, roster management, printable response pages, workspace settings,
+help, and exit; it does not yet guide the review and export workflow.
 
 Quillan currently supports:
 
@@ -70,6 +72,23 @@ Printable response generation is exposed through the teacher-facing menu and
 the Python API in `quillan.printable_response`. It is not exposed as a
 dedicated direct CLI command.
 
+Current classroom-data workflows are local-first: they read and write the
+teacher-selected Paper Data Suite workspace and do not upload student work,
+review records, comment banks, or exports to a hosted service. Canonical v0.7
+records and exports live at:
+
+```text
+classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
+classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
+classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
+classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
+shared/comment_banks/<bank_id>.json
+```
+
+Opening evidence delegates only to the local system viewer. Exports are
+derived files and never replace the canonical manifest or review record.
+
 ## Core Principle
 
 Quillan is not an AI essay grader.
@@ -89,11 +108,18 @@ particular, Quillan does not currently provide:
 - QR extraction from scanned PDFs or images;
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
+- splitting multi-page scanned PDFs or batch-ingesting raw scan folders;
 - merging newly routed evidence into existing teacher review state;
 - complete requirements-checking workflows;
 - AI tagging, AI scoring, or AI feedback;
+- AI suggestions or PDF text extraction;
 - automatic grading;
-- complete teacher-facing assignment editing or review workflows; or
+- automatic mastery calculation, review-state decisions, or evidence
+  selection among duplicates;
+- guided teacher-facing submission review, notes, tags, comment selection,
+  scoring, feedback export, or summary export workflows;
+- teacher-facing scan intake or QR recognition;
+- complete teacher-facing assignment editing workflows; or
 - a dedicated printable-response command.
 
 The intended scan-routing rules and failure behavior are documented in
@@ -390,6 +416,10 @@ validation through Roster Management, and combined class-packet generation
 through Printable Response Pages. Workspace Settings can show, set,
 validate/create, and reset the shared Paper Data Suite workspace root. Help
 summarizes Quillan's teacher-controlled purpose and safe-data expectations.
+The menu does not currently select submissions for review, add notes or tags,
+select comment-bank comments, enter scores, export feedback or summaries,
+ingest scans, or recognize QR codes. Those operations are direct CLI/API
+workflows or future teacher-facing usability work.
 
 Show direct CLI help:
 
@@ -585,12 +615,16 @@ quillan open-evidence <workspace-relative-path>
 quillan open-submission <class_id> <assignment_id> <student_id>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity developing
+quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id>
 quillan set-score <class_id> <assignment_id> <student_id> --criterion <criterion_id> --label "..." --score <number> --max-score <number>
 quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
 quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan workspace show
+quillan workspace set <path>
+quillan workspace validate
+quillan workspace reset
 quillan menu
 ```
 

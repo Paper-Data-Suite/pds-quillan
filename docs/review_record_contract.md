@@ -548,6 +548,27 @@ rubric-profile loading and criterion lookup remain future work. Quillan does
 not infer criterion scores or calculate an overall, weighted, percentage,
 grade, or mastery score.
 
+## Reusable Comment Selection
+
+The direct reusable-comment command is:
+
+```powershell
+quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id>
+```
+
+It validates the shared bank at `shared/comment_banks/<bank_id>.json`, selects
+one student-facing teacher-authored comment, and appends a stable snapshot to
+`review.json.comments`. The snapshot preserves `bank_id + comment_id`
+provenance and copies the source label and text so later bank edits do not
+change an existing review. The teacher may choose a valid source standard and
+may override the bank's feedback-inclusion default.
+
+Selection requires a valid matching adjacent `submission.json`, creates a
+missing review record using the same state and preservation rules as notes and
+tags, and does not mutate the source bank, submission manifest, evidence, or
+retained scans. It does not export feedback, select comments automatically,
+analyze writing, score work, or infer mastery.
+
 ## Derived Artifacts and Historical Names
 
 `review.json` is the canonical active v0.7 teacher-review record for notes,
@@ -604,7 +625,8 @@ This contract does not implement:
 
 * rubric-profile loading, validation, or criterion lookup;
 * overall, weighted, percentage, grade, or mastery score calculation;
-* assignment-driven comment-bank activation or reusable-comment management;
+* assignment-driven comment-bank activation, bank editing, or guided
+  reusable-comment management;
 * roster-aware missing-student reporting;
 * terminal-menu review workflows or review CLI commands beyond those listed;
 * editing or deletion of append-only review artifacts;
