@@ -9,8 +9,8 @@ from pathlib import Path
 from pds_core.workspace import WorkspaceRootError, WorkspaceStatus
 import pytest
 
-import quillan.cli
 from quillan.cli import main
+import quillan.cli_app.handlers.workspace as cli_workspace
 
 
 def _menu_input(
@@ -188,7 +188,9 @@ def test_workspace_show_uses_pds_core_status(
         calls += 1
         return status
 
-    monkeypatch.setattr(quillan.cli, "inspect_workspace_root", inspect_workspace_root)
+    monkeypatch.setattr(
+        cli_workspace, "inspect_workspace_root", inspect_workspace_root
+    )
 
     result = main(["workspace", "show"])
     captured = capsys.readouterr()
@@ -216,7 +218,7 @@ def test_workspace_show_reports_status_fields(
         default_root=tmp_path / "workspace",
     )
     monkeypatch.setattr(
-        quillan.cli,
+        cli_workspace,
         "inspect_workspace_root",
         lambda: status,
     )
@@ -249,7 +251,7 @@ def test_workspace_show_reports_workspace_error(
         raise WorkspaceRootError("bad workspace")
 
     monkeypatch.setattr(
-        quillan.cli,
+        cli_workspace,
         "inspect_workspace_root",
         raise_workspace_error,
     )
@@ -277,8 +279,8 @@ def test_workspace_set_validates_and_saves_shared_root(
         calls.append(("save", root))
         return root
 
-    monkeypatch.setattr(quillan.cli, "ensure_workspace_root", ensure)
-    monkeypatch.setattr(quillan.cli, "save_workspace_root", save)
+    monkeypatch.setattr(cli_workspace, "ensure_workspace_root", ensure)
+    monkeypatch.setattr(cli_workspace, "save_workspace_root", save)
 
     assert main(["workspace", "set", str(requested_root)]) == 0
     output = capsys.readouterr().out
@@ -300,7 +302,7 @@ def test_workspace_validate_uses_current_resolved_root(
     calls: list[Path] = []
 
     monkeypatch.setattr(
-        quillan.cli,
+        cli_workspace,
         "resolve_workspace_root",
         lambda: resolved_root,
     )
@@ -311,7 +313,7 @@ def test_workspace_validate_uses_current_resolved_root(
         calls.append(root)
         return root
 
-    monkeypatch.setattr(quillan.cli, "ensure_workspace_root", ensure)
+    monkeypatch.setattr(cli_workspace, "ensure_workspace_root", ensure)
 
     assert main(["workspace", "validate"]) == 0
     output = capsys.readouterr().out
@@ -346,9 +348,9 @@ def test_workspace_reset_clears_only_saved_preference(
         calls += 1
         return was_cleared
 
-    monkeypatch.setattr(quillan.cli, "clear_saved_workspace_root", clear)
+    monkeypatch.setattr(cli_workspace, "clear_saved_workspace_root", clear)
     monkeypatch.setattr(
-        quillan.cli,
+        cli_workspace,
         "resolve_workspace_root",
         lambda: resolved_root,
     )
@@ -382,7 +384,7 @@ def test_workspace_commands_report_workspace_errors(
     def fail(*_args: object) -> object:
         raise WorkspaceRootError("bad workspace")
 
-    monkeypatch.setattr(quillan.cli, patched_name, fail)
+    monkeypatch.setattr(cli_workspace, patched_name, fail)
 
     assert main(command) != 0
     assert "Error: bad workspace" in capsys.readouterr().out
@@ -483,7 +485,7 @@ def test_workspace_menu_reuses_workspace_show_handler(
         print("Synthetic workspace status")
         return 0
 
-    monkeypatch.setattr(quillan.cli, "_handle_workspace_show", handle_workspace_show)
+    monkeypatch.setattr(cli_workspace, "show_workspace", handle_workspace_show)
     _menu_input(monkeypatch, ["4", "1", "", "5", "6"])
 
     assert main(["menu"]) == 0
@@ -514,7 +516,7 @@ def test_workspace_menu_sets_workspace_folder(
         print("PDS_WORKSPACE_ROOT still takes precedence.")
         return 0
 
-    monkeypatch.setattr(quillan.cli, "_handle_workspace_set", handle_workspace_set)
+    monkeypatch.setattr(cli_workspace, "set_workspace", handle_workspace_set)
     _menu_input(monkeypatch, ["4", "2", str(workspace_root), "", "5", "6"])
 
     assert main(["menu"]) == 0
@@ -538,7 +540,7 @@ def test_workspace_menu_blank_set_cancels_without_change(
         calls += 1
         return 0
 
-    monkeypatch.setattr(quillan.cli, "_handle_workspace_set", handle_workspace_set)
+    monkeypatch.setattr(cli_workspace, "set_workspace", handle_workspace_set)
     _menu_input(monkeypatch, ["4", "2", "  ", "", "5", "6"])
 
     assert main(["menu"]) == 0
@@ -562,8 +564,8 @@ def test_workspace_menu_validates_current_workspace(
         return 0
 
     monkeypatch.setattr(
-        quillan.cli,
-        "_handle_workspace_validate",
+        cli_workspace,
+        "validate_workspace",
         handle_workspace_validate,
     )
     _menu_input(monkeypatch, ["4", "3", "", "5", "6"])
@@ -589,8 +591,8 @@ def test_workspace_menu_resets_saved_preference(
         return 0
 
     monkeypatch.setattr(
-        quillan.cli,
-        "_handle_workspace_reset",
+        cli_workspace,
+        "reset_workspace",
         handle_workspace_reset,
     )
     _menu_input(monkeypatch, ["4", "4", "", "5", "6"])

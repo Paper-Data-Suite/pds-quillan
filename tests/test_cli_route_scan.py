@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-import quillan.cli
 from quillan.cli import main
+import quillan.cli_app.handlers.routing as cli_routing
 from quillan.evidence_filing import EvidenceFilingError
 from quillan.routing_review import RoutingReviewError
 
@@ -69,7 +69,7 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         json.dumps(assignment),
         encoding="utf-8",
     )
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_routing, "resolve_workspace_root", lambda: tmp_path)
     return tmp_path
 
 
@@ -267,7 +267,7 @@ def test_route_scan_preserves_evidence_filing_error(
         raise EvidenceFilingError("Synthetic disk write failure.")
 
     monkeypatch.setattr(
-        quillan.cli,
+        cli_routing,
         "file_routed_response_evidence",
         fail_filing,
     )
@@ -296,7 +296,7 @@ def test_route_scan_returns_one_when_failure_cannot_be_preserved(
         raise RoutingReviewError("Synthetic review write failure.")
 
     monkeypatch.setattr(
-        quillan.cli,
+        cli_routing,
         "preserve_routing_failure_for_review",
         fail_preservation,
     )

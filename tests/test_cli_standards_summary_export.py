@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-import quillan.cli
 from quillan.cli import main
+import quillan.cli_app.handlers.exports as cli_exports
 from quillan.standards_summary_export import standards_summary_export_path
 from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID
 from tests.test_standards_summary_export import _tag, _write_review
@@ -26,7 +26,7 @@ def test_cli_exports_standards_rows_and_prints_summary(
         comments=[],
     )
     originals = {path: path.read_bytes() for path in paths}
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(["export-standards-summary", CLASS_ID, ASSIGNMENT_ID]) == 0
 
@@ -61,7 +61,7 @@ def test_cli_handles_missing_directory_and_overwrite(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
     command = ["export-standards-summary", CLASS_ID, ASSIGNMENT_ID]
     assert main(command) == 1
     assert "submissions directory does not exist" in capsys.readouterr().out
@@ -96,7 +96,7 @@ def test_cli_writes_header_only_when_no_standard_artifacts(
         tags=[_tag("tag_1", None, "neutral")],
         comments=[],
     )
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(["export-standards-summary", CLASS_ID, ASSIGNMENT_ID]) == 0
 

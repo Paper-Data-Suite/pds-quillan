@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-import quillan.cli
 from quillan.class_summary_export import class_summary_export_path
 from quillan.cli import main
+import quillan.cli_app.handlers.exports as cli_exports
 from tests.test_class_summary_export import _student_dir, _write_records
 from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID
 
@@ -25,7 +25,7 @@ def test_cli_exports_ready_and_non_ready_rows_and_prints_summary(
         manifest_path: manifest_path.read_bytes(),
         review_path: review_path.read_bytes(),
     }
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(["export-class-summary", CLASS_ID, ASSIGNMENT_ID]) == 0
 
@@ -64,7 +64,7 @@ def test_cli_missing_submissions_directory_returns_one(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
     assert main(["export-class-summary", CLASS_ID, ASSIGNMENT_ID]) == 1
     assert "submissions directory does not exist" in capsys.readouterr().out
 
@@ -84,7 +84,7 @@ def test_cli_overwrite_flag_controls_replacement(
     )
     output_path.parent.mkdir(parents=True)
     output_path.write_text("manual edit", encoding="utf-8")
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
     command = ["export-class-summary", CLASS_ID, ASSIGNMENT_ID]
 
     assert main(command) == 1

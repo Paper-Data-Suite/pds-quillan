@@ -10,9 +10,9 @@ from typing import Any
 
 import pytest
 
-import quillan.cli
 import quillan.submission_review_state
 from quillan.cli import main
+import quillan.cli_app.handlers.submissions as cli_submissions
 from quillan.submission_manifest import (
     ALLOWED_SUBMISSION_STATES,
     SubmissionManifestError,
@@ -370,9 +370,11 @@ def test_cli_success_prints_teacher_context(
         new_state="in_progress",
         updated_at=UPDATED_TIMESTAMP,
     )
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
     monkeypatch.setattr(
-        quillan.cli,
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
+    monkeypatch.setattr(
+        cli_submissions,
         "update_submission_review_state",
         lambda *_args: updated,
     )
@@ -405,12 +407,16 @@ def test_cli_failure_returns_one(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
 
     def fail(*_args: object) -> UpdatedSubmissionReviewState:
         raise SubmissionReviewStateError("manifest is unavailable")
 
-    monkeypatch.setattr(quillan.cli, "update_submission_review_state", fail)
+    monkeypatch.setattr(
+        cli_submissions, "update_submission_review_state", fail
+    )
 
     assert (
         main(

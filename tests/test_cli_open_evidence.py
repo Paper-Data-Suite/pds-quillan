@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-import quillan.cli
 from quillan.cli import main
+import quillan.cli_app.handlers.submissions as cli_submissions
 from quillan.evidence_opening import EvidenceOpeningError, OpenedEvidence
 
 
@@ -19,7 +19,9 @@ def test_open_evidence_uses_active_workspace_and_prints_relative_path(
     relative_path = "classes/class_1/scans/evidence.pdf"
     calls: list[tuple[Path, str | Path]] = []
 
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
 
     def open_evidence(
         workspace_root: str | Path,
@@ -31,7 +33,9 @@ def test_open_evidence_uses_active_workspace_and_prints_relative_path(
             evidence_relative_path=relative_path,
         )
 
-    monkeypatch.setattr(quillan.cli, "open_workspace_evidence", open_evidence)
+    monkeypatch.setattr(
+        cli_submissions, "open_workspace_evidence", open_evidence
+    )
 
     assert main(["open-evidence", relative_path]) == 0
     assert calls == [(tmp_path, relative_path)]
@@ -48,7 +52,9 @@ def test_open_evidence_reports_validation_failure(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(quillan.cli, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
 
     def fail_to_open(
         _workspace_root: str | Path,
@@ -56,7 +62,9 @@ def test_open_evidence_reports_validation_failure(
     ) -> OpenedEvidence:
         raise EvidenceOpeningError("unsafe or missing evidence")
 
-    monkeypatch.setattr(quillan.cli, "open_workspace_evidence", fail_to_open)
+    monkeypatch.setattr(
+        cli_submissions, "open_workspace_evidence", fail_to_open
+    )
 
     assert main(["open-evidence", evidence_path]) == 1
     assert "Error: could not open evidence file" in capsys.readouterr().out
