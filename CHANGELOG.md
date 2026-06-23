@@ -45,6 +45,11 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a synthetic end-to-end v0.7 smoke test covering routed-evidence
+  submission assembly, canonical teacher notes, structured tags, reusable
+  comments, criterion scores, and all three review exports, with explicit
+  non-mutation checks for manifests, review records, evidence, and comment
+  banks.
 - Added `quillan export-standards-summary` and a focused read-only API for
   writing assignment-level `exports/standards_summary.csv`. Rows are sorted by
   `standard_code` and aggregate standards-linked tag polarity, selected
