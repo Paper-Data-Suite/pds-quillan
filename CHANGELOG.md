@@ -10,6 +10,12 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added QR-aware PDF page intake to `quillan route-scan --decode-qr`. The
+  command converts each PDF page to an image, decodes and validates each page
+  independently, files routed page evidence as PNG files, preserves page-level
+  and conversion-level failures under `scans/review/`, and continues after
+  handled per-page failures. This adds the `pdf2image` runtime dependency;
+  Poppler must be installed separately by the user.
 - Added QR-aware single-image intake to `quillan route-scan` through
   `--decode-qr`. The command decodes one supported local image, validates the
   decoded Quillan `doc=response` PDS1 payload, routes through existing

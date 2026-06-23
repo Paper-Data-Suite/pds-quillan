@@ -254,8 +254,8 @@ def test_route_scan_decode_qr_unsupported_source_type_preserves_failure(
     workspace: Path,
     tmp_path: Path,
 ) -> None:
-    source = tmp_path / "scan.pdf"
-    source.write_bytes(b"%PDF-1.4\nsynthetic\n%%EOF\n")
+    source = tmp_path / "scan.gif"
+    source.write_bytes(b"synthetic")
 
     assert main(["route-scan", str(source), "--decode-qr"]) == 0
 
@@ -267,7 +267,7 @@ def test_route_scan_decode_qr_unsupported_source_type_preserves_failure(
     module_details = metadata["module_details"]
     assert isinstance(module_details, dict)
     assert module_details["failure_origin"] == "qr_decode"
-    assert not list(workspace.rglob("response_*.pdf"))
+    assert not list(workspace.rglob("response_*.gif"))
 
 
 def test_route_scan_decode_qr_non_pds_payload_preserves_validation_failure(
@@ -453,15 +453,20 @@ def test_route_scan_decode_qr_evidence_filing_failure_is_preserved(
     assert "could not be filed; preserved for review" in output
 
 
-def test_route_scan_decode_qr_pdf_remains_unsupported(
+def test_route_scan_decode_qr_pdf_conversion_failure_is_preserved(
     workspace: Path,
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     source = tmp_path / "synthetic-response.pdf"
     source.write_bytes(b"%PDF-1.4\nsynthetic response scan\n%%EOF\n")
+    monkeypatch.setattr(cli_routing, "iter_pdf_page_images", lambda _source: [])
 
     assert main(["route-scan", str(source), "--decode-qr"]) == 0
 
     metadata = _review_metadata(workspace)
-    assert metadata["failure_category"] == "source_type_unsupported"
+    assert metadata["failure_category"] == "source_unreadable"
+    module_details = metadata["module_details"]
+    assert isinstance(module_details, dict)
+    assert module_details["failure_origin"] == "pdf_conversion"
     assert not list(workspace.rglob("response_*.pdf"))
