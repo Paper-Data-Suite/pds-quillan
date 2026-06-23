@@ -17,6 +17,7 @@ from quillan.cli_app.handlers.exports import (
     handle_export_feedback,
     handle_export_standards_summary,
 )
+from quillan.cli_app.handlers.decoding import handle_decode_scan
 from quillan.cli_app.handlers.review import (
     handle_add_comment,
     handle_add_note,
@@ -93,6 +94,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="Already-decoded canonical PDS1 payload text.",
     )
     route_scan_parser.set_defaults(handler=handle_route_scan)
+
+    decode_scan_parser = subparsers.add_parser(
+        "decode-scan",
+        help="Decode a Quillan response-page QR payload without routing.",
+        description=(
+            "Decode one supported local image file, report the raw QR payload "
+            "and Quillan response-page identity, and exit without routing, "
+            "copying, preserving, assembling, or writing workspace data."
+        ),
+    )
+    decode_scan_parser.add_argument(
+        "source_file",
+        type=Path,
+        help="Path to a supported local image scan file.",
+    )
+    decode_scan_parser.add_argument(
+        "--hide-payload",
+        action="store_true",
+        help="Suppress raw QR payload text in diagnostic output.",
+    )
+    decode_scan_parser.set_defaults(handler=handle_decode_scan)
 
     assemble_parser = subparsers.add_parser(
         "assemble-submissions",
