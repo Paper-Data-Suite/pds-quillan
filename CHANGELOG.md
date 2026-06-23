@@ -31,6 +31,11 @@ planning and do not by themselves represent releases.
 
 ### Changed
 
+- Hardened QR-aware `route-scan` failure preservation so decode, payload
+  validation, payload parse, route-planning, and evidence-filing failures use
+  consistent routing-review metadata, stable `failure_origin` details, shared
+  failure categories, schema validation coverage, and no invented identity
+  fields before payload identity is available.
 - Validated the repository documentation against the completed v0.7.0
   milestone implementation. The docs now distinguish direct CLI/API review
   and export support from the current teacher-facing menu, use the canonical

@@ -9,12 +9,20 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from pds_core.scan_failure_metadata import ROUTING_FAILURE_CATEGORIES
+from pds_core.scan_failure_metadata import (
+    ROUTING_FAILURE_CATEGORIES,
+    validate_routing_failure_metadata,
+)
 
 from quillan.evidence_filing import (
     EvidenceFilingError,
     RetainedSourceScan,
 )
+from quillan.payload_validation import (
+    ResponsePayloadValidationFailure,
+    decoded_payload_to_response_page,
+)
+from quillan.qr_decode import QrImageDecodeResult
 from quillan.route_planning import (
     DecodedResponsePage,
     RouteFailure,
@@ -23,7 +31,9 @@ from quillan.route_planning import (
 )
 from quillan.routing_review import (
     RoutingReviewError,
+    preserve_decode_failure_for_review,
     preserve_evidence_filing_error_for_review,
+    preserve_payload_validation_failure_for_review,
     preserve_route_failure_for_review,
     preserve_routing_failure_for_review,
 )
@@ -40,10 +50,12 @@ RAW_PAYLOAD = (
 
 
 def _read_metadata(path: Path) -> dict[str, object]:
-    return cast(
+    metadata = cast(
         dict[str, object],
         json.loads(path.read_text(encoding="utf-8")),
     )
+    validate_routing_failure_metadata(metadata)
+    return metadata
 
 
 def _route_failure(workspace: Path) -> RouteFailure:
@@ -155,6 +167,37 @@ def test_shared_writer_refuses_failure_id_collision(tmp_path: Path) -> None:
         )
 
 
+def test_failure_metadata_filenames_are_unique_for_distinct_failures(
+    tmp_path: Path,
+) -> None:
+    first = preserve_routing_failure_for_review(
+        tmp_path,
+        failure_category="payload_invalid",
+        failure_message="Invalid.",
+        source_filename="scan.pdf",
+        detected_payload="first",
+        created_at=CREATED_AT,
+    )
+    second = preserve_routing_failure_for_review(
+        tmp_path,
+        failure_category="payload_invalid",
+        failure_message="Invalid.",
+        source_filename="scan.pdf",
+        detected_payload="second",
+        created_at=CREATED_AT,
+    )
+
+    assert first.failure_metadata_path != second.failure_metadata_path
+    records = sorted((tmp_path / "scans" / "review").glob("*.json"))
+    assert records == sorted(
+        [first.failure_metadata_path, second.failure_metadata_path]
+    )
+    for record in records:
+        validate_routing_failure_metadata(
+            json.loads(record.read_text(encoding="utf-8"))
+        )
+
+
 def test_preserves_route_failure_fields_without_replanning(
     tmp_path: Path,
 ) -> None:
@@ -176,7 +219,72 @@ def test_preserves_route_failure_fields_without_replanning(
     assert metadata["student_id"] == STUDENT_ID
     assert metadata["detected_payload"] == RAW_PAYLOAD
     assert metadata["payload_page_number"] == 2
-    assert metadata["module_details"] == failure.module_details
+    expected_details: dict[str, object] = {
+        "failure_origin": "route_planning",
+    }
+    expected_details.update(failure.module_details)
+    assert metadata["module_details"] == expected_details
+
+
+def test_decode_failure_adapter_preserves_null_identity(
+    tmp_path: Path,
+) -> None:
+    record = preserve_decode_failure_for_review(
+        tmp_path,
+        decode_result=QrImageDecodeResult(
+            payload_text=None,
+            failure_category="payload_missing",
+            failure_message="No QR payload could be decoded.",
+        ),
+        source_filename="blank.png",
+        created_at=CREATED_AT,
+    )
+
+    metadata = _read_metadata(record.failure_metadata_path)
+    assert metadata["failure_category"] == "payload_missing"
+    assert metadata["failure_message"] == "No QR payload could be decoded."
+    assert metadata["source_filename"] == "blank.png"
+    assert metadata["module"] is None
+    assert metadata["detected_payload"] is None
+    assert metadata["payload_page_number"] is None
+    assert metadata["class_id"] is None
+    assert metadata["assignment_id"] is None
+    assert metadata["student_id"] is None
+    assert metadata["module_details"] == {
+        "failure_origin": "qr_decode",
+        "decode_attempt": None,
+    }
+
+
+def test_payload_validation_failure_adapter_preserves_parsed_identity(
+    tmp_path: Path,
+) -> None:
+    payload = RAW_PAYLOAD.replace("doc=response", "doc=cover")
+    failure = decoded_payload_to_response_page(payload)
+    assert isinstance(failure, ResponsePayloadValidationFailure)
+
+    record = preserve_payload_validation_failure_for_review(
+        tmp_path,
+        failure=failure,
+        source_filename="wrong-doc.png",
+        created_at=CREATED_AT,
+    )
+
+    metadata = _read_metadata(record.failure_metadata_path)
+    assert metadata["failure_category"] == "payload_invalid"
+    assert metadata["module"] == "quillan"
+    assert metadata["detected_payload"] == payload
+    assert metadata["class_id"] == CLASS_ID
+    assert metadata["assignment_id"] == ASSIGNMENT_ID
+    assert metadata["student_id"] == STUDENT_ID
+    assert metadata["payload_page_number"] == 2
+    assert metadata["module_details"] == {
+        "failure_origin": "payload_validation",
+        "reason": "document_type_invalid",
+        "field": "doc",
+        "expected_document_type": "response",
+        "actual_document_type": "cover",
+    }
 
 
 def test_route_failure_adapter_accepts_retained_source_provenance(
