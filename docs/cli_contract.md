@@ -302,10 +302,11 @@ A future menu may guide teachers through additional multi-step work after
 those workflows are actually implemented. It should orchestrate reusable
 application functions rather than becoming the only route to core operations.
 
-CLI parsing and presentation belong in `quillan/cli.py`. Validation, storage,
-workspace resolution, and other domain behavior belong in their relevant
-modules or in shared `pds-core` services. This separation allows direct
-commands and the menu to share behavior and tests.
+CLI parsing, presentation, and command handlers live in the internal
+`quillan.cli_app` package. `quillan/cli.py` remains the public compatibility
+facade and console-script entrypoint. Validation, storage, workspace
+resolution, and other domain behavior belong in their relevant modules or in
+shared `pds-core` services.
 
 ## Help and Discoverability
 
@@ -539,9 +540,10 @@ Until Quillan reaches 1.0:
   migrated, but pre-1.0 changes do not promise a fixed deprecation period.
 
 The source of truth for the current surface is the combination of
-`quillan/cli.py`, its CLI tests, and this document. If they disagree, the
-implementation and tests describe executable behavior, and the mismatch
-should be corrected rather than treated as an undocumented feature.
+`quillan.cli_app`, the public `quillan/cli.py` facade, CLI tests, and this
+document. If they disagree, the implementation and tests describe executable
+behavior, and the mismatch should be corrected rather than treated as an
+undocumented feature.
 
 ## Not Currently Part of the CLI
 
@@ -553,11 +555,9 @@ explicitly outside the current end-to-end foundation:
 * workspace creation or selection;
 * production scan routing or QR extraction;
 * OCR or handwriting interpretation;
-* requirements checking, tagging, scoring, feedback, and reporting
-  workflows;
+* complete requirements-checking workflows;
 * AI grading, scoring, tagging, or feedback; and
-* complete teacher-facing assignment, printable-response, submission
-  review, tagging, scoring, feedback, or reporting workflows.
+* complete terminal-menu submission review and reporting workflows.
 
 Their presence in design documents or Python modules does not add them to the
 CLI contract.

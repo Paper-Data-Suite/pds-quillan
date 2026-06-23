@@ -193,15 +193,15 @@ standards and criterion references, polarity, severity defaults, search
 metadata, and student-facing controls. Banks are not student records, do not
 grade work, and do not generate feedback by themselves.
 
-Future assignments may optionally activate banks through
-`comment_bank_ids`. Direct shared-bank selection copies the chosen language into
+Future assignments may optionally activate banks through `comment_bank_ids`.
+The implemented direct shared-bank selection copies chosen language into
 `review.json.comments` with `source: "comment_bank"`, `bank_id`, and
 `comment_id`. Because comment IDs are unique only within a bank, the pair
 preserves source provenance. The copied label and text make the student review
 a stable snapshot rather than a live reference. The complete version `1`
 shape and validation rules are defined in
-[`comment_bank_contract.md`](comment_bank_contract.md). Runtime validation,
-assignment activation, and selection are not implemented.
+[`comment_bank_contract.md`](comment_bank_contract.md). Runtime validation and
+direct selection are implemented; assignment activation remains future work.
 
 ## Assignment
 
@@ -562,121 +562,19 @@ Example:
 }
 ```
 
-## Tag Record (Historical Design)
+## Review Tags and Scores
 
-This section preserves the earlier separate-file design for historical
-context. It is not an active v0.7 contract. Canonical tag records are items in
-the `tags` array of `review.json`, with their current shape defined in
-[`review_record_contract.md`](review_record_contract.md). Implementations must
-not create or mirror active tag data in `tags.json`.
-
-Historical suggested path (not active in v0.7):
-
-```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/tags.json
-```
-
-Required fields:
-
-* `tag_id`
-* `submission_id`
-* `student_id`
-* `class_id`
-* `assignment_id`
-* `location`
-* `standard_code`
-* `comment_id`
-* `label`
-* `polarity`
-* `created_at`
-
-Optional fields:
-
-* `severity`
-* `teacher_note`
-
-Allowed MVP polarity values:
-
-* `positive`
-* `developing`
-* `negative`
-
-Allowed MVP location keys:
-
-* `paragraph`
-* `sentence`
-* `page`
-* `stanza`
-* `line`
-* `section`
-* `scene`
-* `whole_submission`
-
-Example:
-
-```json
-[
-  {
-    "tag_id": "tag_0001",
-    "submission_id": "sub_0001_villainy_final_essay_synthetic",
-    "student_id": "stu_0001",
-    "class_id": "english12_period3_synthetic",
-    "assignment_id": "villainy_final_essay_synthetic",
-    "location": {
-      "paragraph": 2
-    },
-    "standard_code": "W.AW.11-12.1",
-    "comment_id": "evidence_needs_explanation",
-    "label": "Evidence needs more explanation",
-    "polarity": "developing",
-    "severity": 2,
-    "teacher_note": "The example is relevant, but the student does not explain how it proves the claim.",
-    "created_at": "2026-06-07T12:00:00"
-  }
-]
-```
-
-## Score Record (Historical Design)
-
-This section preserves the earlier aggregate score-file design for historical
-context. It is not an active v0.7 contract. Canonical criterion score records
-are items in the `scores` array of `review.json`. Scores remain
-teacher-entered or teacher-confirmed decisions and are never automatically
-generated or determined by tags or other records.
-
-Historical suggested path (not active in v0.7):
-
-```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/scores.json
-```
-
-Example:
-
-```json
-{
-  "submission_id": "sub_0001_villainy_final_essay_synthetic",
-  "student_id": "stu_0001",
-  "assignment_id": "villainy_final_essay_synthetic",
-  "rubric_id": "argument_essay_4pt_synthetic",
-  "rubric_scores": {
-    "claim": 3,
-    "evidence": 2,
-    "reasoning": 2,
-    "organization": 3,
-    "language": 3
-  },
-  "overall_score": 13,
-  "max_score": 20,
-  "teacher_summary": "The essay has a clear central claim and relevant evidence, but several body paragraphs need stronger explanation."
-}
-```
+Active tag and criterion-score records are stored only in the `tags` and
+`scores` arrays of canonical `review.json`. Their current shapes and validation
+rules are defined in
+[`review_record_contract.md`](review_record_contract.md). Quillan does not
+create or mirror standalone review-artifact files for either record type.
 
 ## Feedback File (Derived Export)
 
 The feedback file stores student-readable teacher communication derived from a
-valid matching canonical `review.json`. Unlike the historical `tags.json` and
-`scores.json` concepts, it is not a canonical review record and must not
-replace `review.json`.
+valid matching canonical `review.json`. It is not a canonical review record
+and must not replace `review.json`.
 
 Canonical export path:
 

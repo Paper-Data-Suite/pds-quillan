@@ -13,6 +13,9 @@ planning and do not by themselves represent releases.
 - Split the CLI implementation into smaller internal parser, argument,
   output, and command-handler modules. Public command behavior and the
   `quillan.cli:main` console-script entrypoint remain unchanged.
+- Removed obsolete standalone review-artifact storage helpers and empty stale
+  placeholder modules. Canonical review data remains in `review.json`, with
+  feedback and assignment summaries written only as derived exports.
 - Added explicit shared-bank provenance to selected version `1` review
   comments. `comment_bank` snapshots now require a valid `bank_id` and
   `comment_id`; standards-profile snapshots require `standard_code` and

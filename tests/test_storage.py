@@ -19,13 +19,7 @@ from quillan.storage import (
     assignment_scans_dir,
     assignment_submissions_dir,
     assignment_templates_dir,
-    feedback_path,
-    reports_dir,
-    requirements_path,
-    scores_path,
     student_submission_dir,
-    submission_text_path,
-    tags_path,
 )
 
 CLASS_ID = "english12_period3_synthetic"
@@ -54,13 +48,7 @@ def test_assignment_paths_use_shared_pds_routes(tmp_path: Path) -> None:
     ) == pds_assignment_templates_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID)
 
 
-def test_quillan_assignment_files_remain_assignment_local(tmp_path: Path) -> None:
-    expected_dir = pds_assignment_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID)
-
-    assert reports_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID) == expected_dir / "reports"
-
-
-def test_student_files_remain_submission_local(tmp_path: Path) -> None:
+def test_student_submission_dir_uses_shared_pds_route(tmp_path: Path) -> None:
     expected_dir = pds_student_submission_dir(
         tmp_path,
         CLASS_ID,
@@ -71,24 +59,4 @@ def test_student_files_remain_submission_local(tmp_path: Path) -> None:
     assert (
         student_submission_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
         == expected_dir
-    )
-    assert (
-        submission_text_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
-        == expected_dir / "submission.txt"
-    )
-    assert (
-        requirements_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
-        == expected_dir / "requirements.json"
-    )
-    assert (
-        tags_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
-        == expected_dir / "tags.json"
-    )
-    assert (
-        scores_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
-        == expected_dir / "scores.json"
-    )
-    assert (
-        feedback_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
-        == expected_dir / "feedback.md"
     )
