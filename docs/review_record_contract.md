@@ -25,7 +25,7 @@ This document defines submission review schema version `1` for the v0.7
 contract. Runtime loading and validation are implemented by
 `quillan.review_record`. Canonical path computation and safe writing are
 implemented by `quillan.review_record_paths`. Teacher-facing commands and
-exports remain future work.
+derived exports are implemented for the v0.7 review workflows.
 
 ## Top-Level Structure
 
@@ -604,8 +604,8 @@ This contract does not implement:
 
 * rubric-profile loading, validation, or criterion lookup;
 * overall, weighted, percentage, grade, or mastery score calculation;
-* standalone comment-bank lookup or reusable-comment management;
-* standards-summary export or roster-aware missing-student reporting;
+* assignment-driven comment-bank activation or reusable-comment management;
+* roster-aware missing-student reporting;
 * terminal-menu review workflows or review CLI commands beyond those listed;
 * editing or deletion of append-only review artifacts;
 * AI scoring, feedback, comments, suggestions, or automated grading;

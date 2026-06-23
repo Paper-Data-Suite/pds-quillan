@@ -14,11 +14,12 @@ review without reading the student's work.
 
 This document defines the review model and data boundaries. Quillan currently
 validates relevant data contracts, can prepare printable writing-response
-pages, and supports direct teacher-entered quick notes and structured tags.
-It does not yet implement complete requirements-checking, scoring, feedback,
-reporting, or terminal-menu review workflows. Its initial terminal menu is a
-navigation skeleton rather than a review implementation. AI tagging, AI
-scoring, AI feedback, and automatic grading are not implemented.
+pages, supports direct teacher-entered notes, tags, comments, and criterion
+scores, and can export student feedback and assignment summaries. It does not
+yet implement complete requirements-checking or terminal-menu review
+workflows. Its initial terminal menu is a navigation skeleton rather than a
+review implementation. AI tagging, AI scoring, AI feedback, and automatic
+grading are not implemented.
 
 ## Source Evidence
 
@@ -58,11 +59,11 @@ in `review.json`.
 
 Derived outputs are generated from teacher-reviewed records:
 
-* `feedback.md`
+* `exports/feedback.md`
 * `exports/class_summary.csv`
 * `exports/standards_summary.csv`
 
-`feedback.md` is a possible student-readable export. CSV reports are
+`exports/feedback.md` is a student-readable export. CSV reports are
 aggregations. These outputs are not independent evidence or substitutes for
 `review.json`; they should remain traceable to the teacher-confirmed records
 from which they were derived.
@@ -219,8 +220,9 @@ Ready rows include transparent totals of teacher-entered scores and maximums,
 but those sums are not grades, percentages, mastery judgments, or weighted
 results. Missing or invalid records remain visible as status rows. The export
 does not inspect evidence or source comment banks, use a roster, or mutate
-canonical records. Standards aggregation and roster-aware missing-student
-reporting remain separate future work.
+canonical records. Standards aggregation is available through the implemented
+standards summary export; roster-aware missing-student reporting remains
+future work.
 
 ## Relationship to Existing Documentation
 

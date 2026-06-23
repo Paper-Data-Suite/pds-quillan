@@ -18,8 +18,8 @@ Quillan currently supports:
 - standards profile loading and validation;
 - validation of the legacy text-oriented submission metadata shape;
 - documented writing-evidence and teacher-review data contracts;
-- a documented shared reusable comment bank contract with a synthetic
-  example; runtime bank activation and comment selection remain future work;
+- a validated shared reusable comment bank contract with a synthetic example
+  and direct teacher-controlled comment selection into `review.json`;
 - loading and validation for the version `1` reviewable-evidence submission
   manifest through the distinct `quillan.submission_manifest` module;
 - assembly of new version `1` submission manifests from caller-provided routed
@@ -61,6 +61,9 @@ Quillan currently supports:
   opening, and student-aware selected-evidence opening; and
 - explicit, teacher-controlled lightweight submission review-state updates
   that change only review metadata;
+- direct teacher-controlled quick-note, structured-tag, reusable-comment, and
+  criterion-score updates to canonical `review.json` records;
+- derived student feedback, class summary, and standards summary exports; and
 - synthetic examples and fixtures for safe testing and documentation.
 
 Printable response generation is exposed through the teacher-facing menu and
@@ -87,9 +90,7 @@ particular, Quillan does not currently provide:
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
 - merging newly routed evidence into existing teacher review state;
-- assignment creation workflows;
-- implemented requirements-checking, tagging, scoring, feedback, or
-  production reporting workflows;
+- complete requirements-checking workflows;
 - AI tagging, AI scoring, or AI feedback;
 - automatic grading;
 - complete teacher-facing assignment editing or review workflows; or
@@ -353,12 +354,13 @@ Replacing an existing packet requires exact `OVERWRITE` confirmation.
 Generation does not alter the roster or assignment config. Generated PDFs are
 local workspace artifacts and should not be committed.
 
-Reusable teacher-authored comment banks are designed to live at
+Reusable teacher-authored comment banks live at
 `shared/comment_banks/<bank_id>.json`. The version `1` source-data contract,
 category and comment shapes, future assignment activation, and snapshot
 boundary with `review.json.comments` are documented in
-[`docs/comment_bank_contract.md`](docs/comment_bank_contract.md). Quillan does
-not yet load banks or select comments from them.
+[`docs/comment_bank_contract.md`](docs/comment_bank_contract.md). The direct
+`add-comment` workflow validates a bank and copies selected teacher-authored
+language into the canonical review record.
 
 Quillan also consumes the shared PDS1 payload conventions and helpers from
 `pds-core`. Each generated response page embeds a QR code containing a
