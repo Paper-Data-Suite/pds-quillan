@@ -60,7 +60,7 @@ The expected current and reserved layout is:
               requirements.json
               review.json
               feedback.md
-          reports/
+          exports/
             standards_summary.csv
             class_summary.csv
           debug/
@@ -194,13 +194,12 @@ review data. It should remain traceable to `review.json` and must not be
 treated as an independent review record or a replacement for teacher
 judgment. Feedback export is not implemented by this document.
 
-### `reports/`
+### `exports/`
 
-The assignment-local location for future reports derived from
-teacher-reviewed records. Expected MVP report names are
-`standards_summary.csv` and `class_summary.csv`. Reports summarize records;
-they do not replace the underlying source evidence or teacher-review
-artifacts. Report generation is not implemented by this document.
+The assignment-local location for derived teacher-facing reports. Implemented
+report names are `standards_summary.csv` and `class_summary.csv`. Reports
+summarize records; they do not replace the underlying source evidence or
+teacher-review artifacts.
 
 ### `debug/`
 
@@ -257,8 +256,8 @@ container for notes, tags, criterion scores, and selected comments.
 Derived outputs are generated from teacher-reviewed records:
 
 * `feedback.md`
-* `reports/standards_summary.csv`
-* `reports/class_summary.csv`
+* `exports/standards_summary.csv`
+* `exports/class_summary.csv`
 
 Exports and reports should be reproducible from the applicable reviewed
 records and should not become the sole copy of submission evidence or teacher

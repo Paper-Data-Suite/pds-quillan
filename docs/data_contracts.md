@@ -697,28 +697,33 @@ requires explicit overwrite approval.
 
 ## Standards Summary Report
 
-A standards summary aggregates teacher-reviewed tag data by standard. It is a
-derived report rather than independent evidence and should remain traceable to
-its underlying review records.
+The standards summary is an implemented assignment-level derived export from
+valid matching `submission.json` and `review.json` records. It remains
+traceable to teacher-entered review artifacts and is not independent evidence.
 
-Suggested path:
-
-```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/reports/standards_summary.csv
-```
-
-Required MVP columns:
+Canonical path:
 
 ```text
-assignment_id,class_id,standard_code,positive_tags,developing_tags,negative_tags,most_common_positive,most_common_developing,most_common_negative
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 ```
 
-Example row:
+Stable columns:
 
-```csv
-assignment_id,class_id,standard_code,positive_tags,developing_tags,negative_tags,most_common_positive,most_common_developing,most_common_negative
-villainy_final_essay_synthetic,english12_period3_synthetic,W.AW.11-12.1,12,18,6,clear_claim,evidence_needs_explanation,unsupported_claim
+```text
+class_id,assignment_id,standard_code,student_count,tag_student_count,comment_student_count,tag_count,positive_tag_count,developing_tag_count,negative_tag_count,neutral_tag_count,selected_comment_count,included_comment_count,excluded_comment_count,review_count,missing_review_count,invalid_review_count,missing_submission_count,invalid_submission_count,identity_mismatch_count,source
 ```
+
+Each row represents one `standard_code` referenced by a tag or selected
+comment in a valid matching review, sorted by code. Tag counts use the four
+validated polarities. Comment counts distinguish included and excluded
+selected comments. Student counts are distinct per standard and source type.
+Assignment-level record-status counts repeat on each row; a report with no
+standards-linked artifacts contains only the header.
+
+The export ignores tags and comments without `standard_code`, scores, and
+notes. It does not load standards profiles, map criteria to standards, infer
+mastery, calculate grades, inspect evidence, read comment banks, use a roster,
+or mutate canonical records.
 
 ## Class Summary Report
 
@@ -750,7 +755,7 @@ The export reads only expected `submission.json` and `review.json` records and
 checks whether each `exports/feedback.md` path exists. It does not read
 feedback contents, evidence files, retained scans, standards profiles, or
 comment banks, and it does not mutate canonical records. Roster-aware missing
-student reporting and standards summaries remain future work.
+student reporting remains future work.
 
 ## Synthetic Data Policy
 

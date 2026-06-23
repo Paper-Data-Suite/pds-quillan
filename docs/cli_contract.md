@@ -50,6 +50,7 @@ quillan validate-standards <path>
 quillan validate-assignment <path>
 quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
+quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
 quillan workspace show
 quillan workspace set <path>
 quillan workspace validate
@@ -440,6 +441,30 @@ The export is read-only with respect to canonical records. It does not read
 evidence files or comment banks, use a roster, infer missing students,
 calculate percentages, grades, mastery, or weighted results, or generate a
 standards summary. Existing CSV files require `--overwrite`.
+
+## Standards Summary Export
+
+```powershell
+quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
+```
+
+This command discovers immediate student directories under the assignment
+`submissions/` directory and writes the derived
+`assignments/<assignment_id>/exports/standards_summary.csv`. It validates each
+available `submission.json` and `review.json`, counts missing, invalid, and
+identity-mismatched records without aborting the assignment export, and emits
+one row per referenced standard sorted by `standard_code`.
+
+Rows aggregate standards-linked structured tags by polarity and selected
+comments by feedback inclusion, plus distinct student counts. Artifacts
+without `standard_code` are ignored. If no valid linked artifacts exist, the
+command writes a header-only CSV. Success returns `0`; handled workspace,
+validation, missing-directory, and overwrite failures return `1`.
+
+The export does not include notes or scores, map criteria to standards, load a
+standards profile, inspect student writing or evidence, read comment banks,
+use AI, calculate grades or mastery, use a roster, or mutate canonical
+records. Existing CSV files require `--overwrite`.
 
 ## Output and Error Handling
 

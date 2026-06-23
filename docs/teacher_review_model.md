@@ -59,8 +59,8 @@ in `review.json`.
 Derived outputs are generated from teacher-reviewed records:
 
 * `feedback.md`
-* `reports/standards_summary.csv`
 * `exports/class_summary.csv`
+* `exports/standards_summary.csv`
 
 `feedback.md` is a possible student-readable export. CSV reports are
 aggregations. These outputs are not independent evidence or substitutes for
@@ -86,6 +86,14 @@ they do not establish a tag without teacher confirmation.
 
 Tags can support review consistency and reporting, but they do not
 mechanically determine scores.
+
+The assignment-level `exports/standards_summary.csv` report groups only
+standards-linked tags and selected comments from valid matching review
+records. It reports tag polarity, feedback inclusion, and distinct-student
+counts without reading evidence or source comment banks. It does not include
+scores or notes, load standards profiles, infer mastery, calculate grades, or
+mutate canonical records. Student discovery is directory-based; roster-aware
+missing-student reporting remains future work.
 
 ## Evidence Philosophy
 

@@ -142,7 +142,9 @@ The supported teacher/developer sequence is:
 13. `export-feedback` writes selected comments and criterion scores to a
     student-facing Markdown file.
 14. `export-class-summary` writes an assignment-level teacher review CSV.
-15. `set-review-state` records lightweight submission-manifest progress when
+15. `export-standards-summary` writes an assignment-level standards-linked
+    tag and selected-comment CSV.
+16. `set-review-state` records lightweight submission-manifest progress when
     the teacher chooses.
 
 Opening evidence and updating review state are separate teacher-controlled
@@ -162,6 +164,7 @@ quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --c
 quillan set-score <class_id> <assignment_id> <student_id> --criterion evidence --label "Evidence" --score 3 --max-score 4
 quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
+quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 ```
 
@@ -212,6 +215,14 @@ quillan set-review-state <class_id> <assignment_id> <student_id> <state>
   score totals, selected comments, tags, notes, and feedback-file existence.
   The totals are transparent arithmetic, not grades. The export does not read
   evidence or comment banks and does not mutate canonical records.
+- `export-standards-summary` reads valid matching `submission.json` and
+  `review.json` records and writes
+  `assignments/<assignment_id>/exports/standards_summary.csv`. It creates one
+  sorted row per `standard_code` referenced by a structured tag or selected
+  comment, including tag polarity, feedback-inclusion, and distinct-student
+  counts. It does not include scores or notes, load standards profiles, infer
+  mastery or grades, read evidence or comment banks, use a roster, or mutate
+  canonical records. Existing output requires `--overwrite`.
 - `set-review-state` updates only the manifest's `submission_state` and
   `updated_at`; it does not inspect evidence or make a review decision.
 
@@ -222,7 +233,7 @@ teacher explicitly requests it.
 Quillan does not perform OCR, handwriting recognition, PDF text
 extraction, AI scoring, AI feedback, AI suggestions, automatic grading,
 automatic review-state updates, automatic evidence selection among duplicates,
-rubric scoring, automatic feedback generation, standards reporting, or
+rubric scoring, automatic feedback generation, standards mastery reporting, or
 roster-aware missing-student reporting. Quick
 notes and structured tags are teacher-entered
 records; they do not score or generate feedback by themselves.
@@ -575,6 +586,7 @@ quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity
 quillan set-score <class_id> <assignment_id> <student_id> --criterion <criterion_id> --label "..." --score <number> --max-score <number>
 quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
+quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan workspace show
 quillan menu

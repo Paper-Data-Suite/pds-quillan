@@ -39,6 +39,14 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added `quillan export-standards-summary` and a focused read-only API for
+  writing assignment-level `exports/standards_summary.csv`. Rows are sorted by
+  `standard_code` and aggregate standards-linked tag polarity, selected
+  comment feedback inclusion, and distinct-student counts while retaining
+  assignment-level missing, invalid, and identity-mismatch counts. The export
+  excludes scores and notes, does not load standards profiles, read evidence
+  or comment banks, infer mastery or grades, use a roster, or mutate canonical
+  records.
 - Added `quillan export-class-summary` and a focused read-only API for writing
   assignment-level `exports/class_summary.csv`. The deterministic CSV includes
   one row per discovered student directory, status rows for missing, invalid,
