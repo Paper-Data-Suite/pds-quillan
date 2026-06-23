@@ -39,6 +39,13 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added `quillan export-class-summary` and a focused read-only API for writing
+  assignment-level `exports/class_summary.csv`. The deterministic CSV includes
+  one row per discovered student directory, status rows for missing, invalid,
+  and identity-mismatched records, review/submission states, transparent
+  teacher-entered score totals, selected-comment, tag, and note counts, and
+  feedback-export existence. It does not read evidence or comment banks,
+  calculate grades or mastery, use a roster, or mutate canonical records.
 - Added `quillan export-feedback` and a focused read-only API for generating
   `submissions/<student_id>/exports/feedback.md` from valid matching
   `submission.json` and `review.json` records. The Markdown includes ordered

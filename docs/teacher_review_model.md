@@ -60,7 +60,7 @@ Derived outputs are generated from teacher-reviewed records:
 
 * `feedback.md`
 * `reports/standards_summary.csv`
-* `reports/class_summary.csv`
+* `exports/class_summary.csv`
 
 `feedback.md` is a possible student-readable export. CSV reports are
 aggregations. These outputs are not independent evidence or substitutes for
@@ -204,6 +204,15 @@ Reports must be derived from teacher-confirmed artifacts rather than
 unconfirmed software judgments. They support instructional planning and
 clerical organization, but they do not replace reading student work or
 reviewing the underlying records.
+
+The implemented class review summary reads existing assignment submission and
+review records and emits one status row per discovered student directory.
+Ready rows include transparent totals of teacher-entered scores and maximums,
+but those sums are not grades, percentages, mastery judgments, or weighted
+results. Missing or invalid records remain visible as status rows. The export
+does not inspect evidence or source comment banks, use a roster, or mutate
+canonical records. Standards aggregation and roster-aware missing-student
+reporting remain separate future work.
 
 ## Relationship to Existing Documentation
 

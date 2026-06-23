@@ -559,7 +559,7 @@ contracts. Implementations must not split or mirror canonical review data
 across those files.
 
 `submissions/<student_id>/exports/feedback.md`,
-`reports/class_summary.csv`, and
+`assignments/<assignment_id>/exports/class_summary.csv`, and
 `reports/standards_summary.csv` are derived export artifacts. They may be
 generated from teacher-controlled review records, but they do
 not replace `review.json` and are not authoritative independent evidence.
@@ -578,6 +578,12 @@ Export does not mutate the review record, update timestamps, or advance
 `review_state` to `exported`. It writes only the derived feedback file and
 refuses to replace an existing file unless overwrite is explicitly requested.
 
+The class summary export similarly reads existing canonical records without
+mutating them. It reports missing, invalid, and identity-mismatched records as
+CSV status rows and includes only simple counts and arithmetic totals from
+teacher-entered review data. It does not inspect evidence or comment banks,
+calculate grades or mastery, or perform standards or roster reporting.
+
 ## Synthetic Example
 
 A complete fake record with a note, two tags, one criterion score, and one
@@ -591,7 +597,7 @@ This contract does not implement:
 * rubric-profile loading, validation, or criterion lookup;
 * overall, weighted, percentage, grade, or mastery score calculation;
 * standalone comment-bank lookup or reusable-comment management;
-* class-summary or standards-summary export;
+* standards-summary export or roster-aware missing-student reporting;
 * terminal-menu review workflows or review CLI commands beyond those listed;
 * editing or deletion of append-only review artifacts;
 * AI scoring, feedback, comments, suggestions, or automated grading;

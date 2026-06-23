@@ -23,6 +23,11 @@ from quillan.assignment_submission_assembly import (
     assemble_assignment_submissions,
 )
 from quillan.assignments import AssignmentConfigError, load_assignment_config
+from quillan.class_summary_export import (
+    ClassSummaryExportError,
+    ExportedClassSummary,
+    export_class_review_summary,
+)
 from quillan.evidence_filing import (
     EvidenceFilingError,
     RoutedEvidenceFile,
@@ -197,6 +202,13 @@ def main(argv: list[str] | None = None) -> int:
             args.class_id,
             args.assignment_id,
             args.student_id,
+            overwrite=args.overwrite,
+        )
+
+    if args.command == "export-class-summary":
+        return _handle_export_class_summary(
+            args.class_id,
+            args.assignment_id,
             overwrite=args.overwrite,
         )
 
@@ -536,6 +548,29 @@ def _build_parser() -> argparse.ArgumentParser:
         "--overwrite",
         action="store_true",
         help="Replace an existing exports/feedback.md file.",
+    )
+
+    export_class_summary_parser = subparsers.add_parser(
+        "export-class-summary",
+        help="Export a class-level review summary CSV for one assignment.",
+        description=(
+            "Generate a teacher-facing CSV summary from existing submission "
+            "and review records for one class assignment. The export reports "
+            "review availability, review state, score totals, selected feedback "
+            "counts, tag counts, and note counts. It does not mutate canonical "
+            "records or evidence."
+        ),
+    )
+    export_class_summary_parser.add_argument(
+        "class_id", help="Class identifier."
+    )
+    export_class_summary_parser.add_argument(
+        "assignment_id", help="Assignment identifier."
+    )
+    export_class_summary_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace an existing exports/class_summary.csv file.",
     )
 
     workspace_parser = subparsers.add_parser(
@@ -1034,6 +1069,45 @@ def _print_exported_feedback(exported: ExportedFeedback) -> None:
     print(f"Scores: {exported.score_count}")
     print(f"Overwrote existing: {_format_bool(exported.overwrote_existing)}")
     print(f"Feedback file: {exported.feedback_relative_path}")
+
+
+def _handle_export_class_summary(
+    class_id: str,
+    assignment_id: str,
+    *,
+    overwrite: bool,
+) -> int:
+    """Export one teacher-facing assignment class summary CSV."""
+    try:
+        workspace_root = resolve_workspace_root()
+        exported = export_class_review_summary(
+            workspace_root,
+            class_id,
+            assignment_id,
+            overwrite=overwrite,
+        )
+    except (WorkspaceRootError, ClassSummaryExportError) as error:
+        print(f"Error: could not export class review summary: {error}")
+        return 1
+
+    _print_exported_class_summary(exported)
+    return 0
+
+
+def _print_exported_class_summary(exported: ExportedClassSummary) -> None:
+    """Print a concise teacher-facing class summary export result."""
+    print("Exported class review summary:")
+    print(f"Class: {exported.class_id}")
+    print(f"Assignment: {exported.assignment_id}")
+    print(f"Rows: {exported.row_count}")
+    print(f"Ready: {exported.ready_count}")
+    print(f"Missing review: {exported.missing_review_count}")
+    print(f"Invalid review: {exported.invalid_review_count}")
+    print(f"Missing submission: {exported.missing_submission_count}")
+    print(f"Invalid submission: {exported.invalid_submission_count}")
+    print(f"Identity mismatch: {exported.identity_mismatch_count}")
+    print(f"Overwrote existing: {_format_bool(exported.overwrote_existing)}")
+    print(f"Summary file: {exported.summary_relative_path}")
 
 
 def _print_assignment_submission_status(
