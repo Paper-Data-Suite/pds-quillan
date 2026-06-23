@@ -59,11 +59,12 @@ in `review.json`.
 
 Derived outputs are generated from teacher-reviewed records:
 
-* `exports/feedback.md`
-* `exports/class_summary.csv`
-* `exports/standards_summary.csv`
+* `submissions/<student_id>/exports/feedback.md`
+* `assignments/<assignment_id>/exports/class_summary.csv`
+* `assignments/<assignment_id>/exports/standards_summary.csv`
 
-`exports/feedback.md` is a student-readable export. CSV reports are
+The student-level `exports/feedback.md` is a student-readable export. The
+assignment-level CSV reports are
 aggregations. These outputs are not independent evidence or substitutes for
 `review.json`; they should remain traceable to the teacher-confirmed records
 from which they were derived.

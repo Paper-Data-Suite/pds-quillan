@@ -48,6 +48,16 @@ quillan
 quillan --help
 quillan validate-standards <path>
 quillan validate-assignment <path>
+quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
+quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
+quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
+quillan open-evidence <workspace-relative-evidence-path>
+quillan open-submission <class_id> <assignment_id> <student_id>
+quillan set-review-state <class_id> <assignment_id> <student_id> <state>
+quillan add-note <class_id> <assignment_id> <student_id> --text "..."
+quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity <polarity>
+quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id>
+quillan set-score <class_id> <assignment_id> <student_id> --criterion <criterion_id> --label "..." --score <number> --max-score <number>
 quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
 quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
@@ -71,8 +81,7 @@ quillan menu
 ```
 
 Bare `quillan` and the explicit `menu` command launch the same interactive
-menu skeleton. Direct validation and workspace-status commands remain
-non-interactive.
+menu skeleton. The other commands remain direct and non-interactive.
 
 ### `validate-standards`
 
@@ -288,6 +297,13 @@ delete files, and `PDS_WORKSPACE_ROOT` still takes precedence.
 The workspace submenu does not include school-year settings. The overall menu
 remains a guided shell rather than a complete teacher-facing application.
 
+The menu does not currently guide teachers through submission selection,
+evidence opening, review-state changes, notes, tags, comment-bank selection,
+criterion scoring, feedback export, class or standards summary export, scan
+intake, or QR recognition. The implemented review and export operations are
+available through the direct commands documented below and through focused
+Python APIs.
+
 Menu help describes Quillan as a local-first, teacher-controlled
 writing-evidence tool; keeps teacher judgment primary; states that Quillan is
 not automated grading software; identifies currently unsupported AI, OCR,
@@ -302,11 +318,12 @@ A future menu may guide teachers through additional multi-step work after
 those workflows are actually implemented. It should orchestrate reusable
 application functions rather than becoming the only route to core operations.
 
-CLI parsing, presentation, and command handlers live in the internal
-`quillan.cli_app` package. `quillan/cli.py` remains the public compatibility
-facade and console-script entrypoint. Validation, storage, workspace
-resolution, and other domain behavior belong in their relevant modules or in
-shared `pds-core` services.
+CLI parser construction lives in `quillan/cli_app/parser.py`; argument
+conversion, output helpers, top-level dispatch, and command handlers live
+under `quillan/cli_app`. `quillan/cli.py` remains the public compatibility
+facade and `quillan.cli:main` console-script entrypoint. Validation, storage,
+workspace resolution, and other domain behavior belong in their relevant
+modules or in shared `pds-core` services.
 
 ## Help and Discoverability
 
@@ -356,9 +373,77 @@ Commands that operate on managed Paper Data Suite records should use shared
 workspace layouts. The active layout is documented in
 [`workspace_lifecycle.md`](workspace_lifecycle.md).
 
-A future command that writes files must document its destination, overwrite
-policy, and partial-failure behavior before that behavior is treated as
-stable.
+Commands that write files document their destination, overwrite policy, and
+handled-failure behavior in their command sections and help output.
+
+## Decoded-Payload Scan Routing
+
+```powershell
+quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
+```
+
+This command routes one selected source file using caller-supplied canonical
+PDS1 text. On success it retains the source under
+`scans/source/YYYY-MM-DD/` and files routed evidence under the target
+assignment's `scans/` directory. Payload, planning, or filing failures are
+preserved under `scans/review/` when they can be handled safely.
+
+The command does not inspect PDFs or images for QR codes, decode QR codes,
+split multi-page PDFs, batch-ingest a folder, run OCR, or identify a student
+from raw scan content. Exit `0` means the file was routed or safely preserved
+for review; exit `1` means it could not be handled safely.
+
+## Submission Assembly and Status
+
+```powershell
+quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
+quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
+```
+
+`assemble-submissions` discovers already-routed PDF and image evidence by the
+assignment filename convention and creates canonical student
+`submission.json` manifests. Existing manifests are skipped unless
+`--overwrite` requests full regeneration. Assembly does not inspect evidence
+contents, recover provenance absent from filenames, or choose among ambiguous
+duplicate evidence.
+
+`list-submissions` is read-only. It reports manifest and page states,
+present-but-unselected evidence, students needing assembly, unassembled routed
+files, and skipped filenames without creating or modifying records.
+
+## Evidence and Submission Opening
+
+```powershell
+quillan open-evidence <workspace-relative-evidence-path>
+quillan open-submission <class_id> <assignment_id> <student_id>
+```
+
+`open-evidence` opens one existing file that resolves inside the active
+workspace. `open-submission` validates one canonical manifest and opens its
+single selected evidence item. Both commands are read-only and do not inspect
+content, select evidence, or update review state.
+
+## Submission Review State
+
+```powershell
+quillan set-review-state <class_id> <assignment_id> <student_id> <state>
+```
+
+The allowed states are `unreviewed`, `in_progress`, `needs_rescan`, and
+`reviewed`. This command updates only `submission_state` and `updated_at` in
+the validated manifest. It does not open or inspect evidence or make an
+automatic review decision.
+
+## Quick Teacher Notes
+
+```powershell
+quillan add-note <class_id> <assignment_id> <student_id> --text "..."
+```
+
+This direct command appends one teacher-entered note to canonical
+`review.json`, creating the record only when the adjacent `submission.json`
+exists, validates, and matches the requested identity. It preserves the
+manifest, evidence, and unrelated review content.
 
 ## Structured Review Tags
 
@@ -377,6 +462,20 @@ returns `0` and reports the class, assignment, student, tag ID, polarity,
 review state, and workspace-relative review-record path. The command never
 mutates the submission manifest, routed evidence, or retained source scans,
 and it does not score, analyze, or generate feedback.
+
+## Reusable Comment Selection
+
+```powershell
+quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id>
+```
+
+This direct command validates a shared comment bank and appends one
+teacher-selected student-facing comment to canonical `review.json`. Optional
+`--standard`, `--include-in-feedback`, and `--exclude-from-feedback` flags
+refine the snapshot. The command copies label and text and preserves
+`bank_id + comment_id` provenance, so later bank edits do not change the
+review. It does not export feedback or mutate the source bank, manifest, or
+evidence.
 
 ## Criterion Scores
 
@@ -552,12 +651,14 @@ explicitly outside the current end-to-end foundation:
 
 * printable response generation as a dedicated command;
 * submission validation as a dedicated command;
-* workspace creation or selection;
-* production scan routing or QR extraction;
+* guided teacher-facing review and export workflows;
+* raw-scan QR recognition, PDF splitting, folder batch intake, or automatic
+  production scan routing;
 * OCR or handwriting interpretation;
 * complete requirements-checking workflows;
 * AI grading, scoring, tagging, or feedback; and
-* complete terminal-menu submission review and reporting workflows.
+* automatic grading, mastery calculation, review-state decisions, or
+  duplicate-evidence selection.
 
 Their presence in design documents or Python modules does not add them to the
 CLI contract.

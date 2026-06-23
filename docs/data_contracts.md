@@ -7,14 +7,14 @@ shared comment banks, assignments, submissions, teacher review, requirements
 checks, feedback exports, and reports.
 
 Standards profiles, assignment configurations, the legacy text-oriented
-submission metadata shape, and the reviewable-evidence submission manifest
-have implemented Python validation support. New-manifest writing and assembly
-from caller-provided evidence metadata are implemented; evidence discovery,
-merging, and state-changing review workflows are not. The writing-response
-payload contract is implemented and used by printable PDF generation.
-Requirements, teacher-review records, feedback exports, and reporting records
-remain contracts for teacher-controlled workflows that are not yet
-implemented end to end.
+submission metadata shape, comment banks, review records, and the
+reviewable-evidence submission manifest have implemented Python validation
+support. Routed-evidence discovery and manifest assembly, explicit
+teacher-controlled review updates, reusable-comment selection, and student,
+class, and standards exports are implemented through direct CLI commands and
+Python APIs. The writing-response payload contract is implemented and used by
+printable PDF generation. Requirements checking and guided teacher-facing
+review remain future work.
 
 For the expected workspace layout and file lifecycle of these records, see
 [`workspace_lifecycle.md`](workspace_lifecycle.md).
@@ -507,10 +507,12 @@ PDS1|module=quillan|class=english12_p4|aid=personal_narrative|sid=1001|page=1|do
 This contract identifies response documents only. The implemented printable
 generator embeds the payload in a QR code on each response page and writes the
 batch PDF to the assignment-local `templates/` directory. Student display
-names are printed for handling but are not included in the payload. QR
-extraction from later scans, scan routing, and OCR remain unimplemented. The
-printable page structure, identity fields, writing area, and output location
-are defined in
+names are printed for handling but are not included in the payload. A direct
+`route-scan` command can retain and route a selected source file when the
+caller supplies an already-decoded canonical PDS1 payload. QR extraction from
+raw scans, PDF splitting, batch scan intake, automatic raw-scan routing, and
+OCR remain unimplemented. The printable page structure, identity fields,
+writing area, and output location are defined in
 [`printable_response_template.md`](printable_response_template.md).
 
 ## Requirements Check

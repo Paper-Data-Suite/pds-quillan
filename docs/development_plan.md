@@ -26,8 +26,21 @@ Quillan currently has:
 * student submission manifest assembly and read-only status listing;
 * local evidence opening and student submission opening;
 * teacher-controlled lightweight review-state updates;
+* canonical `review.json` records with direct teacher-entered notes, structured
+  tags, reusable comment-bank selection, and criterion scores;
+* student feedback, class review summary, and standards summary exports;
+* a refactored direct CLI implementation under `quillan/cli_app`, with
+  `quillan/cli.py` retained as the compatibility facade;
+* a teacher-facing menu for assignment management, roster management,
+  printable response pages, workspace settings, help, and exit;
 * automated tests for standards validation and CLI behavior;
 * configured development checks using `pytest`, `ruff`, and `mypy`.
+
+The v0.7 review and export foundation is primarily a direct CLI/API workflow.
+The menu does not yet guide submission review, notes, tags, reusable comments,
+scores, exports, scan intake, or QR recognition. Raw-scan QR decoding, PDF
+splitting, batch intake, OCR, AI judgment, automatic grading, automatic
+mastery calculation, and automatic evidence selection remain unimplemented.
 
 ## MVP Scope
 
@@ -103,7 +116,12 @@ Examples and tests should use:
 * synthetic scores;
 * synthetic teacher comments.
 
-## Initial Architecture
+## Original Architecture Sketch
+
+The list below records the initial planning decomposition. The current source
+tree uses focused modules such as `review_record.py`, `review_notes.py`,
+`review_tags.py`, `review_comments.py`, `review_scores.py`,
+`feedback_export.py`, the summary exporters, and `quillan/cli_app`.
 
 Package modules:
 
@@ -277,65 +295,74 @@ Planned responsibility:
 
 ### `tagging.py`
 
-Planned responsibility:
+Implemented responsibility is now split across `review_tags.py`,
+`review_notes.py`, `review_comments.py`, and the canonical
+`review_record.py` model:
 
-* support standard/comment selection;
-* store structured tag records;
-* validate tag locations;
-* support teacher notes.
+* direct teacher-controlled standard/comment selection;
+* structured tags and validated locations;
+* reusable comment-bank snapshots; and
+* teacher-entered notes.
 
 ### `scoring.py`
 
-Planned responsibility:
+Implemented criterion-score responsibility now lives in `review_scores.py`:
 
-* summarize tags;
-* support rubric score entry;
-* store final teacher scores;
-* eventually suggest score bands without making final decisions.
+* record or update teacher-entered criterion scores in `review.json`;
+* preserve unrelated review data; and
+* avoid inferred scores, overall grades, mastery calculations, or automatic
+  score suggestions.
 
 ### `feedback.py`
 
-Planned responsibility:
+Implemented feedback responsibility now lives in `feedback_export.py`:
 
-* generate student-readable feedback from tags, scores, and teacher notes;
-* export feedback as Markdown.
+* export student-readable Markdown from selected comments and
+  teacher-entered criterion scores; and
+* keep private notes, tags, score notes, and provenance out of the export.
 
 ### `reports.py`
 
-Planned responsibility:
+Implemented reporting responsibility is split across
+`class_summary_export.py` and `standards_summary_export.py`:
 
-* aggregate class-level results;
-* summarize standards performance;
-* summarize rubric performance;
-* export CSV reports.
+* export assignment-level class review status and transparent score totals;
+* aggregate standards-linked tags and selected comments; and
+* avoid grades, mastery conclusions, evidence inspection, or roster inference.
 
 ### `storage.py`
 
-Planned responsibility:
+Current storage responsibility is distributed across focused path and writer
+modules and shared `pds-core` services:
 
-* centralize paths and file writing;
-* support local project-root configuration;
-* eventually integrate with Paper Data Suite shared storage.
+* resolve and manage the shared Paper Data Suite workspace;
+* compute canonical submission, review, comment-bank, and export paths; and
+* use safe local writes with explicit overwrite policies.
 
 ### `validation.py`
 
-Planned responsibility:
+Validation remains colocated with the relevant contracts and focused modules:
 
-* hold shared validation helpers once multiple modules need them.
+* standards, assignments, manifests, reviews, and comment banks validate
+  before use; and
+* shared cross-module primitives come from `pds-core` where applicable.
 
 ### `cli.py`
 
 Responsible for:
 
-* teacher-facing terminal commands;
-* direct CLI workflows;
-* the initial menu shell and future menu workflows.
+* retaining the public `quillan.cli:main` compatibility entrypoint.
 
 Current status:
 
-* implemented `validate-standards`;
-* implemented the initial bare `quillan` / `quillan menu` skeleton;
-* covered by tests.
+* parser construction, argument conversion, output, dispatch, and handlers
+  live under `quillan/cli_app`;
+* direct commands cover validation, decoded-payload routing, submission
+  assembly/status/opening, explicit review updates, and all v0.7 exports;
+* bare `quillan` and `quillan menu` launch the current teacher-facing menu;
+* guided teacher-facing review/export and raw-scan intake remain future work;
+  and
+* the command surface is covered by focused tests.
 
 ## Development Sequence
 

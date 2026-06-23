@@ -236,8 +236,8 @@ Comment field rules are:
   It is a stable source identifier and should not be renamed once selected
   into review records.
 * `label` and `text` must be non-empty strings. `label` is concise,
-  teacher-facing selection text; `text` is the full reusable language that a
-  future workflow may snapshot into a review.
+  teacher-facing selection text; `text` is the full reusable language that
+  the direct selection workflow can snapshot into a review.
 * `short_text`, `subcategory`, `teacher_note`, `follow_up_prompt`, and
   `revision_action`, when present, must be non-empty strings.
 * `category_id` must reference a category in the same bank.
@@ -253,8 +253,8 @@ Comment field rules are:
 * `severity_default`, when present, must be a non-negative integer. It is a
   triage and organization default, not a score.
 * `include_in_feedback_default` must be a boolean. It is the initial
-  preference for a future selection workflow, not an instruction to export
-  the source comment automatically.
+  preference used by the direct selection workflow, not an instruction to
+  export the source comment automatically.
 * `student_facing` must be a boolean. `false` marks language or guidance that
   is not appropriate to copy directly into student-facing feedback.
 * `tags` and `hotwords`, when present, must be arrays of non-empty strings
@@ -364,9 +364,9 @@ mutated. No feedback export is performed.
 Schema version `1` and the first runtime workflow do not implement:
 
 * comment bank editing, menus, search, or UI;
-* mutation of `review.json`, `submission.json`, or evidence files;
+* mutation of comment-bank source files, `submission.json`, or evidence files;
 * assignment-local merge or override behavior;
-* feedback, email, LMS, or PDF export;
+* guided feedback export from a comment-bank menu, email, LMS, or PDF export;
 * reports or standard-mastery conclusions;
 * automatic suggestions, standard detection, scoring, or grading;
 * AI feedback or AI comment generation;
