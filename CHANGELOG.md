@@ -10,6 +10,10 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a decode-only `quillan decode-scan` diagnostic command that reads one
+  supported local image, reports QR decode and Quillan response-page validation
+  details, distinguishes decode and payload failures with exit codes, and does
+  not route, preserve, or write workspace data.
 - Added a decoded QR payload validation layer that converts canonical Quillan
   `doc=response` PDS1 text into `DecodedResponsePage` values, returns structured
   payload failures for missing, unsupported, malformed, wrong-module, and wrong
