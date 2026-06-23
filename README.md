@@ -141,7 +141,8 @@ The supported teacher/developer sequence is:
 12. `set-score` sets or updates one explicitly teacher-entered criterion score.
 13. `export-feedback` writes selected comments and criterion scores to a
     student-facing Markdown file.
-14. `set-review-state` records lightweight submission-manifest progress when
+14. `export-class-summary` writes an assignment-level teacher review CSV.
+15. `set-review-state` records lightweight submission-manifest progress when
     the teacher chooses.
 
 Opening evidence and updating review state are separate teacher-controlled
@@ -160,6 +161,7 @@ quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity
 quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id>
 quillan set-score <class_id> <assignment_id> <student_id> --criterion evidence --label "Evidence" --score 3 --max-score 4
 quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
+quillan export-class-summary <class_id> <assignment_id> [--overwrite]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 ```
 
@@ -202,6 +204,14 @@ quillan set-review-state <class_id> <assignment_id> <student_id> <state>
   provenance are excluded. Existing feedback is protected unless
   `--overwrite` is supplied, and export does not mutate canonical records,
   evidence, timestamps, or review state.
+- `export-class-summary` discovers immediate student directories under the
+  assignment `submissions/` directory and writes
+  `assignments/<assignment_id>/exports/class_summary.csv`. Each student gets
+  one deterministic row, including status rows for missing, invalid, or
+  identity-mismatched records. Ready rows summarize states, teacher-entered
+  score totals, selected comments, tags, notes, and feedback-file existence.
+  The totals are transparent arithmetic, not grades. The export does not read
+  evidence or comment banks and does not mutate canonical records.
 - `set-review-state` updates only the manifest's `submission_state` and
   `updated_at`; it does not inspect evidence or make a review decision.
 
@@ -212,7 +222,8 @@ teacher explicitly requests it.
 Quillan does not perform OCR, handwriting recognition, PDF text
 extraction, AI scoring, AI feedback, AI suggestions, automatic grading,
 automatic review-state updates, automatic evidence selection among duplicates,
-rubric scoring, automatic feedback generation, or report generation. Quick
+rubric scoring, automatic feedback generation, standards reporting, or
+roster-aware missing-student reporting. Quick
 notes and structured tags are teacher-entered
 records; they do not score or generate feedback by themselves.
 The teacher remains responsible for reading and evaluating student work.
@@ -563,6 +574,7 @@ quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity developing
 quillan set-score <class_id> <assignment_id> <student_id> --criterion <criterion_id> --label "..." --score <number> --max-score <number>
 quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
+quillan export-class-summary <class_id> <assignment_id> [--overwrite]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan workspace show
 quillan menu

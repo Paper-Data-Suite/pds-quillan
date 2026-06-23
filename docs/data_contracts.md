@@ -722,28 +722,35 @@ villainy_final_essay_synthetic,english12_period3_synthetic,W.AW.11-12.1,12,18,6,
 
 ## Class Summary Report
 
-A class summary aggregates teacher-reviewed submission-level results. It is a
-derived report for review and instructional planning, not a replacement for
+A class review summary is an implemented assignment-level derived export for
+review management and instructional planning. It is not a replacement for
 reading student work or consulting the underlying records.
 
-Suggested path:
+Canonical path:
 
 ```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/reports/class_summary.csv
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
 ```
 
-Required MVP columns:
+Stable columns:
 
 ```text
-assignment_id,class_id,student_id,requirements_status,overall_score,max_score,positive_tags,developing_tags,negative_tags
+class_id,assignment_id,student_id,row_status,review_state,submission_state,score_count,total_score,total_max_score,included_comment_count,selected_comment_count,tag_count,note_count,feedback_export_exists,submission_manifest_path,review_record_path,feedback_export_path,error
 ```
 
-Example row:
+Each immediate child directory under the assignment `submissions/` directory
+produces one row, sorted by `student_id`. `row_status` is one of `ready`,
+`missing_submission`, `invalid_submission`, `missing_review`, `invalid_review`,
+or `identity_mismatch`. Individual bad records remain visible as status rows.
+Ready rows contain counts and the arithmetic sums of teacher-entered `score`
+and `max_score` values. These totals are not percentages, grades, weighted
+scores, mastery results, or rubric levels.
 
-```csv
-assignment_id,class_id,student_id,requirements_status,overall_score,max_score,positive_tags,developing_tags,negative_tags
-villainy_final_essay_synthetic,english12_period3_synthetic,stu_0001,partially_met,13,20,4,5,1
-```
+The export reads only expected `submission.json` and `review.json` records and
+checks whether each `exports/feedback.md` path exists. It does not read
+feedback contents, evidence files, retained scans, standards profiles, or
+comment banks, and it does not mutate canonical records. Roster-aware missing
+student reporting and standards summaries remain future work.
 
 ## Synthetic Data Policy
 

@@ -49,6 +49,7 @@ quillan --help
 quillan validate-standards <path>
 quillan validate-assignment <path>
 quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
+quillan export-class-summary <class_id> <assignment_id> [--overwrite]
 quillan workspace show
 quillan workspace set <path>
 quillan workspace validate
@@ -413,6 +414,32 @@ count, overwrite status, and workspace-relative feedback path. Handled
 workspace, validation, missing-record, and overwrite failures return `1`.
 Without `--overwrite`, an existing feedback file is preserved. The command
 does not mutate review state, timestamps, canonical records, or evidence.
+
+## Class Review Summary Export
+
+```powershell
+quillan export-class-summary <class_id> <assignment_id> [--overwrite]
+```
+
+This direct command discovers immediate student directories under the
+assignment's canonical `submissions/` directory and writes
+`assignments/<assignment_id>/exports/class_summary.csv`. Rows are sorted by
+`student_id`. Valid matching records produce `ready` rows with submission and
+review states, score counts and simple score/max-score totals, selected and
+included comment counts, tag and note counts, feedback-export existence, and
+workspace-relative paths.
+
+Missing, invalid, and identity-mismatched student records produce
+`missing_submission`, `invalid_submission`, `missing_review`,
+`invalid_review`, or `identity_mismatch` rows rather than aborting the whole
+export. A missing assignment submissions directory is a handled failure.
+Success returns `0` and prints row/status counts, overwrite status, and the
+summary path; handled failures return `1`.
+
+The export is read-only with respect to canonical records. It does not read
+evidence files or comment banks, use a roster, infer missing students,
+calculate percentages, grades, mastery, or weighted results, or generate a
+standards summary. Existing CSV files require `--overwrite`.
 
 ## Output and Error Handling
 
