@@ -49,21 +49,23 @@ Quillan data should be:
 * compatible with shared Paper Data Suite data structures;
 * auditable by a teacher.
 
-## Standards Profile
+## Legacy Quillan Standards Profile
 
-A standards profile is a teacher- or department-defined collection of
-instructional targets and reusable review language. Profiles can be reused
-across assignments to make teacher review, evidence organization, and
-reporting more consistent.
+Shared standards definitions and reusable standards profiles are owned by
+`pds-core` and stored in the workspace standards library. Quillan's older
+standards-profile shape is transitional module data for reusable review
+language such as comments, hotwords, feedback templates, and severity defaults
+that may reference shared `standard_id` values.
 
-A profile describes the review vocabulary available to a teacher. It does not
-discover standards, inspect writing automatically, determine whether a
-standard was met, generate authoritative feedback, or calculate a score.
+This legacy profile describes Quillan review vocabulary available to a
+teacher. It does not discover standards, inspect writing automatically,
+determine whether a standard was met, generate authoritative feedback, or
+calculate a score.
 
-Suggested Paper Data Suite path:
+Shared standards library path:
 
 ```text
-shared/standards/<profile_id>.json
+<PDS workspace root>/standards/library.json
 ```
 
 Standalone Quillan MVP path:
@@ -242,11 +244,11 @@ Example:
   "title": "Villainy Final Essay",
   "class_ids": ["english12_period3_synthetic"],
   "writing_type": "literary argument essay",
-  "standards_profile_id": "english_12_njsls_synthetic",
+  "standards_profile_id": "english12_2023_njsls",
   "tagging_mode": "focus",
   "focus_standards": [
-    "W.AW.11-12.1",
-    "W.WP.11-12.4"
+    "nj_ela_2023_rl_cr_11_12_1",
+    "nj_ela_2023_w_aw_11_12_1"
   ],
   "basic_requirements": {
     "paragraphs_min": 4,
@@ -261,6 +263,13 @@ Example:
   "rubric_id": "argument_essay_4pt_synthetic"
 }
 ```
+
+Assignment configs store shared `pds-core` standards references. The
+`standards_profile_id` should identify a profile in the workspace standards
+library, and `focus_standards` should contain shared `standard_id` values
+rather than teacher-facing display codes. Quillan-specific comments, hotwords,
+feedback templates, review tags, and writing-review scaffolding remain
+module-owned; Quillan does not maintain an independent standards universe.
 
 ## Submission Manifest
 

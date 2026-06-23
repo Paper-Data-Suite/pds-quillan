@@ -109,7 +109,10 @@ quillan validate-assignment <path>
 ```
 
 Loads a UTF-8 JSON assignment configuration and applies Quillan's current
-assignment validation rules.
+structural assignment validation rules. Cross-file validation against the
+shared `pds-core` workspace standards library is available through Quillan's
+assignment standards-selection helper, but this CLI command does not currently
+load the workspace standards library.
 
 On success, it writes this form to standard output:
 

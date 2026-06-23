@@ -515,10 +515,12 @@ quillan add-tag <class_id> <assignment_id> <student_id> --label "Evidence needs 
 Tags are stored in the `tags` array of the student's canonical `review.json`.
 Optional flags can reference a standard (`--standard`), profile comment
 (`--comment-id`), severity, teacher note, page, evidence ID, and controlled
-location. Standard and comment references use the assignment config and
-`shared/standards/<profile_id>.json`; standards in the profile are allowed
-even when they are not assignment focus standards. A missing review record is
-created only for a valid matching `submission.json`.
+location. Assignment `standards_profile_id` and `focus_standards` values are
+shared `pds-core` standards-library references: `focus_standards` stores
+durable `standard_id` values, not teacher-facing display codes. Quillan-owned
+comments, hotwords, feedback templates, and review scaffolding remain module
+data that can reference those shared IDs. A missing review record is created
+only for a valid matching `submission.json`.
 
 Tags remain teacher-entered review artifacts. Adding one does not mutate the
 submission manifest or evidence, calculate a score, establish standard
@@ -560,6 +562,12 @@ Validate an assignment configuration:
 ```powershell
 quillan validate-assignment <assignment.json>
 ```
+
+This command keeps structural assignment validation available without a
+workspace standards library. Workspace-aware validation can additionally check
+that `standards_profile_id` exists in the shared `pds-core` standards library
+and that each `focus_standards` entry is a shared `standard_id` in that
+profile. Quillan does not maintain an independent standards universe.
 
 Route one selected scan using an already-decoded Quillan PDS1 payload:
 

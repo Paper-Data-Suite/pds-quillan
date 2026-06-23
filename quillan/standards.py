@@ -1,4 +1,11 @@
-"""Standards profile loading and validation for Quillan."""
+"""Legacy Quillan standards-profile loading and validation.
+
+Shared standards definitions and reusable standards profiles are owned by
+``pds-core``. This module remains for transitional Quillan-specific profile
+data such as comment-bank scaffolding, hotwords, feedback templates, and
+severity defaults that are not part of the shared ``StandardDefinition``
+contract.
+"""
 
 from __future__ import annotations
 

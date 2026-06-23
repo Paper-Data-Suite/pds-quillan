@@ -511,11 +511,10 @@ quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity
 
 It appends one teacher-entered tag to `tags`, using sequential IDs such as
 `tag_0001`. Optional references to pages and evidence IDs are validated
-against the adjacent submission manifest. Optional standard and comment
-references are validated through the assignment config and the canonical
-`shared/standards/<profile_id>.json` profile. Standards present in the profile
-are accepted even when they are outside `focus_standards`; reusable comment
-labels and polarities must match their stored profile values.
+against the adjacent submission manifest. Optional standard references use
+shared `pds-core` `standard_id` values from the workspace standards library.
+Reusable comment references remain Quillan-owned module data; their labels and
+polarities must match the stored Quillan comment/profile values.
 
 The command follows the same creation, timestamp, state-transition, complete
 record validation, safe-write, preservation, and non-mutation policies as
