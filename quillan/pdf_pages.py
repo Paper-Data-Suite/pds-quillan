@@ -44,8 +44,8 @@ def iter_pdf_page_images(
     """
     pdf_path = Path(path)
     try:
-        from pdf2image import convert_from_path  # type: ignore[import-not-found]
-        from pdf2image.exceptions import (  # type: ignore[import-not-found]
+        from pdf2image import convert_from_path
+        from pdf2image.exceptions import (
             PDFInfoNotInstalledError,
             PDFPageCountError,
             PDFPopplerTimeoutError,
