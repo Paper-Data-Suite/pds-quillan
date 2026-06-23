@@ -199,6 +199,7 @@ def preserve_decode_failure_for_review(
     *,
     decode_result: QrImageDecodeResult,
     source_filename: str,
+    source_page_number: int | None = None,
     created_at: datetime | None = None,
 ) -> RoutingReviewRecord:
     """Preserve source/QR decode failure context without invented identity."""
@@ -215,6 +216,7 @@ def preserve_decode_failure_for_review(
         module=None,
         detected_payload=None,
         payload_page_number=None,
+        source_page_number=source_page_number,
         class_id=None,
         assignment_id=None,
         student_id=None,
@@ -231,6 +233,7 @@ def preserve_payload_validation_failure_for_review(
     *,
     failure: ResponsePayloadValidationFailure,
     source_filename: str,
+    source_page_number: int | None = None,
     created_at: datetime | None = None,
 ) -> RoutingReviewRecord:
     """Preserve decoded-payload validation failure context for review."""
@@ -251,6 +254,7 @@ def preserve_payload_validation_failure_for_review(
         source_filename=source_filename,
         module=failure.module,
         detected_payload=failure.raw_payload,
+        source_page_number=source_page_number,
         payload_page_number=failure.page_number,
         class_id=failure.class_id,
         assignment_id=failure.assignment_id,
@@ -268,6 +272,7 @@ def preserve_evidence_filing_error_for_review(
     source_filename: str,
     retained_source: RetainedSourceScan | None = None,
     review_copy_path: str | Path | None = None,
+    source_page_number: int | None = None,
     module_details: dict[str, object] | None = None,
     created_at: datetime | None = None,
 ) -> RoutingReviewRecord:
@@ -299,6 +304,7 @@ def preserve_evidence_filing_error_for_review(
             else retained_source.retained_source_path
         ),
         review_copy_path=review_copy_path,
+        source_page_number=source_page_number,
         payload_page_number=route_plan.page_number,
         class_id=route_plan.class_id,
         assignment_id=route_plan.assignment_id,

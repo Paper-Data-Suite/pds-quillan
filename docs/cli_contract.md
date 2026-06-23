@@ -50,6 +50,7 @@ quillan validate-standards <path>
 quillan validate-assignment <path>
 quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
 quillan route-scan <source-image> --decode-qr
+quillan route-scan <source-pdf> --decode-qr
 quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 quillan open-evidence <workspace-relative-evidence-path>
@@ -382,23 +383,27 @@ handled-failure behavior in their command sections and help output.
 ```powershell
 quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
 quillan route-scan <source-image> --decode-qr
+quillan route-scan <source-pdf> --decode-qr
 ```
 
 This command routes one selected source file using exactly one payload source:
 caller-supplied canonical PDS1 text through `--payload`, or one decoded QR
-payload from a supported local image through `--decode-qr`. Supported QR image
-extensions are `.png`, `.jpg`, `.jpeg`, `.tif`, and `.tiff`.
+payload from a supported local image or each page of a PDF through
+`--decode-qr`. Supported QR image extensions are `.png`, `.jpg`, `.jpeg`,
+`.tif`, and `.tiff`; PDF intake supports `.pdf` and uses `pdf2image`, which
+requires Poppler installed on the user's machine.
 
 On success it retains the source under `scans/source/YYYY-MM-DD/` and files
-routed evidence under the target assignment's `scans/` directory. Decode,
-payload, planning, or filing failures are preserved under `scans/review/` when
-they can be handled safely.
+routed evidence under the target assignment's `scans/` directory. PDF pages
+route independently and successful PDF page evidence is filed as PNG files;
+`source_page_number` records the physical PDF page separately from the decoded
+`payload_page_number`. Decode, payload, planning, filing, or PDF conversion
+failures are preserved under `scans/review/` when they can be handled safely.
 
-The command does not convert PDFs, split multi-page PDFs, batch-ingest a
-folder, assemble submissions, create review records, run OCR, or identify a
-student from raw scan content without a valid payload. Exit `0` means the file
-was routed or safely preserved for review; exit `1` means it could not be
-handled safely.
+The command does not batch-ingest a folder, expose menu scan intake, assemble
+submissions, create review records, run OCR, or identify a student from raw
+scan content without a valid payload. Exit `0` means the file was routed or
+safely preserved for review; exit `1` means it could not be handled safely.
 
 ## Submission Assembly and Status
 
