@@ -10,6 +10,10 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a decoded QR payload validation layer that converts canonical Quillan
+  `doc=response` PDS1 text into `DecodedResponsePage` values, returns structured
+  payload failures for missing, unsupported, malformed, wrong-module, and wrong
+  document-type payloads, and leaves raw QR decoding and routing unchanged.
 - Added an internal, local OpenCV QR image decoder for supported response-page
   image files. It returns structured decode results without routing scans,
   validating PDS1 payloads, writing diagnostics, or mutating workspaces.
