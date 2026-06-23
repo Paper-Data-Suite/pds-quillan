@@ -47,6 +47,11 @@ from quillan.review_notes import (
     ReviewNoteError,
     add_review_note,
 )
+from quillan.review_comments import (
+    AddedReviewComment,
+    ReviewCommentError,
+    add_review_comment,
+)
 from quillan.review_scores import (
     ReviewScoreError,
     UpdatedReviewScore,
@@ -156,6 +161,17 @@ def main(argv: list[str] | None = None) -> int:
             evidence_id=args.evidence_id,
             location_type=args.location_type,
             location_value=args.location_value,
+        )
+
+    if args.command == "add-comment":
+        return _handle_add_comment(
+            args.class_id,
+            args.assignment_id,
+            args.student_id,
+            bank_id=args.bank,
+            comment_id=args.comment_id,
+            standard_code=args.standard,
+            include_in_feedback=args.include_in_feedback,
         )
 
     if args.command == "set-score":
@@ -401,6 +417,47 @@ def _build_parser() -> argparse.ArgumentParser:
         "--location-value",
         type=_location_value_argument,
         help="Optional positive integer or non-empty location value.",
+    )
+
+    add_comment_parser = subparsers.add_parser(
+        "add-comment",
+        help="Select one reusable comment-bank comment for a student review record.",
+        description=(
+            "Append one teacher-selected reusable comment from a shared comment "
+            "bank to the canonical review.json for a student submission. The "
+            "selected comment snapshots label and text so later bank edits do "
+            "not alter existing reviews."
+        ),
+    )
+    add_comment_parser.add_argument("class_id", help="Class identifier.")
+    add_comment_parser.add_argument(
+        "assignment_id", help="Assignment identifier."
+    )
+    add_comment_parser.add_argument("student_id", help="Student identifier.")
+    add_comment_parser.add_argument(
+        "--bank", required=True, help="Shared comment-bank identifier."
+    )
+    add_comment_parser.add_argument(
+        "--comment-id", required=True, help="Reusable source comment identifier."
+    )
+    add_comment_parser.add_argument(
+        "--standard", help="Optional standard code from the source comment."
+    )
+    feedback_group = add_comment_parser.add_mutually_exclusive_group()
+    feedback_group.add_argument(
+        "--include-in-feedback",
+        dest="include_in_feedback",
+        action="store_const",
+        const=True,
+        default=None,
+        help="Include the selected comment in future feedback.",
+    )
+    feedback_group.add_argument(
+        "--exclude-from-feedback",
+        dest="include_in_feedback",
+        action="store_const",
+        const=False,
+        help="Exclude the selected comment from future feedback.",
     )
 
     set_score_parser = subparsers.add_parser(
@@ -806,6 +863,51 @@ def _print_added_review_tag(added: AddedReviewTag) -> None:
     print(f"Student: {added.student_id}")
     print(f"Tag: {added.tag_id}")
     print(f"Polarity: {added.polarity}")
+    print(f"Review state: {added.review_state}")
+    print(f"Review record: {added.review_record_relative_path}")
+
+
+def _handle_add_comment(
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    bank_id: str,
+    comment_id: str,
+    standard_code: str | None,
+    include_in_feedback: bool | None,
+) -> int:
+    """Select one shared-bank comment into a canonical review record."""
+    try:
+        workspace_root = resolve_workspace_root()
+        added = add_review_comment(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            bank_id=bank_id,
+            comment_id=comment_id,
+            standard_code=standard_code,
+            include_in_feedback=include_in_feedback,
+        )
+    except (WorkspaceRootError, ReviewCommentError) as error:
+        print(f"Error: could not select review comment: {error}")
+        return 1
+
+    _print_added_review_comment(added)
+    return 0
+
+
+def _print_added_review_comment(added: AddedReviewComment) -> None:
+    """Print a concise teacher-facing selected-comment summary."""
+    print("Selected review comment:")
+    print(f"Class: {added.class_id}")
+    print(f"Assignment: {added.assignment_id}")
+    print(f"Student: {added.student_id}")
+    print(f"Bank: {added.bank_id}")
+    print(f"Source comment: {added.comment_id}")
+    print(f"Review comment: {added.comment_record_id}")
+    print(f"Include in feedback: {_format_bool(added.include_in_feedback)}")
     print(f"Review state: {added.review_state}")
     print(f"Review record: {added.review_record_relative_path}")
 

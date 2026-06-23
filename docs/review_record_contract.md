@@ -396,6 +396,13 @@ live display reference. The selected record is a submission-specific snapshot,
 so later edits to the shared bank cannot silently alter an existing review or
 export.
 
+The direct `add-comment` workflow validates the source bank first and accepts
+only `student_facing: true` comments. It uses the bank's
+`include_in_feedback_default` unless the teacher explicitly includes or
+excludes the selected comment. A sole source `standard_code` is copied
+automatically; with multiple source standards, one is stored only when the
+teacher specifies it.
+
 ## Timestamp Policy
 
 Every timestamp is an ISO 8601 string with an explicit timezone offset, for

@@ -39,6 +39,13 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added `quillan add-comment` and a focused reusable-comment selection API.
+  Shared comment banks are fully validated before selection; student-facing
+  comments are appended to `review.json.comments` with sequential local IDs,
+  `bank_id + comment_id` provenance, snapshotted label and text, optional
+  standard selection, and bank-default or teacher-overridden feedback
+  inclusion. Existing review content and later review states are preserved,
+  while comment banks, submission manifests, and evidence remain unchanged.
 - Defined the version `1` shared reusable comment bank contract at
   `shared/comment_banks/<bank_id>.json`, including writing-type filters,
   categories, standards and criterion links, polarity, severity defaults,

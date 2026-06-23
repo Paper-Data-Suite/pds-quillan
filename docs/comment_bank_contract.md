@@ -23,9 +23,10 @@ submission evidence, review records, grades, or generated feedback. A bank
 does not evaluate writing, imply standards mastery, or place a comment in a
 student's review by itself.
 
-This document defines comment bank schema version `1`. It does not implement
-bank loading, editing, assignment activation, comment selection, feedback
-export, automatic suggestions, or AI-generated comments.
+This document defines comment bank schema version `1`. Runtime loading,
+validation, and direct student-facing selection are implemented; bank editing,
+assignment activation, menus, feedback export, automatic suggestions, and
+AI-generated comments are not.
 
 ## Top-Level Structure
 
@@ -302,7 +303,7 @@ The bank and the review record serve different purposes:
 * a `review.json.comments` item is a teacher-selected snapshot associated
   with one student submission.
 
-A future selection operation should copy the selected `label` and `text`,
+The direct selection operation copies the selected `label` and `text`,
 set `source` to `"comment_bank"`, preserve the source `bank_id` and
 `comment_id`, apply the teacher's `include_in_feedback` choice, and create a
 new local `comment_record_id` and timestamp. A `comment_id` is unique only
@@ -312,9 +313,9 @@ reference, and later edits to a shared bank must not silently change an
 existing student's review or exported feedback.
 
 Source `standard_codes` and `criterion_ids` are filtering and alignment
-metadata. A future workflow may copy the specifically applicable
-`standard_code`, but it must not treat either reference as a score or mastery
-decision.
+metadata. Selection copies a sole standard automatically, stores an explicitly
+requested source standard, and otherwise omits `standard_code`; it does not
+treat either reference as a score or mastery decision.
 
 The strict version `1` `review.json.comments` shape requires `bank_id` and
 `comment_id` for `source: "comment_bank"`, along with snapshotted `label` and
@@ -345,13 +346,24 @@ Future tools should be able to filter or order bank comments by:
 These fields support fast teacher lookup. They do not authorize automatic
 selection, automatic feedback, automatic standards detection, or scoring.
 
+## Runtime Selection
+
+```powershell
+quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id>
+```
+
+Optional `--standard`, `--include-in-feedback`, and
+`--exclude-from-feedback` flags refine the selected snapshot. Include and
+exclude are mutually exclusive. Only comments with `student_facing: true` are
+selectable in this MVP; teacher-only language is rejected. The source bank,
+submission manifest, routed evidence, and retained source scans are never
+mutated. No feedback export is performed.
+
 ## Scope and Non-Goals
 
-Schema version `1` establishes a reusable source-data contract only. It does
-not implement:
+Schema version `1` and the first runtime workflow do not implement:
 
-* `quillan add-comment` or any other comment-selection command;
-* comment bank loading, validation, editing, menus, or UI;
+* comment bank editing, menus, search, or UI;
 * mutation of `review.json`, `submission.json`, or evidence files;
 * assignment-local merge or override behavior;
 * feedback, email, LMS, or PDF export;

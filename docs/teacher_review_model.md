@@ -166,12 +166,16 @@ must not present authoritative AI-generated feedback.
 
 Shared comment banks are reusable teacher-authored source data stored at
 `shared/comment_banks/<bank_id>.json`. They are not student records and do
-not grade, evaluate, or generate feedback by themselves. A future selection
-workflow should copy a comment's teacher-approved language into
+not grade, evaluate, or generate feedback by themselves. The direct
+`add-comment` workflow copies a student-facing comment's teacher-approved
+language into
 `review.json.comments` as a snapshot with `source: "comment_bank"`, the source
 `bank_id`, and the source `comment_id`. Comment IDs are bank-local, so the pair
 identifies the reusable source comment. The copied label and text remain
 stable if the bank later changes; provenance does not create a live reference.
+The bank feedback default may be overridden by the teacher at selection time.
+Teacher-only bank comments are rejected, and selection does not export
+feedback.
 The source contract and future assignment-activation design are defined in
 [`comment_bank_contract.md`](comment_bank_contract.md).
 
