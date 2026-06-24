@@ -120,7 +120,6 @@ particular, Quillan does not currently provide:
   selection among duplicates;
 - guided teacher-facing submission review, notes, tags, comment selection,
   scoring, feedback export, or summary export workflows;
-- teacher-facing scan intake or QR recognition;
 - complete teacher-facing assignment editing workflows; or
 - a dedicated printable-response command.
 
@@ -206,7 +205,7 @@ quillan set-review-state <class_id> <assignment_id> <student_id> <state>
   QR-bearing PDF, or a non-recursive folder of supported QR-bearing scan files.
   PDF intake processes pages independently, files page evidence as PNG files,
   and preserves handled failures under `scans/review/`; it does not archive
-  source files, run OCR, use the menu, or assemble a submission. After
+  source files, run OCR, or assemble a submission. After
   QR-aware intake, the command prints explicit `assemble-submissions` commands
   for class/assignment pairs with newly routed pages in the current intake
   summary. Preserved failures should still be reviewed before treating the
@@ -409,9 +408,9 @@ canonical payload such as:
 PDS1|module=quillan|class=<class_id>|aid=<assignment_id>|sid=<student_id>|page=<page_number>|doc=response
 ```
 
-Generating this QR code is implemented. A caller can route a selected scan
-after separately decoding its payload, but Quillan does not extract QR codes,
-split PDFs, or perform OCR.
+Generating this QR code is implemented. Quillan can route selected scans by
+decoding QR payloads from supported image files, PDF pages, or direct files in
+a non-recursive folder. It does not perform OCR.
 
 ## Running Quillan
 
@@ -425,14 +424,24 @@ quillan
 
 The menu provides writing assignment config creation and validation through
 Assignment Management, class roster creation, viewing, staged editing, and
-validation through Roster Management, and combined class-packet generation
-through Printable Response Pages. Workspace Settings can show, set,
-validate/create, and reset the shared Paper Data Suite workspace root. Help
-summarizes Quillan's teacher-controlled purpose and safe-data expectations.
+validation through Roster Management, combined class-packet generation through
+Printable Response Pages, and guided QR scan intake through Scan Intake /
+Route Paper Responses. Workspace Settings can show, set, validate/create, and
+reset the shared Paper Data Suite workspace root. Help summarizes Quillan's
+teacher-controlled purpose and safe-data expectations.
+
+The scan-intake menu asks for an image, PDF, or non-recursive folder path and
+uses the same QR-aware behavior as `quillan route-scan <source> --decode-qr`.
+It prints the structured scan intake summary, preserves handled failures for
+review, and shows explicit `assemble-submissions` next steps when pages were
+routed. It does not expose payload mode, move or archive original source
+files, assemble submissions automatically, run OCR, score work, or perform AI
+feedback.
+
 The menu does not currently select submissions for review, add notes or tags,
-select comment-bank comments, enter scores, export feedback or summaries,
-ingest scans, or recognize QR codes. Those operations are direct CLI/API
-workflows or future teacher-facing usability work.
+select comment-bank comments, enter scores, or export feedback or summaries.
+Those operations are direct CLI/API workflows or future teacher-facing
+usability work.
 
 Show direct CLI help:
 
@@ -615,7 +624,8 @@ QR-aware intake supports `.jpeg`, `.jpg`, `.pdf`, `.png`, `.tif`, and `.tiff`.
 PDF conversion uses `pdf2image` and requires Poppler installed on the user's
 machine. The command does not move, delete, or archive source files, run OCR,
 score, tag, generate feedback, assemble submissions, create review records,
-create reports, or expose menu scan intake.
+or create reports. The Scan Intake / Route Paper Responses menu uses this same
+QR-aware route-scan behavior.
 
 After QR-aware intake, `route-scan` derives class/assignment assembly targets
 from the current structured intake summary and prints safe next-step commands,

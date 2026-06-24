@@ -210,9 +210,10 @@ The menu provides:
 1. Assignment Management
 2. Roster Management
 3. Printable Response Pages
-4. Workspace Settings
-5. Help
-6. Exit
+4. Scan Intake / Route Paper Responses
+5. Workspace Settings
+6. Help
+7. Exit
 ```
 
 Roster Management provides:
@@ -280,6 +281,28 @@ alter roster or assignment data. It does not add individual PDFs, scan
 routing, OCR, review, scoring, feedback, reports, AI, or a direct printable
 CLI command.
 
+Scan Intake / Route Paper Responses prompts for a local scan source path:
+
+```text
+Scan file or folder path (leave blank to cancel):
+```
+
+Blank input cancels without routing files. Nonblank input trims surrounding
+whitespace and removes one matching pair of surrounding quotes, so pasted
+Windows paths such as `"C:\Users\Teacher\Desktop\scan folder"` work as a
+single path. The source may be a supported image file, a PDF, or a
+non-recursive folder containing supported image/PDF scan files. The workflow
+uses the same QR-aware implementation path as
+`quillan route-scan <source> --decode-qr`; it does not expose payload mode.
+It prints the structured scan intake summary, including processed sources,
+attempted pages, routed, preserved, failed, skipped unsupported, review
+required, and failure-category counts. If routed evidence exists, it prints
+the same explicit `assemble-submissions` next-step guidance as the direct
+command. If review is required, the preserved-failure caution is printed.
+The workflow does not automatically assemble submissions, move or archive the
+teacher's original source files, create `submission.json` or `review.json`,
+run OCR, score, tag, generate feedback, or perform AI work.
+
 Workspace Settings provides:
 
 ```text
@@ -304,16 +327,17 @@ remains a guided shell rather than a complete teacher-facing application.
 
 The menu does not currently guide teachers through submission selection,
 evidence opening, review-state changes, notes, tags, comment-bank selection,
-criterion scoring, feedback export, class or standards summary export, scan
-intake, or QR recognition. The implemented review and export operations are
-available through the direct commands documented below and through focused
+criterion scoring, feedback export, class or standards summary export, or
+submission assembly. The implemented review, export, and assembly operations
+are available through the direct commands documented below and through focused
 Python APIs.
 
 Menu help describes Quillan as a local-first, teacher-controlled
 writing-evidence tool; keeps teacher judgment primary; states that Quillan is
-not automated grading software; identifies currently unsupported AI, OCR,
-scan-routing, and review workflows; and summarizes repository safe-data
-expectations and current direct commands.
+not automated grading software; identifies currently unsupported AI, OCR, and
+review workflows; notes that guided scan intake routes QR-coded response pages
+only; and summarizes repository safe-data expectations and current direct
+commands.
 
 The menu clears the screen only when both standard input and standard output
 are interactive terminals. A normal exit or `KeyboardInterrupt` returns status
@@ -432,7 +456,8 @@ intake run. When review is required, the next-step message warns that preserved
 failures should be reviewed before the batch is treated as complete.
 
 The command does not move, delete, or archive source files after folder intake.
-It does not expose menu scan intake, assemble submissions, create review
+The Scan Intake / Route Paper Responses menu invokes this same QR-aware intake
+path. QR-aware scan intake does not assemble submissions, create review
 records, run OCR, or identify a student from raw scan content without a valid
 payload.
 

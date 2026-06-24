@@ -10,6 +10,8 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a teacher-facing menu workflow for QR-aware scan intake from image,
+  PDF, or folder sources.
 - Added post-intake submission assembly next-step guidance based on routed scan
   intake results.
 - Added folder-based QR scan intake to `quillan route-scan <folder> --decode-qr`.

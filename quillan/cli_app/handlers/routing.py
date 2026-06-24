@@ -81,17 +81,9 @@ def handle_route_scan(args: argparse.Namespace) -> int:
         return 1
 
     if args.decode_qr:
-        if source_file.is_dir():
-            return _route_source_folder_qr(
-                workspace_root,
-                source_folder=source_file,
-                created_at=intake_timestamp,
-            )
-        if not _validate_source_file(source_file):
-            return 1
-        return _route_source_file_qr(
+        return run_qr_scan_intake(
+            source_file,
             workspace_root,
-            source_file=source_file,
             created_at=intake_timestamp,
         )
     else:
@@ -116,6 +108,45 @@ def handle_route_scan(args: argparse.Namespace) -> int:
         workspace_root,
         source_file=source_file,
         decoded_page=decoded_result,
+        created_at=intake_timestamp,
+    )
+
+
+def run_qr_scan_intake(
+    source_path: Path,
+    workspace_root: Path | None = None,
+    *,
+    created_at: datetime | None = None,
+) -> int:
+    """Run QR-aware scan intake for one image, PDF, or direct child folder."""
+    intake_timestamp = (
+        datetime.now(timezone.utc) if created_at is None else created_at
+    )
+    try:
+        resolved_workspace_root = (
+            resolve_workspace_root() if workspace_root is None else workspace_root
+        )
+    except WorkspaceRootError as error:
+        print(f"Error: could not resolve the PDS workspace: {error}")
+        return 1
+    except Exception as error:
+        print(f"Error: unexpected workspace resolution failure: {error}")
+        return 1
+
+    if not source_path.exists():
+        print(f"Error: scan source does not exist: {source_path}")
+        return 1
+    if source_path.is_dir():
+        return _route_source_folder_qr(
+            resolved_workspace_root,
+            source_folder=source_path,
+            created_at=intake_timestamp,
+        )
+    if not _validate_source_file(source_path):
+        return 1
+    return _route_source_file_qr(
+        resolved_workspace_root,
+        source_file=source_path,
         created_at=intake_timestamp,
     )
 
