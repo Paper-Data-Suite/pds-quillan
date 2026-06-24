@@ -162,15 +162,15 @@ def _write_review_record(root: Path, review: dict[str, Any]) -> Path:
 
 
 def _enter_selected_student(student_choice: str = "1") -> list[str]:
-    return ["5", "1", "1", "1", student_choice]
+    return ["5", "1", "1", "1", "1", student_choice]
 
 
 def _exit_selected_student_to_main() -> list[str]:
-    return ["8", "", "2", "8"]
+    return ["9", "5", "", "2", "8"]
 
 
 def _exit_after_selected_student_action_to_main() -> list[str]:
-    return ["", "8", "", "2", "8"]
+    return ["", "9", "5", "", "2", "8"]
 
 
 @pytest.fixture
