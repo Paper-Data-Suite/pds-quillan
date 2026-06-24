@@ -11,8 +11,10 @@ Quillan is part of the broader Paper Data Suite concept, alongside ScoreForm.
 Quillan is an early pre-1.0 foundation. The v0.7.0 milestone provides a
 teacher-controlled review and export foundation through direct CLI commands
 and Python APIs. The teacher-facing terminal menu currently covers assignment
-management, roster management, printable response pages, workspace settings,
-help, and exit; it does not yet guide the review and export workflow.
+management, roster management, printable response pages, QR-aware scan intake,
+a read-only Review Student Work navigation skeleton, workspace settings,
+help, and exit; guided review entry and export remain direct CLI/API workflows
+or future menu work.
 
 Quillan currently supports:
 
@@ -118,8 +120,8 @@ particular, Quillan does not currently provide:
 - automatic grading;
 - automatic mastery calculation, review-state decisions, or evidence
   selection among duplicates;
-- guided teacher-facing submission review, notes, tags, comment selection,
-  scoring, feedback export, or summary export workflows;
+- guided teacher-facing review entry, notes, tags, comment selection, scoring,
+  feedback export, or summary export workflows;
 - complete teacher-facing assignment editing workflows; or
 - a dedicated printable-response command.
 
@@ -438,10 +440,15 @@ routed. It does not expose payload mode, move or archive original source
 files, assemble submissions automatically, run OCR, score work, or perform AI
 feedback.
 
-The menu does not currently select submissions for review, add notes or tags,
-select comment-bank comments, enter scores, or export feedback or summaries.
-Those operations are direct CLI/API workflows or future teacher-facing
-usability work.
+The Review Student Work menu is a navigation/context-selection skeleton. It
+lets a teacher select a class, assignment, and student/submission; view the
+current submission status and a brief review summary; and open selected
+submission evidence through the same safe local-opening behavior as
+`open-submission`. It is read-only except for launching the local file viewer:
+it does not create or mutate `review.json` or `submission.json`, automatically
+assemble submissions, run OCR, score work, add notes or tags, select
+comment-bank comments, enter scores, export feedback, export summaries, or use
+AI.
 
 Show direct CLI help:
 
