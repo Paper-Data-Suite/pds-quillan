@@ -11,15 +11,27 @@ from pds_core.rosters import RosterError
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
 from quillan.assignments import AssignmentConfigError, load_assignment_config
+from quillan.class_summary_export import (
+    ClassSummaryExportError,
+    export_class_review_summary,
+)
 from quillan.cli_app.output import (
     print_added_review_comment,
     print_added_review_note,
     print_added_review_tag,
     print_assignment_submission_status,
+    print_exported_class_summary,
+    print_exported_feedback,
+    print_exported_standards_summary,
     print_opened_submission_review,
     print_updated_review_score,
     print_updated_submission_review_state,
     workspace_relative_display,
+)
+from quillan.feedback_export import FeedbackExportError, export_student_feedback
+from quillan.standards_summary_export import (
+    StandardsSummaryExportError,
+    export_standards_summary,
 )
 from quillan.comment_banks import CommentBankError, load_comment_bank
 from quillan.review_comments import ReviewCommentError, add_review_comment
@@ -105,27 +117,10 @@ def _run_review_selection_workflow() -> int:
     if assignment is None:
         return 0
 
-    status = _load_submission_status(
+    return _launch_assignment_review_actions(
         workspace_root,
         class_id,
         assignment.assignment_id,
-    )
-    if status is None:
-        return 1
-
-    print()
-    print_assignment_submission_status(status, workspace_root)
-    print()
-
-    student_id = _prompt_student_id(workspace_root, class_id, status)
-    if student_id is None:
-        return 0
-
-    return _launch_selected_student_review(
-        workspace_root,
-        class_id,
-        assignment.assignment_id,
-        student_id,
     )
 
 
@@ -351,14 +346,15 @@ def _launch_selected_student_review(
         print("4. Select reusable comment")
         print("5. Set criterion score")
         print("6. Update submission review state")
-        print("7. Refresh summary")
-        print("8. Back")
+        print("7. Export student feedback")
+        print("8. Refresh summary")
+        print("9. Back")
         print()
 
         choice = input("Select an option: ").strip()
         print()
 
-        if choice in {"", "8"}:
+        if choice in {"", "9"}:
             return 0
         if choice == "1":
             _open_submission_evidence(
@@ -409,9 +405,17 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "7":
+            _menu_export_student_feedback(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+            input("Press Enter to continue...")
+        elif choice == "8":
             continue
         else:
-            print("Invalid selection. Please enter a number from 1 to 8.")
+            print("Invalid selection. Please enter a number from 1 to 9.")
             input("Press Enter to continue...")
 
 
@@ -978,3 +982,138 @@ def _open_submission_evidence(
         return
 
     print_opened_submission_review(opened)
+
+
+def _prompt_overwrite_export() -> bool | object:
+    response = input("Overwrite existing export if present? (y/N): ").strip().lower()
+    if response in {"", "n", "no"}:
+        return False
+    if response in {"y", "yes"}:
+        return True
+    print("Export canceled. Please enter y or n.")
+    return _CANCEL
+
+
+def _menu_export_student_feedback(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    overwrite = _prompt_overwrite_export()
+    if overwrite is _CANCEL:
+        return
+    assert isinstance(overwrite, bool)
+    try:
+        exported = export_student_feedback(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            overwrite=overwrite,
+        )
+    except (FeedbackExportError, OSError) as error:
+        print(f"Error: could not export student feedback: {error}")
+        return
+    print_exported_feedback(exported)
+
+
+def _menu_export_class_summary(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    overwrite = _prompt_overwrite_export()
+    if overwrite is _CANCEL:
+        return
+    assert isinstance(overwrite, bool)
+    try:
+        exported = export_class_review_summary(
+            workspace_root,
+            class_id,
+            assignment_id,
+            overwrite=overwrite,
+        )
+    except (ClassSummaryExportError, OSError) as error:
+        print(f"Error: could not export class review summary: {error}")
+        return
+    print_exported_class_summary(exported)
+
+
+def _menu_export_standards_summary(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    overwrite = _prompt_overwrite_export()
+    if overwrite is _CANCEL:
+        return
+    assert isinstance(overwrite, bool)
+    try:
+        exported = export_standards_summary(
+            workspace_root,
+            class_id,
+            assignment_id,
+            overwrite=overwrite,
+        )
+    except (StandardsSummaryExportError, OSError) as error:
+        print(f"Error: could not export standards summary: {error}")
+        return
+    print_exported_standards_summary(exported)
+
+
+def _launch_assignment_review_actions(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> int:
+    from quillan.menu import clear_screen, print_menu_header
+
+    while True:
+        clear_screen()
+        print_menu_header("Assignment Review Actions")
+
+        status = _load_submission_status(
+            workspace_root,
+            class_id,
+            assignment_id,
+        )
+        if status is None:
+            input("Press Enter to continue...")
+            return 1
+
+        print_assignment_submission_status(status, workspace_root)
+        print()
+
+        print("1. Select student/submission")
+        print("2. Export class review summary")
+        print("3. Export standards summary")
+        print("4. Refresh submission status")
+        print("5. Back")
+        print()
+
+        choice = input("Select an option: ").strip()
+        print()
+
+        if choice in {"", "5"}:
+            return 0
+        elif choice == "1":
+            student_id = _prompt_student_id(workspace_root, class_id, status)
+            if student_id is not None:
+                _launch_selected_student_review(
+                    workspace_root,
+                    class_id,
+                    assignment_id,
+                    student_id,
+                )
+        elif choice == "2":
+            _menu_export_class_summary(workspace_root, class_id, assignment_id)
+            input("Press Enter to continue...")
+        elif choice == "3":
+            _menu_export_standards_summary(workspace_root, class_id, assignment_id)
+            input("Press Enter to continue...")
+        elif choice == "4":
+            continue
+        else:
+            print("Invalid selection. Please enter a number from 1 to 5.")
+            input("Press Enter to continue...")
