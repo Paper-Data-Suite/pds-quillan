@@ -10,6 +10,8 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added structured QR scan-intake summaries for image and PDF routing,
+  including routed, preserved, failed, and review-required counts.
 - Added Quillan assignment validation support for the shared pds-core
   standards library contract.
 - Added QR-aware PDF page intake to `quillan route-scan --decode-qr`. The

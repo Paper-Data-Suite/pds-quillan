@@ -167,6 +167,13 @@ def test_route_scan_decode_qr_successfully_routes_single_image(
     assert routed_path.read_bytes() == original_bytes
     assert "Routed Quillan response page." in output
     assert "Routed evidence: classes/" in output
+    assert "Scan intake summary" in output
+    assert "Sources processed: 1" in output
+    assert "Pages attempted: 1" in output
+    assert "Routed: 1" in output
+    assert "Preserved for review: 0" in output
+    assert "Failed: 0" in output
+    assert "Review required: no" in output
     assert not (workspace / "scans" / "review").exists()
     assert not list(workspace.rglob("submission.json"))
     assert not list(workspace.rglob("review.json"))
@@ -248,6 +255,12 @@ def test_route_scan_decode_qr_blank_image_preserves_decode_failure(
     assert not list(workspace.rglob("response_*.png"))
     assert "preserved for review" in output
     assert "Category: payload_missing" in output
+    assert "Scan intake summary" in output
+    assert "Pages attempted: 1" in output
+    assert "Routed: 0" in output
+    assert "Preserved for review: 1" in output
+    assert "Review required: yes" in output
+    assert "- payload_missing: 1" in output
 
 
 def test_route_scan_decode_qr_unsupported_source_type_preserves_failure(

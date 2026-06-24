@@ -402,11 +402,16 @@ route independently and successful PDF page evidence is filed as PNG files;
 `source_page_number` records the physical PDF page separately from the decoded
 `payload_page_number`. Decode, payload, planning, filing, or PDF conversion
 failures are preserved under `scans/review/` when they can be handled safely.
+QR-aware image and PDF intake prints a structured scan intake summary with
+source, page, routed, preserved, failed, and review-required counts. Partial
+success is explicit: exit `0` can mean all pages routed or that expected
+failures were safely preserved for review. Preserved failures require review
+before intake is treated as complete. Exit `1` means an unexpected failure
+occurred or a failure could not be preserved safely.
 
 The command does not batch-ingest a folder, expose menu scan intake, assemble
 submissions, create review records, run OCR, or identify a student from raw
-scan content without a valid payload. Exit `0` means the file was routed or
-safely preserved for review; exit `1` means it could not be handled safely.
+scan content without a valid payload.
 
 ## Submission Assembly and Status
 

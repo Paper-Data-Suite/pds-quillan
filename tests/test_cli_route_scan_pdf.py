@@ -194,7 +194,9 @@ def test_route_scan_decode_qr_pdf_routes_each_valid_page(
     assert {path.suffix for path in routed} == {".png"}
     assert not list(workspace.rglob("response_*.pdf"))
     assert not _review_metadata_records(workspace)
-    assert "Pages processed: 2" in output
+    assert "Scan intake summary" in output
+    assert "Sources processed: 1" in output
+    assert "Pages attempted: 2" in output
     assert "Routed: 2" in output
     assert not list(workspace.rglob("submission.json"))
     assert not list(workspace.rglob("review.json"))
@@ -385,7 +387,8 @@ def test_route_scan_decode_qr_pdf_later_pages_process_after_failures(
     assert len(_routed_pngs(workspace)) == 1
     assert categories == ["payload_missing", "payload_schema_unsupported"]
     assert [record["source_page_number"] for record in metadata] == [1, 3]
-    assert "Pages processed: 3" in output
+    assert "Scan intake summary" in output
+    assert "Pages attempted: 3" in output
     assert "Routed: 1" in output
     assert "Preserved for review: 2" in output
 
