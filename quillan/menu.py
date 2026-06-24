@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sys
 from collections.abc import Callable
+from pathlib import Path
 
 WorkspaceShowHandler = Callable[[], int]
 WorkspaceSetHandler = Callable[[str], int]
@@ -43,7 +44,8 @@ def print_menu_help() -> None:
     print("Teacher judgment remains primary; Quillan is not automated grading software.")
     print()
     print("Quillan does not currently implement AI tagging, AI scoring,")
-    print("AI feedback, OCR, scan routing, or full teacher-facing review workflows.")
+    print("AI feedback, OCR, or full teacher-facing review workflows.")
+    print("Guided scan intake routes QR-coded response pages only.")
     print()
     print("Use synthetic data only in repository examples and tests.")
     print("Do not commit or post real student data, rosters, scans, writing, grades,")
@@ -81,6 +83,38 @@ def launch_printable_response_menu() -> None:
     )
 
     launch()
+
+
+def _normalize_menu_path(raw_path: str) -> Path | None:
+    stripped = raw_path.strip()
+    if not stripped:
+        return None
+    if len(stripped) >= 2 and stripped[0] == stripped[-1] and stripped[0] in {
+        '"',
+        "'",
+    }:
+        stripped = stripped[1:-1].strip()
+    if not stripped:
+        return None
+    return Path(stripped)
+
+
+def launch_scan_intake_workflow() -> None:
+    """Prompt for a scan source and run QR-aware routing intake."""
+    from quillan.cli_app.handlers.routing import run_qr_scan_intake
+
+    clear_screen()
+    print_menu_header("Scan Intake / Route Paper Responses")
+    raw_source_path = input("Scan file or folder path (leave blank to cancel): ")
+    print()
+
+    source_path = _normalize_menu_path(raw_source_path)
+    if source_path is None:
+        print("Scan intake canceled. No scan files were routed.")
+    else:
+        run_qr_scan_intake(source_path)
+    print()
+    pause_for_user()
 
 
 def launch_workspace_menu(
@@ -156,9 +190,10 @@ def launch_menu(
             print("1. Assignment Management")
             print("2. Roster Management")
             print("3. Printable Response Pages")
-            print("4. Workspace Settings")
-            print("5. Help")
-            print("6. Exit")
+            print("4. Scan Intake / Route Paper Responses")
+            print("5. Workspace Settings")
+            print("6. Help")
+            print("7. Exit")
             print()
 
             choice = input("Select an option: ").strip()
@@ -171,22 +206,24 @@ def launch_menu(
             elif choice == "3":
                 launch_printable_response_menu()
             elif choice == "4":
+                launch_scan_intake_workflow()
+            elif choice == "5":
                 launch_workspace_menu(
                     workspace_show,
                     workspace_set,
                     workspace_validate,
                     workspace_reset,
                 )
-            elif choice == "5":
+            elif choice == "6":
                 clear_screen()
                 print_menu_help()
                 print()
                 pause_for_user()
-            elif choice == "6":
+            elif choice == "7":
                 print("Goodbye.")
                 return 0
             else:
-                print("Invalid selection. Please enter a number from 1 to 6.")
+                print("Invalid selection. Please enter a number from 1 to 7.")
                 print()
                 pause_for_user()
     except KeyboardInterrupt:
