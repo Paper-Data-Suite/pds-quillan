@@ -220,7 +220,7 @@ def test_review_workflow_selects_context_and_shows_read_only_summary(
         for path in workspace.rglob("*")
         if path.is_file()
     )
-    _menu_input(monkeypatch, ["5", "1", "1", "1", "1", "3", "", "2", "8"])
+    _menu_input(monkeypatch, ["5", "1", "1", "1", "1", "8", "", "2", "8"])
 
     assert main(["menu"]) == 0
 
@@ -263,7 +263,10 @@ def test_review_summary_includes_existing_review_record_counts(
     )
     review_path.write_text(json.dumps(_review_record()), encoding="utf-8")
     review_before = review_path.read_bytes()
-    _menu_input(monkeypatch, ["5", "1", "1", "1", "1", "3", "", "2", "8"])
+    _menu_input(
+        monkeypatch,
+        ["5", "1", "1", "1", "1", "8", "", "2", "8"],
+    )
 
     assert main(["menu"]) == 0
 
@@ -310,7 +313,7 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
     )
     _menu_input(
         monkeypatch,
-        ["5", "1", "1", "1", "1", "1", "", "3", "", "2", "8"],
+        ["5", "1", "1", "1", "1", "1", "", "8", "", "2", "8"],
     )
 
     assert main(["menu"]) == 0
@@ -328,7 +331,7 @@ def test_review_menu_reports_missing_openable_evidence(
 ) -> None:
     _menu_input(
         monkeypatch,
-        ["5", "1", "1", "1", "2", "1", "", "3", "", "2", "8"],
+        ["5", "1", "1", "1", "2", "1", "", "8", "", "2", "8"],
     )
 
     assert main(["menu"]) == 0
@@ -338,6 +341,83 @@ def test_review_menu_reports_missing_openable_evidence(
     assert "Submission: not assembled" in output
     assert "Error: could not open student submission" in output
     assert not list(workspace.rglob("review.json"))
+
+
+
+def test_review_menu_adds_teacher_note_to_review_record(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(
+        monkeypatch,
+        [
+            "5",
+            "1",
+            "1",
+            "1",
+            "1",
+            "2",
+            "This is a test note.",
+            "",
+            "8",
+            "",
+            "2",
+            "8",
+        ],
+    )
+
+    assert main(["menu"]) == 0
+
+    review_path = (
+        workspace
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "submissions"
+        / STUDENT_ID
+        / "review.json"
+    )
+    assert review_path.exists()
+    review = json.loads(review_path.read_text(encoding="utf-8"))
+    assert review["notes"][0]["text"] == "This is a test note."
+    assert review["review_state"] == "in_progress"
+
+
+def test_review_menu_updates_submission_review_state(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(
+        monkeypatch,
+        [
+            "5",
+            "1",
+            "1",
+            "1",
+            "1",
+            "6",
+            "in_progress",
+            "",
+            "8",
+            "",
+            "2",
+            "8",
+        ],
+    )
+
+    assert main(["menu"]) == 0
+
+    manifest_path = submission_manifest_path(
+        workspace,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["submission_state"] == "in_progress"
 
 
 def test_review_menu_no_classes_and_invalid_selection_back_out_safely(

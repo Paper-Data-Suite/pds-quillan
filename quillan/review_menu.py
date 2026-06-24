@@ -12,16 +12,36 @@ from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
 from quillan.assignments import AssignmentConfigError, load_assignment_config
 from quillan.cli_app.output import (
+    print_added_review_comment,
+    print_added_review_note,
+    print_added_review_tag,
     print_assignment_submission_status,
     print_opened_submission_review,
+    print_updated_review_score,
+    print_updated_submission_review_state,
     workspace_relative_display,
 )
-from quillan.review_record import ReviewRecordError, load_review_record
+from quillan.comment_banks import CommentBankError, load_comment_bank
+from quillan.review_comments import ReviewCommentError, add_review_comment
+from quillan.review_notes import ReviewNoteError, add_review_note
+from quillan.review_record import (
+    ALLOWED_LOCATION_TYPES,
+    ALLOWED_TAG_POLARITIES,
+    ReviewRecordError,
+    load_review_record,
+)
 from quillan.review_record_paths import review_record_path
+from quillan.review_scores import ReviewScoreError, set_review_score
+from quillan.review_tags import ReviewTagError, add_review_tag
 from quillan.storage import assignment_config_path
 from quillan.submission_review_opening import (
     SubmissionReviewOpeningError,
     open_student_submission_for_review,
+)
+from quillan.submission_manifest import ALLOWED_SUBMISSION_STATES
+from quillan.submission_review_state import (
+    SubmissionReviewStateError,
+    update_submission_review_state,
 )
 from quillan.submission_status import (
     AssignmentSubmissionStatus,
@@ -326,14 +346,19 @@ def _launch_selected_student_review(
         )
         print()
         print("1. Open submission evidence")
-        print("2. Refresh summary")
-        print("3. Back")
+        print("2. Add teacher note")
+        print("3. Add structured tag")
+        print("4. Select reusable comment")
+        print("5. Set criterion score")
+        print("6. Update submission review state")
+        print("7. Refresh summary")
+        print("8. Back")
         print()
 
         choice = input("Select an option: ").strip()
         print()
 
-        if choice in {"", "3"}:
+        if choice in {"", "8"}:
             return 0
         if choice == "1":
             _open_submission_evidence(
@@ -344,10 +369,506 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "2":
+            _menu_add_review_note(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+            input("Press Enter to continue...")
+        elif choice == "3":
+            _menu_add_review_tag(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+            input("Press Enter to continue...")
+        elif choice == "4":
+            _menu_add_review_comment(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+            input("Press Enter to continue...")
+        elif choice == "5":
+            _menu_set_review_score(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+            input("Press Enter to continue...")
+        elif choice == "6":
+            _menu_update_submission_review_state(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+            input("Press Enter to continue...")
+        elif choice == "7":
             continue
         else:
-            print("Invalid selection. Please enter a number from 1 to 3.")
+            print("Invalid selection. Please enter a number from 1 to 8.")
             input("Press Enter to continue...")
+
+
+def _menu_add_review_note(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    text = input("Teacher note text: ").strip()
+    if not text:
+        print("Add note canceled. Teacher note text is required.")
+        return
+
+    try:
+        added = add_review_note(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            text,
+        )
+    except (ReviewNoteError, OSError) as error:
+        print(f"Error: could not add teacher note: {error}")
+        return
+
+    print_added_review_note(added)
+
+
+def _menu_add_review_tag(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    label = input("Tag label: ").strip()
+    if not label:
+        print("Add tag canceled. Tag label is required.")
+        return
+
+    print(
+        f"Polarity options: {', '.join(sorted(ALLOWED_TAG_POLARITIES))}"
+    )
+    polarity = input("Tag polarity: ").strip()
+    if polarity not in ALLOWED_TAG_POLARITIES:
+        print(
+            "Add tag canceled. Invalid polarity. "
+            f"Allowed values: {', '.join(sorted(ALLOWED_TAG_POLARITIES))}."
+        )
+        return
+
+    standard_code = input(
+        "Standard code (leave blank if not applicable): "
+    ).strip() or None
+    comment_id = None
+    if standard_code is not None:
+        comment_id = input(
+            "Comment ID (leave blank if not applicable): "
+        ).strip() or None
+    severity = _parse_optional_positive_int(
+        input("Severity (leave blank if not applicable): ")
+    )
+    teacher_note = input(
+        "Teacher note (leave blank if not applicable): "
+    ).strip() or None
+    page_number = _parse_optional_positive_int(
+        input("Page number (leave blank if not applicable): ")
+    )
+    evidence_id = input(
+        "Evidence ID (leave blank if not applicable): "
+    ).strip() or None
+    location_type = input(
+        "Location type (leave blank if not applicable): "
+    ).strip() or None
+    location_value: str | int | None = None
+    if location_type:
+        if location_type not in ALLOWED_LOCATION_TYPES:
+            print(
+                "Add tag canceled. Invalid location type. "
+                f"Allowed values: {', '.join(sorted(ALLOWED_LOCATION_TYPES))}."
+            )
+            return
+        raw_location = input(
+            "Location value (leave blank if not applicable): "
+        ).strip()
+        if raw_location:
+            if location_type in {
+                "page",
+                "paragraph",
+                "sentence",
+                "line",
+            }:
+                try:
+                    location_value = int(raw_location)
+                except ValueError:
+                    print(
+                        "Add tag canceled. Location value must be a positive integer "
+                        f"for {location_type}."
+                    )
+                    return
+            else:
+                location_value = raw_location
+
+    try:
+        added = add_review_tag(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            label=label,
+            polarity=polarity,
+            standard_code=standard_code,
+            comment_id=comment_id,
+            severity=severity,
+            teacher_note=teacher_note,
+            page_number=page_number,
+            evidence_id=evidence_id,
+            location_type=location_type,
+            location_value=location_value,
+        )
+    except (ReviewTagError, OSError) as error:
+        print(f"Error: could not add structured tag: {error}")
+        return
+
+    print_added_review_tag(added)
+
+
+def _load_available_comment_banks(
+    workspace_root: Path,
+) -> tuple[dict[str, Any], ...]:
+    comment_banks_dir = (
+        Path(workspace_root) / "shared" / "comment_banks"
+    )
+    if not comment_banks_dir.is_dir():
+        return ()
+
+    banks: list[dict[str, Any]] = []
+    for bank_path in sorted(
+        comment_banks_dir.glob("*.json"), key=lambda path: path.name.casefold()
+    ):
+        try:
+            bank = load_comment_bank(bank_path)
+        except (OSError, CommentBankError):
+            continue
+        banks.append(bank)
+    return tuple(banks)
+
+
+def _prompt_comment_bank(
+    banks: tuple[dict[str, Any], ...],
+) -> dict[str, Any] | None:
+    print("Available comment banks:")
+    for index, bank in enumerate(banks, start=1):
+        title = bank.get("title")
+        label = bank["bank_id"]
+        if isinstance(title, str) and title.strip():
+            label += f": {title.strip()}"
+        print(f"{index}. {label}")
+    print("B. Back")
+    print()
+
+    while True:
+        selection = input("Select comment bank: ").strip()
+        if selection == "" or selection.casefold() == "b":
+            print("Select comment canceled.")
+            return None
+        if selection.isdigit():
+            index = int(selection) - 1
+            if 0 <= index < len(banks):
+                return banks[index]
+        for bank in banks:
+            if bank["bank_id"] == selection:
+                return bank
+        print(
+            "Invalid comment bank selection. "
+            "Please choose a listed bank or Back."
+        )
+
+
+def _prompt_comment_from_bank(bank: dict[str, Any]) -> dict[str, Any] | None:
+    raw_comments = bank.get("comments")
+    if not isinstance(raw_comments, list):
+        return None
+    comments: list[dict[str, Any]] = [
+        comment
+        for comment in raw_comments
+        if isinstance(comment, dict) and comment.get("student_facing") is True
+    ]
+    if not comments:
+        print(
+            "Select comment canceled. "
+            "No student-facing comments available in this bank."
+        )
+        return None
+
+    print("Available comments:")
+    for index, comment in enumerate(comments, start=1):
+        preview = comment.get("short_text") or comment["text"].splitlines()[0]
+        preview = preview.strip()
+        if len(preview) > 80:
+            preview = preview[:77] + "..."
+        print(
+            f"{index}. {comment['comment_id']}: {comment['label']} — {preview}"
+        )
+    print("B. Back")
+    print()
+
+    while True:
+        selection = input("Select comment: ").strip()
+        if selection == "" or selection.casefold() == "b":
+            print("Select comment canceled.")
+            return None
+        if selection.isdigit():
+            index = int(selection) - 1
+            if 0 <= index < len(comments):
+                return comments[index]
+        for comment in comments:
+            if comment["comment_id"] == selection:
+                return comment
+        print(
+            "Invalid comment selection. "
+            "Please choose a listed comment or Back."
+        )
+
+
+def _prompt_optional_standard_code(comment: dict[str, Any]) -> str | None:
+    standard_codes = [
+        code
+        for code in comment.get("standard_codes", [])
+        if isinstance(code, str) and code.strip()
+    ]
+    if len(standard_codes) <= 1:
+        return None
+
+    print("Standard code options:")
+    for index, code in enumerate(standard_codes, start=1):
+        print(f"{index}. {code}")
+    print("B. Back")
+    print()
+
+    selection = input(
+        "Select standard code or leave blank to use default: "
+    ).strip()
+    if selection == "" or selection.casefold() == "b":
+        return None
+    if selection.isdigit():
+        index = int(selection) - 1
+        if 0 <= index < len(standard_codes):
+            return standard_codes[index]
+    if selection in standard_codes:
+        return selection
+
+    print(
+        "Select comment canceled. "
+        "Invalid standard code selection."
+    )
+    return None
+
+
+_CANCEL = object()
+
+
+def _prompt_optional_boolean(
+    prompt: str,
+) -> bool | None | object:
+    raw = input(prompt)
+    normalized = raw.strip().lower()
+    if normalized in {"", "none"}:
+        return None
+    if normalized in {"y", "yes", "true", "t"}:
+        return True
+    if normalized in {"n", "no", "false", "f"}:
+        return False
+    print(
+        "Select comment canceled. Invalid response. "
+        "Use y/n or leave blank to use default."
+    )
+    return _CANCEL
+
+
+def _menu_add_review_comment(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    banks = _load_available_comment_banks(workspace_root)
+    if not banks:
+        print("Select comment canceled. No valid shared comment banks found.")
+        return
+
+    bank = _prompt_comment_bank(banks)
+    if bank is None:
+        return
+
+    comment = _prompt_comment_from_bank(bank)
+    if comment is None:
+        return
+
+    standard_code = _prompt_optional_standard_code(comment)
+    include_in_feedback = _prompt_optional_boolean(
+        "Include in feedback? (y/n, leave blank to use default): "
+    )
+    if include_in_feedback is _CANCEL:
+        return
+
+    val_include: bool | None = (
+        include_in_feedback if isinstance(include_in_feedback, bool) else None
+    )
+
+    try:
+        added = add_review_comment(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            bank_id=bank["bank_id"],
+            comment_id=comment["comment_id"],
+            standard_code=standard_code,
+            include_in_feedback=val_include,
+        )
+    except (ReviewCommentError, OSError) as error:
+        print(f"Error: could not select review comment: {error}")
+        return
+
+    print_added_review_comment(added)
+
+
+def _menu_set_review_score(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    criterion_id = input("Criterion ID: ").strip()
+    if not criterion_id:
+        print("Set score canceled. criterion_id is required.")
+        return
+
+    label = input("Criterion label: ").strip()
+    if not label:
+        print("Set score canceled. label is required.")
+        return
+
+    score = _parse_required_number(input("Score: "))
+    if score is None:
+        print("Set score canceled. score is required and must be a number.")
+        return
+
+    max_score = _parse_required_number(input("Max score: "))
+    if max_score is None:
+        print("Set score canceled. max_score is required and must be a number.")
+        return
+
+    scale = input("Scale (leave blank if not applicable): ").strip() or None
+    teacher_note = input(
+        "Teacher note (leave blank if not applicable): "
+    ).strip() or None
+
+    try:
+        updated = set_review_score(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            criterion_id=criterion_id,
+            label=label,
+            score=score,
+            max_score=max_score,
+            scale=scale,
+            teacher_note=teacher_note,
+        )
+    except (ReviewScoreError, OSError) as error:
+        print(f"Error: could not set review score: {error}")
+        return
+
+    print_updated_review_score(updated)
+
+
+def _menu_update_submission_review_state(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    print("Submission review state options:")
+    for index, state_opt in enumerate(sorted(ALLOWED_SUBMISSION_STATES), start=1):
+        print(f"{index}. {state_opt}")
+    print()
+
+    selection = input("Select submission review state: ").strip()
+    if not selection:
+        print("Update review state canceled.")
+        return
+
+    selected_state: str | None = None
+    if selection.isdigit():
+        index = int(selection) - 1
+        selected_state = sorted(ALLOWED_SUBMISSION_STATES)[index] if 0 <= index < len(ALLOWED_SUBMISSION_STATES) else None
+    else:
+        selected_state = selection
+
+    if selected_state not in ALLOWED_SUBMISSION_STATES:
+        print(
+            "Update review state canceled. Invalid state selection. "
+            f"Allowed values: {', '.join(sorted(ALLOWED_SUBMISSION_STATES))}."
+        )
+        return
+
+    try:
+        updated = update_submission_review_state(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            selected_state,
+        )
+    except SubmissionReviewStateError as error:
+        print(f"Error: could not update submission review state: {error}")
+        return
+
+    print_updated_submission_review_state(updated)
+
+
+def _parse_optional_positive_int(value: str) -> int | None:
+    if not value.strip():
+        return None
+    try:
+        parsed = int(value.strip())
+    except ValueError:
+        return None
+    return parsed if parsed > 0 else None
+
+
+def _parse_required_number(value: str) -> int | float | None:
+    text = value.strip()
+    if not text:
+        return None
+    try:
+        if "." in text or "e" in text.lower():
+            parsed = float(text)
+        else:
+            parsed = int(text)
+    except ValueError:
+        return None
+    return parsed
+
+
+def _parse_optional_boolean(value: str) -> bool | None:
+    text = value.strip().lower()
+    if text in {"", "none"}:
+        return None
+    if text in {"y", "yes", "true", "t"}:
+        return True
+    if text in {"n", "no", "false", "f"}:
+        return False
+    return None
 
 
 def _print_review_summary(
