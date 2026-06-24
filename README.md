@@ -60,7 +60,8 @@ Quillan currently supports:
   QR-bearing image, one QR-bearing PDF processed page by page, or a
   non-recursive folder of supported QR-bearing scan files. It orchestrates the
   existing parser, QR decoder, payload validator, route planner, evidence
-  filer, and failure review helpers;
+  filer, failure review helpers, and post-intake `assemble-submissions`
+  next-step guidance derived from the current intake summary;
 - read-only assignment submission status listing, workspace-safe local evidence
   opening, and student-aware selected-evidence opening; and
 - explicit, teacher-controlled lightweight submission review-state updates
@@ -155,24 +156,26 @@ The supported teacher/developer sequence is:
 3. `route-scan` retains the source scan and files routed assignment evidence.
 4. If routing cannot safely complete, Quillan preserves failure metadata under
    `scans/review/` rather than silently discarding the failure.
-5. `assemble-submissions` creates missing student submission manifests from
+5. QR-aware `route-scan` reports which class/assignment pairs have newly
+   routed evidence and prints explicit `assemble-submissions` next steps.
+6. `assemble-submissions` creates missing student submission manifests from
    routed evidence.
-6. `list-submissions` reports assignment status without writing files.
-7. `open-submission` opens the selected evidence for a specific student.
-8. The teacher reads and evaluates the evidence in the local system viewer.
-9. `add-note` appends a teacher-entered observation to the student's canonical
+7. `list-submissions` reports assignment status without writing files.
+8. `open-submission` opens the selected evidence for a specific student.
+9. The teacher reads and evaluates the evidence in the local system viewer.
+10. `add-note` appends a teacher-entered observation to the student's canonical
    `review.json`.
-10. `add-tag` appends a teacher-entered structured observation to that review
+11. `add-tag` appends a teacher-entered structured observation to that review
     record.
-11. `add-comment` selects student-facing teacher-authored language from a
+12. `add-comment` selects student-facing teacher-authored language from a
     shared comment bank into that review record as a stable snapshot.
-12. `set-score` sets or updates one explicitly teacher-entered criterion score.
-13. `export-feedback` writes selected comments and criterion scores to a
+13. `set-score` sets or updates one explicitly teacher-entered criterion score.
+14. `export-feedback` writes selected comments and criterion scores to a
     student-facing Markdown file.
-14. `export-class-summary` writes an assignment-level teacher review CSV.
-15. `export-standards-summary` writes an assignment-level standards-linked
+15. `export-class-summary` writes an assignment-level teacher review CSV.
+16. `export-standards-summary` writes an assignment-level standards-linked
     tag and selected-comment CSV.
-16. `set-review-state` records lightweight submission-manifest progress when
+17. `set-review-state` records lightweight submission-manifest progress when
     the teacher chooses.
 
 Opening evidence and updating review state are separate teacher-controlled
@@ -203,7 +206,11 @@ quillan set-review-state <class_id> <assignment_id> <student_id> <state>
   QR-bearing PDF, or a non-recursive folder of supported QR-bearing scan files.
   PDF intake processes pages independently, files page evidence as PNG files,
   and preserves handled failures under `scans/review/`; it does not archive
-  source files, run OCR, use the menu, or assemble a submission.
+  source files, run OCR, use the menu, or assemble a submission. After
+  QR-aware intake, the command prints explicit `assemble-submissions` commands
+  for class/assignment pairs with newly routed pages in the current intake
+  summary. Preserved failures should still be reviewed before treating the
+  batch as complete.
 - `assemble-submissions` creates missing manifests from routed filenames, or
   fully regenerates them with `--overwrite`; it does not inspect file contents
   or choose among ambiguous duplicate evidence.
@@ -609,6 +616,15 @@ PDF conversion uses `pdf2image` and requires Poppler installed on the user's
 machine. The command does not move, delete, or archive source files, run OCR,
 score, tag, generate feedback, assemble submissions, create review records,
 create reports, or expose menu scan intake.
+
+After QR-aware intake, `route-scan` derives class/assignment assembly targets
+from the current structured intake summary and prints safe next-step commands,
+such as `quillan assemble-submissions <class_id> <assignment_id>`, for newly
+routed evidence. It does not rescan assignment `scans/` directories and does
+not include preserved or failed pages as assembly targets. If review is
+required, the message warns that preserved failures should be reviewed before
+the batch is treated as complete. Submission assembly remains the explicit step
+that creates or refreshes manifests.
 
 Assemble all student manifests discoverable from routed filenames in an
 assignment's `scans/` directory:

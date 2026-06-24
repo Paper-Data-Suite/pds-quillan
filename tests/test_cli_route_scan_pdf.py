@@ -198,6 +198,10 @@ def test_route_scan_decode_qr_pdf_routes_each_valid_page(
     assert "Sources processed: 1" in output
     assert "Pages attempted: 2" in output
     assert "Routed: 2" in output
+    assert (
+        f"quillan assemble-submissions {CLASS_ID} {ASSIGNMENT_ID}  "
+        "(2 routed pages)"
+    ) in output
     assert not list(workspace.rglob("submission.json"))
     assert not list(workspace.rglob("review.json"))
 
@@ -391,6 +395,12 @@ def test_route_scan_decode_qr_pdf_later_pages_process_after_failures(
     assert "Pages attempted: 3" in output
     assert "Routed: 1" in output
     assert "Preserved for review: 2" in output
+    assert (
+        "You may assemble submissions for routed evidence now, but "
+        "preserved failures should be reviewed before treating the batch "
+        "as complete."
+    ) in output
+    assert f"quillan assemble-submissions {CLASS_ID} {ASSIGNMENT_ID}" in output
 
 
 def test_route_scan_payload_mode_does_not_process_pdf_pages(
