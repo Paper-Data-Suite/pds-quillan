@@ -589,8 +589,12 @@ Successful routing retains the selected source under
 page evidence as PNG files, preserving the physical `source_page_number`
 separately from the decoded `payload_page_number`. Decode, payload, planning,
 filing, and PDF conversion failures are preserved under `scans/review/` when
-possible. Exit code `0` means the input was routed or safely preserved for
-review; exit code `1` means it could not be handled safely.
+possible. QR-aware image and PDF intake prints a structured summary with
+source, page, routed, preserved, failed, and review-required counts. Partial
+success is explicit: exit code `0` can mean every page routed or that expected
+failures were safely preserved for review. Preserved failures require review
+before intake is treated as complete. Exit code `1` means an unexpected or
+unpreserved failure occurred.
 
 This direct developer/teacher primitive is single-scan only. QR-aware intake
 supports `.png`, `.jpg`, `.jpeg`, `.tif`, and `.tiff` images plus `.pdf`

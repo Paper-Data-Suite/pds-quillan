@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import argparse
 import tempfile
-from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 import cv2
 from pds_core.pds1 import Pds1PayloadError, parse_pds1_payload
@@ -20,6 +19,7 @@ from quillan.cli_app.output import (
 )
 from quillan.evidence_filing import (
     EvidenceFilingError,
+    RoutedEvidenceFile,
     file_routed_response_evidence,
 )
 from quillan.payload_validation import (
@@ -52,13 +52,12 @@ from quillan.routing_review import (
     preserve_route_failure_for_review,
     preserve_routing_failure_for_review,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class _PageRouteOutcome:
-    page_number: int
-    status: str
-    category: str | None = None
+from quillan.scan_intake_summary import (
+    ScanIntakePageResult,
+    ScanIntakeSourceResult,
+    ScanIntakeSummary,
+    format_scan_intake_summary,
+)
 
 
 def handle_route_scan(args: argparse.Namespace) -> int:
@@ -83,7 +82,7 @@ def handle_route_scan(args: argparse.Namespace) -> int:
                 source_file=source_file,
                 created_at=intake_timestamp,
             )
-        decoded_result = _decoded_page_from_source_qr(
+        return _route_source_image_qr(
             workspace_root,
             source_file=source_file,
             created_at=intake_timestamp,
@@ -147,7 +146,7 @@ def _decoded_page_from_source_qr(
     *,
     source_file: Path,
     created_at: datetime,
-) -> DecodedResponsePage | int:
+) -> DecodedResponsePage | ScanIntakePageResult:
     """Decode and validate a Quillan response-page QR from one image."""
     try:
         decode_result = decode_qr_payload_from_image_path(source_file)
@@ -187,7 +186,7 @@ def _decoded_page_from_qr_image(
     image: object,
     source_page_number: int,
     created_at: datetime,
-) -> DecodedResponsePage | int:
+) -> DecodedResponsePage | ScanIntakePageResult:
     """Decode and validate a Quillan response-page QR from one loaded image."""
     try:
         decode_result = decode_qr_payload_from_image(image)
@@ -222,6 +221,41 @@ def _decoded_page_from_qr_image(
     return validation_result
 
 
+def _route_source_image_qr(
+    workspace_root: Path,
+    *,
+    source_file: Path,
+    created_at: datetime,
+) -> int:
+    """Decode and route one QR-bearing image, then print an intake summary."""
+    decoded_result = _decoded_page_from_source_qr(
+        workspace_root,
+        source_file=source_file,
+        created_at=created_at,
+    )
+    if isinstance(decoded_result, ScanIntakePageResult):
+        page_result = decoded_result
+    else:
+        page_result = _route_decoded_page_result(
+            workspace_root,
+            source_file=source_file,
+            decoded_page=decoded_result,
+            created_at=created_at,
+        )
+    summary = ScanIntakeSummary(
+        (
+            _source_result_from_pages(
+                source_file=source_file,
+                source_type="image",
+                page_results=(page_result,),
+            ),
+        )
+    )
+    print()
+    print(format_scan_intake_summary(summary))
+    return 1 if summary.has_failures else 0
+
+
 def _route_decoded_page(
     workspace_root: Path,
     *,
@@ -234,6 +268,31 @@ def _route_decoded_page(
     print_success: bool = True,
 ) -> int:
     """Plan and file one already-decoded Quillan response page."""
+    page_result = _route_decoded_page_result(
+        workspace_root,
+        source_file=source_file,
+        decoded_page=decoded_page,
+        created_at=created_at,
+        routed_source_file_path=routed_source_file_path,
+        routed_extension=routed_extension,
+        source_page_number=source_page_number,
+        print_success=print_success,
+    )
+    return 1 if page_result.status == "failed" else 0
+
+
+def _route_decoded_page_result(
+    workspace_root: Path,
+    *,
+    source_file: Path,
+    decoded_page: DecodedResponsePage,
+    created_at: datetime,
+    routed_source_file_path: Path | None = None,
+    routed_extension: str | None = None,
+    source_page_number: int | None = None,
+    print_success: bool = True,
+) -> ScanIntakePageResult:
+    """Plan and file one decoded Quillan response page."""
     try:
         route_result = plan_decoded_response_page_route(
             workspace_root,
@@ -248,7 +307,16 @@ def _route_decoded_page(
                 created_at=created_at,
             )
             print_route_failure_review(route_result, review_record)
-            return 0
+            return _page_result_from_review_record(
+                source_filename=source_file.name,
+                source_page_number=source_page_number,
+                status="preserved",
+                review_record=review_record,
+                payload_page_number=route_result.page_number,
+                class_id=route_result.class_id,
+                assignment_id=route_result.assignment_id,
+                student_id=route_result.student_id,
+            )
 
         try:
             filed_evidence = file_routed_response_evidence(
@@ -269,17 +337,44 @@ def _route_decoded_page(
                 created_at=created_at,
             )
             print_evidence_filing_review(error, review_record)
-            return 0
+            return _page_result_from_review_record(
+                source_filename=source_file.name,
+                source_page_number=source_page_number,
+                status="preserved",
+                review_record=review_record,
+                payload_page_number=route_result.page_number,
+                class_id=route_result.class_id,
+                assignment_id=route_result.assignment_id,
+                student_id=route_result.student_id,
+            )
     except RoutingReviewError as error:
         print(f"Error: could not preserve scan routing failure for review: {error}")
-        return 1
+        return _failed_page_result(
+            source_filename=source_file.name,
+            source_page_number=source_page_number,
+            payload_page_number=decoded_page.page_number,
+            failure_category="review_preservation_failed",
+            failure_message=str(error),
+            decoded_page=decoded_page,
+        )
     except Exception as error:
         print(f"Error: unexpected route-scan failure: {error}")
-        return 1
+        return _failed_page_result(
+            source_filename=source_file.name,
+            source_page_number=source_page_number,
+            payload_page_number=decoded_page.page_number,
+            failure_category="processing_error",
+            failure_message=str(error),
+            decoded_page=decoded_page,
+        )
 
     if print_success:
         print_routed_evidence(filed_evidence)
-    return 0
+    return _page_result_from_filed_evidence(
+        source_filename=source_file.name,
+        source_page_number=source_page_number,
+        filed_evidence=filed_evidence,
+    )
 
 
 def _route_source_pdf_qr(
@@ -330,11 +425,11 @@ def _route_source_pdf_qr(
 
     print(f"Pages: {len(pages)}")
     print()
-    outcomes: list[_PageRouteOutcome] = []
+    page_results: list[ScanIntakePageResult] = []
     with tempfile.TemporaryDirectory(prefix="quillan-pdf-pages-") as temp_dir:
         temp_root = Path(temp_dir)
         for page in pages:
-            outcome = _route_pdf_page_qr(
+            page_result = _route_pdf_page_qr(
                 workspace_root,
                 source_file=source_file,
                 page=page,
@@ -342,25 +437,28 @@ def _route_source_pdf_qr(
                 + timedelta(microseconds=page.page_number - 1),
                 temp_root=temp_root,
             )
-            outcomes.append(outcome)
-            if outcome.status == "routed":
-                print(f"Page {outcome.page_number}: routed")
+            page_results.append(page_result)
+            page_number = page_result.source_page_number
+            if page_result.status == "routed":
+                print(f"Page {page_number}: routed")
             else:
                 print(
-                    f"Page {outcome.page_number}: preserved for review"
-                    f" - {outcome.category}"
+                    f"Page {page_number}: {page_result.status}"
+                    f" - {page_result.failure_category}"
                 )
 
-    routed = sum(1 for outcome in outcomes if outcome.status == "routed")
-    preserved = sum(1 for outcome in outcomes if outcome.status == "preserved")
-    failed = sum(1 for outcome in outcomes if outcome.status == "failed")
+    summary = ScanIntakeSummary(
+        (
+            _source_result_from_pages(
+                source_file=source_file,
+                source_type="pdf",
+                page_results=tuple(page_results),
+            ),
+        )
+    )
     print()
-    print("Summary:")
-    print(f"Pages processed: {len(outcomes)}")
-    print(f"Routed: {routed}")
-    print(f"Preserved for review: {preserved}")
-    print(f"Failed: {failed}")
-    return 1 if failed else 0
+    print(format_scan_intake_summary(summary))
+    return 1 if summary.has_failures else 0
 
 
 def _route_pdf_page_qr(
@@ -370,7 +468,7 @@ def _route_pdf_page_qr(
     page: PdfPageImage,
     created_at: datetime,
     temp_root: Path,
-) -> _PageRouteOutcome:
+) -> ScanIntakePageResult:
     decoded_result = _decoded_page_from_qr_image(
         workspace_root,
         source_file=source_file,
@@ -378,22 +476,32 @@ def _route_pdf_page_qr(
         source_page_number=page.page_number,
         created_at=created_at,
     )
-    if isinstance(decoded_result, int):
-        return _PageRouteOutcome(
-            page_number=page.page_number,
-            status="preserved" if decoded_result == 0 else "failed",
-            category=_latest_review_category(workspace_root),
-        )
+    if isinstance(decoded_result, ScanIntakePageResult):
+        return decoded_result
 
     page_image_path = temp_root / f"page_{page.page_number:03d}.png"
     try:
         written = cv2.imwrite(str(page_image_path), cast(ImageArray, page.image))
     except cv2.error as error:
         print(f"Error: could not prepare PDF page image for routing: {error}")
-        return _PageRouteOutcome(page.page_number, "failed", "processing_error")
+        return _failed_page_result(
+            source_filename=source_file.name,
+            source_page_number=page.page_number,
+            payload_page_number=decoded_result.page_number,
+            failure_category="processing_error",
+            failure_message=str(error),
+            decoded_page=decoded_result,
+        )
     if not written:
         print("Error: could not prepare PDF page image for routing.")
-        return _PageRouteOutcome(page.page_number, "failed", "processing_error")
+        return _failed_page_result(
+            source_filename=source_file.name,
+            source_page_number=page.page_number,
+            payload_page_number=decoded_result.page_number,
+            failure_category="processing_error",
+            failure_message="Could not prepare PDF page image for routing.",
+            decoded_page=decoded_result,
+        )
 
     return _route_pdf_decoded_page(
         workspace_root,
@@ -413,7 +521,7 @@ def _route_pdf_decoded_page(
     created_at: datetime,
     routed_source_file_path: Path,
     source_page_number: int,
-) -> _PageRouteOutcome:
+) -> ScanIntakePageResult:
     """Plan and file one decoded PDF page, returning a page summary outcome."""
     try:
         route_result = plan_decoded_response_page_route(
@@ -428,17 +536,22 @@ def _route_pdf_decoded_page(
                 source_page_number=source_page_number,
                 created_at=created_at,
             )
-            return _PageRouteOutcome(
-                source_page_number,
-                "preserved",
-                review_record.failure_category,
+            return _page_result_from_review_record(
+                source_filename=source_file.name,
+                source_page_number=source_page_number,
+                status="preserved",
+                review_record=review_record,
+                payload_page_number=route_result.page_number,
+                class_id=route_result.class_id,
+                assignment_id=route_result.assignment_id,
+                student_id=route_result.student_id,
             )
 
         try:
             # The existing filing layer retains the original source for each
             # page route. The routed artifact itself is the extracted page PNG,
             # so assignment evidence is never the whole multi-page PDF.
-            file_routed_response_evidence(
+            filed_evidence = file_routed_response_evidence(
                 workspace_root,
                 route_plan=route_result,
                 source_file_path=source_file,
@@ -455,23 +568,42 @@ def _route_pdf_decoded_page(
                 source_page_number=source_page_number,
                 created_at=created_at,
             )
-            return _PageRouteOutcome(
-                source_page_number,
-                "preserved",
-                review_record.failure_category,
+            return _page_result_from_review_record(
+                source_filename=source_file.name,
+                source_page_number=source_page_number,
+                status="preserved",
+                review_record=review_record,
+                payload_page_number=route_result.page_number,
+                class_id=route_result.class_id,
+                assignment_id=route_result.assignment_id,
+                student_id=route_result.student_id,
             )
     except RoutingReviewError as error:
         print(f"Error: could not preserve scan routing failure for review: {error}")
-        return _PageRouteOutcome(
-            source_page_number,
-            "failed",
-            "review_preservation_failed",
+        return _failed_page_result(
+            source_filename=source_file.name,
+            source_page_number=source_page_number,
+            payload_page_number=decoded_page.page_number,
+            failure_category="review_preservation_failed",
+            failure_message=str(error),
+            decoded_page=decoded_page,
         )
     except Exception as error:
         print(f"Error: unexpected route-scan failure: {error}")
-        return _PageRouteOutcome(source_page_number, "failed", "processing_error")
+        return _failed_page_result(
+            source_filename=source_file.name,
+            source_page_number=source_page_number,
+            payload_page_number=decoded_page.page_number,
+            failure_category="processing_error",
+            failure_message=str(error),
+            decoded_page=decoded_page,
+        )
 
-    return _PageRouteOutcome(source_page_number, "routed")
+    return _page_result_from_filed_evidence(
+        source_filename=source_file.name,
+        source_page_number=source_page_number,
+        filed_evidence=filed_evidence,
+    )
 
 
 def _validate_source_file(source_file: Path) -> bool:
@@ -541,7 +673,7 @@ def _preserve_decode_failure(
     decode_result: QrImageDecodeResult,
     created_at: datetime,
     source_page_number: int | None = None,
-) -> int:
+) -> ScanIntakePageResult:
     """Preserve source/QR decode failure context for teacher review."""
     try:
         review_record = preserve_decode_failure_for_review(
@@ -556,20 +688,37 @@ def _preserve_decode_failure(
             "Error: QR decode failure could not be preserved for review: "
             f"{review_error}"
         )
-        return 1
+        return _failed_page_result(
+            source_filename=source_file.name,
+            source_page_number=source_page_number,
+            payload_page_number=None,
+            failure_category="review_preservation_failed",
+            failure_message=str(review_error),
+        )
     except Exception as unexpected_error:
         print(
             "Error: unexpected failure while preserving QR decode failure: "
             f"{unexpected_error}"
         )
-        return 1
+        return _failed_page_result(
+            source_filename=source_file.name,
+            source_page_number=source_page_number,
+            payload_page_number=None,
+            failure_category="processing_error",
+            failure_message=str(unexpected_error),
+        )
 
     _print_preserved_intake_failure(
         reason=review_record.failure_message,
         category=review_record.failure_category,
         review_record=review_record,
     )
-    return 0
+    return _page_result_from_review_record(
+        source_filename=source_file.name,
+        source_page_number=source_page_number,
+        status="preserved",
+        review_record=review_record,
+    )
 
 
 def _preserve_payload_validation_failure(
@@ -579,7 +728,7 @@ def _preserve_payload_validation_failure(
     failure: ResponsePayloadValidationFailure,
     created_at: datetime,
     source_page_number: int | None = None,
-) -> int:
+) -> ScanIntakePageResult:
     """Preserve decoded-payload validation failure context for review."""
     try:
         review_record = preserve_payload_validation_failure_for_review(
@@ -594,20 +743,47 @@ def _preserve_payload_validation_failure(
             "Error: decoded payload failure could not be preserved for review: "
             f"{review_error}"
         )
-        return 1
+        return _failed_page_result(
+            source_filename=source_file.name,
+            source_page_number=source_page_number,
+            payload_page_number=failure.page_number,
+            failure_category="review_preservation_failed",
+            failure_message=str(review_error),
+            class_id=failure.class_id,
+            assignment_id=failure.assignment_id,
+            student_id=failure.student_id,
+        )
     except Exception as unexpected_error:
         print(
             "Error: unexpected failure while preserving decoded payload failure: "
             f"{unexpected_error}"
         )
-        return 1
+        return _failed_page_result(
+            source_filename=source_file.name,
+            source_page_number=source_page_number,
+            payload_page_number=failure.page_number,
+            failure_category="processing_error",
+            failure_message=str(unexpected_error),
+            class_id=failure.class_id,
+            assignment_id=failure.assignment_id,
+            student_id=failure.student_id,
+        )
 
     _print_preserved_intake_failure(
         reason=failure.failure_message,
         category=failure.failure_category,
         review_record=review_record,
     )
-    return 0
+    return _page_result_from_review_record(
+        source_filename=source_file.name,
+        source_page_number=source_page_number,
+        status="preserved",
+        review_record=review_record,
+        payload_page_number=failure.page_number,
+        class_id=failure.class_id,
+        assignment_id=failure.assignment_id,
+        student_id=failure.student_id,
+    )
 
 
 def _print_preserved_intake_failure(
@@ -654,38 +830,181 @@ def _preserve_pdf_conversion_failure(
             "Error: PDF conversion failure could not be preserved for review: "
             f"{review_error}"
         )
+        summary = ScanIntakeSummary(
+            (
+                ScanIntakeSourceResult(
+                    source_filename=source_file.name,
+                    source_path=source_file,
+                    source_type="pdf",
+                    status="failed",
+                    pages_attempted=0,
+                    routed_count=0,
+                    preserved_count=0,
+                    failed_count=1,
+                    page_results=(),
+                    source_failure_category="review_preservation_failed",
+                    source_failure_message=str(review_error),
+                ),
+            )
+        )
+        print()
+        print(format_scan_intake_summary(summary))
         return 1
     except Exception as unexpected_error:
         print(
             "Error: unexpected failure while preserving PDF conversion failure: "
             f"{unexpected_error}"
         )
+        summary = ScanIntakeSummary(
+            (
+                ScanIntakeSourceResult(
+                    source_filename=source_file.name,
+                    source_path=source_file,
+                    source_type="pdf",
+                    status="failed",
+                    pages_attempted=0,
+                    routed_count=0,
+                    preserved_count=0,
+                    failed_count=1,
+                    page_results=(),
+                    source_failure_category="processing_error",
+                    source_failure_message=str(unexpected_error),
+                ),
+            )
+        )
+        print()
+        print(format_scan_intake_summary(summary))
         return 1
 
     print("PDF could not be converted; preserved for review.")
     print(f"Category: {review_record.failure_category}")
     print(f"Review record: {review_record.failure_metadata_relative_path}")
+    summary = ScanIntakeSummary(
+        (
+            ScanIntakeSourceResult(
+                source_filename=source_file.name,
+                source_path=source_file,
+                source_type="pdf",
+                status="preserved",
+                pages_attempted=0,
+                routed_count=0,
+                preserved_count=1,
+                failed_count=0,
+                page_results=(),
+                source_failure_category=review_record.failure_category,
+                source_failure_message=review_record.failure_message,
+                review_metadata_relative_path=(
+                    review_record.failure_metadata_relative_path
+                ),
+            ),
+        )
+    )
+    print()
+    print(format_scan_intake_summary(summary))
     return 0
 
 
-def _latest_review_category(workspace_root: Path) -> str | None:
-    review_dir = workspace_root / "scans" / "review"
-    try:
-        records = sorted(
-            review_dir.glob("*.json"),
-            key=lambda path: path.stat().st_mtime_ns,
-        )
-    except OSError:
-        return None
-    if not records:
-        return None
-    try:
-        import json
+def _page_result_from_filed_evidence(
+    *,
+    source_filename: str,
+    source_page_number: int | None,
+    filed_evidence: RoutedEvidenceFile,
+) -> ScanIntakePageResult:
+    return ScanIntakePageResult(
+        source_filename=source_filename,
+        source_page_number=source_page_number,
+        payload_page_number=filed_evidence.page_number,
+        status="routed",
+        class_id=filed_evidence.class_id,
+        assignment_id=filed_evidence.assignment_id,
+        student_id=filed_evidence.student_id,
+        routed_evidence_relative_path=(
+            filed_evidence.routed_evidence_relative_path
+        ),
+        retained_source_relative_path=(
+            filed_evidence.retained_source.retained_source_relative_path
+        ),
+    )
 
-        loaded = json.loads(records[-1].read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if not isinstance(loaded, dict):
-        return None
-    category = loaded.get("failure_category")
-    return category if isinstance(category, str) else None
+
+def _page_result_from_review_record(
+    *,
+    source_filename: str,
+    source_page_number: int | None,
+    status: Literal["routed", "preserved", "failed"],
+    review_record: RoutingReviewRecord,
+    payload_page_number: int | None = None,
+    class_id: str | None = None,
+    assignment_id: str | None = None,
+    student_id: str | None = None,
+) -> ScanIntakePageResult:
+    return ScanIntakePageResult(
+        source_filename=source_filename,
+        source_page_number=source_page_number,
+        payload_page_number=payload_page_number,
+        status=status,
+        failure_category=review_record.failure_category,
+        failure_message=review_record.failure_message,
+        class_id=class_id,
+        assignment_id=assignment_id,
+        student_id=student_id,
+        retained_source_relative_path=review_record.retained_source_relative_path,
+        review_metadata_relative_path=(
+            review_record.failure_metadata_relative_path
+        ),
+    )
+
+
+def _failed_page_result(
+    *,
+    source_filename: str,
+    source_page_number: int | None,
+    payload_page_number: int | None,
+    failure_category: str,
+    failure_message: str,
+    decoded_page: DecodedResponsePage | None = None,
+    class_id: str | None = None,
+    assignment_id: str | None = None,
+    student_id: str | None = None,
+) -> ScanIntakePageResult:
+    return ScanIntakePageResult(
+        source_filename=source_filename,
+        source_page_number=source_page_number,
+        payload_page_number=payload_page_number,
+        status="failed",
+        failure_category=failure_category,
+        failure_message=failure_message,
+        class_id=class_id if decoded_page is None else decoded_page.class_id,
+        assignment_id=(
+            assignment_id if decoded_page is None else decoded_page.assignment_id
+        ),
+        student_id=student_id if decoded_page is None else decoded_page.student_id,
+    )
+
+
+def _source_result_from_pages(
+    *,
+    source_file: Path,
+    source_type: Literal["image", "pdf"],
+    page_results: tuple[ScanIntakePageResult, ...],
+) -> ScanIntakeSourceResult:
+    routed = sum(1 for page in page_results if page.status == "routed")
+    preserved = sum(1 for page in page_results if page.status == "preserved")
+    failed = sum(1 for page in page_results if page.status == "failed")
+    if failed and routed == 0 and preserved == 0:
+        status = "failed"
+    elif preserved or failed:
+        status = "partial" if routed else "preserved"
+    else:
+        status = "completed"
+    return ScanIntakeSourceResult(
+        source_filename=source_file.name,
+        source_path=source_file,
+        source_type=source_type,
+        status=cast(Literal["completed", "partial", "failed", "preserved"], status),
+        pages_attempted=len(page_results),
+        routed_count=routed,
+        preserved_count=preserved,
+        failed_count=failed,
+        page_results=page_results,
+    )
