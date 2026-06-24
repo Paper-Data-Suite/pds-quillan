@@ -41,6 +41,7 @@ def test_empty_summary_counts_are_zero() -> None:
     assert summary.routed_count == 0
     assert summary.preserved_count == 0
     assert summary.failed_count == 0
+    assert summary.skipped_unsupported_count == 0
     assert not summary.requires_review
     assert not summary.has_failures
     assert summary.failure_categories == {}
@@ -125,6 +126,15 @@ def test_summary_formatter_includes_review_message_and_categories() -> None:
     assert "Scan intake summary" in output
     assert "Sources processed: 1" in output
     assert "Pages attempted: 1" in output
+    assert "Skipped unsupported files: 0" in output
     assert "Review required: yes" in output
     assert "Review required before intake is complete." in output
     assert "- payload_missing: 1" in output
+
+
+def test_summary_formatter_includes_skipped_unsupported_count() -> None:
+    output = format_scan_intake_summary(
+        ScanIntakeSummary((), skipped_unsupported_count=3)
+    )
+
+    assert "Skipped unsupported files: 3" in output

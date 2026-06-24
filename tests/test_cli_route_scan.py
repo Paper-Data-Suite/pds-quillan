@@ -233,8 +233,8 @@ def test_route_scan_directory_source_returns_one_without_review_record(
 
     output = capsys.readouterr().out
     assert result == 1
-    assert "source file" in output
-    assert "existing regular file" in output
+    assert "--payload route-scan mode requires a source file" in output
+    assert "not a folder" in output
     assert not (workspace / "scans" / "review").exists()
     assert not (workspace / "scans" / "source").exists()
     assert not list(workspace.rglob("response_*.pdf"))
