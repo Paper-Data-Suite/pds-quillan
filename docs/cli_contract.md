@@ -12,8 +12,8 @@ development. It records:
   CLI.
 
 The CLI includes a developer-oriented, scriptable command layer and an initial
-teacher-facing menu with shared-roster management. It is not a complete
-teacher-facing application.
+teacher-facing menu with shared-roster management, scan intake, and read-only
+review navigation. It is not a complete teacher-facing application.
 This contract describes implemented behavior separately from future design. A
 command or workflow documented elsewhere as planned is not part of the current
 CLI until it is implemented, tested, and added here.
@@ -211,9 +211,10 @@ The menu provides:
 2. Roster Management
 3. Printable Response Pages
 4. Scan Intake / Route Paper Responses
-5. Workspace Settings
-6. Help
-7. Exit
+5. Review Student Work
+6. Workspace Settings
+7. Help
+8. Exit
 ```
 
 Roster Management provides:
@@ -303,6 +304,38 @@ The workflow does not automatically assemble submissions, move or archive the
 teacher's original source files, create `submission.json` or `review.json`,
 run OCR, score, tag, generate feedback, or perform AI work.
 
+Review Student Work provides a read-only guided navigation skeleton:
+
+```text
+1. Select class and assignment
+2. Back
+```
+
+The workflow lists available classes from the active workspace, lists
+assignments for the selected class, prints the current assignment submission
+status through the existing status formatting path, and lets the teacher pick a
+student/submission by number. Roster students remain visible even when they do
+not yet have an assembled submission. The selected-student view shows a brief
+current review summary with class, assignment, student, manifest/evidence
+status, review state, and existing `review.json` counts when a valid review
+record is already present.
+
+The selected-student view offers:
+
+```text
+1. Open submission evidence
+2. Refresh summary
+3. Back
+```
+
+Opening submission evidence delegates to the same existing safe selected
+evidence-opening path as `quillan open-submission <class_id> <assignment_id>
+<student_id>`. Missing manifests or missing selected evidence are reported
+clearly. The workflow does not automatically assemble submissions, create or
+mutate `submission.json` or `review.json`, update review state, add notes,
+tags, comments, or scores, export feedback or summaries, run OCR, parse
+evidence contents, score work, or perform AI work.
+
 Workspace Settings provides:
 
 ```text
@@ -325,12 +358,11 @@ delete files, and `PDS_WORKSPACE_ROOT` still takes precedence.
 The workspace submenu does not include school-year settings. The overall menu
 remains a guided shell rather than a complete teacher-facing application.
 
-The menu does not currently guide teachers through submission selection,
-evidence opening, review-state changes, notes, tags, comment-bank selection,
-criterion scoring, feedback export, class or standards summary export, or
-submission assembly. The implemented review, export, and assembly operations
-are available through the direct commands documented below and through focused
-Python APIs.
+The menu does not currently guide teachers through review-state changes, notes,
+tags, comment-bank selection, criterion scoring, feedback export, class or
+standards summary export, or submission assembly. Those implemented review,
+export, and assembly operations are available through the direct commands
+documented below and through focused Python APIs.
 
 Menu help describes Quillan as a local-first, teacher-controlled
 writing-evidence tool; keeps teacher judgment primary; states that Quillan is

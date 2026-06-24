@@ -10,6 +10,8 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added a teacher-facing Review Student Work menu skeleton for selecting class,
+  assignment, and student/submission context before guided review entry.
 - Added a teacher-facing menu workflow for QR-aware scan intake from image,
   PDF, or folder sources.
 - Added post-intake submission assembly next-step guidance based on routed scan

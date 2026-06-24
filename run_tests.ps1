@@ -17,7 +17,7 @@ function Invoke-Check {
     }
 }
 
-Invoke-Check "Running pytest..." { python -m pytest }
+Invoke-Check "Running pytest..." { python -m pytest --basetemp .\.pytest-tmp }
 Invoke-Check "Running Ruff..." { python -m ruff check . }
 Invoke-Check "Running mypy..." { python -m mypy . }
 Invoke-Check "Checking diff whitespace..." { git diff --check }
