@@ -35,6 +35,7 @@ from quillan.pdf_pages import (
 from quillan.qr_decode import (
     ImageArray,
     QrImageDecodeResult,
+    SUPPORTED_IMAGE_EXTENSIONS,
     decode_qr_payload_from_image,
     decode_qr_payload_from_image_path,
 )
@@ -59,9 +60,11 @@ from quillan.scan_intake_summary import (
     format_scan_intake_summary,
 )
 
+SUPPORTED_SCAN_EXTENSIONS = frozenset({*SUPPORTED_IMAGE_EXTENSIONS, ".pdf"})
+
 
 def handle_route_scan(args: argparse.Namespace) -> int:
-    """Route one source scan from caller-supplied payload text or image QR."""
+    """Route source scans from caller-supplied payload text or QR."""
     source_file: Path = args.source_file
     intake_timestamp = datetime.now(timezone.utc)
     try:
@@ -74,20 +77,26 @@ def handle_route_scan(args: argparse.Namespace) -> int:
         return 1
 
     if args.decode_qr:
-        if not _validate_source_file(source_file):
-            return 1
-        if source_file.suffix.lower() == ".pdf":
-            return _route_source_pdf_qr(
+        if source_file.is_dir():
+            return _route_source_folder_qr(
                 workspace_root,
-                source_file=source_file,
+                source_folder=source_file,
                 created_at=intake_timestamp,
             )
-        return _route_source_image_qr(
+        if not _validate_source_file(source_file):
+            return 1
+        return _route_source_file_qr(
             workspace_root,
             source_file=source_file,
             created_at=intake_timestamp,
         )
     else:
+        if source_file.is_dir():
+            print(
+                "Error: --payload route-scan mode requires a source file, "
+                "not a folder."
+            )
+            return 1
         if not _validate_source_file(source_file):
             return 1
         decoded_result = _decoded_page_from_payload_text(
@@ -104,6 +113,89 @@ def handle_route_scan(args: argparse.Namespace) -> int:
         source_file=source_file,
         decoded_page=decoded_result,
         created_at=intake_timestamp,
+    )
+
+
+def _route_source_file_qr(
+    workspace_root: Path,
+    *,
+    source_file: Path,
+    created_at: datetime,
+) -> int:
+    source_result = _intake_source_file_qr(
+        workspace_root,
+        source_file=source_file,
+        created_at=created_at,
+    )
+    summary = ScanIntakeSummary((source_result,))
+    print()
+    print(format_scan_intake_summary(summary))
+    return 1 if summary.has_failures else 0
+
+
+def _route_source_folder_qr(
+    workspace_root: Path,
+    *,
+    source_folder: Path,
+    created_at: datetime,
+) -> int:
+    if not _validate_source_folder(source_folder):
+        return 1
+
+    supported_files, skipped_unsupported_count = _discover_supported_scan_files(
+        source_folder
+    )
+    if not supported_files:
+        print(f"Error: no supported scan files found in folder: {source_folder}")
+        if skipped_unsupported_count:
+            print(f"Skipped unsupported files: {skipped_unsupported_count}")
+        return 1
+
+    print(f"Processing folder: {source_folder}")
+    print(f"Supported scan files: {len(supported_files)}")
+    if skipped_unsupported_count:
+        print(f"Skipped unsupported files: {skipped_unsupported_count}")
+    print()
+
+    source_results: list[ScanIntakeSourceResult] = []
+    for source_index, source_file in enumerate(supported_files):
+        print(f"Source {source_index + 1}: {source_file.name}")
+        source_results.append(
+            _intake_source_file_qr(
+                workspace_root,
+                source_file=source_file,
+                created_at=created_at + timedelta(seconds=source_index),
+                route_image_as_png=True,
+            )
+        )
+        print()
+
+    summary = ScanIntakeSummary(
+        tuple(source_results),
+        skipped_unsupported_count=skipped_unsupported_count,
+    )
+    print(format_scan_intake_summary(summary))
+    return 1 if summary.has_failures else 0
+
+
+def _intake_source_file_qr(
+    workspace_root: Path,
+    *,
+    source_file: Path,
+    created_at: datetime,
+    route_image_as_png: bool = False,
+) -> ScanIntakeSourceResult:
+    if source_file.suffix.lower() == ".pdf":
+        return _intake_source_pdf_qr(
+            workspace_root,
+            source_file=source_file,
+            created_at=created_at,
+        )
+    return _intake_source_image_qr(
+        workspace_root,
+        source_file=source_file,
+        created_at=created_at,
+        route_as_png=route_image_as_png,
     )
 
 
@@ -221,13 +313,14 @@ def _decoded_page_from_qr_image(
     return validation_result
 
 
-def _route_source_image_qr(
+def _intake_source_image_qr(
     workspace_root: Path,
     *,
     source_file: Path,
     created_at: datetime,
-) -> int:
-    """Decode and route one QR-bearing image, then print an intake summary."""
+    route_as_png: bool = False,
+) -> ScanIntakeSourceResult:
+    """Decode and route one QR-bearing image."""
     decoded_result = _decoded_page_from_source_qr(
         workspace_root,
         source_file=source_file,
@@ -236,24 +329,72 @@ def _route_source_image_qr(
     if isinstance(decoded_result, ScanIntakePageResult):
         page_result = decoded_result
     else:
-        page_result = _route_decoded_page_result(
+        if route_as_png and source_file.suffix.lower() != ".png":
+            page_result = _route_decoded_image_page_as_png_result(
+                workspace_root,
+                source_file=source_file,
+                decoded_page=decoded_result,
+                created_at=created_at,
+            )
+        else:
+            page_result = _route_decoded_page_result(
+                workspace_root,
+                source_file=source_file,
+                decoded_page=decoded_result,
+                created_at=created_at,
+            )
+    return _source_result_from_pages(
+        source_file=source_file,
+        source_type="image",
+        page_results=(page_result,),
+    )
+
+
+def _route_decoded_image_page_as_png_result(
+    workspace_root: Path,
+    *,
+    source_file: Path,
+    decoded_page: DecodedResponsePage,
+    created_at: datetime,
+) -> ScanIntakePageResult:
+    with tempfile.TemporaryDirectory(prefix="quillan-image-route-") as temp_dir:
+        routed_image_path = Path(temp_dir) / "source.png"
+        try:
+            image = cv2.imread(str(source_file), cv2.IMREAD_COLOR)
+            written = (
+                False
+                if image is None
+                else cv2.imwrite(str(routed_image_path), image)
+            )
+        except cv2.error as error:
+            print(f"Error: could not prepare source image for routing: {error}")
+            return _failed_page_result(
+                source_filename=source_file.name,
+                source_page_number=None,
+                payload_page_number=decoded_page.page_number,
+                failure_category="processing_error",
+                failure_message=str(error),
+                decoded_page=decoded_page,
+            )
+        if not written:
+            print("Error: could not prepare source image for routing.")
+            return _failed_page_result(
+                source_filename=source_file.name,
+                source_page_number=None,
+                payload_page_number=decoded_page.page_number,
+                failure_category="processing_error",
+                failure_message="Could not prepare source image for routing.",
+                decoded_page=decoded_page,
+            )
+
+        return _route_decoded_page_result(
             workspace_root,
             source_file=source_file,
-            decoded_page=decoded_result,
+            decoded_page=decoded_page,
             created_at=created_at,
+            routed_source_file_path=routed_image_path,
+            routed_extension=".png",
         )
-    summary = ScanIntakeSummary(
-        (
-            _source_result_from_pages(
-                source_file=source_file,
-                source_type="image",
-                page_results=(page_result,),
-            ),
-        )
-    )
-    print()
-    print(format_scan_intake_summary(summary))
-    return 1 if summary.has_failures else 0
 
 
 def _route_decoded_page(
@@ -377,18 +518,18 @@ def _route_decoded_page_result(
     )
 
 
-def _route_source_pdf_qr(
+def _intake_source_pdf_qr(
     workspace_root: Path,
     *,
     source_file: Path,
     created_at: datetime,
-) -> int:
+) -> ScanIntakeSourceResult:
     """Convert and route each page of a QR-bearing PDF scan independently."""
     print(f"Processing PDF: {source_file}")
     try:
         pages = list(iter_pdf_page_images(source_file))
     except PdfPageConversionError as error:
-        return _preserve_pdf_conversion_failure(
+        return _pdf_conversion_failure_source_result(
             workspace_root,
             source_file=source_file,
             failure=error.failure,
@@ -400,7 +541,7 @@ def _route_source_pdf_qr(
             failure_message=f"Unexpected PDF conversion failure: {error}",
             module_details={"failure_origin": "pdf_conversion"},
         )
-        return _preserve_pdf_conversion_failure(
+        return _pdf_conversion_failure_source_result(
             workspace_root,
             source_file=source_file,
             failure=failure,
@@ -416,7 +557,7 @@ def _route_source_pdf_qr(
                 "reason": "zero_pages",
             },
         )
-        return _preserve_pdf_conversion_failure(
+        return _pdf_conversion_failure_source_result(
             workspace_root,
             source_file=source_file,
             failure=failure,
@@ -447,18 +588,11 @@ def _route_source_pdf_qr(
                     f" - {page_result.failure_category}"
                 )
 
-    summary = ScanIntakeSummary(
-        (
-            _source_result_from_pages(
-                source_file=source_file,
-                source_type="pdf",
-                page_results=tuple(page_results),
-            ),
-        )
+    return _source_result_from_pages(
+        source_file=source_file,
+        source_type="pdf",
+        page_results=tuple(page_results),
     )
-    print()
-    print(format_scan_intake_summary(summary))
-    return 1 if summary.has_failures else 0
 
 
 def _route_pdf_page_qr(
@@ -621,6 +755,37 @@ def _validate_source_file(source_file: Path) -> bool:
         print(f"Error: source file is not readable: {error}")
         return False
     return True
+
+
+def _validate_source_folder(source_folder: Path) -> bool:
+    """Return whether the selected scan folder is an existing directory."""
+    try:
+        if not source_folder.is_dir():
+            print(
+                "Error: scan folder must be an existing directory: "
+                f"{source_folder}"
+            )
+            return False
+        list(source_folder.iterdir())
+    except OSError as error:
+        print(f"Error: scan folder is not readable: {error}")
+        return False
+    return True
+
+
+def _discover_supported_scan_files(source_folder: Path) -> tuple[list[Path], int]:
+    """Return direct child scan files in deterministic order and skip count."""
+    supported_files: list[Path] = []
+    skipped_unsupported_count = 0
+    for child in source_folder.iterdir():
+        if not child.is_file():
+            continue
+        if child.suffix.lower() in SUPPORTED_SCAN_EXTENSIONS:
+            supported_files.append(child)
+        else:
+            skipped_unsupported_count += 1
+    supported_files.sort(key=lambda path: (path.name.lower(), path.name))
+    return supported_files, skipped_unsupported_count
 
 
 def _preserve_payload_parse_failure(
@@ -798,13 +963,13 @@ def _print_preserved_intake_failure(
     print(f"Review record: {review_record.failure_metadata_relative_path}")
 
 
-def _preserve_pdf_conversion_failure(
+def _pdf_conversion_failure_source_result(
     workspace_root: Path,
     *,
     source_file: Path,
     failure: PdfPageConversionFailure,
     created_at: datetime,
-) -> int:
+) -> ScanIntakeSourceResult:
     """Preserve a whole-PDF conversion failure as one review record."""
     try:
         review_record = preserve_routing_failure_for_review(
@@ -830,78 +995,57 @@ def _preserve_pdf_conversion_failure(
             "Error: PDF conversion failure could not be preserved for review: "
             f"{review_error}"
         )
-        summary = ScanIntakeSummary(
-            (
-                ScanIntakeSourceResult(
-                    source_filename=source_file.name,
-                    source_path=source_file,
-                    source_type="pdf",
-                    status="failed",
-                    pages_attempted=0,
-                    routed_count=0,
-                    preserved_count=0,
-                    failed_count=1,
-                    page_results=(),
-                    source_failure_category="review_preservation_failed",
-                    source_failure_message=str(review_error),
-                ),
-            )
+        return ScanIntakeSourceResult(
+            source_filename=source_file.name,
+            source_path=source_file,
+            source_type="pdf",
+            status="failed",
+            pages_attempted=0,
+            routed_count=0,
+            preserved_count=0,
+            failed_count=1,
+            page_results=(),
+            source_failure_category="review_preservation_failed",
+            source_failure_message=str(review_error),
         )
-        print()
-        print(format_scan_intake_summary(summary))
-        return 1
     except Exception as unexpected_error:
         print(
             "Error: unexpected failure while preserving PDF conversion failure: "
             f"{unexpected_error}"
         )
-        summary = ScanIntakeSummary(
-            (
-                ScanIntakeSourceResult(
-                    source_filename=source_file.name,
-                    source_path=source_file,
-                    source_type="pdf",
-                    status="failed",
-                    pages_attempted=0,
-                    routed_count=0,
-                    preserved_count=0,
-                    failed_count=1,
-                    page_results=(),
-                    source_failure_category="processing_error",
-                    source_failure_message=str(unexpected_error),
-                ),
-            )
+        return ScanIntakeSourceResult(
+            source_filename=source_file.name,
+            source_path=source_file,
+            source_type="pdf",
+            status="failed",
+            pages_attempted=0,
+            routed_count=0,
+            preserved_count=0,
+            failed_count=1,
+            page_results=(),
+            source_failure_category="processing_error",
+            source_failure_message=str(unexpected_error),
         )
-        print()
-        print(format_scan_intake_summary(summary))
-        return 1
 
     print("PDF could not be converted; preserved for review.")
     print(f"Category: {review_record.failure_category}")
     print(f"Review record: {review_record.failure_metadata_relative_path}")
-    summary = ScanIntakeSummary(
-        (
-            ScanIntakeSourceResult(
-                source_filename=source_file.name,
-                source_path=source_file,
-                source_type="pdf",
-                status="preserved",
-                pages_attempted=0,
-                routed_count=0,
-                preserved_count=1,
-                failed_count=0,
-                page_results=(),
-                source_failure_category=review_record.failure_category,
-                source_failure_message=review_record.failure_message,
-                review_metadata_relative_path=(
-                    review_record.failure_metadata_relative_path
-                ),
-            ),
-        )
+    return ScanIntakeSourceResult(
+        source_filename=source_file.name,
+        source_path=source_file,
+        source_type="pdf",
+        status="preserved",
+        pages_attempted=0,
+        routed_count=0,
+        preserved_count=1,
+        failed_count=0,
+        page_results=(),
+        source_failure_category=review_record.failure_category,
+        source_failure_message=review_record.failure_message,
+        review_metadata_relative_path=(
+            review_record.failure_metadata_relative_path
+        ),
     )
-    print()
-    print(format_scan_intake_summary(summary))
-    return 0
 
 
 def _page_result_from_filed_evidence(

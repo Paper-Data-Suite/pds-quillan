@@ -76,19 +76,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     route_scan_parser = subparsers.add_parser(
         "route-scan",
-        help="Route one Quillan response scan from payload text or QR.",
+        help="Route Quillan response scans from payload text or QR.",
         description=(
             "Route one scan file using either an already-decoded Quillan PDS1 "
             "payload or QR payloads decoded from a supported local image or "
-            "PDF. PDF files are processed page by page. "
-            "Exit 0 means the file was routed or safely preserved for review; "
-            "exit 1 means the input could not be handled safely."
+            "PDF. With --decode-qr, a folder path processes supported image "
+            "and PDF files directly inside that folder in deterministic order. "
+            "PDF files are processed page by page. Exit 0 means all attempted "
+            "scan sources were routed or safely preserved for review; exit 1 "
+            "means the input or an attempted source could not be handled safely."
         ),
     )
     route_scan_parser.add_argument(
         "source_file",
         type=Path,
-        help="Path to the selected source scan file.",
+        help="Path to the selected source scan file, or a folder with --decode-qr.",
     )
     payload_group = route_scan_parser.add_mutually_exclusive_group(
         required=True
@@ -102,7 +104,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=(
             "Decode Quillan response-page QR payloads from a source image or "
-            "PDF."
+            "PDF, or from supported image/PDF files directly inside a folder."
         ),
     )
     route_scan_parser.set_defaults(handler=handle_route_scan)

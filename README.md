@@ -57,9 +57,10 @@ Quillan currently supports:
   failure metadata under `scans/review/`, including retained-source provenance
   when available, without copying review artifacts;
 - a direct `route-scan` command for already-decoded payloads, one supported
-  QR-bearing image, or a QR-bearing PDF processed page by page. It
-  orchestrates the existing parser, QR decoder, payload validator, route
-  planner, evidence filer, and failure review helpers;
+  QR-bearing image, one QR-bearing PDF processed page by page, or a
+  non-recursive folder of supported QR-bearing scan files. It orchestrates the
+  existing parser, QR decoder, payload validator, route planner, evidence
+  filer, and failure review helpers;
 - read-only assignment submission status listing, workspace-safe local evidence
   opening, and student-aware selected-evidence opening; and
 - explicit, teacher-controlled lightweight submission review-state updates
@@ -104,11 +105,11 @@ The data contracts and design documents describe additional teacher-review
 and paper-ingest workflows that are not yet implemented end to end. In
 particular, Quillan does not currently provide:
 
-- end-to-end production scan intake and routing beyond one already-selected
-  source file;
+- end-to-end production inbox draining, source archiving, or cleanup after
+  scan intake;
 - OCR or handwriting interpretation;
 - automatic conversion of scans into reviewed submissions;
-- batch-ingesting raw scan folders;
+- recursive raw scan folder intake;
 - merging newly routed evidence into existing teacher review state;
 - complete requirements-checking workflows;
 - AI tagging, AI scoring, or AI feedback;
@@ -197,11 +198,12 @@ quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 ```
 
-- `route-scan` retains one selected source scan and files routed evidence from
-  either an already-decoded payload, one supported QR-bearing image, or one
-  QR-bearing PDF. PDF intake processes pages independently, files page evidence
-  as PNG files, and preserves handled failures under `scans/review/`; it does
-  not batch-ingest folders, run OCR, use the menu, or assemble a submission.
+- `route-scan` retains selected source scans and files routed evidence from
+  either an already-decoded payload, one supported QR-bearing image, one
+  QR-bearing PDF, or a non-recursive folder of supported QR-bearing scan files.
+  PDF intake processes pages independently, files page evidence as PNG files,
+  and preserves handled failures under `scans/review/`; it does not archive
+  source files, run OCR, use the menu, or assemble a submission.
 - `assemble-submissions` creates missing manifests from routed filenames, or
   fully regenerates them with `--overwrite`; it does not inspect file contents
   or choose among ambiguous duplicate evidence.
@@ -575,12 +577,13 @@ Route one selected scan using an already-decoded Quillan PDS1 payload:
 quillan route-scan <source-file> --payload "PDS1|module=quillan|class=<class_id>|aid=<assignment_id>|sid=<student_id>|page=<page>|doc=response"
 ```
 
-Or route one supported local image or PDF by decoding Quillan response-page QR
-payloads:
+Or route one supported local image, PDF, or non-recursive folder by decoding
+Quillan response-page QR payloads:
 
 ```powershell
 quillan route-scan <source-image> --decode-qr
 quillan route-scan <source-pdf> --decode-qr
+quillan route-scan <source-folder> --decode-qr
 ```
 
 Successful routing retains the selected source under
@@ -590,18 +593,22 @@ page evidence as PNG files, preserving the physical `source_page_number`
 separately from the decoded `payload_page_number`. Decode, payload, planning,
 filing, and PDF conversion failures are preserved under `scans/review/` when
 possible. QR-aware image and PDF intake prints a structured summary with
-source, page, routed, preserved, failed, and review-required counts. Partial
-success is explicit: exit code `0` can mean every page routed or that expected
-failures were safely preserved for review. Preserved failures require review
-before intake is treated as complete. Exit code `1` means an unexpected or
-unpreserved failure occurred.
+source, page, routed, preserved, failed, skipped unsupported, and
+review-required counts. Folder intake produces one aggregate summary across all
+processed sources and continues after recoverable failures that can be
+preserved for review. Partial success is explicit: exit code `0` can mean every
+page routed or that expected failures were safely preserved for review.
+Preserved failures require review before intake is treated as complete. Exit
+code `1` means an unexpected or unpreserved failure occurred.
 
-This direct developer/teacher primitive is single-scan only. QR-aware intake
-supports `.png`, `.jpg`, `.jpeg`, `.tif`, and `.tiff` images plus `.pdf`
-files. PDF conversion uses `pdf2image` and requires Poppler installed on the
-user's machine. The command does not batch-ingest folders, run OCR, score, tag,
-generate feedback, assemble submissions, create review records, create reports,
-or expose menu scan intake.
+Folder intake is QR-aware only; `--payload` requires a source file and rejects
+folders. It processes only direct child files in deterministic filename order,
+does not recurse, and skips unsupported files while reporting their count.
+QR-aware intake supports `.jpeg`, `.jpg`, `.pdf`, `.png`, `.tif`, and `.tiff`.
+PDF conversion uses `pdf2image` and requires Poppler installed on the user's
+machine. The command does not move, delete, or archive source files, run OCR,
+score, tag, generate feedback, assemble submissions, create review records,
+create reports, or expose menu scan intake.
 
 Assemble all student manifests discoverable from routed filenames in an
 assignment's `scans/` directory:

@@ -49,6 +49,7 @@ class ScanIntakeSummary:
     """Aggregate QR-aware scan intake outcomes."""
 
     source_results: tuple[ScanIntakeSourceResult, ...]
+    skipped_unsupported_count: int = 0
 
     @property
     def source_count(self) -> int:
@@ -108,6 +109,7 @@ def format_scan_intake_summary(summary: ScanIntakeSummary) -> str:
         f"Routed: {summary.routed_count}",
         f"Preserved for review: {summary.preserved_count}",
         f"Failed: {summary.failed_count}",
+        f"Skipped unsupported files: {summary.skipped_unsupported_count}",
         f"Review required: {'yes' if summary.requires_review else 'no'}",
     ]
     if summary.has_failures:

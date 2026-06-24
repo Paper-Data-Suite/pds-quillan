@@ -381,20 +381,29 @@ workspace layouts. The active layout is documented in
 Commands that write files document their destination, overwrite policy, and
 handled-failure behavior in their command sections and help output.
 
-## Single-Scan Routing
+## Scan Routing
 
 ```powershell
 quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
 quillan route-scan <source-image> --decode-qr
 quillan route-scan <source-pdf> --decode-qr
+quillan route-scan <source-folder> --decode-qr
 ```
 
-This command routes one selected source file using exactly one payload source:
-caller-supplied canonical PDS1 text through `--payload`, or one decoded QR
-payload from a supported local image or each page of a PDF through
-`--decode-qr`. Supported QR image extensions are `.png`, `.jpg`, `.jpeg`,
-`.tif`, and `.tiff`; PDF intake supports `.pdf` and uses `pdf2image`, which
-requires Poppler installed on the user's machine.
+This command routes selected scan sources using exactly one payload source:
+caller-supplied canonical PDS1 text through `--payload`, or QR payloads
+decoded from a supported local image, each page of a PDF, or every supported
+scan file directly inside a folder through `--decode-qr`. Folder intake is
+QR-aware only; `--payload` requires a file and rejects folders. Supported scan
+extensions are `.jpeg`, `.jpg`, `.pdf`, `.png`, `.tif`, and `.tiff`. PDF intake
+uses `pdf2image`, which requires Poppler installed on the user's machine.
+
+Folder intake is non-recursive. It processes only direct child files in
+deterministic order by case-insensitive filename with a stable filename
+tie-breaker. Unsupported files such as `.txt`, `.csv`, `.DS_Store`, or
+`Thumbs.db` are skipped, counted in the structured summary, and are not
+failures. An empty folder, or a folder with no supported scan files, prints a
+clear error and exits `1`.
 
 On success it retains the source under `scans/source/YYYY-MM-DD/` and files
 routed evidence under the target assignment's `scans/` directory. PDF pages
@@ -403,15 +412,18 @@ route independently and successful PDF page evidence is filed as PNG files;
 `payload_page_number`. Decode, payload, planning, filing, or PDF conversion
 failures are preserved under `scans/review/` when they can be handled safely.
 QR-aware image and PDF intake prints a structured scan intake summary with
-source, page, routed, preserved, failed, and review-required counts. Partial
-success is explicit: exit `0` can mean all pages routed or that expected
-failures were safely preserved for review. Preserved failures require review
-before intake is treated as complete. Exit `1` means an unexpected failure
-occurred or a failure could not be preserved safely.
+source, page, routed, preserved, failed, skipped unsupported, and
+review-required counts. Folder intake produces one aggregate summary across all
+processed sources. Partial success is explicit: exit `0` can mean all pages
+routed or that expected failures were safely preserved for review, including
+when later files continued after a preserved failure. Preserved failures require
+review before intake is treated as complete. Exit `1` means an unexpected
+failure occurred or a failure could not be preserved safely.
 
-The command does not batch-ingest a folder, expose menu scan intake, assemble
-submissions, create review records, run OCR, or identify a student from raw
-scan content without a valid payload.
+The command does not move, delete, or archive source files after folder intake.
+It does not expose menu scan intake, assemble submissions, create review
+records, run OCR, or identify a student from raw scan content without a valid
+payload.
 
 ## Submission Assembly and Status
 
@@ -672,8 +684,8 @@ explicitly outside the current end-to-end foundation:
 * printable response generation as a dedicated command;
 * submission validation as a dedicated command;
 * guided teacher-facing review and export workflows;
-* raw-scan QR recognition, PDF splitting, folder batch intake, or automatic
-  production scan routing;
+* recursive scan folder intake, source-file archiving, inbox draining, or
+  automatic production scan routing;
 * OCR or handwriting interpretation;
 * complete requirements-checking workflows;
 * AI grading, scoring, tagging, or feedback; and

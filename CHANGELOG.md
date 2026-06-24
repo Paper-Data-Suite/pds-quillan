@@ -10,6 +10,11 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added folder-based QR scan intake to `quillan route-scan <folder> --decode-qr`.
+  The command processes supported image/PDF scan files directly inside the
+  folder in deterministic order, skips unsupported files with an aggregate
+  count, preserves recoverable failures for review, and reports one structured
+  intake summary across all processed sources.
 - Added structured QR scan-intake summaries for image and PDF routing,
   including routed, preserved, failed, and review-required counts.
 - Added Quillan assignment validation support for the shared pds-core
@@ -25,8 +30,8 @@ planning and do not by themselves represent releases.
   decoded Quillan `doc=response` PDS1 payload, routes through existing
   route-planning and evidence-filing layers, preserves decode, payload,
   routing, and filing failures under scan review metadata, and keeps
-  `--payload` mode supported. PDF, folder/batch intake, submission assembly,
-  and automatic review-record creation remain out of scope.
+  `--payload` mode supported. Submission assembly and automatic review-record
+  creation remain out of scope.
 - Added a decode-only `quillan decode-scan` diagnostic command that reads one
   supported local image, reports QR decode and Quillan response-page validation
   details, distinguishes decode and payload failures with exit codes, and does
