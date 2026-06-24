@@ -174,6 +174,12 @@ def test_route_scan_decode_qr_successfully_routes_single_image(
     assert "Preserved for review: 0" in output
     assert "Failed: 0" in output
     assert "Review required: no" in output
+    assert "Next step:" in output
+    assert "Run submission assembly for newly routed evidence:" in output
+    assert (
+        f"quillan assemble-submissions {CLASS_ID} {ASSIGNMENT_ID}"
+        in output
+    )
     assert not (workspace / "scans" / "review").exists()
     assert not list(workspace.rglob("submission.json"))
     assert not list(workspace.rglob("review.json"))
@@ -261,6 +267,7 @@ def test_route_scan_decode_qr_blank_image_preserves_decode_failure(
     assert "Preserved for review: 1" in output
     assert "Review required: yes" in output
     assert "- payload_missing: 1" in output
+    assert "assemble-submissions" not in output
 
 
 def test_route_scan_decode_qr_unsupported_source_type_preserves_failure(

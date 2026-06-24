@@ -24,6 +24,7 @@ from quillan.routing_review import RoutingReviewError
 
 CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"
+SECOND_ASSIGNMENT_ID = "memoir_01_synthetic"
 STUDENT_ID = "stu_0001"
 SECOND_STUDENT_ID = "stu_0002"
 UNKNOWN_STUDENT_ID = "stu_9999"
@@ -38,8 +39,8 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 def _write_workspace(root: Path) -> None:
     class_dir = root / "classes" / CLASS_ID
-    assignment_dir = class_dir / "assignments" / ASSIGNMENT_ID
-    assignment_dir.mkdir(parents=True)
+    assignments_dir = class_dir / "assignments"
+    assignments_dir.mkdir(parents=True)
 
     with (class_dir / "roster.csv").open(
         "w",
@@ -76,31 +77,35 @@ def _write_workspace(root: Path) -> None:
             }
         )
 
-    assignment = {
-        "assignment_id": ASSIGNMENT_ID,
-        "title": "Synthetic Essay",
-        "class_ids": [CLASS_ID],
-        "writing_type": "argument",
-        "standards_profile_id": "synthetic_profile",
-        "tagging_mode": "focus",
-        "focus_standards": ["W.1"],
-        "basic_requirements": {"paragraphs_min": 1},
-        "rubric_id": "synthetic_rubric",
-    }
-    (assignment_dir / "assignment.json").write_text(
-        json.dumps(assignment),
-        encoding="utf-8",
-    )
+    for assignment_id in (ASSIGNMENT_ID, SECOND_ASSIGNMENT_ID):
+        assignment_dir = assignments_dir / assignment_id
+        assignment_dir.mkdir()
+        assignment = {
+            "assignment_id": assignment_id,
+            "title": "Synthetic Essay",
+            "class_ids": [CLASS_ID],
+            "writing_type": "argument",
+            "standards_profile_id": "synthetic_profile",
+            "tagging_mode": "focus",
+            "focus_standards": ["W.1"],
+            "basic_requirements": {"paragraphs_min": 1},
+            "rubric_id": "synthetic_rubric",
+        }
+        (assignment_dir / "assignment.json").write_text(
+            json.dumps(assignment),
+            encoding="utf-8",
+        )
 
 
 def _valid_payload(
     *,
+    assignment_id: str = ASSIGNMENT_ID,
     student_id: str = STUDENT_ID,
     page: int = 2,
 ) -> str:
     return build_response_payload(
         class_id=CLASS_ID,
-        assignment_id=ASSIGNMENT_ID,
+        assignment_id=assignment_id,
         student_id=student_id,
         page=page,
     )
@@ -184,6 +189,37 @@ def test_route_scan_decode_qr_folder_routes_supported_images_in_order(
     assert "Pages attempted: 2" in output
     assert "Routed: 2" in output
     assert "Skipped unsupported files: 0" in output
+    assert (
+        f"quillan assemble-submissions {CLASS_ID} {ASSIGNMENT_ID}  "
+        "(2 routed pages)"
+    ) in output
+
+
+def test_route_scan_decode_qr_folder_prints_sorted_assembly_targets(
+    workspace: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    folder = tmp_path / "inbox"
+    folder.mkdir()
+    _write_qr_image(
+        folder / "memoir.png",
+        _valid_payload(assignment_id=SECOND_ASSIGNMENT_ID),
+    )
+    _write_qr_image(folder / "essay.png", _valid_payload())
+
+    assert main(["route-scan", str(folder), "--decode-qr"]) == 0
+
+    output = capsys.readouterr().out
+    first_command = f"- quillan assemble-submissions {CLASS_ID} {ASSIGNMENT_ID}"
+    second_command = (
+        f"- quillan assemble-submissions {CLASS_ID} {SECOND_ASSIGNMENT_ID}"
+    )
+    assert "Next steps:" in output
+    assert first_command in output
+    assert second_command in output
+    assert output.index(first_command) < output.index(second_command)
+    assert not list(workspace.rglob("submission.json"))
 
 
 def test_route_scan_decode_qr_folder_processes_supported_pdfs(
@@ -281,6 +317,12 @@ def test_route_scan_decode_qr_folder_preserved_failure_continues(
     assert "Preserved for review: 1" in output
     assert "Review required: yes" in output
     assert "- payload_missing: 1" in output
+    assert (
+        "You may assemble submissions for routed evidence now, but "
+        "preserved failures should be reviewed before treating the batch "
+        "as complete."
+    ) in output
+    assert f"quillan assemble-submissions {CLASS_ID} {ASSIGNMENT_ID}" in output
 
 
 def test_route_scan_decode_qr_folder_pdf_conversion_failure_continues(

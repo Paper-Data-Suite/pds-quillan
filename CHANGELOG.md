@@ -10,6 +10,8 @@ planning and do not by themselves represent releases.
 
 ### Added
 
+- Added post-intake submission assembly next-step guidance based on routed scan
+  intake results.
 - Added folder-based QR scan intake to `quillan route-scan <folder> --decode-qr`.
   The command processes supported image/PDF scan files directly inside the
   folder in deterministic order, skips unsupported files with an aggregate

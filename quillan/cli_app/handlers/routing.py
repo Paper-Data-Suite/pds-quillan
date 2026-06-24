@@ -22,6 +22,10 @@ from quillan.evidence_filing import (
     RoutedEvidenceFile,
     file_routed_response_evidence,
 )
+from quillan.intake_assembly import (
+    IntakeAssemblyTarget,
+    assembly_targets_from_intake_summary,
+)
 from quillan.payload_validation import (
     ResponsePayloadValidationFailure,
     decoded_payload_to_response_page,
@@ -130,6 +134,7 @@ def _route_source_file_qr(
     summary = ScanIntakeSummary((source_result,))
     print()
     print(format_scan_intake_summary(summary))
+    _print_submission_assembly_next_steps(summary)
     return 1 if summary.has_failures else 0
 
 
@@ -175,7 +180,45 @@ def _route_source_folder_qr(
         skipped_unsupported_count=skipped_unsupported_count,
     )
     print(format_scan_intake_summary(summary))
+    _print_submission_assembly_next_steps(summary)
     return 1 if summary.has_failures else 0
+
+
+def _print_submission_assembly_next_steps(summary: ScanIntakeSummary) -> None:
+    targets = assembly_targets_from_intake_summary(summary)
+    if not targets:
+        return
+
+    print()
+    if summary.requires_review:
+        print("Review required before intake is complete.")
+        print(
+            "You may assemble submissions for routed evidence now, but "
+            "preserved failures should be reviewed before treating the batch "
+            "as complete."
+        )
+        print()
+    print("Next step:" if len(targets) == 1 else "Next steps:")
+    print("Run submission assembly for newly routed evidence:")
+    if len(targets) == 1:
+        target = targets[0]
+        line = _format_assembly_command(target)
+        if target.routed_page_count != 1:
+            line = f"{line}  ({target.routed_page_count} routed pages)"
+        print(line)
+        return
+    for target in targets:
+        print(
+            f"- {_format_assembly_command(target)}  "
+            f"({target.routed_page_count} routed pages)"
+        )
+
+
+def _format_assembly_command(target: IntakeAssemblyTarget) -> str:
+    return (
+        "quillan assemble-submissions "
+        f"{target.class_id} {target.assignment_id}"
+    )
 
 
 def _intake_source_file_qr(

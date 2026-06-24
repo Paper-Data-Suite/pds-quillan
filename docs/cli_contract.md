@@ -420,6 +420,17 @@ when later files continued after a preserved failure. Preserved failures require
 review before intake is treated as complete. Exit `1` means an unexpected
 failure occurred or a failure could not be preserved safely.
 
+After QR-aware intake, the command derives assembly targets from routed
+`ScanIntakePageResult` entries in the current `ScanIntakeSummary`. Routed pages
+with both `class_id` and `assignment_id` are grouped by class/assignment and
+reported in deterministic order as explicit `quillan assemble-submissions
+<class_id> <assignment_id>` next-step commands. Preserved, failed, skipped, and
+malformed routed pages without complete class/assignment identity do not create
+assembly targets. The command does not scan assignment `scans/` directories to
+find targets, so the guidance only reflects evidence routed by the current
+intake run. When review is required, the next-step message warns that preserved
+failures should be reviewed before the batch is treated as complete.
+
 The command does not move, delete, or archive source files after folder intake.
 It does not expose menu scan intake, assemble submissions, create review
 records, run OCR, or identify a student from raw scan content without a valid
