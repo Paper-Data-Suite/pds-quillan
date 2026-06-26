@@ -1,2 +1,2 @@
-assignment_id,class_id,standard_code,positive_tags,developing_tags,negative_tags,most_common_positive,most_common_developing,most_common_negative
-villainy_final_essay_synthetic,english12_period3_synthetic,W.AW.11-12.1,1,1,0,clear_claim,evidence_needs_explanation,
+class_id,assignment_id,standard_id,code,short_name,standard_source,subject,course,domain,student_count,tag_student_count,comment_student_count,tag_count,positive_tag_count,developing_tag_count,negative_tag_count,neutral_tag_count,selected_comment_count,included_comment_count,excluded_comment_count,review_count,missing_review_count,invalid_review_count,missing_submission_count,invalid_submission_count,identity_mismatch_count,source
+english12_period3_synthetic,villainy_final_essay_synthetic,njsls-ela:W.AW.11-12.1,W.AW.11-12.1,Argument Writing,NJSLS,English Language Arts,English 12,Writing,1,1,1,2,1,1,0,0,1,1,0,1,0,0,0,0,0,review_tags_and_comments

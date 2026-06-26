@@ -13,7 +13,7 @@ Quillan is an early pre-1.0 foundation. The v0.8.0 milestone provides a teacher-
 Quillan currently supports:
 
 * assignment configuration validation;
-* standards profile loading and validation;
+* pds-core standards profile selection for assignment configuration;
 * validation of legacy text-oriented submission metadata;
 * documented writing-evidence and teacher-review data contracts;
 * validated shared reusable comment banks with synthetic examples;
@@ -73,7 +73,7 @@ classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 scans/source/YYYY-MM-DD/
 scans/review/
 shared/comment_banks/<bank_id>.json
-shared/standards/<standards_profile_id>.json
+shared/standards/library.json
 ```
 
 Opening evidence delegates only to the local system viewer. Exports are derived files and never replace the canonical submission manifest or review record.
@@ -90,11 +90,11 @@ Quillan may eventually help summarize teacher-created data, but final scoring an
 
 ## Implemented v0.8.0 Workflow
 
-Quillan’s v0.8.0 workflow separates retained source scans, routed evidence, submission manifests, teacher review records, and exports.
+Quillanâ€™s v0.8.0 workflow separates retained source scans, routed evidence, submission manifests, teacher review records, and exports.
 
 A **retained source scan** is the canonical active source copy Quillan keeps during scan intake.
 
-**Routed evidence** is a file copied or derived from retained source material and filed under an assignment’s `scans/` directory for student/assignment review.
+**Routed evidence** is a file copied or derived from retained source material and filed under an assignmentâ€™s `scans/` directory for student/assignment review.
 
 A **student submission manifest** is the structured record connecting one student and assignment to pages, page states, selected evidence, alternate evidence, and provenance.
 
@@ -173,15 +173,15 @@ The creation workflow prompts for:
 * assignment title;
 * assignment ID;
 * writing type;
-* standards profile ID;
+* pds-core standards profile selection;
 * tagging mode;
-* focus standards;
+* pds-core focus-standard selection;
 * basic requirements;
 * rubric ID.
 
 `writing_type` is currently a required teacher-entered value, not a discovered list.
 
-`standards_profile_id` is currently a required teacher-entered value, not a discovered list.
+`standards_profile_id` is selected from the active pds-core standards library and stored as a durable pds-core `profile_id`. Focus standards are selected from that profile and stored as durable pds-core `standard_id` values.
 
 `tagging_mode` is constrained to the allowed values shown by the prompt.
 
@@ -296,7 +296,6 @@ The current command surface is:
 ```powershell
 quillan
 quillan --help
-quillan validate-standards <standards-profile.json>
 quillan validate-assignment <assignment.json>
 quillan route-scan <source-file> --payload "<PDS1|...>"
 quillan route-scan <source-image> --decode-qr
@@ -629,7 +628,7 @@ This reads valid matching `submission.json` and `review.json` records and writes
 classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 ```
 
-It creates one sorted row per `standard_code` referenced by a structured tag or selected comment, including tag polarity, feedback-inclusion, and distinct-student counts.
+It creates one sorted row per `standard_id` referenced by a structured tag or selected comment, including tag polarity, feedback-inclusion, and distinct-student counts.
 
 It does not include individual student IDs, scores, notes, mastery determinations, or grades.
 
@@ -642,23 +641,11 @@ All exports are derived files. Exports do not mutate:
 * rosters;
 * assignment configs;
 * comment banks;
-* standards profiles.
+* pds-core standards definitions and profiles.
 
 The guided menu export actions reuse these same export services and output formatters. The menu does not implement a second export system.
 
 ## Standards and Assignment Validation
-
-Validate a standards profile:
-
-```powershell
-quillan validate-standards <standards-profile.json>
-```
-
-Expected output:
-
-```text
-Valid standards profile: english_12_njsls_synthetic
-```
 
 Validate an assignment configuration:
 
@@ -670,7 +657,7 @@ This command keeps structural assignment validation available without requiring 
 
 Workspace-aware review workflows can additionally check that `standards_profile_id` exists in the shared standards library and that referenced standards are valid for that profile.
 
-Quillan does not maintain an independent standards universe.
+Quillan does not maintain an independent standards universe. Shared standards definitions, durable `standard_id` values, reusable `profile_id` values, and profile validation are owned by pds-core. Legacy Quillan standards-profile files are removed before production use; this is a pre-1.0 breaking cleanup with no production-data migration.
 
 ## Data Contracts
 
@@ -728,7 +715,7 @@ This test uses an isolated synthetic workspace and verifies the integrated path 
 
 * synthetic class roster setup;
 * assignment config creation and validation;
-* standards profile setup;
+* pds-core standards library setup;
 * comment bank setup;
 * scan routing from a Quillan response payload;
 * submission manifest assembly;
@@ -826,7 +813,7 @@ Committed examples and tests should use:
 * synthetic scores;
 * synthetic teacher comments;
 * synthetic rosters;
-* synthetic standards profiles;
+* synthetic pds-core standards libraries;
 * synthetic scans or scan-like fixtures.
 
 Do not commit:

@@ -306,4 +306,3 @@ caller-supplied decoded-payload slice. Canonical retained sources belong in
 `scans/source/YYYY-MM-DD/`, canonical failure records belong in
 `scans/review/`, and assignment-level `scans/` contains routed evidence. QR
 recognition, PDF splitting, batch raw-scan intake, and OCR remain future work.
-

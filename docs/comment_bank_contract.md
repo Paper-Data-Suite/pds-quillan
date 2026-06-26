@@ -59,7 +59,7 @@ Every version `1` comment bank contains:
       "category_id": "evidence",
       "subcategory": "analysis",
       "writing_types": ["argument", "literary_analysis"],
-      "standard_codes": ["W.AW.11-12.1"],
+      "standard_ids": ["njsls-ela:W.AW.11-12.1"],
       "criterion_ids": ["evidence"],
       "polarity": "developing",
       "severity_default": 2,
@@ -194,7 +194,7 @@ Optional fields are:
 * `short_text`;
 * `subcategory`;
 * `writing_types`;
-* `standard_codes`;
+* `standard_ids`;
 * `criterion_ids`;
 * `severity_default`;
 * `tags`;
@@ -217,7 +217,7 @@ Example:
   "category_id": "claim",
   "subcategory": "strength",
   "writing_types": ["argument", "literary_analysis"],
-  "standard_codes": ["W.AW.11-12.1"],
+  "standard_ids": ["njsls-ela:W.AW.11-12.1"],
   "criterion_ids": ["thesis"],
   "polarity": "positive",
   "severity_default": 0,
@@ -244,7 +244,7 @@ Comment field rules are:
 * `writing_types`, when present, must be a non-empty array of non-empty
   strings, contain no duplicate exact values, and be a subset of the bank's
   `writing_types`.
-* `standard_codes` and `criterion_ids`, when present, must be arrays of
+* `standard_ids` and `criterion_ids`, when present, must be arrays of
   non-empty strings with no duplicate exact values. They are optional lookup
   metadata: the bank remains valid without an available standards or rubric
   profile, and their presence does not establish mastery or a score.
@@ -312,9 +312,9 @@ comment. Copying display language is essential: provenance is not a live
 reference, and later edits to a shared bank must not silently change an
 existing student's review or exported feedback.
 
-Source `standard_codes` and `criterion_ids` are filtering and alignment
+Source `standard_ids` and `criterion_ids` are filtering and alignment
 metadata. Selection copies a sole standard automatically, stores an explicitly
-requested source standard, and otherwise omits `standard_code`; it does not
+requested source standard, and otherwise omits `standard_id`; it does not
 treat either reference as a score or mastery decision.
 
 The strict version `1` `review.json.comments` shape requires `bank_id` and
@@ -323,9 +323,9 @@ The strict version `1` `review.json.comments` shape requires `bank_id` and
 `bank_id` records provenance at `shared/comment_banks/<bank_id>.json`; review
 validation does not load that file or perform selection.
 
-Standards-profile comments remain a separate reusable source with
-`source: "standards_profile"`. Teacher-entered language uses
-`source: "custom"`.
+Teacher-entered language uses `source: "custom"`. Reusable selected comments
+come from Quillan comment banks with `source: "comment_bank"`; shared
+standards definitions and profiles remain pds-core-owned.
 
 ## Selection and Search Expectations
 
@@ -334,7 +334,7 @@ Future tools should be able to filter or order bank comments by:
 * active bank;
 * assignment and comment writing type;
 * category and subcategory;
-* standard code;
+* standard ID;
 * criterion ID;
 * polarity;
 * default severity;

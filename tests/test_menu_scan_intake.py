@@ -97,7 +97,7 @@ def _write_workspace(root: Path) -> None:
         "writing_type": "argument",
         "standards_profile_id": "synthetic_profile",
         "tagging_mode": "focus",
-        "focus_standards": ["W.1"],
+        "focus_standards": ["njsls-ela:W.1"],
         "basic_requirements": {"paragraphs_min": 1},
         "rubric_id": "synthetic_rubric",
     }

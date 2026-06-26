@@ -23,7 +23,7 @@ TIMESTAMP = "2026-06-23T13:00:00+00:00"
 
 
 def _tag(
-    tag_id: str, standard_code: str | None, polarity: str
+    tag_id: str, standard_id: str | None, polarity: str
 ) -> dict[str, Any]:
     tag = {
         "tag_id": tag_id,
@@ -32,13 +32,13 @@ def _tag(
         "created_at": TIMESTAMP,
         "module_details": {},
     }
-    if standard_code is not None:
-        tag["standard_code"] = standard_code
+    if standard_id is not None:
+        tag["standard_id"] = standard_id
     return tag
 
 
 def _comment(
-    comment_id: str, standard_code: str | None, included: bool
+    comment_id: str, standard_id: str | None, included: bool
 ) -> dict[str, Any]:
     comment = {
         "comment_record_id": comment_id,
@@ -49,12 +49,13 @@ def _comment(
         "created_at": TIMESTAMP,
         "module_details": {},
     }
-    if standard_code is not None:
+    if standard_id is not None:
         comment.update(
             {
-                "source": "standards_profile",
+                "source": "comment_bank",
+                "bank_id": "general_writing",
                 "comment_id": f"source_{comment_id}",
-                "standard_code": standard_code,
+                "standard_id": standard_id,
             }
         )
     return comment
@@ -89,14 +90,14 @@ def test_aggregates_standards_in_sorted_stable_rows_without_mutation(
         tmp_path,
         "00100",
         tags=[
-            _tag("tag_1", "W.Z", "positive"),
-            _tag("tag_2", "W.A", "developing"),
-            _tag("tag_3", "W.A", "negative"),
+            _tag("tag_1", "synthetic:W.Z", "positive"),
+            _tag("tag_2", "synthetic:W.A", "developing"),
+            _tag("tag_3", "synthetic:W.A", "negative"),
             _tag("tag_4", None, "neutral"),
         ],
         comments=[
-            _comment("comment_1", "W.A", True),
-            _comment("comment_2", "W.A", False),
+            _comment("comment_1", "synthetic:W.A", True),
+            _comment("comment_2", "synthetic:W.A", False),
             _comment("comment_3", None, True),
         ],
     )
@@ -104,12 +105,12 @@ def test_aggregates_standards_in_sorted_stable_rows_without_mutation(
         tmp_path,
         "00200",
         tags=[
-            _tag("tag_1", "W.A", "neutral"),
-            _tag("tag_2", "W.A", "positive"),
+            _tag("tag_1", "synthetic:W.A", "neutral"),
+            _tag("tag_2", "synthetic:W.A", "positive"),
         ],
         comments=[
-            _comment("comment_1", "W.A", True),
-            _comment("comment_2", "W.Z", False),
+            _comment("comment_1", "synthetic:W.A", True),
+            _comment("comment_2", "synthetic:W.Z", False),
         ],
     )
     evidence = tmp_path / "evidence.pdf"
@@ -153,7 +154,7 @@ def test_aggregates_standards_in_sorted_stable_rows_without_mutation(
         reader = csv.DictReader(file)
         assert tuple(reader.fieldnames or ()) == CSV_COLUMNS
         rows = list(reader)
-    assert [row["standard_code"] for row in rows] == ["W.A", "W.Z"]
+    assert [row["standard_id"] for row in rows] == ["synthetic:W.A", "synthetic:W.Z"]
     first = rows[0]
     assert first["student_count"] == "2"
     assert first["tag_student_count"] == "2"
@@ -179,7 +180,7 @@ def test_non_ready_counts_repeat_on_rows_and_do_not_abort(tmp_path: Path) -> Non
     _write_review(
         tmp_path,
         "00100",
-        tags=[_tag("tag_1", "W.A", "positive")],
+        tags=[_tag("tag_1", "synthetic:W.A", "positive")],
         comments=[],
     )
     _student_dir(tmp_path, "00200").mkdir(parents=True)
@@ -258,7 +259,7 @@ def test_overwrite_replaces_only_the_derived_csv(tmp_path: Path) -> None:
     paths = _write_review(
         tmp_path,
         "00100",
-        tags=[_tag("tag_1", "W.A", "positive")],
+        tags=[_tag("tag_1", "synthetic:W.A", "positive")],
         comments=[],
     )
     originals = {path: path.read_bytes() for path in paths}
@@ -281,7 +282,7 @@ def test_overwrite_replaces_only_the_derived_csv(tmp_path: Path) -> None:
         created_at=TIMESTAMP,
     )
     assert second.overwrote_existing is True
-    assert _read_rows(second.summary_path)[0]["standard_code"] == "W.A"
+    assert _read_rows(second.summary_path)[0]["standard_id"] == "synthetic:W.A"
     for path, original in originals.items():
         assert path.read_bytes() == original
 

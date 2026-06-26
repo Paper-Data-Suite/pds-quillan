@@ -7,6 +7,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+from pds_core.standards import (
+    StandardDefinition,
+    StandardsLibrary,
+    StandardsProfile,
+    write_workspace_standards_library,
+)
+
 from quillan.assignment_submission_assembly import (
     assemble_assignment_submissions,
 )
@@ -28,7 +35,7 @@ CLASS_ID = "english12_period3_synthetic"
 ASSIGNMENT_ID = "villainy_final_essay_synthetic"
 STUDENT_ID = "stu_0001"
 PROFILE_ID = "english_12_synthetic"
-STANDARD_CODE = "RL.CR.11-12.1"
+STANDARD_ID = "njsls-ela:RL.CR.11-12.1"
 BANK_ID = "general_writing_synthetic"
 COMMENT_ID = "evidence_explanation_synthetic"
 ASSEMBLED_AT = "2026-06-23T12:00:00+00:00"
@@ -65,26 +72,38 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
             "writing_type": "literary_analysis",
             "standards_profile_id": PROFILE_ID,
             "tagging_mode": "focus",
-            "focus_standards": [STANDARD_CODE],
+            "focus_standards": [STANDARD_ID],
             "basic_requirements": {},
             "rubric_id": "synthetic_rubric",
         },
     )
-    _write_json(
-        tmp_path / "shared" / "standards" / f"{PROFILE_ID}.json",
-        {
-            "profile_id": PROFILE_ID,
-            "subject": "English Language Arts",
-            "course": "Synthetic English 12",
-            "standards": [
-                {
-                    "code": STANDARD_CODE,
-                    "short_name": "Citing evidence",
-                    "description": "Cite evidence to support analysis.",
-                    "comments": [],
-                }
-            ],
-        },
+    write_workspace_standards_library(
+        tmp_path,
+        StandardsLibrary(
+            standards=(
+                StandardDefinition(
+                    standard_id=STANDARD_ID,
+                    code="RL.CR.11-12.1",
+                    source="NJSLS",
+                    short_name="Citing evidence",
+                    description="Cite evidence to support analysis.",
+                    subject="English Language Arts",
+                    course="Synthetic English 12",
+                    domain="Reading Literature",
+                    available_modules=("quillan",),
+                ),
+            ),
+            profiles=(
+                StandardsProfile(
+                    profile_id=PROFILE_ID,
+                    standards=(STANDARD_ID,),
+                    subject="English Language Arts",
+                    course="Synthetic English 12",
+                    source="NJSLS",
+                    title="Synthetic English 12",
+                ),
+            ),
+        ),
     )
     comment_text = (
         "Explain how the selected evidence supports your central idea."
@@ -114,7 +133,7 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
                     "text": comment_text,
                     "category_id": "analysis",
                     "writing_types": ["literary_analysis"],
-                    "standard_codes": [STANDARD_CODE],
+                    "standard_ids": [STANDARD_ID],
                     "criterion_ids": ["evidence"],
                     "polarity": "developing",
                     "include_in_feedback_default": True,
@@ -187,7 +206,7 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
         STUDENT_ID,
         label="Synthetic evidence needs development",
         polarity="developing",
-        standard_code=STANDARD_CODE,
+        standard_id=STANDARD_ID,
         page_number=1,
         evidence_id=page["selected_evidence_id"],
         created_at=TAG_AT,
@@ -200,7 +219,7 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
             "polarity": "developing",
             "created_at": TAG_AT,
             "module_details": {},
-            "standard_code": STANDARD_CODE,
+            "standard_id": STANDARD_ID,
             "page_number": 1,
             "evidence_id": page["selected_evidence_id"],
         }
@@ -225,7 +244,7 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
     assert comment["comment_id"] == COMMENT_ID
     assert comment["label"] == "Explain the evidence"
     assert comment["text"] == comment_text
-    assert comment["standard_code"] == STANDARD_CODE
+    assert comment["standard_id"] == STANDARD_ID
     assert comment["include_in_feedback"] is True
     assert comment_bank_path.read_bytes() == bank_before_review
 
@@ -286,7 +305,7 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
         "Private synthetic score note.",
         BANK_ID,
         COMMENT_ID,
-        STANDARD_CODE,
+        STANDARD_ID,
         "comment_bank",
     ):
         assert private_value not in feedback_text
@@ -322,7 +341,7 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
     standards_rows = _read_csv_rows(standards_summary.summary_path)
     assert len(standards_rows) == 1
     standards_row = standards_rows[0]
-    assert standards_row["standard_code"] == STANDARD_CODE
+    assert standards_row["standard_id"] == STANDARD_ID
     assert standards_row["tag_count"] == "1"
     assert standards_row["developing_tag_count"] == "1"
     assert standards_row["positive_tag_count"] == "0"

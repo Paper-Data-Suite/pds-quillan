@@ -93,7 +93,7 @@
         "informational",
         "short_response"
       ],
-      "standard_codes": ["W.AW.11-12.1"],
+      "standard_ids": ["njsls-ela:W.AW.11-12.1"],
       "criterion_ids": ["evidence", "analysis"],
       "polarity": "developing",
       "severity_default": 2,
@@ -120,7 +120,7 @@
         "literary_analysis",
         "informational"
       ],
-      "standard_codes": ["W.AW.11-12.1"],
+      "standard_ids": ["njsls-ela:W.AW.11-12.1"],
       "criterion_ids": ["evidence"],
       "polarity": "positive",
       "severity_default": 0,
@@ -172,7 +172,7 @@
         "narrative",
         "reflection"
       ],
-      "standard_codes": ["W.WP.11-12.4"],
+      "standard_ids": ["njsls-ela:W.WP.11-12.4"],
       "criterion_ids": ["revision_process"],
       "polarity": "neutral",
       "severity_default": 1,

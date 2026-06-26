@@ -34,6 +34,31 @@ def test_valid_synthetic_bank_loads() -> None:
     bank = load_comment_bank(EXAMPLE_PATH)
     assert bank["bank_id"] == "general_writing_synthetic"
     assert len(bank["comments"]) > 1
+    assert any("standard_ids" in comment for comment in bank["comments"])
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("standard_ids", ["njsls-ela:W.AW.11-12.1", ""], "non-empty"),
+        (
+            "standard_ids",
+            ["njsls-ela:W.AW.11-12.1", "njsls-ela:W.AW.11-12.1"],
+            "duplicate",
+        ),
+        ("standard_codes", ["W.AW.11-12.1"], "Unknown field"),
+    ],
+)
+def test_standard_ids_contract_is_enforced(
+    field: str,
+    value: list[str],
+    message: str,
+) -> None:
+    bank = _bank()
+    bank["comments"][0][field] = value
+
+    with pytest.raises(CommentBankError, match=message):
+        validate_comment_bank(bank)
 
 
 def test_canonical_path_validates_identifier(tmp_path: Path) -> None:

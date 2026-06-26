@@ -32,10 +32,7 @@ from quillan.cli_app.handlers.submissions import (
     handle_open_submission,
     handle_set_review_state,
 )
-from quillan.cli_app.handlers.validation import (
-    handle_validate_assignment,
-    handle_validate_standards,
-)
+from quillan.cli_app.handlers.validation import handle_validate_assignment
 from quillan.cli_app.handlers.workspace import (
     handle_menu,
     handle_workspace_reset,
@@ -51,17 +48,6 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the top-level argument parser and register command handlers."""
     parser = argparse.ArgumentParser(description=APP_DESCRIPTION)
     subparsers = parser.add_subparsers(dest="command")
-
-    validate_standards_parser = subparsers.add_parser(
-        "validate-standards",
-        help="Validate a standards profile JSON file.",
-    )
-    validate_standards_parser.add_argument(
-        "path",
-        type=Path,
-        help="Path to the standards profile JSON file.",
-    )
-    validate_standards_parser.set_defaults(handler=handle_validate_standards)
 
     validate_assignment_parser = subparsers.add_parser(
         "validate-assignment",
@@ -257,12 +243,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Tag polarity: positive, developing, negative, or neutral.",
     )
     add_tag_parser.add_argument(
-        "--standard",
-        help="Optional standards-profile code.",
+        "--standard-id",
+        help="Optional durable pds-core standard_id.",
     )
     add_tag_parser.add_argument(
         "--comment-id",
-        help="Optional reusable comment ID under --standard.",
+        help="Optional reusable comment ID associated with --standard-id.",
     )
     add_tag_parser.add_argument(
         "--severity",
@@ -312,7 +298,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Reusable source comment identifier.",
     )
     add_comment_parser.add_argument(
-        "--standard", help="Optional standard code from the source comment."
+        "--standard-id", help="Optional durable standard_id from the source comment."
     )
     feedback_group = add_comment_parser.add_mutually_exclusive_group()
     feedback_group.add_argument(

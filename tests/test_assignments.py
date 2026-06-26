@@ -20,8 +20,8 @@ def _valid_assignment_config() -> dict[str, object]:
         "standards_profile_id": "english_12_njsls_synthetic",
         "tagging_mode": "focus",
         "focus_standards": [
-            "W.AW.11-12.1",
-            "W.WP.11-12.4",
+            "njsls-ela:W.AW.11-12.1",
+            "njsls-ela:W.WP.11-12.4",
         ],
         "basic_requirements": {
             "paragraphs_min": 4,
@@ -116,7 +116,7 @@ def test_empty_class_ids_raises_error(tmp_path: Path) -> None:
 def test_focus_standards_must_be_list(tmp_path: Path) -> None:
     assignment_path = tmp_path / "assignment.json"
     assignment_data = _valid_assignment_config()
-    assignment_data["focus_standards"] = "W.AW.11-12.1"
+    assignment_data["focus_standards"] = "njsls-ela:W.AW.11-12.1"
     assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
 
     with pytest.raises(AssignmentConfigError, match="focus_standards.*must be a list"):

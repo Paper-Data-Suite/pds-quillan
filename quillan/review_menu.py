@@ -467,11 +467,11 @@ def _menu_add_review_tag(
         )
         return
 
-    standard_code = input(
-        "Standard code (leave blank if not applicable): "
+    standard_id = input(
+        "Standard ID (leave blank if not applicable): "
     ).strip() or None
     comment_id = None
-    if standard_code is not None:
+    if standard_id is not None:
         comment_id = input(
             "Comment ID (leave blank if not applicable): "
         ).strip() or None
@@ -527,7 +527,7 @@ def _menu_add_review_tag(
             student_id,
             label=label,
             polarity=polarity,
-            standard_code=standard_code,
+            standard_id=standard_id,
             comment_id=comment_id,
             severity=severity,
             teacher_note=teacher_note,
@@ -641,36 +641,36 @@ def _prompt_comment_from_bank(bank: dict[str, Any]) -> dict[str, Any] | None:
         )
 
 
-def _prompt_optional_standard_code(comment: dict[str, Any]) -> str | None:
-    standard_codes = [
-        code
-        for code in comment.get("standard_codes", [])
-        if isinstance(code, str) and code.strip()
+def _prompt_optional_standard_id(comment: dict[str, Any]) -> str | None:
+    standard_ids = [
+        standard_id
+        for standard_id in comment.get("standard_ids", [])
+        if isinstance(standard_id, str) and standard_id.strip()
     ]
-    if len(standard_codes) <= 1:
+    if len(standard_ids) <= 1:
         return None
 
-    print("Standard code options:")
-    for index, code in enumerate(standard_codes, start=1):
-        print(f"{index}. {code}")
+    print("Standard ID options:")
+    for index, standard_id in enumerate(standard_ids, start=1):
+        print(f"{index}. {standard_id}")
     print("B. Back")
     print()
 
     selection = input(
-        "Select standard code or leave blank to use default: "
+        "Select standard ID or leave blank to use default: "
     ).strip()
     if selection == "" or selection.casefold() == "b":
         return None
     if selection.isdigit():
         index = int(selection) - 1
-        if 0 <= index < len(standard_codes):
-            return standard_codes[index]
-    if selection in standard_codes:
+        if 0 <= index < len(standard_ids):
+            return standard_ids[index]
+    if selection in standard_ids:
         return selection
 
     print(
         "Select comment canceled. "
-        "Invalid standard code selection."
+        "Invalid standard ID selection."
     )
     return None
 
@@ -715,7 +715,7 @@ def _menu_add_review_comment(
     if comment is None:
         return
 
-    standard_code = _prompt_optional_standard_code(comment)
+    standard_id = _prompt_optional_standard_id(comment)
     include_in_feedback = _prompt_optional_boolean(
         "Include in feedback? (y/n, leave blank to use default): "
     )
@@ -734,7 +734,7 @@ def _menu_add_review_comment(
             student_id,
             bank_id=bank["bank_id"],
             comment_id=comment["comment_id"],
-            standard_code=standard_code,
+            standard_id=standard_id,
             include_in_feedback=val_include,
         )
     except (ReviewCommentError, OSError) as error:

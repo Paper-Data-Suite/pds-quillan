@@ -11,6 +11,12 @@ from pathlib import Path
 from typing import Any, Final
 
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
+from pds_core.standards import (
+    StandardDefinition,
+    StandardsLibrary,
+    load_workspace_standards_library,
+    find_standard_definition,
+)
 
 from quillan.review_record import ReviewRecordError, load_review_record
 from quillan.submission_manifest import (
@@ -21,7 +27,13 @@ from quillan.submission_manifest import (
 CSV_COLUMNS: Final[tuple[str, ...]] = (
     "class_id",
     "assignment_id",
-    "standard_code",
+    "standard_id",
+    "code",
+    "short_name",
+    "standard_source",
+    "subject",
+    "course",
+    "domain",
     "student_count",
     "tag_student_count",
     "comment_student_count",
@@ -70,7 +82,7 @@ class ExportedStandardsSummary:
 
 @dataclass(slots=True)
 class _StandardCounts:
-    """Mutable aggregation state for one standard code."""
+    """Mutable aggregation state for one durable standard ID."""
 
     tag_students: set[str] = field(default_factory=set)
     comment_students: set[str] = field(default_factory=set)
@@ -154,6 +166,10 @@ def export_standards_summary(
         "invalid_submission": 0,
         "identity_mismatch": 0,
     }
+    try:
+        standards_library = load_workspace_standards_library(resolved_root)
+    except OSError:
+        standards_library = StandardsLibrary(standards=(), profiles=())
     for student_dir in student_dirs:
         _inspect_student(
             class_id,
@@ -167,11 +183,12 @@ def export_standards_summary(
         _build_row(
             class_id,
             assignment_id,
-            standard_code,
-            aggregates[standard_code],
+            standard_id,
+            aggregates[standard_id],
             status_counts,
+            find_standard_definition(standards_library, standard_id),
         )
-        for standard_code in sorted(aggregates)
+        for standard_id in sorted(aggregates)
     ]
     _write_csv(output_path, rows, overwrite=overwrite)
 
@@ -233,20 +250,20 @@ def _inspect_student(
 
     status_counts["review"] += 1
     for tag in review["tags"]:
-        standard_code = tag.get("standard_code")
-        if standard_code is None:
+        standard_id = tag.get("standard_id")
+        if standard_id is None:
             continue
-        counts = aggregates.setdefault(standard_code, _StandardCounts())
+        counts = aggregates.setdefault(standard_id, _StandardCounts())
         counts.tag_students.add(student_id)
         counts.tag_count += 1
         polarity_field = f"{tag['polarity']}_tag_count"
         setattr(counts, polarity_field, getattr(counts, polarity_field) + 1)
 
     for comment in review["comments"]:
-        standard_code = comment.get("standard_code")
-        if standard_code is None:
+        standard_id = comment.get("standard_id")
+        if standard_id is None:
             continue
-        counts = aggregates.setdefault(standard_code, _StandardCounts())
+        counts = aggregates.setdefault(standard_id, _StandardCounts())
         counts.comment_students.add(student_id)
         counts.selected_comment_count += 1
         if comment["include_in_feedback"]:
@@ -258,14 +275,21 @@ def _inspect_student(
 def _build_row(
     class_id: str,
     assignment_id: str,
-    standard_code: str,
+    standard_id: str,
     counts: _StandardCounts,
     status_counts: dict[str, int],
+    definition: StandardDefinition | None,
 ) -> dict[str, str]:
     return {
         "class_id": class_id,
         "assignment_id": assignment_id,
-        "standard_code": standard_code,
+        "standard_id": standard_id,
+        "code": definition.code if definition is not None else "",
+        "short_name": definition.short_name if definition is not None else "",
+        "standard_source": definition.source if definition is not None else "",
+        "subject": definition.subject or "" if definition is not None else "",
+        "course": definition.course or "" if definition is not None else "",
+        "domain": definition.domain or "" if definition is not None else "",
         "student_count": str(
             len(counts.tag_students | counts.comment_students)
         ),

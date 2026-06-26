@@ -49,7 +49,6 @@ The implemented command surface currently exposed through argparse is:
 ```powershell
 quillan
 quillan --help
-quillan validate-standards <path>
 quillan validate-assignment <path>
 quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
 quillan route-scan <source-image> --decode-qr
@@ -61,8 +60,8 @@ quillan open-evidence <workspace-relative-evidence-path>
 quillan open-submission <class_id> <assignment_id> <student_id>
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
-quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity <polarity>
-quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id>
+quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity <polarity> [--standard-id <standard_id>]
+quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id> [--standard-id <standard_id>]
 quillan set-score <class_id> <assignment_id> <student_id> --criterion <criterion_id> --label "..." --score <number> --max-score <number>
 quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
@@ -87,23 +86,6 @@ quillan menu
 
 Bare `quillan` and the explicit `menu` command launch the same interactive
 menu. The other commands remain direct and non-interactive.
-
-### `validate-standards`
-
-```powershell
-quillan validate-standards <path>
-```
-
-Loads a UTF-8 JSON standards profile and applies Quillan's current standards
-profile validation rules.
-
-On success, it writes this form to standard output:
-
-```text
-Valid standards profile: <profile_id>
-```
-
-It is read-only. It does not rewrite, normalize, copy, or install the profile.
 
 ### `validate-assignment`
 
@@ -247,17 +229,18 @@ Assignment creation prompts for:
 * assignment title;
 * assignment ID;
 * writing type;
-* standards profile ID;
+* pds-core standards profile selection;
 * tagging mode;
-* focus standards;
+* pds-core focus-standard selection;
 * basic requirements; and
 * rubric ID.
 
 `writing_type` is currently a typed teacher-entered value, not a discovered or
 selectable list.
 
-`standards_profile_id` is currently a typed teacher-entered value, not a
-discovered or selectable list.
+`standards_profile_id` is selected from the active pds-core standards library
+and stored as a durable pds-core `profile_id`. Focus standards are selected
+from that profile and stored as durable pds-core `standard_id` values.
 
 An existing config is replaced only after exact `OVERWRITE` confirmation.
 
@@ -736,7 +719,7 @@ exists, validates, and matches the requested identity.
 Optional flags are:
 
 ```text
---standard
+--standard-id
 --comment-id
 --severity
 --note
@@ -766,7 +749,7 @@ teacher-selected student-facing comment to canonical `review.json`.
 Optional flags are:
 
 ```text
---standard
+--standard-id
 --include-in-feedback
 --exclude-from-feedback
 ```
@@ -886,20 +869,20 @@ classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 It validates each available `submission.json` and `review.json`, counts
 missing, invalid, and identity-mismatched records without aborting the
 assignment export, and emits one row per referenced standard sorted by
-`standard_code`.
+`standard_id`.
 
 Rows aggregate standards-linked structured tags by polarity and selected
 comments by feedback inclusion, plus distinct student counts.
 
-Artifacts without `standard_code` are ignored.
+Artifacts without `standard_id` are ignored.
 
 If no valid linked artifacts exist, the command writes a header-only CSV.
 
 Success returns `0`. Handled workspace, validation, missing-directory, and
 overwrite failures return `1`.
 
-The export does not include notes or scores, map criteria to standards, load a
-standards profile, inspect student writing or evidence, read comment banks,
+The export does not include notes or scores, map criteria to standards, inspect
+student writing or evidence, read comment banks,
 use AI, calculate grades or mastery, use a roster, or mutate canonical
 records.
 
@@ -923,7 +906,7 @@ Exports do not mutate:
 * rosters;
 * assignment configs;
 * comment banks; or
-* standards profiles.
+* pds-core standards libraries.
 
 The menu delegates to the same export services and output formatters as the
 direct CLI handlers. It does not implement a parallel export system.
@@ -947,7 +930,6 @@ The intended convention is:
 Current validation failures are reported with these prefixes:
 
 ```text
-Invalid standards profile: ...
 Invalid assignment config: ...
 ```
 

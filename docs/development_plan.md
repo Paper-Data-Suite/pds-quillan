@@ -231,7 +231,7 @@ metadata-only command.
 Target milestone:
 
 ```text
-v0.6.0 — Reviewable Evidence and Submission Assembly
+v0.6.0 â€” Reviewable Evidence and Submission Assembly
 ```
 
 The completed/current v0.6 workflow includes:
@@ -366,7 +366,7 @@ Current status:
 
 ## Development Sequence
 
-### Phase 1 — Project Scaffold
+### Phase 1 â€” Project Scaffold
 
 Status: complete.
 
@@ -380,7 +380,7 @@ Completed work:
 * Add basic CLI entry point.
 * Confirm test/lint/type-check tooling.
 
-### Phase 2 — Data Contracts
+### Phase 2 â€” Data Contracts
 
 Status: complete.
 
@@ -393,7 +393,7 @@ Completed work:
 * Add synthetic output examples.
 * Document synthetic data policy.
 
-### Phase 3 — Standards Profiles
+### Phase 3 â€” Standards Profiles
 
 Status: partially complete.
 
@@ -415,14 +415,14 @@ Remaining possible work:
 * Add duplicate code/comment ID checks.
 * Add active standards resolution by tagging mode.
 
-### Phase 4 — CLI Foundation
+### Phase 4 â€” CLI Foundation
 
 Status: partially complete.
 
 Completed work:
 
 * Add argparse-based CLI structure.
-* Add `validate-standards` command.
+* Superseded: shared standards validation now belongs to pds-core.
 * Add the initial bare `quillan` menu entry point, explicit `quillan menu`
   alias, and navigation skeleton.
 * Add the Roster Management submenu using shared `pds-core` contracts.
@@ -440,7 +440,7 @@ Remaining possible work:
 * Add examples to CLI help text.
 * Expand menu workflows only as supported application behavior is implemented.
 
-### Phase 5 — Assignments
+### Phase 5 â€” Assignments
 
 Planned work:
 
@@ -458,7 +458,7 @@ Likely first commands:
 * `quillan validate-assignment <path>`
 * later: `quillan create-assignment`
 
-### Phase 6 — Submissions and Requirements
+### Phase 6 â€” Submissions and Requirements
 
 Completed reviewable-evidence work:
 
@@ -494,7 +494,7 @@ Likely first commands:
 * `quillan check-requirements <assignment-path> <submission-path>`
 * later: interactive requirements workflow.
 
-### Phase 7 — Tagging
+### Phase 7 â€” Tagging
 
 Planned work:
 
@@ -508,13 +508,13 @@ Planned work:
 Likely first workflow:
 
 * load assignment;
-* load standards profile;
+* use pds-core standards references;
 * choose subdivision;
 * choose standard;
 * choose comment;
 * save tag record.
 
-### Phase 8 — Scoring and Feedback
+### Phase 8 â€” Scoring and Feedback
 
 Planned work:
 
@@ -524,7 +524,7 @@ Planned work:
 * Generate feedback Markdown.
 * Add tests.
 
-### Phase 9 — Reports
+### Phase 9 â€” Reports
 
 Planned work:
 
@@ -577,11 +577,11 @@ Use the following board columns:
 
 Recommended use:
 
-* **Backlog** — captured but not ready.
-* **Ready** — clearly scoped and ready to start.
-* **In Progress** — branch is active.
-* **In Review** — pull request is open.
-* **Done** — merged or intentionally closed.
+* **Backlog** â€” captured but not ready.
+* **Ready** â€” clearly scoped and ready to start.
+* **In Progress** â€” branch is active.
+* **In Review** â€” pull request is open.
+* **Done** â€” merged or intentionally closed.
 
 ## AI Assistance Workflow
 

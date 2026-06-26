@@ -48,7 +48,7 @@ def handle_add_tag(args: argparse.Namespace) -> int:
             args.student_id,
             label=args.label,
             polarity=args.polarity,
-            standard_code=args.standard,
+            standard_id=args.standard_id,
             comment_id=args.comment_id,
             severity=args.severity,
             teacher_note=args.note,
@@ -76,7 +76,7 @@ def handle_add_comment(args: argparse.Namespace) -> int:
             args.student_id,
             bank_id=args.bank,
             comment_id=args.comment_id,
-            standard_code=args.standard,
+            standard_id=args.standard_id,
             include_in_feedback=args.include_in_feedback,
         )
     except (WorkspaceRootError, ReviewCommentError) as error:

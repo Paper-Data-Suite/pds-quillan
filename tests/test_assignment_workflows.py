@@ -8,6 +8,12 @@ from pathlib import Path
 
 from pds_core.classes import write_class_roster
 from pds_core.rosters import create_roster
+from pds_core.standards import (
+    StandardDefinition,
+    StandardsLibrary,
+    StandardsProfile,
+    write_workspace_standards_library,
+)
 import pytest
 
 import quillan.assignment_workflows as workflows
@@ -30,7 +36,10 @@ def _assignment(
         writing_type="literary_analysis",
         standards_profile_id="synthetic_ela_11_12",
         tagging_mode="focus",
-        focus_standards=["W.AW.11-12.1", "L.KL.11-12.2"],
+        focus_standards=[
+            "njsls-ela:W.AW.11-12.1",
+            "njsls-ela:L.KL.11-12.2",
+        ],
         basic_requirements={
             "paragraphs_min": 4,
             "word_count_min": 500,
@@ -53,6 +62,51 @@ def _write_roster(workspace_root: Path, class_id: str = "english_12_p3") -> None
         ],
     )
     write_class_roster(workspace_root, roster)
+
+
+def _write_standards_library(workspace_root: Path) -> None:
+    write_workspace_standards_library(
+        workspace_root,
+        StandardsLibrary(
+            standards=(
+                StandardDefinition(
+                    standard_id="njsls-ela:W.AW.11-12.1",
+                    code="W.AW.11-12.1",
+                    source="NJSLS",
+                    short_name="Argument Writing",
+                    description="Synthetic argument writing standard.",
+                    subject="English Language Arts",
+                    course="English 12",
+                    domain="Writing",
+                    available_modules=("quillan",),
+                ),
+                StandardDefinition(
+                    standard_id="njsls-ela:L.KL.11-12.2",
+                    code="L.KL.11-12.2",
+                    source="NJSLS",
+                    short_name="Language Knowledge",
+                    description="Synthetic language knowledge standard.",
+                    subject="English Language Arts",
+                    course="English 12",
+                    domain="Language",
+                    available_modules=("quillan",),
+                ),
+            ),
+            profiles=(
+                StandardsProfile(
+                    profile_id="synthetic_ela_11_12",
+                    standards=(
+                        "njsls-ela:W.AW.11-12.1",
+                        "njsls-ela:L.KL.11-12.2",
+                    ),
+                    subject="English Language Arts",
+                    course="English 12",
+                    source="NJSLS",
+                    title="Synthetic ELA 11-12",
+                ),
+            ),
+        ),
+    )
 
 
 def _inputs(
@@ -85,9 +139,9 @@ def _creation_responses(
         "Literary Analysis Essay",
         assignment_id,
         "literary_analysis",
-        "synthetic_ela_11_12",
+        "1",
+        "1, 2",
         "",
-        " W.AW.11-12.1, L.KL.11-12.2, ",
         paragraphs_min,
         "",
         "500",
@@ -154,7 +208,7 @@ def test_write_assignment_config_rejects_class_path_mismatch(
 
 
 def test_assignment_parsing_helpers() -> None:
-    assert workflows.suggest_assignment_id("  Café Literary Analysis!  ") == (
+    assert workflows.suggest_assignment_id("  Cafe Literary Analysis!  ") == (
         "cafe_literary_analysis"
     )
     assert workflows.parse_comma_separated_values(" A, B ,, C ") == [
@@ -179,6 +233,7 @@ def test_prompt_create_assignment_selects_roster_class_and_writes_config(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write_roster(tmp_path)
+    _write_standards_library(tmp_path)
     monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
     _inputs(monkeypatch, _creation_responses())
 
@@ -194,8 +249,8 @@ def test_prompt_create_assignment_selects_roster_class_and_writes_config(
     assignment = load_assignment_config(path)
     assert assignment["class_ids"] == ["english_12_p3"]
     assert assignment["focus_standards"] == [
-        "W.AW.11-12.1",
-        "L.KL.11-12.2",
+        "njsls-ela:W.AW.11-12.1",
+        "njsls-ela:L.KL.11-12.2",
     ]
     assert assignment["basic_requirements"] == {
         "paragraphs_min": 4,
@@ -210,6 +265,7 @@ def test_prompt_create_assignment_accepts_exact_class_id_and_blank_options(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _write_roster(tmp_path)
+    _write_standards_library(tmp_path)
     monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
     responses = _creation_responses(
         selection="english_12_p3",
@@ -230,8 +286,8 @@ def test_prompt_create_assignment_accepts_exact_class_id_and_blank_options(
         / "assignment.json"
     )
     assert assignment["focus_standards"] == [
-        "W.AW.11-12.1",
-        "L.KL.11-12.2",
+        "njsls-ela:W.AW.11-12.1",
+        "njsls-ela:L.KL.11-12.2",
     ]
     assert assignment["basic_requirements"] == {}
 
@@ -254,6 +310,7 @@ def test_prompt_create_assignment_rejects_invalid_teacher_id(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write_roster(tmp_path)
+    _write_standards_library(tmp_path)
     monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
     _inputs(
         monkeypatch,
@@ -265,12 +322,32 @@ def test_prompt_create_assignment_rejects_invalid_teacher_id(
     assert not list(tmp_path.rglob("assignment.json"))
 
 
+def test_prompt_create_assignment_explains_missing_standards_library(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    _inputs(
+        monkeypatch,
+        ["1", "Synthetic Assignment", "", "argument"],
+    )
+
+    assert workflows.prompt_create_assignment() == 1
+    assert "Create or import standards through pds-core first" in (
+        capsys.readouterr().out
+    )
+    assert not list(tmp_path.rglob("assignment.json"))
+
+
 def test_prompt_create_assignment_rejects_invalid_numeric_requirement(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write_roster(tmp_path)
+    _write_standards_library(tmp_path)
     monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
     _inputs(
         monkeypatch,
@@ -295,6 +372,7 @@ def test_prompt_create_assignment_overwrite_requires_exact_confirmation(
     expected_title: str,
 ) -> None:
     _write_roster(tmp_path)
+    _write_standards_library(tmp_path)
     existing = _assignment()
     existing["title"] = "Original Synthetic Assignment"
     path = workflows.write_assignment_config(

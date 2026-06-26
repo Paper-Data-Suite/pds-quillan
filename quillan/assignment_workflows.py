@@ -7,10 +7,17 @@ import re
 import unicodedata
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 from pds_core.classes import ClassFolder, list_class_folders
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
+from pds_core.standards import StandardsReadError, StandardsValidationError
+from pds_core.standards_selection import (
+    StandardSelectionItem,
+    list_profiles_for_selection,
+    list_standards_for_profile_selection,
+    load_standards_for_selection,
+)
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
 from quillan.assignments import (
@@ -27,6 +34,7 @@ _NUMERIC_REQUIREMENTS = (
     "word_count_min",
     "word_count_max",
 )
+_T = TypeVar("_T")
 
 
 def suggest_assignment_id(title: str) -> str:
@@ -193,6 +201,94 @@ def _prompt_basic_requirements() -> dict[str, Any]:
     return requirements
 
 
+def _prompt_numbered_selection(
+    items: Sequence[_T],
+    *,
+    prompt: str,
+    label: str,
+) -> _T | None:
+    selection = input(prompt).strip()
+    if selection.isdigit() and 1 <= int(selection) <= len(items):
+        return items[int(selection) - 1]
+    print(f"Error: {label} not found: {selection}")
+    return None
+
+
+def _prompt_standards_selection(
+    workspace_root: Path,
+) -> tuple[str, list[str]] | None:
+    try:
+        library = load_standards_for_selection(workspace_root)
+    except (OSError, StandardsReadError, StandardsValidationError) as error:
+        print(f"Error: could not load pds-core standards library: {error}")
+        return None
+
+    profiles = list_profiles_for_selection(library)
+    if not profiles:
+        print(
+            "No pds-core standards profiles found. Create or import standards "
+            "through pds-core first."
+        )
+        return None
+
+    print("Available standards profiles:")
+    for index, profile in enumerate(profiles, start=1):
+        print(f"{index}. {profile.label}")
+    print()
+    selected_profile = _prompt_numbered_selection(
+        profiles,
+        prompt="Select standards profile: ",
+        label="standards profile",
+    )
+    if selected_profile is None:
+        return None
+
+    try:
+        standards = list_standards_for_profile_selection(
+            library,
+            selected_profile.profile_id,
+        )
+    except StandardsValidationError as error:
+        print(f"Error: could not list profile standards: {error}")
+        return None
+    if not standards:
+        print(
+            "Selected pds-core standards profile has no standards available "
+            "for Quillan."
+        )
+        return None
+
+    print("Available standards:")
+    for index, standard in enumerate(standards, start=1):
+        print(f"{index}. {standard.label}")
+    print()
+    selected_standards = _prompt_focus_standards(standards)
+    if selected_standards is None:
+        return None
+    return selected_profile.profile_id, selected_standards
+
+
+def _prompt_focus_standards(
+    standards: Sequence[StandardSelectionItem],
+) -> list[str] | None:
+    selection = input("Select focus standards by number, comma-separated: ").strip()
+    if not selection:
+        return []
+    selected_ids: list[str] = []
+    seen: set[str] = set()
+    for item in parse_comma_separated_values(selection):
+        if not item.isdigit() or not 1 <= int(item) <= len(standards):
+            print(f"Error: focus standard selection not found: {item}")
+            return None
+        standard_id = standards[int(item) - 1].standard_id
+        if standard_id in seen:
+            print(f"Error: duplicate focus standard selection: {item}")
+            return None
+        seen.add(standard_id)
+        selected_ids.append(standard_id)
+    return selected_ids
+
+
 def prompt_create_assignment() -> int:
     """Prompt for and write one validated writing assignment config."""
     from quillan.menu import print_menu_header
@@ -217,10 +313,10 @@ def prompt_create_assignment() -> int:
         validate_identifier(assignment_id, "assignment_id")
 
         writing_type = _required_input("Writing type: ", "Writing type")
-        standards_profile_id = _required_input(
-            "Standards profile ID: ",
-            "Standards profile ID",
-        )
+        standards_selection = _prompt_standards_selection(workspace_root)
+        if standards_selection is None:
+            return 1
+        standards_profile_id, focus_standards = standards_selection
         tagging_mode = input(
             "Tagging mode [focus/focus_plus_past/benchmark/custom] "
             "(default: focus): "
@@ -230,9 +326,6 @@ def prompt_create_assignment() -> int:
         if tagging_mode not in ALLOWED_TAGGING_MODES:
             allowed = "/".join(sorted(ALLOWED_TAGGING_MODES))
             raise ValueError(f"Tagging mode must be one of: {allowed}.")
-        focus_standards = parse_comma_separated_values(
-            input("Focus standards, comma-separated: ")
-        )
         basic_requirements = _prompt_basic_requirements()
         rubric_id = _required_input("Rubric ID: ", "Rubric ID")
         assignment = build_assignment_config(

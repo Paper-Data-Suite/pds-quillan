@@ -65,7 +65,7 @@ def _assignment(class_ids: list[str] | None = None) -> dict[str, object]:
         "writing_type": "synthetic_response",
         "standards_profile_id": "synthetic_ela",
         "tagging_mode": "focus",
-        "focus_standards": ["W.SYN.1"],
+        "focus_standards": ["synthetic:W.SYN.1"],
         "basic_requirements": {"paragraphs_min": 1},
         "rubric_id": "synthetic_rubric",
     }

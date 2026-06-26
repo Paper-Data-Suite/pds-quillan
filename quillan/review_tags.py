@@ -9,6 +9,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, cast
 
+from pds_core.standards import (
+    StandardsValidationError,
+    load_workspace_standards_library,
+    validate_profile_standard_selection,
+)
+
 from quillan.assignments import AssignmentConfigError, load_assignment_config
 from quillan.review_record import (
     ALLOWED_LOCATION_TYPES,
@@ -24,7 +30,6 @@ from quillan.review_record_paths import (
     review_record_path,
     write_review_record,
 )
-from quillan.standards import StandardsProfileError, load_standards_profile
 from quillan.storage import assignment_config_path
 from quillan.submission_manifest import (
     SubmissionManifestError,
@@ -65,7 +70,7 @@ def add_review_tag(
     *,
     label: str,
     polarity: str,
-    standard_code: str | None = None,
+    standard_id: str | None = None,
     comment_id: str | None = None,
     severity: int | None = None,
     teacher_note: str | None = None,
@@ -78,9 +83,7 @@ def add_review_tag(
     """Append one teacher-entered structured tag to a review record."""
     normalized_label = _normalize_required_string(label, "label")
     normalized_polarity = _normalize_polarity(polarity)
-    normalized_standard = _normalize_optional_string(
-        standard_code, "standard_code"
-    )
+    normalized_standard = _normalize_optional_string(standard_id, "standard_id")
     normalized_comment = _normalize_optional_string(comment_id, "comment_id")
     normalized_note = _normalize_optional_string(teacher_note, "teacher_note")
     normalized_evidence = _normalize_optional_string(evidence_id, "evidence_id")
@@ -90,7 +93,7 @@ def add_review_tag(
     normalized_created_at = _normalize_timestamp(created_at)
 
     if normalized_comment is not None and normalized_standard is None:
-        raise ReviewTagError("comment_id requires standard_code.")
+        raise ReviewTagError("comment_id requires standard_id.")
 
     try:
         resolved_workspace_root = Path(workspace_root).resolve(strict=False)
@@ -152,7 +155,7 @@ def add_review_tag(
             resolved_workspace_root,
             class_id=class_id,
             assignment_id=assignment_id,
-            standard_code=normalized_standard,
+            standard_id=normalized_standard,
             comment_id=normalized_comment,
             label=normalized_label,
             polarity=normalized_polarity,
@@ -205,7 +208,7 @@ def add_review_tag(
         "module_details": {},
     }
     optional_fields = {
-        "standard_code": normalized_standard,
+        "standard_id": normalized_standard,
         "comment_id": normalized_comment,
         "severity": severity,
         "teacher_note": normalized_note,
@@ -425,7 +428,7 @@ def _validate_profile_references(
     *,
     class_id: str,
     assignment_id: str,
-    standard_code: str,
+    standard_id: str,
     comment_id: str | None,
     label: str,
     polarity: str,
@@ -448,49 +451,19 @@ def _validate_profile_references(
             f"Assignment config does not include class_id {class_id!r}."
         )
 
-    profile_id = assignment["standards_profile_id"]
-    profile_path = workspace_root / "shared" / "standards" / f"{profile_id}.json"
+    profile_id = cast(str, assignment["standards_profile_id"])
     try:
-        profile = load_standards_profile(profile_path)
-    except (OSError, StandardsProfileError) as error:
-        raise ReviewTagError(f"Could not load standards profile: {error}") from error
-    if profile["profile_id"] != profile_id:
-        raise ReviewTagError(
-            f"Standards profile ID is {profile['profile_id']!r}, "
-            f"expected {profile_id!r}."
+        library = load_workspace_standards_library(workspace_root)
+        validate_profile_standard_selection(
+            library,
+            profile_id=profile_id,
+            selected_standard_ids=(standard_id,),
         )
-
-    standards = {standard["code"]: standard for standard in profile["standards"]}
-    if standard_code not in standards:
+    except (OSError, StandardsValidationError) as error:
         raise ReviewTagError(
-            f"standard_code {standard_code!r} does not exist in standards "
-            f"profile {profile_id!r}."
-        )
-    if comment_id is None:
-        return severity
-
-    comments = {
-        comment["comment_id"]: comment
-        for comment in standards[standard_code]["comments"]
-    }
-    if comment_id not in comments:
-        raise ReviewTagError(
-            f"comment_id {comment_id!r} does not exist under standard "
-            f"{standard_code!r}."
-        )
-    comment = comments[comment_id]
-    if label != comment["label"]:
-        raise ReviewTagError(
-            f"label {label!r} does not match profile comment label "
-            f"{comment['label']!r}."
-        )
-    if polarity != comment["polarity"]:
-        raise ReviewTagError(
-            f"polarity {polarity!r} does not match profile comment polarity "
-            f"{comment['polarity']!r}."
-        )
-    if severity is None:
-        return cast(int | None, comment.get("severity_default"))
+            "Could not validate standard_id against pds-core standards "
+            f"profile {profile_id!r}: {error}"
+        ) from error
     return severity
 
 

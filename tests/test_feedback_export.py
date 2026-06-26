@@ -52,7 +52,7 @@ def test_exports_ordered_student_content_without_mutating_sources(
             "source": "comment_bank",
             "bank_id": "private_bank",
             "comment_id": "private_comment_id",
-            "standard_code": "PRIVATE.STANDARD",
+            "standard_id": "PRIVATE.STANDARD",
             "module_details": {"private": "comment metadata"},
         }
     )

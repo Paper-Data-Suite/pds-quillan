@@ -8,9 +8,16 @@ from pathlib import Path
 
 import pytest
 
+from pds_core.standards import (
+    StandardDefinition,
+    StandardsLibrary,
+    StandardsProfile,
+    write_workspace_standards_library,
+)
+
 from quillan.assignment_workflows import (
-build_assignment_config,
-write_assignment_config,
+    build_assignment_config,
+    write_assignment_config,
 )
 from quillan.cli import main
 import quillan.cli_app.handlers.exports as exports_handler
@@ -26,13 +33,13 @@ STUDENT_ID = "stu_0001"
 SECOND_STUDENT_ID = "stu_0002"
 BANK_ID = "general_writing_synthetic"
 COMMENT_ID = "focus_is_clear"
-STANDARD_CODE = "W.1"
+STANDARD_ID = "njsls-ela:W.AW.11-12.1"
 
 EXAMPLE_BANK_PATH = (
-Path(__file__).parents[1]
-/ "examples"
-/ "comment_banks"
-/ f"{BANK_ID}.json"
+    Path(__file__).parents[1]
+    / "examples"
+    / "comment_banks"
+    / f"{BANK_ID}.json"
 )
 
 @pytest.fixture
@@ -43,28 +50,28 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
     _write_roster(tmp_path)
     _write_assignment(tmp_path)
-    _write_standards_profile(tmp_path)
+    _write_standards_library(tmp_path)
     _write_comment_bank(tmp_path)
 
     return tmp_path
 
 
 def _patch_workspace_resolution(
-monkeypatch: pytest.MonkeyPatch,
-workspace_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    workspace_root: Path,
 ) -> None:
     """Route CLI handler workspace resolution into the temporary workspace."""
     for module in (
-    exports_handler,
-    review_handler,
-    routing_handler,
-    submissions_handler,
+        exports_handler,
+        review_handler,
+        routing_handler,
+        submissions_handler,
     ):
         monkeypatch.setattr(
-        module,
-        "resolve_workspace_root",
-        lambda: workspace_root,
-        raising=False,
+            module,
+            "resolve_workspace_root",
+            lambda: workspace_root,
+            raising=False,
         )
 
 def _write_roster(root: Path) -> None:
@@ -106,55 +113,62 @@ def _write_roster(root: Path) -> None:
 
 def _write_assignment(root: Path) -> Path:
     assignment = build_assignment_config(
-    assignment_id=ASSIGNMENT_ID,
-    title="Synthetic Argument Essay",
-    class_id=CLASS_ID,
-    writing_type="argument",
-    standards_profile_id="synthetic_profile",
-    tagging_mode="focus",
-    focus_standards=[STANDARD_CODE],
-    basic_requirements={"paragraphs_min": 1},
-    rubric_id="synthetic_rubric",
+        assignment_id=ASSIGNMENT_ID,
+        title="Synthetic Argument Essay",
+        class_id=CLASS_ID,
+        writing_type="argument",
+        standards_profile_id="synthetic_profile",
+        tagging_mode="focus",
+        focus_standards=[STANDARD_ID],
+        basic_requirements={"paragraphs_min": 1},
+        rubric_id="synthetic_rubric",
     )
     return write_assignment_config(root, CLASS_ID, assignment)
 
-def _write_standards_profile(root: Path) -> None:
-    profile_path = root / "shared" / "standards" / "synthetic_profile.json"
-    profile_path.parent.mkdir(parents=True, exist_ok=True)
-    profile_path.write_text(
-        json.dumps(
-            {
-                "profile_id": "synthetic_profile",
-                "subject": "English",
-                "course": "English 12",
-                "standards": [
-                    {
-                        "code": STANDARD_CODE,
-                        "short_name": "Argument Writing",
-                        "description": "Use claims, reasoning, and evidence.",
-                        "comments": [],
-                    }
-                ],
-            },
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
+
+def _write_standards_library(root: Path) -> None:
+    write_workspace_standards_library(
+        root,
+        StandardsLibrary(
+            standards=(
+                StandardDefinition(
+                    standard_id=STANDARD_ID,
+                    code="W.AW.11-12.1",
+                    source="NJSLS",
+                    short_name="Argument Writing",
+                    description="Use claims, reasoning, and evidence.",
+                    subject="English Language Arts",
+                    course="English 12",
+                    domain="Writing",
+                    available_modules=("quillan",),
+                ),
+            ),
+            profiles=(
+                StandardsProfile(
+                    profile_id="synthetic_profile",
+                    standards=(STANDARD_ID,),
+                    subject="English Language Arts",
+                    course="English 12",
+                    source="NJSLS",
+                    title="Synthetic Profile",
+                ),
+            ),
+        ),
     )
 
 def _write_comment_bank(root: Path) -> None:
     bank_path = root / "shared" / "comment_banks" / f"{BANK_ID}.json"
     bank_path.parent.mkdir(parents=True, exist_ok=True)
     bank_path.write_text(
-    EXAMPLE_BANK_PATH.read_text(encoding="utf-8"),
-    encoding="utf-8",
+        EXAMPLE_BANK_PATH.read_text(encoding="utf-8"),
+        encoding="utf-8",
     )
 
 def _response_payload(*, student_id: str = STUDENT_ID, page: int = 1) -> str:
     return (
-    "PDS1|module=quillan|doc=response|"
-    f"class={CLASS_ID}|aid={ASSIGNMENT_ID}|"
-    f"sid={student_id}|page={page}"
+        "PDS1|module=quillan|doc=response|"
+        f"class={CLASS_ID}|aid={ASSIGNMENT_ID}|"
+        f"sid={student_id}|page={page}"
     )
 
 def _source_scan(root: Path) -> Path:
@@ -164,17 +178,17 @@ def _source_scan(root: Path) -> Path:
     return source_path
 
 def test_v080_scan_review_export_end_to_end_smoke(
-workspace: Path,
-capsys: pytest.CaptureFixture[str],
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Exercise the integrated v0.8.0 teacher-controlled workflow path."""
     assignment_path = (
-    workspace
-    / "classes"
-    / CLASS_ID
-    / "assignments"
-    / ASSIGNMENT_ID
-    / "assignment.json"
+        workspace
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "assignment.json"
     )
     assert assignment_path.is_file()
 
@@ -263,8 +277,8 @@ capsys: pytest.CaptureFixture[str],
             "claim",
             "--polarity",
             "positive",
-            "--standard",
-            STANDARD_CODE,
+            "--standard-id",
+            STANDARD_ID,
             "--note",
             "Claim is clear and defensible.",
             "--page",
@@ -330,7 +344,7 @@ capsys: pytest.CaptureFixture[str],
     review = json.loads(review_path.read_text(encoding="utf-8"))
     assert review["review_state"] == "in_progress"
     assert review["notes"][0]["text"] == "Teacher observation: the claim is clear."
-    assert review["tags"][0]["standard_code"] == STANDARD_CODE
+    assert review["tags"][0]["standard_id"] == STANDARD_ID
     assert review["tags"][0]["label"] == "claim"
     assert review["tags"][0]["evidence_id"] == selected_evidence_id
     assert review["comments"][0]["source"] == "comment_bank"
@@ -400,7 +414,7 @@ capsys: pytest.CaptureFixture[str],
     assert "in_progress" in class_summary_text
 
     standards_summary_text = standards_summary_path.read_text(encoding="utf-8")
-    assert STANDARD_CODE in standards_summary_text
+    assert STANDARD_ID in standards_summary_text
     assert "student_count" in standards_summary_text
     assert "tag_student_count" in standards_summary_text
     assert "positive_tag_count" in standards_summary_text
