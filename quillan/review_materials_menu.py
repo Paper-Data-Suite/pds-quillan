@@ -33,7 +33,9 @@ def launch_review_materials_menu() -> int:
 
                 launch_comment_banks_menu()
             elif choice == "2":
-                _show_tag_banks_info()
+                from quillan.tag_bank_workflows import launch_tag_banks_menu
+
+                launch_tag_banks_menu()
             elif choice == "3":
                 _show_rubrics_info()
             elif choice == "4":

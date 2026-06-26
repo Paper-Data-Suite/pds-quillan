@@ -170,9 +170,9 @@ silently replace existing notes.
 ## Tags
 
 `tags` contains teacher-created or teacher-confirmed observations. A tag may
-refer to a standard, reusable comment, page, evidence candidate, location, or
-the whole submission. It is not a score, proof that a standard was met or
-missed, or an instruction to calculate a score.
+refer to a standard, reusable tag template, reusable comment, page, evidence
+candidate, location, or the whole submission. It is not a score, proof that a
+standard was met or missed, or an instruction to calculate a score.
 
 Each tag contains:
 
@@ -206,6 +206,10 @@ Required tag fields are:
 
 Optional tag fields are:
 
+* `source`;
+* `tag_bank_id`;
+* `tag_template_id`;
+* `criterion_id`;
 * `standard_id`;
 * `comment_id`;
 * `severity`;
@@ -223,6 +227,13 @@ Tag field rules are:
   not a score.
 * `teacher_note`, when present, is a non-empty string.
 * `page_number`, when present, is a positive integer.
+* `source`, when present, is one of `tag_bank` or `custom`.
+* `tag_bank_id` and `tag_template_id` are required when `source` is
+  `tag_bank`. They identify the source file under
+  `shared/tag_banks/<tag_bank_id>.json` and the selected template inside that
+  bank.
+* `criterion_id`, when present, is optional rubric/scoring metadata and is not
+  validated against a rubric profile in schema version `1`.
 * `standard_id` and `comment_id`, when present, are non-empty strings.
   `standard_id` is pds-core provenance; `comment_id` identifies reusable
   Quillan comment-bank language when paired with `bank_id`.
@@ -258,6 +269,32 @@ For `whole_submission`, `value` must be `null`. For `page`, `paragraph`,
 `scene`, `stanza`, and `custom`, `value` must be either a positive integer or
 a non-empty string. A `page` location must agree with `page_number` when both
 are present.
+
+### Reusable Tag Snapshots
+
+When a teacher selects a reusable tag from a Quillan tag bank, the review
+record stores a snapshot, not a live reference:
+
+```json
+{
+  "tag_id": "tag_0001",
+  "source": "tag_bank",
+  "tag_bank_id": "general_written_response_tags",
+  "tag_template_id": "explanation_needs_more_detail",
+  "label": "Explanation needs more detail",
+  "polarity": "developing",
+  "criterion_id": "explanation",
+  "severity": 2,
+  "teacher_note": "The explanation names the idea but does not explain why it matters.",
+  "created_at": "2026-06-26T00:00:00+00:00",
+  "module_details": {}
+}
+```
+
+Later edits to the source tag bank do not rewrite prior review records.
+Optional reusable-template `standard_ids` remain pds-core durable references
+only, and optional `criterion_ids` remain rubric/scoring metadata only.
+Existing direct CLI tags may omit `source` and all tag-bank provenance fields.
 
 Tags are append-only for the MVP. Editing, deletion, deduplication, and any
 interpretation of severity are future work. Tags must never calculate or

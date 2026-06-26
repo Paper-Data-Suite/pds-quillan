@@ -13,6 +13,12 @@ from quillan.cli import main
 import quillan.comment_bank_workflows as comment_bank_workflows
 import quillan.review_menu as review_menu
 from quillan.review_record_paths import review_record_path, write_review_record
+from quillan.tag_bank_writing import (
+    build_tag_bank,
+    build_tag_category,
+    build_tag_template,
+    write_tag_bank,
+)
 from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
@@ -157,6 +163,34 @@ def _write_bank(root: Path) -> None:
     bank_path.write_text(EXAMPLE_BANK_PATH.read_text(encoding="utf-8"), encoding="utf-8")
 
 
+def _write_tag_bank(root: Path) -> None:
+    category = build_tag_category(
+        category_id="reasoning_explanation",
+        label="Reasoning / Explanation",
+        description="Teacher observations about reasoning.",
+    )
+    tag = build_tag_template(
+        tag_template_id="explanation_needs_more_detail",
+        label="Explanation needs more detail",
+        category_id="reasoning_explanation",
+        polarity="developing",
+        optional_metadata={
+            "severity_default": 2,
+            "criterion_ids": ["explanation"],
+            "teacher_note_prompt": "What part needs more detail?",
+        },
+    )
+    bank = build_tag_bank(
+        tag_bank_id="general_written_response_tags",
+        title="General Written Response Tags",
+        description="Reusable synthetic tag templates.",
+        writing_types=["general"],
+        categories=[category],
+        tags=[tag],
+    )
+    write_tag_bank(root, bank)
+
+
 def _write_review_record(root: Path, review: dict[str, Any]) -> Path:
     path = review_record_path(root, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
     return write_review_record(path, review)
@@ -259,6 +293,50 @@ def test_review_menu_adds_structured_tag_to_review_record(
     assert review["tags"][0]["label"] == "claim"
     assert review["tags"][0]["polarity"] == "positive"
     assert review["review_state"] == "in_progress"
+
+
+def test_review_menu_selects_reusable_tag_by_bank_and_category(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_tag_bank(workspace)
+    manifest_path = submission_manifest_path(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    )
+    manifest_before = manifest_path.read_bytes()
+
+    _menu_input(
+        monkeypatch,
+        _enter_selected_student()
+        + ["3", "1", "1", "1", "1", "The explanation names the idea only."]
+        + _exit_after_selected_student_action_to_main(),
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "General Written Response Tags" in output
+    assert "Explanation needs more detail" in output
+    review = json.loads(
+        review_record_path(
+            workspace,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+        ).read_text(encoding="utf-8")
+    )
+    tag = review["tags"][0]
+    assert tag["source"] == "tag_bank"
+    assert tag["tag_bank_id"] == "general_written_response_tags"
+    assert tag["tag_template_id"] == "explanation_needs_more_detail"
+    assert tag["label"] == "Explanation needs more detail"
+    assert tag["polarity"] == "developing"
+    assert tag["severity"] == 2
+    assert tag["criterion_id"] == "explanation"
+    assert tag["teacher_note"] == "The explanation names the idea only."
+    assert "standard_id" not in tag
+    assert review["review_state"] == "in_progress"
+    assert manifest_path.read_bytes() == manifest_before
 
 
 def test_review_menu_blank_tag_cancels_without_review_record(

@@ -317,6 +317,49 @@ def test_duplicate_tag_id_is_rejected() -> None:
         validate_review_record(record)
 
 
+def test_tag_bank_provenance_and_criterion_id_are_valid() -> None:
+    record = _record()
+    tag = _tag()
+    tag.update(
+        {
+            "source": "tag_bank",
+            "tag_bank_id": "general_written_response_tags",
+            "tag_template_id": "explanation_needs_more_detail",
+            "criterion_id": "explanation",
+        }
+    )
+    record["tags"] = [tag]
+
+    validate_review_record(record)
+
+
+@pytest.mark.parametrize(
+    ("field", "message"),
+    [
+        ("tag_bank_id", "tag_bank_id"),
+        ("tag_template_id", "tag_template_id"),
+    ],
+)
+def test_tag_bank_source_requires_provenance_fields(
+    field: str,
+    message: str,
+) -> None:
+    record = _record()
+    tag = _tag()
+    tag.update(
+        {
+            "source": "tag_bank",
+            "tag_bank_id": "general_written_response_tags",
+            "tag_template_id": "explanation_needs_more_detail",
+        }
+    )
+    del tag[field]
+    record["tags"] = [tag]
+
+    with pytest.raises(ReviewRecordError, match=message):
+        validate_review_record(record)
+
+
 @pytest.mark.parametrize(
     "location",
     [
