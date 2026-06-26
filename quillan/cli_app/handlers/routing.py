@@ -6,11 +6,15 @@ import argparse
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from collections.abc import Callable
 from typing import Literal, cast
 
 import cv2
 from pds_core.pds1 import Pds1PayloadError, parse_pds1_payload
-from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
+from pds_core.workspace import (
+    WorkspaceRootError,
+    resolve_workspace_root as _resolve_workspace_root,
+)
 
 from quillan.cli_app.output import (
     print_evidence_filing_review,
@@ -67,6 +71,11 @@ from quillan.scan_intake_summary import (
 SUPPORTED_SCAN_EXTENSIONS = frozenset({*SUPPORTED_IMAGE_EXTENSIONS, ".pdf"})
 
 
+def resolve_workspace_root() -> Path:
+    """Resolve the workspace through pds-core for routing and menu workflows."""
+    return _resolve_workspace_root()
+
+
 def handle_route_scan(args: argparse.Namespace) -> int:
     """Route source scans from caller-supplied payload text or QR."""
     source_file: Path = args.source_file
@@ -117,6 +126,7 @@ def run_qr_scan_intake(
     workspace_root: Path | None = None,
     *,
     created_at: datetime | None = None,
+    on_summary: Callable[[ScanIntakeSummary], None] | None = None,
 ) -> int:
     """Run QR-aware scan intake for one image, PDF, or direct child folder."""
     intake_timestamp = (
@@ -141,6 +151,7 @@ def run_qr_scan_intake(
             resolved_workspace_root,
             source_folder=source_path,
             created_at=intake_timestamp,
+            on_summary=on_summary,
         )
     if not _validate_source_file(source_path):
         return 1
@@ -148,6 +159,7 @@ def run_qr_scan_intake(
         resolved_workspace_root,
         source_file=source_path,
         created_at=intake_timestamp,
+        on_summary=on_summary,
     )
 
 
@@ -156,6 +168,7 @@ def _route_source_file_qr(
     *,
     source_file: Path,
     created_at: datetime,
+    on_summary: Callable[[ScanIntakeSummary], None] | None = None,
 ) -> int:
     source_result = _intake_source_file_qr(
         workspace_root,
@@ -166,6 +179,8 @@ def _route_source_file_qr(
     print()
     print(format_scan_intake_summary(summary))
     _print_submission_assembly_next_steps(summary)
+    if on_summary is not None:
+        on_summary(summary)
     return 1 if summary.has_failures else 0
 
 
@@ -174,6 +189,7 @@ def _route_source_folder_qr(
     *,
     source_folder: Path,
     created_at: datetime,
+    on_summary: Callable[[ScanIntakeSummary], None] | None = None,
 ) -> int:
     if not _validate_source_folder(source_folder):
         return 1
@@ -212,6 +228,8 @@ def _route_source_folder_qr(
     )
     print(format_scan_intake_summary(summary))
     _print_submission_assembly_next_steps(summary)
+    if on_summary is not None:
+        on_summary(summary)
     return 1 if summary.has_failures else 0
 
 

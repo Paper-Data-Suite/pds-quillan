@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +9,12 @@ from pds_core.classes import list_class_folders, load_class_roster
 from pds_core.rosters import RosterError
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
+from quillan.assignment_picker import (
+    AssignmentChoice,
+    available_assignments,
+    prompt_assignment_choice,
+)
+from quillan.assignment_submission_assembly import assemble_assignment_submissions
 from quillan.assignments import AssignmentConfigError, load_assignment_config
 from quillan.class_summary_export import (
     ClassSummaryExportError,
@@ -45,7 +50,6 @@ from quillan.review_record import (
 from quillan.review_record_paths import review_record_path
 from quillan.review_scores import ReviewScoreError, set_review_score
 from quillan.review_tags import ReviewTagError, add_review_tag
-from quillan.storage import assignment_config_path
 from quillan.submission_review_opening import (
     SubmissionReviewOpeningError,
     open_student_submission_for_review,
@@ -60,14 +64,6 @@ from quillan.submission_status import (
     StudentSubmissionStatus,
     list_assignment_submission_status,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class AssignmentChoice:
-    """One assignment available for teacher review navigation."""
-
-    assignment_id: str
-    title: str | None
 
 
 def launch_review_student_work_menu() -> int:
@@ -109,17 +105,13 @@ def _run_review_selection_workflow() -> int:
     if workspace_root is None:
         return 1
 
-    class_id = _prompt_class_id(workspace_root)
-    if class_id is None:
-        return 0
-
-    assignment = _prompt_assignment(workspace_root, class_id)
+    assignment = prompt_assignment_choice(workspace_root)
     if assignment is None:
         return 0
 
     return _launch_assignment_review_actions(
         workspace_root,
-        class_id,
+        assignment.class_id,
         assignment.assignment_id,
     )
 
@@ -196,30 +188,8 @@ def _available_assignments(
     workspace_root: Path,
     class_id: str,
 ) -> tuple[AssignmentChoice, ...]:
-    assignments_dir = workspace_root / "classes" / class_id / "assignments"
-    if not assignments_dir.is_dir():
-        return ()
-
-    choices: list[AssignmentChoice] = []
-    for assignment_dir in sorted(
-        (path for path in assignments_dir.iterdir() if path.is_dir()),
-        key=lambda path: path.name.casefold(),
-    ):
-        config_path = assignment_config_path(
-            workspace_root,
-            class_id,
-            assignment_dir.name,
-        )
-        if not config_path.is_file():
-            continue
-        title = _load_assignment_title(config_path)
-        choices.append(
-            AssignmentChoice(
-                assignment_id=assignment_dir.name,
-                title=title,
-            )
-        )
-    return tuple(choices)
+    """Compatibility wrapper for callers of the original review helper."""
+    return available_assignments(workspace_root, class_id)
 
 
 def _load_assignment_title(config_path: Path) -> str | None:
@@ -340,6 +310,56 @@ def _launch_selected_student_review(
             student_id,
         )
         print()
+        status = _load_submission_status(workspace_root, class_id, assignment_id)
+        student_status = _student_submission_status(status, student_id)
+        if student_status is None:
+            print("No routed evidence has been found for this student yet.")
+            print(
+                "Route a scan for this assignment, then assemble submissions "
+                "before review."
+            )
+            print()
+            print("1. View routed evidence status")
+            print("2. Refresh summary")
+            print("3. Back")
+            print()
+            choice = input("Select an option: ").strip()
+            print()
+            if choice in {"", "3"}:
+                return 0
+            if choice in {"1", "2"}:
+                continue
+            print("Invalid selection. Please enter a number from 1 to 3.")
+            input("Press Enter to continue...")
+            continue
+        if student_status.manifest_path is None:
+            print(
+                "This student has routed evidence, but the review-ready "
+                "submission record has not been assembled yet."
+            )
+            print(
+                "Assemble submissions before reviewing, tagging, scoring, "
+                "or exporting."
+            )
+            print()
+            print("1. Assemble this assignment now")
+            print("2. View routed evidence status")
+            print("3. Refresh summary")
+            print("4. Back")
+            print()
+            choice = input("Select an option: ").strip()
+            print()
+            if choice in {"", "4"}:
+                return 0
+            if choice == "1":
+                _assemble_assignment(workspace_root, class_id, assignment_id)
+                input("Press Enter to continue...")
+            elif choice in {"2", "3"}:
+                continue
+            else:
+                print("Invalid selection. Please enter a number from 1 to 4.")
+                input("Press Enter to continue...")
+            continue
         print("1. Open submission evidence")
         print("2. Add teacher note")
         print("3. Add structured tag")
@@ -417,6 +437,33 @@ def _launch_selected_student_review(
         else:
             print("Invalid selection. Please enter a number from 1 to 9.")
             input("Press Enter to continue...")
+
+
+def _student_submission_status(
+    status: AssignmentSubmissionStatus | None, student_id: str
+) -> StudentSubmissionStatus | None:
+    if status is None:
+        return None
+    return next(
+        (item for item in status.student_statuses if item.student_id == student_id),
+        None,
+    )
+
+
+def _assemble_assignment(
+    workspace_root: Path, class_id: str, assignment_id: str
+) -> None:
+    """Assemble routed evidence without replacing existing teacher records."""
+    from quillan.cli_app.output import print_assignment_submission_assembly
+
+    try:
+        result = assemble_assignment_submissions(
+            workspace_root, class_id, assignment_id, overwrite=False
+        )
+    except Exception as error:
+        print(f"Error: could not assemble submissions: {error}")
+        return
+    print_assignment_submission_assembly(result, workspace_root)
 
 
 def _menu_add_review_note(
@@ -1086,16 +1133,17 @@ def _launch_assignment_review_actions(
         print()
 
         print("1. Select student/submission")
-        print("2. Export class review summary")
-        print("3. Export standards summary")
-        print("4. Refresh submission status")
-        print("5. Back")
+        print("2. Assemble routed submissions")
+        print("3. Export class review summary")
+        print("4. Export standards summary")
+        print("5. Refresh submission status")
+        print("6. Back")
         print()
 
         choice = input("Select an option: ").strip()
         print()
 
-        if choice in {"", "5"}:
+        if choice in {"", "6"}:
             return 0
         elif choice == "1":
             student_id = _prompt_student_id(workspace_root, class_id, status)
@@ -1107,13 +1155,16 @@ def _launch_assignment_review_actions(
                     student_id,
                 )
         elif choice == "2":
-            _menu_export_class_summary(workspace_root, class_id, assignment_id)
+            _assemble_assignment(workspace_root, class_id, assignment_id)
             input("Press Enter to continue...")
         elif choice == "3":
-            _menu_export_standards_summary(workspace_root, class_id, assignment_id)
+            _menu_export_class_summary(workspace_root, class_id, assignment_id)
             input("Press Enter to continue...")
         elif choice == "4":
+            _menu_export_standards_summary(workspace_root, class_id, assignment_id)
+            input("Press Enter to continue...")
+        elif choice == "5":
             continue
         else:
-            print("Invalid selection. Please enter a number from 1 to 5.")
+            print("Invalid selection. Please enter a number from 1 to 6.")
             input("Press Enter to continue...")

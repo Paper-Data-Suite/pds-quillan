@@ -206,7 +206,7 @@ def test_narrow_review_state_transition(
         ("missing_bank", "not found"),
         ("invalid_bank", "not valid JSON"),
         ("missing_comment", "has no comment"),
-        ("missing_submission", "does not exist"),
+        ("missing_submission", "not review-ready yet"),
         ("invalid_review", "not valid JSON"),
     ],
 )

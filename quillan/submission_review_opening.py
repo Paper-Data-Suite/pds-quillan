@@ -15,6 +15,7 @@ from quillan.submission_manifest_paths import (
     SubmissionManifestPathError,
     submission_manifest_path,
 )
+from quillan.submission_guidance import missing_submission_guidance
 
 
 class SubmissionReviewOpeningError(Exception):
@@ -57,10 +58,7 @@ def open_student_submission_for_review(
         raise SubmissionReviewOpeningError(str(error)) from error
 
     if not manifest_path.exists():
-        raise SubmissionReviewOpeningError(
-            "Submission manifest does not exist for "
-            f"class={class_id}, assignment={assignment_id}, student={student_id}."
-        )
+        raise SubmissionReviewOpeningError(missing_submission_guidance())
 
     try:
         manifest = load_submission_manifest(manifest_path)

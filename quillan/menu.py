@@ -7,6 +7,8 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
+from pds_core.scan_routes import scans_inbox_dir
+
 WorkspaceShowHandler = Callable[[], int]
 WorkspaceSetHandler = Callable[[str], int]
 WorkspaceActionHandler = Callable[[], int]
@@ -99,21 +101,152 @@ def _normalize_menu_path(raw_path: str) -> Path | None:
 
 
 def launch_scan_intake_workflow() -> None:
-    """Prompt for a scan source and run QR-aware routing intake."""
-    from quillan.cli_app.handlers.routing import run_qr_scan_intake
+    """Route scans from the shared inbox, with a power-user path fallback."""
+    from quillan.assignment_submission_assembly import assemble_assignment_submissions
+    from quillan.cli_app.handlers import routing
+    from quillan.cli_app.output import print_assignment_submission_assembly
+    from quillan.intake_assembly import assembly_targets_from_intake_summary
+    from quillan.scan_intake_summary import ScanIntakeSummary
 
-    clear_screen()
-    print_menu_header("Scan Intake / Route Paper Responses")
-    raw_source_path = input("Scan file or folder path (leave blank to cancel): ")
-    print()
+    try:
+        workspace_root = routing.resolve_workspace_root()
+    except Exception as error:
+        clear_screen()
+        print_menu_header("Scan Intake / Route Paper Responses")
+        print(f"Error: could not resolve the PDS workspace: {error}")
+        print()
+        pause_for_user()
+        return
+    inbox = scans_inbox_dir(workspace_root)
+    inbox.mkdir(parents=True, exist_ok=True)
+    exit_to_main = False
 
-    source_path = _normalize_menu_path(raw_source_path)
-    if source_path is None:
-        print("Scan intake canceled. No scan files were routed.")
-    else:
-        run_qr_scan_intake(source_path)
-    print()
-    pause_for_user()
+    def post_route(summary: ScanIntakeSummary) -> None:
+        nonlocal exit_to_main
+        targets = assembly_targets_from_intake_summary(summary)
+        if not targets:
+            return
+        while True:
+            print()
+            print("Scan routed successfully.")
+            print("Routed evidence was filed for:")
+            for index, target in enumerate(targets, start=1):
+                print(
+                    f"{index}. Class: {target.class_id}; "
+                    f"Assignment: {target.assignment_id}"
+                )
+            print()
+            print("Submission records are required before review.")
+            if len(targets) == 1:
+                print("1. Assemble submissions now")
+                print("2. View submission status")
+                print("3. Return to Scan Intake")
+                print("4. Back to Main Menu")
+                choice = input("Select an option: ").strip()
+                if choice == "1":
+                    target = targets[0]
+                    result = assemble_assignment_submissions(
+                        workspace_root, target.class_id, target.assignment_id
+                    )
+                    print_assignment_submission_assembly(result, workspace_root)
+                    continue
+                if choice == "2":
+                    from quillan.submission_status import list_assignment_submission_status
+                    from quillan.cli_app.output import print_assignment_submission_status
+
+                    target = targets[0]
+                    print_assignment_submission_status(
+                        list_assignment_submission_status(
+                            workspace_root, target.class_id, target.assignment_id
+                        ),
+                        workspace_root,
+                    )
+                    continue
+                if choice == "4":
+                    exit_to_main = True
+                return
+            print(
+                "Choose a numbered target to assemble it, or B to return "
+                "to Scan Intake."
+            )
+            choice = input("Select target: ").strip()
+            if choice == "" or choice.casefold() == "b":
+                return
+            if choice.isdigit() and 1 <= int(choice) <= len(targets):
+                target = targets[int(choice) - 1]
+                result = assemble_assignment_submissions(
+                    workspace_root, target.class_id, target.assignment_id
+                )
+                print_assignment_submission_assembly(result, workspace_root)
+            else:
+                print(
+                    "Invalid selection. Please choose a routed assignment "
+                    "or Back."
+                )
+
+    while True:
+        clear_screen()
+        print_menu_header("Scan Intake / Route Paper Responses")
+        print(f"Scan inbox:\n{inbox}\n")
+        scans = sorted(
+            (
+                path
+                for path in inbox.iterdir()
+                if path.is_file()
+                and path.suffix.casefold() in routing.SUPPORTED_SCAN_EXTENSIONS
+            ),
+            key=lambda path: path.name.casefold(),
+        )
+        if scans:
+            print("Available scans:")
+            for index, scan in enumerate(scans, start=1):
+                print(f"{index}. {scan.name}")
+        else:
+            print("No supported scans found in scans_inbox.")
+            print(f"\nPlace scanned PDFs or images in:\n{inbox}")
+        print("C. Choose custom file/folder path")
+        print("R. Refresh")
+        print("B. Back")
+        print()
+        selection = input("Select scan: ").strip()
+        if selection.casefold() == "b":
+            return
+        if selection == "":
+            print("Scan intake canceled. No scan files were routed.")
+            print()
+            pause_for_user()
+            return
+        selected_inbox_scan = False
+        if selection.casefold() == "r":
+            continue
+        if selection.casefold() == "c":
+            source_path = _normalize_menu_path(
+                input("Scan file or folder path (leave blank to cancel): ")
+            )
+            if source_path is None:
+                print("Scan intake canceled. No scan files were routed.")
+                pause_for_user()
+                continue
+        elif selection.isdigit() and 1 <= int(selection) <= len(scans):
+            source_path = scans[int(selection) - 1]
+            selected_inbox_scan = True
+        else:
+            # Preserve pasted-path convenience for experienced users of earlier menus.
+            source_path = _normalize_menu_path(selection)
+            if source_path is None:
+                print("Invalid selection. Please choose a scan, C, R, or B.")
+                pause_for_user()
+                continue
+        print()
+        routing.run_qr_scan_intake(
+            source_path,
+            workspace_root,
+            on_summary=post_route if selected_inbox_scan else None,
+        )
+        print()
+        pause_for_user()
+        if exit_to_main:
+            return
 
 
 def launch_review_student_work_menu() -> None:

@@ -27,6 +27,7 @@ from quillan.submission_manifest_paths import (
     SubmissionManifestPathError,
     submission_manifest_path,
 )
+from quillan.submission_guidance import missing_submission_guidance
 
 _SEQUENTIAL_NOTE_ID = re.compile(r"^note_(\d{4})$")
 
@@ -85,10 +86,7 @@ def add_review_note(
         raise ReviewNoteError(str(error)) from error
 
     if not manifest_path.exists():
-        raise ReviewNoteError(
-            "Submission manifest does not exist for "
-            f"class={class_id}, assignment={assignment_id}, student={student_id}."
-        )
+        raise ReviewNoteError(missing_submission_guidance())
 
     try:
         manifest = load_submission_manifest(manifest_path)

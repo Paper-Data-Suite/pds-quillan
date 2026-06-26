@@ -306,3 +306,13 @@ caller-supplied decoded-payload slice. Canonical retained sources belong in
 `scans/source/YYYY-MM-DD/`, canonical failure records belong in
 `scans/review/`, and assignment-level `scans/` contains routed evidence. QR
 recognition, PDF splitting, batch raw-scan intake, and OCR remain future work.
+
+## Scan Intake and Submission Assembly
+
+`scans_inbox/` is the shared teacher drop zone for scans awaiting routing. Quillan
+creates it on entry to Scan Intake and never moves or deletes its source files.
+Routed assignment evidence belongs under the assignment's `scans/` directory.
+That evidence is not review-ready until explicit assembly writes
+`submissions/<student_id>/submission.json`. Assembly skips existing submission
+files by default; regenerating an existing submission is an explicit destructive
+choice because it can replace the submission record.

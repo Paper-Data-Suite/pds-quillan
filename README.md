@@ -864,6 +864,17 @@ Quillan's scan intake routes QR-identified paper responses. It does not read the
 
 Quillan's review tools record teacher decisions. They do not replace teacher judgment.
 
+## Guided Paper-Response Workflow
+
+From the Quillan menu, teachers select assignments by class and assignment name;
+they do not normally need to paste an `assignment.json` path. Scan Intake creates
+and lists the shared workspace `scans_inbox/` drop zone. Select a PDF or supported
+image there (or use the custom-path fallback), route its QR-bearing pages, then
+choose **Assemble submissions**. Routing preserves source scans and files routed
+evidence; assembly creates the review-ready `submission.json` record. Existing
+submission records are skipped by default, so teacher review records are not
+replaced. Review actions become available only after assembly.
+
 ## Development Workflow
 
 Use issue branches for changes:

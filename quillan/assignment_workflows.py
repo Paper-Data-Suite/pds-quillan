@@ -26,6 +26,7 @@ from quillan.assignments import (
     load_assignment_config,
     validate_assignment_config,
 )
+from quillan.assignment_picker import prompt_assignment_choice
 from quillan.storage import assignment_config_path
 
 _NUMERIC_REQUIREMENTS = (
@@ -378,21 +379,23 @@ def _normalize_path_input(value: str) -> str:
 
 
 def prompt_view_validate_assignment() -> int:
-    """Load, validate, and summarize an explicit assignment JSON path."""
+    """Select, load, validate, and summarize a canonical assignment config."""
     from quillan.menu import print_menu_header
 
     print_menu_header("View/Validate Assignment")
-    assignment_path = _normalize_path_input(input("Assignment JSON path: "))
-    if not assignment_path:
-        print("Error: assignment JSON path is required.")
+    workspace_root = _workspace_root()
+    if workspace_root is None:
         return 1
+    choice = prompt_assignment_choice(workspace_root)
+    if choice is None:
+        return 0
     try:
-        assignment = load_assignment_config(assignment_path)
+        assignment = load_assignment_config(choice.path)
     except (AssignmentConfigError, OSError) as error:
         print(f"Error: {error}")
         return 1
     print("Assignment config is valid.")
-    print(format_assignment_summary(assignment, assignment_path))
+    print(format_assignment_summary(assignment, choice.path))
     return 0
 
 

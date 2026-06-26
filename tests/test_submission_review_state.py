@@ -168,7 +168,7 @@ def test_invalid_state_raises_without_rewriting(tmp_path: Path) -> None:
 
 
 def test_missing_manifest_raises(tmp_path: Path) -> None:
-    with pytest.raises(SubmissionReviewStateError, match="does not exist"):
+    with pytest.raises(SubmissionReviewStateError, match="not review-ready yet"):
         update_submission_review_state(
             tmp_path,
             CLASS_ID,

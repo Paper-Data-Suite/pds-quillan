@@ -453,6 +453,16 @@ Each phase should add focused tests for validation, traversal resistance,
 collision races, preservation on failure, and the absence of unintended
 submission mutations.
 
+## Teacher Menu Intake
+
+The teacher-facing Scan Intake menu creates and uses `<workspace>/scans_inbox/`
+as a direct-child scan drop zone. It lists supported `.pdf`, `.png`, `.jpg`,
+`.jpeg`, `.tif`, and `.tiff` files without moving or deleting them. A custom
+file/folder path remains available for advanced use. Successful routing files
+routed evidence only; it does not create a review-ready submission, infer a
+score, or update review state. The menu offers explicit submission assembly for
+each routed class/assignment target.
+
 ## Out of Scope
 
 The v0.6 reviewable-evidence workflow does not implement:

@@ -137,7 +137,7 @@ def test_success_opens_selected_evidence_and_returns_context(
 
 
 def test_missing_manifest_raises(tmp_path: Path) -> None:
-    with pytest.raises(SubmissionReviewOpeningError, match="does not exist"):
+    with pytest.raises(SubmissionReviewOpeningError, match="not review-ready yet"):
         open_student_submission_for_review(
             tmp_path,
             CLASS_ID,
@@ -379,4 +379,4 @@ def test_cli_missing_manifest_returns_one(
     assert (
         main(["open-submission", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 1
     )
-    assert "Submission manifest does not exist" in capsys.readouterr().out
+    assert "This submission is not review-ready yet" in capsys.readouterr().out

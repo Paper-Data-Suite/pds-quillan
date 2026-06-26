@@ -330,7 +330,7 @@ def test_blank_text_is_rejected_without_creating_review(
 def test_missing_submission_is_rejected_without_creating_review(
     tmp_path: Path,
 ) -> None:
-    with pytest.raises(ReviewNoteError, match="does not exist"):
+    with pytest.raises(ReviewNoteError, match="not review-ready yet"):
         add_review_note(
             tmp_path,
             CLASS_ID,
