@@ -192,7 +192,7 @@ def test_main_menu_shows_and_opens_review_student_work(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["5", "2", "8"])
+    _menu_input(monkeypatch, ["5", "2", "9"])
 
     assert main(["menu"]) == 0
 
@@ -220,7 +220,7 @@ def test_review_workflow_selects_context_and_shows_read_only_summary(
         for path in workspace.rglob("*")
         if path.is_file()
     )
-    _menu_input(monkeypatch, ["5", "1", "1", "1", "1", "1", "9", "6", "", "2", "8"])
+    _menu_input(monkeypatch, ["5", "1", "1", "1", "1", "1", "9", "6", "", "2", "9"])
 
     assert main(["menu"]) == 0
 
@@ -265,7 +265,7 @@ def test_review_summary_includes_existing_review_record_counts(
     review_before = review_path.read_bytes()
     _menu_input(
         monkeypatch,
-        ["5", "1", "1", "1", "1", "1", "9", "6", "", "2", "8"],
+        ["5", "1", "1", "1", "1", "1", "9", "6", "", "2", "9"],
     )
 
     assert main(["menu"]) == 0
@@ -313,7 +313,7 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
     )
     _menu_input(
         monkeypatch,
-        ["5", "1", "1", "1", "1", "1", "1", "", "9", "6", "", "2", "8"],
+        ["5", "1", "1", "1", "1", "1", "1", "", "9", "6", "", "2", "9"],
     )
 
     assert main(["menu"]) == 0
@@ -331,7 +331,7 @@ def test_review_menu_reports_missing_openable_evidence(
 ) -> None:
     _menu_input(
         monkeypatch,
-        ["5", "1", "1", "1", "1", "2", "1", "", "6", "", "2", "8"],
+        ["5", "1", "1", "1", "1", "2", "1", "", "6", "", "2", "9"],
     )
 
     assert main(["menu"]) == 0
@@ -366,7 +366,7 @@ def test_review_menu_adds_teacher_note_to_review_record(
             "6",
             "",
             "2",
-            "8",
+            "9",
         ],
     )
 
@@ -409,7 +409,7 @@ def test_review_menu_updates_submission_review_state(
             "6",
             "",
             "2",
-            "8",
+            "9",
         ],
     )
 
@@ -431,7 +431,7 @@ def test_review_menu_no_classes_and_invalid_selection_back_out_safely(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(review_menu, "resolve_workspace_root", lambda: tmp_path)
-    _menu_input(monkeypatch, ["5", "9", "", "1", "", "2", "8"])
+    _menu_input(monkeypatch, ["5", "9", "", "1", "", "2", "9"])
 
     assert main(["menu"]) == 0
 

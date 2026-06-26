@@ -256,6 +256,13 @@ def launch_review_student_work_menu() -> None:
     launch()
 
 
+def launch_review_materials_menu() -> None:
+    """Launch the teacher-facing review materials preparation menu."""
+    from quillan.review_materials_menu import launch_review_materials_menu as launch
+
+    launch()
+
+
 def launch_workspace_menu(
     workspace_show: WorkspaceShowHandler,
     workspace_set: WorkspaceSetHandler,
@@ -331,9 +338,10 @@ def launch_menu(
             print("3. Printable Response Pages")
             print("4. Scan Intake / Route Paper Responses")
             print("5. Review Student Work")
-            print("6. Workspace Settings")
-            print("7. Help")
-            print("8. Exit")
+            print("6. Review Materials")
+            print("7. Workspace Settings")
+            print("8. Help")
+            print("9. Exit")
             print()
 
             choice = input("Select an option: ").strip()
@@ -350,22 +358,24 @@ def launch_menu(
             elif choice == "5":
                 launch_review_student_work_menu()
             elif choice == "6":
+                launch_review_materials_menu()
+            elif choice == "7":
                 launch_workspace_menu(
                     workspace_show,
                     workspace_set,
                     workspace_validate,
                     workspace_reset,
                 )
-            elif choice == "7":
+            elif choice == "8":
                 clear_screen()
                 print_menu_help()
                 print()
                 pause_for_user()
-            elif choice == "8":
+            elif choice == "9":
                 print("Goodbye.")
                 return 0
             else:
-                print("Invalid selection. Please enter a number from 1 to 8.")
+                print("Invalid selection. Please enter a number from 1 to 9.")
                 print()
                 pause_for_user()
     except KeyboardInterrupt:

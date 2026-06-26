@@ -32,6 +32,7 @@ Quillan currently supports:
 * teacher-facing class roster creation, viewing, staged editing, and validation through the Roster Management menu;
 * teacher-facing writing assignment config creation and validation through the Assignment Management menu;
 * teacher-facing generation of one combined printable response class packet from an existing canonical roster and assignment config;
+* teacher-facing Review Materials guidance for reusable review aids;
 * shared Paper Data Suite workspace status reporting;
 * assignment-local storage paths based on shared `pds-core` route helpers;
 * decoded response-page route planning that validates class, assignment, roster, and student relationships before writing routed evidence;
@@ -146,9 +147,10 @@ The current top-level menu is:
 3. Printable Response Pages
 4. Scan Intake / Route Paper Responses
 5. Review Student Work
-6. Workspace Settings
-7. Help
-8. Exit
+6. Review Materials
+7. Workspace Settings
+8. Help
+9. Exit
 ```
 
 ### Assignment Management
@@ -262,6 +264,18 @@ The selected-student review menu is:
 These guided actions reuse the same underlying services and data contracts as the direct CLI commands. The menu does not implement separate export logic, scoring logic, routing logic, or AI logic.
 
 Guided export actions preserve overwrite protection. Existing export files are not replaced unless the teacher explicitly confirms overwrite behavior. Invalid overwrite responses cancel safely.
+
+### Review Materials
+
+The Review Materials menu is the preparation area for reusable teacher-authored review aids. It is intended for comment banks, tag banks, rubric/scoring profiles, and optional synthetic starter materials.
+
+These materials help teachers review written student work more quickly by selecting prepared comments, tags, and scoring criteria instead of typing everything during review.
+
+Review materials are subject-agnostic. They may support essays, constructed responses, lab reports, journals, reflections, creative writing, research papers, mathematical explanations, technical writing, and other local writing tasks.
+
+This menu does not modify student submissions, scans, rosters, assignments, exports, or pds-core standards. It does not create or edit review materials yet; those workflows are implemented in follow-up issues.
+
+Review materials augment Quillan review workflows but do not replace pds-core ownership of standards, workspace resolution, or shared routes.
 
 ### Workspace Settings
 

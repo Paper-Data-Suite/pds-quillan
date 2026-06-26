@@ -14,8 +14,8 @@ development. It records:
 The CLI includes a developer-oriented, scriptable command layer and a
 teacher-facing terminal menu. The menu now covers assignment management, roster
 management, printable response pages, QR-aware scan intake, review navigation,
-guided review-entry actions, guided export actions, workspace settings, help,
-and exit.
+guided review-entry actions, guided export actions, Review Materials guidance,
+workspace settings, help, and exit.
 
 This contract describes implemented behavior separately from future design. A
 command or workflow documented elsewhere as planned is not part of the current
@@ -198,9 +198,10 @@ The top-level menu provides:
 3. Printable Response Pages
 4. Scan Intake / Route Paper Responses
 5. Review Student Work
-6. Workspace Settings
-7. Help
-8. Exit
+6. Review Materials
+7. Workspace Settings
+8. Help
+9. Exit
 ```
 
 Menu workflows should orchestrate reusable application functions. They should
@@ -433,6 +434,35 @@ Invalid overwrite responses cancel safely.
 The Review Student Work menu does not automatically assemble submissions,
 route scans, run OCR, parse evidence contents, score work automatically, infer
 mastery, generate AI feedback, or perform AI work.
+
+#### Review Materials
+
+Review Materials provides an informational preparation area for reusable
+teacher-authored review aids:
+
+```text
+1. Comment Banks
+2. Tag Banks
+3. Rubrics / Scoring Profiles
+4. Starter Materials
+5. Back
+```
+
+The menu is subject-agnostic and is intended for teachers reviewing written
+student work such as essays, constructed responses, lab reports, journals,
+reflections, research papers, mathematical explanations, technical writing, and
+other local writing tasks.
+
+The current screens explain the purpose of comment banks, tag banks,
+rubrics/scoring profiles, and optional starter materials. They are guidance
+only. They do not create directories, edit files, install starter data, mutate
+student submissions, route scans, change rosters or assignments, write exports,
+or update review records.
+
+Review materials are Quillan-owned teaching and review aids. They may later
+reference durable pds-core `profile_id` and `standard_id` values, but this menu
+does not duplicate or replace pds-core ownership of standards, workspace
+resolution, shared class routes, roster routes, scan routes, or route helpers.
 
 #### Workspace Settings
 
