@@ -396,13 +396,15 @@ def test_view_validate_assignment_prints_summary_without_rewriting(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    _write_roster(tmp_path)
     path = workflows.write_assignment_config(
         tmp_path,
         "english_12_p3",
         _assignment(),
     )
     original_bytes = path.read_bytes()
-    _inputs(monkeypatch, [f'"{path}"'])
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    prompts = _inputs(monkeypatch, ["1", "1"])
 
     assert workflows.prompt_view_validate_assignment() == 0
     output = capsys.readouterr().out
@@ -415,6 +417,7 @@ def test_view_validate_assignment_prints_summary_without_rewriting(
     assert "Tagging mode: focus" in output
     assert "Focus standards (2)" in output
     assert "Rubric ID: synthetic_argument_v1" in output
+    assert "Assignment JSON path" not in prompts
     assert path.read_bytes() == original_bytes
 
 
@@ -423,14 +426,25 @@ def test_view_validate_assignment_reports_error_without_traceback(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    path = tmp_path / "invalid.json"
+    _write_roster(tmp_path)
+    path = (
+        tmp_path
+        / "classes"
+        / "english_12_p3"
+        / "assignments"
+        / "invalid"
+        / "assignment.json"
+    )
+    path.parent.mkdir(parents=True)
     path.write_text(json.dumps({"assignment_id": "incomplete"}), encoding="utf-8")
     original_bytes = path.read_bytes()
-    _inputs(monkeypatch, [str(path)])
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    prompts = _inputs(monkeypatch, ["1"])
 
-    assert workflows.prompt_view_validate_assignment() == 1
+    assert workflows.prompt_view_validate_assignment() == 0
     output = capsys.readouterr().out
-    assert "Error:" in output
+    assert "No valid assignments found for class english_12_p3." in output
+    assert "Assignment JSON path" not in prompts
     assert "Traceback" not in output
     assert path.read_bytes() == original_bytes
 

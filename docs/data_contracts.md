@@ -563,3 +563,12 @@ Do not commit:
 * real grades;
 * real parent contact information;
 * real scanned student work.
+
+## Submission Readiness
+
+`submission.json` is the canonical review-ready submission record. Routed scan
+files alone are evidence, not a submission record. Menu workflows present this
+as an "assembled submission" or "submission record" to teachers, while the
+filename remains available as technical detail. Existing submission files are
+not overwritten by normal assembly; review records remain separate and are not
+rewritten by scan routing or assembly.

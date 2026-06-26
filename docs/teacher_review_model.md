@@ -235,6 +235,15 @@ the conceptual relationships among those records.
 v0.7 `review.json` shape and its identity, state, timestamp, path, reference,
 and mutation rules.
 
+## Review Readiness
+
+Routed scan evidence and a review-ready submission are distinct. Before a
+teacher adds notes, tags, comments, scores, review state, or feedback exports,
+Quillan requires an assembled submission record. When routed evidence exists
+but that record is missing, the review menu offers assignment-level assembly
+instead of actions that would fail. Assembly neither evaluates evidence nor
+changes review state, notes, tags, comments, scores, or exports.
+
 [`comment_bank_contract.md`](comment_bank_contract.md) defines reusable shared
 comment source data and its boundary from selected review comments.
 

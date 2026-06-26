@@ -175,11 +175,16 @@ def test_empty_scores_and_comments_have_clear_messages(tmp_path: Path) -> None:
     assert "No feedback comments selected." in content
 
 
-@pytest.mark.parametrize("record_kind", ["submission", "review"])
-def test_missing_record_is_rejected(tmp_path: Path, record_kind: str) -> None:
+@pytest.mark.parametrize(
+    ("record_kind", "message"),
+    [("submission", "not review-ready yet"), ("review", "does not exist")],
+)
+def test_missing_record_is_rejected(
+    tmp_path: Path, record_kind: str, message: str
+) -> None:
     if record_kind == "review":
         _write_manifest(tmp_path)
-    with pytest.raises(FeedbackExportError, match="does not exist"):
+    with pytest.raises(FeedbackExportError, match=message):
         export_student_feedback(
             tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
         )

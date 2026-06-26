@@ -19,6 +19,7 @@ from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
 )
+from quillan.submission_guidance import missing_submission_guidance
 
 
 class SubmissionReviewStateError(Exception):
@@ -67,10 +68,7 @@ def update_submission_review_state(
         raise SubmissionReviewStateError(str(error)) from error
 
     if not manifest_path.exists():
-        raise SubmissionReviewStateError(
-            "Submission manifest does not exist for "
-            f"class={class_id}, assignment={assignment_id}, student={student_id}."
-        )
+        raise SubmissionReviewStateError(missing_submission_guidance())
 
     try:
         relative_path = manifest_path.resolve(strict=False).relative_to(

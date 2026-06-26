@@ -1,0 +1,106 @@
+"""Shared teacher-facing class and assignment selection helpers."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+from pds_core.classes import list_class_folders
+
+from quillan.assignments import AssignmentConfigError, load_assignment_config
+from quillan.storage import assignment_config_path
+
+
+@dataclass(frozen=True, slots=True)
+class AssignmentChoice:
+    """A canonical assignment available in one roster-backed class."""
+
+    class_id: str
+    assignment_id: str
+    title: str | None
+    path: Path
+
+
+def prompt_assignment_choice(workspace_root: Path) -> AssignmentChoice | None:
+    """Let a teacher choose a roster class and its canonical assignment."""
+    folders = list_class_folders(workspace_root, require_roster=True)
+    if not folders:
+        print("No classes found in the current workspace.")
+        return None
+
+    print("Available classes:")
+    for index, folder in enumerate(folders, start=1):
+        print(f"{index}. {folder.class_id}")
+    print("B. Back")
+    print()
+    while True:
+        selection = input("Select class: ").strip()
+        if selection == "" or selection.casefold() == "b":
+            print("Class selection canceled.")
+            return None
+        if selection.isdigit() and 1 <= int(selection) <= len(folders):
+            class_id = folders[int(selection) - 1].class_id
+            break
+        class_matches = [
+            folder for folder in folders if folder.class_id == selection
+        ]
+        if class_matches:
+            class_id = class_matches[0].class_id
+            break
+        print("Invalid class selection. Please choose a listed class or Back.")
+
+    assignments = available_assignments(workspace_root, class_id)
+    if not assignments:
+        print(f"No valid assignments found for class {class_id}.")
+        return None
+    print()
+    print(f"Assignments for {class_id}:")
+    for index, assignment in enumerate(assignments, start=1):
+        label = assignment.assignment_id
+        if assignment.title:
+            label += f" - {assignment.title}"
+        print(f"{index}. {label}")
+    print("B. Back")
+    print()
+    while True:
+        selection = input("Select assignment: ").strip()
+        if selection == "" or selection.casefold() == "b":
+            print("Assignment selection canceled.")
+            return None
+        if selection.isdigit() and 1 <= int(selection) <= len(assignments):
+            return assignments[int(selection) - 1]
+        assignment_matches = [
+            item for item in assignments if item.assignment_id == selection
+        ]
+        if assignment_matches:
+            return assignment_matches[0]
+        print("Invalid assignment selection. Please choose a listed assignment or Back.")
+
+
+def available_assignments(
+    workspace_root: Path, class_id: str
+) -> tuple[AssignmentChoice, ...]:
+    """Return valid canonical assignment configs for one class."""
+    assignments_dir = workspace_root / "classes" / class_id / "assignments"
+    if not assignments_dir.is_dir():
+        return ()
+    choices: list[AssignmentChoice] = []
+    for assignment_dir in sorted(
+        (path for path in assignments_dir.iterdir() if path.is_dir()),
+        key=lambda path: path.name.casefold(),
+    ):
+        path = assignment_config_path(workspace_root, class_id, assignment_dir.name)
+        try:
+            assignment = load_assignment_config(path)
+        except (AssignmentConfigError, OSError):
+            continue
+        title = assignment.get("title")
+        choices.append(
+            AssignmentChoice(
+                class_id=class_id,
+                assignment_id=assignment_dir.name,
+                title=title if isinstance(title, str) and title.strip() else None,
+                path=path,
+            )
+        )
+    return tuple(choices)

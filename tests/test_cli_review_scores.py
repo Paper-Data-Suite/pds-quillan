@@ -218,4 +218,4 @@ def test_cli_missing_submission_returns_one(
             "4",
         ]
     ) == 1
-    assert "does not exist" in capsys.readouterr().out
+    assert "This submission is not review-ready yet" in capsys.readouterr().out

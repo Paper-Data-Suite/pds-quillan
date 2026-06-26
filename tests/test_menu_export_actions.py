@@ -44,11 +44,11 @@ def _enter_assignment_review_actions() -> list[str]:
 
 
 def _exit_assignment_review_actions_to_main() -> list[str]:
-    return ["5", "", "2", "8"]
+    return ["6", "", "2", "8"]
 
 
 def _exit_after_assignment_action_to_main() -> list[str]:
-    return ["", "5", "", "2", "8"]
+    return ["", "6", "", "2", "8"]
 
 
 def _enter_selected_student(student_choice: str = "1") -> list[str]:
@@ -267,8 +267,9 @@ def test_assignment_review_actions_menu_includes_export_choices(
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
     assert "Assignment Review Actions" in output
-    assert "2. Export class review summary" in output
-    assert "3. Export standards summary" in output
+    assert "2. Assemble routed submissions" in output
+    assert "3. Export class review summary" in output
+    assert "4. Export standards summary" in output
 
 
 def test_selected_student_review_menu_includes_feedback_export(
@@ -362,7 +363,7 @@ def test_menu_export_class_summary_creates_summary_file(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["2", ""]
+        + ["3", ""]
         + _exit_after_assignment_action_to_main(),
     )
 
@@ -393,7 +394,7 @@ def test_menu_export_standards_summary_creates_summary_file(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["3", ""]
+        + ["4", ""]
         + _exit_after_assignment_action_to_main(),
     )
 
@@ -557,7 +558,7 @@ def test_menu_export_class_summary_requires_overwrite_when_existing(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["2", ""]
+        + ["3", ""]
         + _exit_after_assignment_action_to_main(),
     )
 
@@ -589,7 +590,7 @@ def test_menu_export_class_summary_overwrites_existing_export(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["2", "y"]
+        + ["3", "y"]
         + _exit_after_assignment_action_to_main(),
     )
 
@@ -619,7 +620,7 @@ def test_menu_export_class_summary_invalid_overwrite_cancels_without_writing(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["2", "maybe"]
+        + ["3", "maybe"]
         + _exit_after_assignment_action_to_main(),
     )
 
@@ -650,7 +651,7 @@ def test_menu_export_standards_summary_overwrites_existing_export(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["3", "y"]
+        + ["4", "y"]
         + _exit_after_assignment_action_to_main(),
     )
 
@@ -682,7 +683,7 @@ def test_menu_export_standards_summary_requires_overwrite_when_existing(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["3", ""]
+        + ["4", ""]
         + _exit_after_assignment_action_to_main(),
     )
 
@@ -712,7 +713,7 @@ def test_menu_export_standards_summary_invalid_overwrite_cancels_without_writing
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["3", "maybe"]
+        + ["4", "maybe"]
         + _exit_after_assignment_action_to_main(),
     )
 

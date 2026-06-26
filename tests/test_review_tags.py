@@ -673,7 +673,7 @@ def test_timezone_aware_datetime_is_normalized(tmp_path: Path) -> None:
 
 
 def test_missing_submission_is_rejected(tmp_path: Path) -> None:
-    with pytest.raises(ReviewTagError, match="does not exist"):
+    with pytest.raises(ReviewTagError, match="not review-ready yet"):
         add_review_tag(
             tmp_path,
             CLASS_ID,
