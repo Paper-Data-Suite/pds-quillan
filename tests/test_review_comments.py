@@ -83,7 +83,7 @@ def test_creates_snapshotted_comment_without_mutating_sources(tmp_path: Path) ->
             "include_in_feedback": True,
             "created_at": TIMESTAMP,
             "module_details": {},
-            "standard_code": "W.AW.11-12.1",
+            "standard_id": "njsls-ela:W.AW.11-12.1",
         }
     ]
     assert manifest_path.read_bytes() == manifest_before
@@ -106,8 +106,8 @@ def test_feedback_inclusion_policy(
 def test_standard_selection_policy(tmp_path: Path) -> None:
     _write_manifest(tmp_path)
     bank = _bank()
-    bank["comments"][0]["standard_codes"] = []
-    bank["comments"][3]["standard_codes"] = ["A", "B"]
+    bank["comments"][0]["standard_ids"] = []
+    bank["comments"][3]["standard_ids"] = ["A", "B"]
     _write_bank(tmp_path, bank)
 
     first = _add(tmp_path, comment_id="focus_is_clear")
@@ -115,14 +115,14 @@ def test_standard_selection_policy(tmp_path: Path) -> None:
     third = _add(
         tmp_path,
         comment_id="sentence_boundaries_need_review",
-        standard_code="B",
+        standard_id="B",
     )
     comments = json.loads(
         third.review_record_path.read_text(encoding="utf-8")
     )["comments"]
-    assert "standard_code" not in comments[0]
-    assert "standard_code" not in comments[1]
-    assert comments[2]["standard_code"] == "B"
+    assert "standard_id" not in comments[0]
+    assert "standard_id" not in comments[1]
+    assert comments[2]["standard_id"] == "B"
     assert first.comment_record_id == "comment_record_0001"
     assert second.comment_record_id == "comment_record_0002"
 
@@ -133,7 +133,7 @@ def test_invalid_standard_and_teacher_only_comment_are_rejected(
     _write_manifest(tmp_path)
     _write_bank(tmp_path)
     with pytest.raises(ReviewCommentError, match="not available"):
-        _add(tmp_path, standard_code="missing")
+        _add(tmp_path, standard_id="missing")
     with pytest.raises(ReviewCommentError, match="not student-facing"):
         _add(tmp_path, comment_id="teacher_review_follow_up")
     assert not review_record_path(

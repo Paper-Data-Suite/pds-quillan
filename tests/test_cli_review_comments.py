@@ -35,8 +35,8 @@ def test_cli_selects_comment_and_prints_context(
             "--comment-id",
             "evidence_needs_explanation",
             "--exclude-from-feedback",
-            "--standard",
-            "W.AW.11-12.1",
+            "--standard-id",
+            "njsls-ela:W.AW.11-12.1",
         ]
     ) == 0
 
@@ -60,7 +60,7 @@ def test_cli_selects_comment_and_prints_context(
         ).read_text(encoding="utf-8")
     )
     assert written["comments"][0]["include_in_feedback"] is False
-    assert written["comments"][0]["standard_code"] == "W.AW.11-12.1"
+    assert written["comments"][0]["standard_id"] == "njsls-ela:W.AW.11-12.1"
 
 
 def test_cli_handled_failure_returns_one_without_review(

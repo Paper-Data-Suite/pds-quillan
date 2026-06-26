@@ -93,7 +93,7 @@ The assignment-level `exports/standards_summary.csv` report groups only
 standards-linked tags and selected comments from valid matching review
 records. It reports tag polarity, feedback inclusion, and distinct-student
 counts without reading evidence or source comment banks. It does not include
-scores or notes, load standards profiles, infer mastery, calculate grades, or
+scores or notes, infer mastery, calculate grades, or
 mutate canonical records. Student discovery is directory-based; roster-aware
 missing-student reporting remains future work.
 
@@ -241,4 +241,3 @@ comment source data and its boundary from selected review comments.
 [`workspace_lifecycle.md`](workspace_lifecycle.md) defines where records live
 in the shared PDS workspace and how active records relate over time. It does
 not change the meaning of teacher review defined here.
-

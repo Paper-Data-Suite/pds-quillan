@@ -49,7 +49,7 @@ OPTIONAL_COMMENT_FIELDS: Final[frozenset[str]] = frozenset(
         "short_text",
         "subcategory",
         "writing_types",
-        "standard_codes",
+        "standard_ids",
         "criterion_ids",
         "severity_default",
         "tags",
@@ -220,7 +220,7 @@ def _validate_comments(
                     f"Field '{context}.writing_types' contains value outside "
                     f"bank writing_types: {sorted(outside)[0]!r}."
                 )
-        for field in ("standard_codes", "criterion_ids", "tags", "hotwords"):
+        for field in ("standard_ids", "criterion_ids", "tags", "hotwords"):
             if field in item:
                 _validate_unique_strings(item[field], f"{context}.{field}")
         if "severity_default" in item:

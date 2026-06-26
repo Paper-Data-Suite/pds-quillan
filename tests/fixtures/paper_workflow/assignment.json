@@ -6,7 +6,7 @@
   "standards_profile_id": "english_12_njsls_synthetic",
   "tagging_mode": "focus",
   "focus_standards": [
-    "W.AW.11-12.1"
+    "njsls-ela:W.AW.11-12.1"
   ],
   "basic_requirements": {
     "paragraphs_min": 3,

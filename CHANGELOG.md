@@ -8,6 +8,14 @@ planning and do not by themselves represent releases.
 
 ## Unreleased
 
+### Changed
+
+- Removed legacy Quillan standards-profile files and validation before
+  production use. Quillan now relies on pds-core for shared standards
+  definitions, durable `standard_id` values, reusable `profile_id` values, and
+  profile validation; no production-data migration is provided for the retired
+  pre-1.0 shape.
+
 ### Added
 
 - Added a teacher-facing Review Student Work menu skeleton for selecting class,
@@ -72,7 +80,7 @@ planning and do not by themselves represent releases.
   feedback and assignment summaries written only as derived exports.
 - Added explicit shared-bank provenance to selected version `1` review
   comments. `comment_bank` snapshots now require a valid `bank_id` and
-  `comment_id`; standards-profile snapshots require `standard_code` and
+  `comment_id`; standards-profile snapshots require `standard_id` and
   `comment_id`; and custom comments reject source identifiers. Bank provenance
   does not perform lookup or turn snapshotted label and text into live
   references.
@@ -106,10 +114,10 @@ planning and do not by themselves represent releases.
   banks.
 - Added `quillan export-standards-summary` and a focused read-only API for
   writing assignment-level `exports/standards_summary.csv`. Rows are sorted by
-  `standard_code` and aggregate standards-linked tag polarity, selected
+  `standard_id` and aggregate standards-linked tag polarity, selected
   comment feedback inclusion, and distinct-student counts while retaining
   assignment-level missing, invalid, and identity-mismatch counts. The export
-  excludes scores and notes, does not load standards profiles, read evidence
+  excludes scores and notes, read evidence
   or comment banks, infer mastery or grades, use a roster, or mutate canonical
   records.
 - Added `quillan export-class-summary` and a focused read-only API for writing
@@ -254,7 +262,7 @@ planning and do not by themselves represent releases.
   assignments.
 - Added submission metadata loading and validation for teacher-controlled
   writing evidence records.
-- Added standards profile validation for standards-aligned writing review.
+- Added pds-core standards references for standards-aligned writing review.
 - Added teacher-review model documentation emphasizing that teacher judgment
   remains central.
 - Added printable writing-response PDF generation for paper-based writing

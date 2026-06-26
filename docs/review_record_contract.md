@@ -104,8 +104,8 @@ When present:
   `submission.json`;
 * `page_number` must identify the page entry containing that evidence when
   both fields are present;
-* `standard_code` should identify an active standard in the assignment's
-  standards profile; and
+* `standard_id` should identify a pds-core standard in the assignment's
+  selected pds-core profile; and
 * `criterion_id` should identify a criterion in the assignment rubric or
   rubric profile.
 
@@ -179,7 +179,7 @@ Each tag contains:
 ```json
 {
   "tag_id": "tag_0001",
-  "standard_code": "W.AW.11-12.1",
+  "standard_id": "njsls-ela:W.AW.11-12.1",
   "comment_id": "evidence_needs_explanation",
   "label": "Evidence needs more explanation",
   "polarity": "developing",
@@ -206,7 +206,7 @@ Required tag fields are:
 
 Optional tag fields are:
 
-* `standard_code`;
+* `standard_id`;
 * `comment_id`;
 * `severity`;
 * `teacher_note`;
@@ -223,8 +223,9 @@ Tag field rules are:
   not a score.
 * `teacher_note`, when present, is a non-empty string.
 * `page_number`, when present, is a positive integer.
-* `standard_code` and `comment_id`, when present, are non-empty strings.
-  Together they may identify reusable language in a standards profile.
+* `standard_id` and `comment_id`, when present, are non-empty strings.
+  `standard_id` is pds-core provenance; `comment_id` identifies reusable
+  Quillan comment-bank language when paired with `bank_id`.
 * `evidence_id`, when present, is a non-empty reference to the submission
   manifest as described above.
 * `module_details` is an object.
@@ -328,7 +329,7 @@ record reflects the latest explicit teacher input.
 
 `comments` contains teacher-selected reusable language or teacher-entered
 custom language intended for possible feedback export. Reusable source
-comments may come from a standards profile or from a shared comment bank
+comments come from a shared Quillan comment bank
 defined by [`comment_bank_contract.md`](comment_bank_contract.md).
 
 Each comment contains:
@@ -336,11 +337,12 @@ Each comment contains:
 ```json
 {
   "comment_record_id": "comment_0001",
+  "bank_id": "argument_writing",
   "comment_id": "evidence_needs_explanation",
-  "standard_code": "W.AW.11-12.1",
+  "standard_id": "njsls-ela:W.AW.11-12.1",
   "label": "Evidence needs more explanation",
   "text": "The evidence is relevant, but the explanation needs to show more clearly how it supports the claim.",
-  "source": "standards_profile",
+  "source": "comment_bank",
   "include_in_feedback": true,
   "created_at": "2026-06-22T00:00:00+00:00",
   "module_details": {}
@@ -361,18 +363,19 @@ Optional comment fields are:
 
 * `bank_id`;
 * `comment_id`; and
-* `standard_code`.
+* `standard_id`.
 
 Comment field rules are:
 
 * `comment_record_id` is unique within `comments`.
 * `bank_id`, when present, is a valid shared identifier naming the source at
   `shared/comment_banks/<bank_id>.json`.
-* `comment_id` identifies reusable language within its source bank or
-  standards profile; it is not globally unique across comment banks.
-* `standard_code` identifies the associated profile standard.
+* `comment_id` identifies reusable language within its source bank; it is not
+  globally unique across comment banks.
+* `standard_id`, when present, is durable pds-core provenance for the
+  associated standard.
 * `label` and `text` are non-empty strings.
-* `source` is one of `standards_profile`, `comment_bank`, or `custom`.
+* `source` is one of `comment_bank` or `custom`.
 * `include_in_feedback` is a boolean expressing the teacher's export choice.
 * `module_details` is an object.
 
@@ -380,9 +383,7 @@ Source-specific rules are:
 
 * `comment_bank` comments require both `bank_id` and `comment_id`;
   `bank_id + comment_id` identifies the reusable source comment.
-* `standards_profile` comments require `comment_id` and `standard_code` and
-  must omit `bank_id`.
-* `custom` comments must omit `bank_id`, `comment_id`, and `standard_code`.
+* `custom` comments must omit `bank_id`, `comment_id`, and `standard_id`.
 
 Comments are teacher-selected or teacher-entered; they are not generated from
 student writing or supplied as AI judgments. Comments are append-only for the
@@ -399,7 +400,7 @@ export.
 The direct `add-comment` workflow validates the source bank first and accepts
 only `student_facing: true` comments. It uses the bank's
 `include_in_feedback_default` unless the teacher explicitly includes or
-excludes the selected comment. A sole source `standard_code` is copied
+excludes the selected comment. A sole source `standard_id` is copied
 automatically; with multiple source standards, one is stored only when the
 teacher specifies it.
 
@@ -606,10 +607,10 @@ teacher-entered review data. It does not inspect evidence or comment banks,
 calculate grades or mastery, or perform standards or roster reporting.
 
 The standards summary export validates the same per-student canonical records
-and aggregates only tags and selected comments that contain `standard_code`.
+and aggregates only tags and selected comments that contain `standard_id`.
 It reports tag polarity, comment feedback inclusion, distinct-student counts,
 and assignment-level missing/invalid counts. It excludes scores and notes and
-does not load standards profiles, inspect evidence, read comment banks, infer
+does not inspect evidence, read comment banks, infer
 mastery, calculate grades, use a roster, or mutate canonical records.
 
 ## Synthetic Example

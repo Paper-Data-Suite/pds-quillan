@@ -10,6 +10,13 @@ from typing import Any
 
 import pytest
 
+from pds_core.standards import (
+    StandardDefinition,
+    StandardsLibrary,
+    StandardsProfile,
+    write_workspace_standards_library,
+)
+
 from quillan.review_record_paths import review_record_path, write_review_record
 from quillan.review_tags import (
     AddedReviewTag,
@@ -26,7 +33,8 @@ CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"
 STUDENT_ID = "00107"
 PROFILE_ID = "english_12_njsls_synthetic"
-STANDARD_CODE = "W.AW.11-12.1"
+STANDARD_ID = "njsls-ela:W.AW.11-12.1"
+REVISION_STANDARD_ID = "njsls-ela:W.WP.11-12.4"
 ORIGINAL_TIMESTAMP = "2026-06-20T12:00:00+00:00"
 FIRST_TAG_TIMESTAMP = "2026-06-22T13:35:00-04:00"
 SECOND_TAG_TIMESTAMP = "2026-06-22T14:00:00-04:00"
@@ -148,39 +156,49 @@ def _assignment() -> dict[str, Any]:
         "writing_type": "argument",
         "standards_profile_id": PROFILE_ID,
         "tagging_mode": "focus",
-        "focus_standards": [STANDARD_CODE],
+        "focus_standards": [STANDARD_ID],
         "basic_requirements": {},
         "rubric_id": "argument_4pt",
     }
 
 
-def _profile() -> dict[str, Any]:
-    return {
-        "profile_id": PROFILE_ID,
-        "subject": "English",
-        "course": "English 12",
-        "standards": [
-            {
-                "code": STANDARD_CODE,
-                "short_name": "Argument Writing",
-                "description": "Use claims, reasoning, and evidence.",
-                "comments": [
-                    {
-                        "comment_id": "evidence_needs_explanation",
-                        "label": "Evidence needs more explanation",
-                        "polarity": "developing",
-                        "severity_default": 2,
-                    }
-                ],
-            },
-            {
-                "code": "W.WP.11-12.4",
-                "short_name": "Writing Process",
-                "description": "Develop and strengthen writing.",
-                "comments": [],
-            },
-        ],
-    }
+def _standards_library() -> StandardsLibrary:
+    return StandardsLibrary(
+        standards=(
+            StandardDefinition(
+                standard_id=STANDARD_ID,
+                code="W.AW.11-12.1",
+                source="NJSLS",
+                short_name="Argument Writing",
+                description="Use claims, reasoning, and evidence.",
+                subject="English Language Arts",
+                course="English 12",
+                domain="Writing",
+                available_modules=("quillan",),
+            ),
+            StandardDefinition(
+                standard_id=REVISION_STANDARD_ID,
+                code="W.WP.11-12.4",
+                source="NJSLS",
+                short_name="Writing Process",
+                description="Develop and strengthen writing.",
+                subject="English Language Arts",
+                course="English 12",
+                domain="Writing",
+                available_modules=("quillan",),
+            ),
+        ),
+        profiles=(
+            StandardsProfile(
+                profile_id=PROFILE_ID,
+                standards=(STANDARD_ID, REVISION_STANDARD_ID),
+                subject="English Language Arts",
+                course="English 12",
+                source="NJSLS",
+                title="Synthetic English 12",
+            ),
+        ),
+    )
 
 
 def _write_json(path: Path, value: Any) -> Path:
@@ -210,10 +228,7 @@ def _write_profile_context(workspace: Path) -> None:
         assignment_config_path(workspace, CLASS_ID, ASSIGNMENT_ID),
         _assignment(),
     )
-    _write_json(
-        workspace / "shared" / "standards" / f"{PROFILE_ID}.json",
-        _profile(),
-    )
+    write_workspace_standards_library(workspace, _standards_library())
 
 
 def test_creates_structured_tag_without_mutating_submission_or_evidence(
@@ -531,7 +546,7 @@ def test_whole_submission_and_named_location_are_accepted(tmp_path: Path) -> Non
     assert written["tags"][1]["location"]["value"] == "conclusion"
 
 
-def test_profile_standard_and_comment_are_validated_with_default_severity(
+def test_profile_standard_reference_is_validated_without_default_severity(
     tmp_path: Path,
 ) -> None:
     _write_manifest(tmp_path)
@@ -544,7 +559,7 @@ def test_profile_standard_and_comment_are_validated_with_default_severity(
         STUDENT_ID,
         label="Evidence needs more explanation",
         polarity="developing",
-        standard_code=STANDARD_CODE,
+        standard_id=STANDARD_ID,
         comment_id="evidence_needs_explanation",
         created_at=FIRST_TAG_TIMESTAMP,
     )
@@ -554,7 +569,7 @@ def test_profile_standard_and_comment_are_validated_with_default_severity(
             tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
         ).read_text(encoding="utf-8")
     )
-    assert written["tags"][0]["severity"] == 2
+    assert "severity" not in written["tags"][0]
 
 
 def test_profile_allows_non_focus_standard(tmp_path: Path) -> None:
@@ -568,7 +583,7 @@ def test_profile_allows_non_focus_standard(tmp_path: Path) -> None:
         STUDENT_ID,
         label="Revision observation",
         polarity="neutral",
-        standard_code="W.WP.11-12.4",
+        standard_id=REVISION_STANDARD_ID,
         created_at=FIRST_TAG_TIMESTAMP,
     )
 
@@ -576,31 +591,8 @@ def test_profile_allows_non_focus_standard(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ("kwargs", "message"),
     [
-        ({"standard_code": "missing"}, "does not exist"),
-        ({"comment_id": "comment"}, "requires standard_code"),
-        (
-            {
-                "standard_code": STANDARD_CODE,
-                "comment_id": "missing",
-            },
-            "does not exist",
-        ),
-        (
-            {
-                "standard_code": STANDARD_CODE,
-                "comment_id": "evidence_needs_explanation",
-                "label": "Different label",
-            },
-            "does not match",
-        ),
-        (
-            {
-                "standard_code": STANDARD_CODE,
-                "comment_id": "evidence_needs_explanation",
-                "polarity": "positive",
-            },
-            "does not match",
-        ),
+        ({"standard_id": "missing"}, "unknown standard IDs"),
+        ({"comment_id": "comment"}, "requires standard_id"),
     ],
 )
 def test_invalid_profile_reference_is_rejected(
@@ -637,7 +629,7 @@ def test_standard_reference_requires_assignment_and_profile(tmp_path: Path) -> N
             STUDENT_ID,
             label="Standard tag",
             polarity="neutral",
-            standard_code=STANDARD_CODE,
+            standard_id=STANDARD_ID,
             created_at=FIRST_TAG_TIMESTAMP,
         )
 

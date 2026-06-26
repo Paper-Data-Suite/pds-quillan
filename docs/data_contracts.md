@@ -49,140 +49,17 @@ Quillan data should be:
 * compatible with shared Paper Data Suite data structures;
 * auditable by a teacher.
 
-## Legacy Quillan Standards Profile
+## Standards References
 
-Shared standards definitions and reusable standards profiles are owned by
-`pds-core` and stored in the workspace standards library. Quillan's older
-standards-profile shape is transitional module data for reusable review
-language such as comments, hotwords, feedback templates, and severity defaults
-that may reference shared `standard_id` values.
+Shared standards definitions, durable `standard_id` values, reusable standards profiles, and profile validation are owned by `pds-core` and stored in the workspace standards library.
 
-This legacy profile describes Quillan review vocabulary available to a
-teacher. It does not discover standards, inspect writing automatically,
-determine whether a standard was met, generate authoritative feedback, or
-calculate a score.
+Quillan stores only durable pds-core references:
 
-Shared standards library path:
+* assignment `standards_profile_id` stores a pds-core `profile_id`;
+* assignment `focus_standards` stores pds-core `standard_id` values;
+* review tags and selected reusable comments may store optional pds-core `standard_id` provenance.
 
-```text
-<PDS workspace root>/standards/library.json
-```
-
-Standalone Quillan MVP path:
-
-```text
-quillan_data/standards/<profile_id>.json
-```
-
-Required top-level fields:
-
-* `profile_id`
-* `subject`
-* `course`
-* `standards`
-
-Each standard requires:
-
-* `code`
-* `short_name`
-* `description`
-* `comments`
-
-A standard is an instructional target or teacher-defined evaluation category.
-It may represent a published standard, a course skill, a local performance
-expectation, or a writing criterion used in another subject. Standard `code`
-values must be unique within a standards profile.
-
-The `comments` field is a list and may be empty when a teacher has not defined
-reusable comments for that standard. A standard with no comments is available
-for alignment and reporting only until teacher-review comments are added.
-
-Each comment requires:
-
-* `comment_id`
-* `label`
-* `polarity`
-
-A comment is reusable teacher-approved language connected to a standard. It
-supports consistent teacher tagging and feedback, but its presence in a
-profile is not a judgment about any student work. Each `comment_id` must be
-unique within its standard. The same `comment_id` may be reused under a
-different standard; records that refer to a comment use both `standard_code`
-and `comment_id` to identify it.
-
-Allowed polarity values:
-
-* `positive`
-* `developing`
-* `negative`
-
-Polarity organizes teacher observations as strengths, developing skills, or
-problems. It has no numeric scoring semantics and does not determine a grade.
-
-Optional comment fields:
-
-* `severity_default`
-* `feedback_template`
-* `subskills`
-* `hotwords`
-
-`severity_default`, when present, is a non-negative integer. It is a suggested
-organizational default for a teacher-entered observation, not a score.
-`feedback_template` is optional teacher-approved wording.
-
-Subskills are smaller teacher-defined components of a standard or comment,
-such as `claim`, `reasoning`, `evidence_integration`, `imagery`, or
-`line_breaks`. Hotwords are teacher-defined text cues, such as `because`,
-`however`, or `this shows`, that may help a teacher search for or organize
-evidence. Both fields are optional lists of non-empty strings, and either list
-may be empty.
-
-Hotwords and subskills are support metadata only. A hotword match is not proof
-that a standard was met or missed, and neither field defines an automated
-detection, feedback, grading, or scoring rule. Scores and final judgments
-remain teacher decisions based on teacher-reviewed evidence.
-
-Example:
-
-```json
-{
-  "profile_id": "english_12_njsls_synthetic",
-  "subject": "English Language Arts",
-  "course": "English 12",
-  "standards": [
-    {
-      "code": "W.AW.11-12.1",
-      "short_name": "Argument Writing",
-      "description": "Write arguments to support claims using valid reasoning and relevant and sufficient evidence.",
-      "comments": [
-        {
-          "comment_id": "clear_claim",
-          "label": "Clear claim",
-          "polarity": "positive",
-          "subskills": ["claim"],
-          "hotwords": ["claim", "thesis", "argues"]
-        },
-        {
-          "comment_id": "evidence_needs_explanation",
-          "label": "Evidence needs more explanation",
-          "polarity": "developing",
-          "severity_default": 2,
-          "feedback_template": "The evidence is relevant, but the explanation needs to show more clearly how it supports the claim.",
-          "subskills": ["reasoning", "evidence_explanation"],
-          "hotwords": ["quote", "example", "this shows"]
-        },
-        {
-          "comment_id": "unsupported_claim",
-          "label": "Unsupported claim",
-          "polarity": "negative"
-        }
-      ]
-    }
-  ]
-}
-```
-
-## Shared Comment Bank
+Quillan does not store or validate an independent standards-profile JSON shape. Legacy Quillan standards-profile files were removed before production use as a pre-1.0 breaking cleanup, with no production-data migration.## Shared Comment Bank
 
 A shared comment bank is reusable teacher-authored source data stored at:
 
@@ -619,18 +496,18 @@ Canonical path:
 Stable columns:
 
 ```text
-class_id,assignment_id,standard_code,student_count,tag_student_count,comment_student_count,tag_count,positive_tag_count,developing_tag_count,negative_tag_count,neutral_tag_count,selected_comment_count,included_comment_count,excluded_comment_count,review_count,missing_review_count,invalid_review_count,missing_submission_count,invalid_submission_count,identity_mismatch_count,source
+class_id,assignment_id,standard_id,student_count,tag_student_count,comment_student_count,tag_count,positive_tag_count,developing_tag_count,negative_tag_count,neutral_tag_count,selected_comment_count,included_comment_count,excluded_comment_count,review_count,missing_review_count,invalid_review_count,missing_submission_count,invalid_submission_count,identity_mismatch_count,source
 ```
 
-Each row represents one `standard_code` referenced by a tag or selected
+Each row represents one `standard_id` referenced by a tag or selected
 comment in a valid matching review, sorted by code. Tag counts use the four
 validated polarities. Comment counts distinguish included and excluded
 selected comments. Student counts are distinct per standard and source type.
 Assignment-level record-status counts repeat on each row; a report with no
 standards-linked artifacts contains only the header.
 
-The export ignores tags and comments without `standard_code`, scores, and
-notes. It does not load standards profiles, map criteria to standards, infer
+The export ignores tags and comments without `standard_id`, scores, and
+notes. It map criteria to standards, infer
 mastery, calculate grades, inspect evidence, read comment banks, use a roster,
 or mutate canonical records.
 

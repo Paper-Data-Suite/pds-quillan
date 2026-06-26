@@ -53,7 +53,6 @@ def print_menu_help() -> None:
     print()
     print("Current direct CLI commands:")
     print("  quillan --help")
-    print("  quillan validate-standards <standards-profile.json>")
     print("  quillan validate-assignment <assignment.json>")
     print("  quillan workspace show")
     print("  quillan workspace set <folder>")

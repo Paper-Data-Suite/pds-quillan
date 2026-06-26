@@ -68,16 +68,14 @@ def add_review_comment(
     *,
     bank_id: str,
     comment_id: str,
-    standard_code: str | None = None,
+    standard_id: str | None = None,
     include_in_feedback: bool | None = None,
     created_at: datetime | str | None = None,
 ) -> AddedReviewComment:
     """Append one snapshotted shared-bank comment to a review record."""
     normalized_bank_id = _normalize_identifier(bank_id, "bank_id")
     normalized_comment_id = _normalize_identifier(comment_id, "comment_id")
-    normalized_standard = _normalize_optional_string(
-        standard_code, "standard_code"
-    )
+    normalized_standard = _normalize_optional_string(standard_id, "standard_id")
     if include_in_feedback is not None and not isinstance(
         include_in_feedback, bool
     ):
@@ -201,7 +199,7 @@ def add_review_comment(
         "module_details": {},
     }
     if selected_standard is not None:
-        selected_comment["standard_code"] = selected_standard
+        selected_comment["standard_id"] = selected_standard
     updated_review["comments"].append(selected_comment)
     updated_review["updated_at"] = normalized_created_at
 
@@ -243,11 +241,11 @@ def add_review_comment(
 def _select_standard(
     source_comment: dict[str, Any], requested: str | None
 ) -> str | None:
-    standards = cast(list[str], source_comment.get("standard_codes", []))
+    standards = cast(list[str], source_comment.get("standard_ids", []))
     if requested is not None:
         if requested not in standards:
             raise ReviewCommentError(
-                f"Standard code {requested!r} is not available on comment "
+                f"standard_id {requested!r} is not available on comment "
                 f"{source_comment['comment_id']!r}."
             )
         return requested

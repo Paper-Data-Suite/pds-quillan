@@ -38,7 +38,7 @@ REQUIRED_TAG_FIELDS: Final[frozenset[str]] = frozenset(
 )
 OPTIONAL_TAG_FIELDS: Final[frozenset[str]] = frozenset(
     {
-        "standard_code",
+        "standard_id",
         "comment_id",
         "severity",
         "teacher_note",
@@ -73,7 +73,7 @@ REQUIRED_COMMENT_FIELDS: Final[frozenset[str]] = frozenset(
     }
 )
 OPTIONAL_COMMENT_FIELDS: Final[frozenset[str]] = frozenset(
-    {"bank_id", "comment_id", "standard_code"}
+    {"bank_id", "comment_id", "standard_id"}
 )
 
 ALLOWED_REVIEW_STATES: Final[frozenset[str]] = frozenset(
@@ -83,7 +83,7 @@ ALLOWED_TAG_POLARITIES: Final[frozenset[str]] = frozenset(
     {"positive", "developing", "negative", "neutral"}
 )
 ALLOWED_COMMENT_SOURCES: Final[frozenset[str]] = frozenset(
-    {"standards_profile", "comment_bank", "custom"}
+    {"comment_bank", "custom"}
 )
 ALLOWED_LOCATION_TYPES: Final[frozenset[str]] = frozenset(
     {
@@ -217,7 +217,7 @@ def _validate_tags(value: Any) -> None:
             item["polarity"], f"{context}.polarity", ALLOWED_TAG_POLARITIES
         )
         for field in (
-            "standard_code",
+            "standard_id",
             "comment_id",
             "teacher_note",
             "evidence_id",
@@ -343,7 +343,7 @@ def _validate_comments(value: Any) -> None:
         )
         for field in ("label", "text"):
             _validate_non_empty_string(item[field], f"{context}.{field}")
-        for field in ("comment_id", "standard_code"):
+        for field in ("comment_id", "standard_id"):
             if field in item:
                 _validate_non_empty_string(item[field], f"{context}.{field}")
         if "bank_id" in item:
@@ -372,21 +372,7 @@ def _validate_comment_provenance(
                 )
         return
 
-    if source == "standards_profile":
-        if "bank_id" in item:
-            raise ReviewRecordError(
-                f"Field '{context}.bank_id' must be absent when "
-                f"'{context}.source' is 'standards_profile'."
-            )
-        for field in ("comment_id", "standard_code"):
-            if field not in item:
-                raise ReviewRecordError(
-                    f"Field '{context}.{field}' is required when "
-                    f"'{context}.source' is 'standards_profile'."
-                )
-        return
-
-    for field in ("bank_id", "comment_id", "standard_code"):
+    for field in ("bank_id", "comment_id", "standard_id"):
         if field in item:
             raise ReviewRecordError(
                 f"Field '{context}.{field}' must be absent when "

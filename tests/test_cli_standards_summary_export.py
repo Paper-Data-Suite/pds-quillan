@@ -22,7 +22,7 @@ def test_cli_exports_standards_rows_and_prints_summary(
     paths = _write_review(
         tmp_path,
         "00100",
-        tags=[_tag("tag_1", "W.A", "positive")],
+        tags=[_tag("tag_1", "synthetic:W.A", "positive")],
         comments=[],
     )
     originals = {path: path.read_bytes() for path in paths}
@@ -51,7 +51,7 @@ def test_cli_exports_standards_rows_and_prints_summary(
     with standards_summary_export_path(
         tmp_path, CLASS_ID, ASSIGNMENT_ID
     ).open("r", encoding="utf-8", newline="") as file:
-        assert list(csv.DictReader(file))[0]["standard_code"] == "W.A"
+        assert list(csv.DictReader(file))[0]["standard_id"] == "synthetic:W.A"
     for path, original in originals.items():
         assert path.read_bytes() == original
 
@@ -69,7 +69,7 @@ def test_cli_handles_missing_directory_and_overwrite(
     _write_review(
         tmp_path,
         "00100",
-        tags=[_tag("tag_1", "W.A", "positive")],
+        tags=[_tag("tag_1", "synthetic:W.A", "positive")],
         comments=[],
     )
     output_path = standards_summary_export_path(
