@@ -3,18 +3,17 @@
 Quillan stores structured evidence about student writing using local files.
 
 These contracts describe the expected file formats for standards profiles,
-shared comment banks, assignments, submissions, teacher review, requirements
-checks, feedback exports, and reports.
+shared comment banks, shared tag banks, assignments, submissions, teacher
+review, requirements checks, feedback exports, and reports.
 
 Standards profiles, assignment configurations, the legacy text-oriented
-submission metadata shape, comment banks, review records, and the
+submission metadata shape, comment banks, tag banks, review records, and the
 reviewable-evidence submission manifest have implemented Python validation
 support. Routed-evidence discovery and manifest assembly, explicit
-teacher-controlled review updates, reusable-comment selection, and student,
-class, and standards exports are implemented through direct CLI commands and
-Python APIs. The writing-response payload contract is implemented and used by
-printable PDF generation. Requirements checking and guided teacher-facing
-review remain future work.
+teacher-controlled review updates, reusable-comment selection, reusable-tag
+selection, and student, class, and standards exports are implemented through
+direct CLI commands, guided menus, and Python APIs. The writing-response payload
+contract is implemented and used by printable PDF generation.
 
 For the expected workspace layout and file lifecycle of these records, see
 [`workspace_lifecycle.md`](workspace_lifecycle.md).
@@ -31,6 +30,12 @@ For reusable teacher-authored feedback language stored at
 `shared/comment_banks/<bank_id>.json`, including categories, writing-type
 filters, standards and criterion links, and future assignment activation, see
 [`comment_bank_contract.md`](comment_bank_contract.md).
+
+For reusable teacher-authored tag observations stored at
+`shared/tag_banks/<tag_bank_id>.json`, including categories, writing-type
+filters, optional standards references, optional criterion metadata, and
+review-time snapshot behavior, see
+[`tag_bank_contract.md`](tag_bank_contract.md).
 
 For the required structure and human-readable elements of a printable
 writing-response page, see
@@ -57,9 +62,12 @@ Quillan stores only durable pds-core references:
 
 * assignment `standards_profile_id` stores a pds-core `profile_id`;
 * assignment `focus_standards` stores pds-core `standard_id` values;
-* review tags and selected reusable comments may store optional pds-core `standard_id` provenance.
+* review tags and selected reusable comments may store optional pds-core `standard_id` provenance;
+* reusable tag templates may store optional pds-core `standard_ids` as source metadata.
 
-Quillan does not store or validate an independent standards-profile JSON shape. Legacy Quillan standards-profile files were removed before production use as a pre-1.0 breaking cleanup, with no production-data migration.## Shared Comment Bank
+Quillan does not store or validate an independent standards-profile JSON shape. Legacy Quillan standards-profile files were removed before production use as a pre-1.0 breaking cleanup, with no production-data migration.
+
+## Shared Comment Bank
 
 A shared comment bank is reusable teacher-authored source data stored at:
 
@@ -92,6 +100,39 @@ Comment banks are subject-agnostic and writing-type-aware teacher-authored
 review materials. Optional `standard_ids` are pds-core durable references only;
 Quillan does not create, import, edit, retire, reactivate, or authoritatively
 validate standards through comment-bank workflows.
+
+## Shared Tag Bank
+
+A shared tag bank is reusable teacher-authored source data stored at:
+
+```text
+shared/tag_banks/<tag_bank_id>.json
+```
+
+It organizes short teacher observations with writing types, categories,
+polarity, optional standard references, optional rubric/scoring criterion
+metadata, optional severity defaults, and optional teacher-note prompts. Tag
+banks are not student records, grades, scores, mastery determinations,
+generated feedback, automatic judgments, or automatic suggestions.
+
+Teachers can create, view, edit, extend, and validate shared tag banks from
+Review Materials -> Tag Banks. The workflows write only confirmed, valid
+version `1` bank files under `shared/tag_banks/`, never invalid partial files.
+Existing banks are not overwritten unless the teacher explicitly confirms with
+`OVERWRITE`.
+
+Review Student Work -> Add structured tag can select a reusable tag by bank,
+category, and tag template. The selected values are copied into
+`review.json.tags` with `source: "tag_bank"`, `tag_bank_id`, and
+`tag_template_id`, plus snapshotted label, polarity, optional severity,
+optional `standard_id`, optional `criterion_id`, and optional teacher note.
+Custom one-off tags remain available, and existing direct CLI add-tag behavior
+remains compatible.
+
+Tag banks are Quillan-owned review materials. Optional `standard_ids` are
+pds-core durable references only; Quillan does not create, import, edit,
+retire, reactivate, or authoritatively validate standards through tag-bank
+workflows. Optional `criterion_ids` are rubric/scoring metadata only.
 
 ## Assignment
 

@@ -418,6 +418,13 @@ quillan set-score <class_id> <assignment_id> <student_id> --criterion <criterion
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 ```
 
+`Add structured tag` opens an Add Tag chooser. Teachers can select a reusable
+tag from `shared/tag_banks/<tag_bank_id>.json` by bank, category, and tag
+template, or choose Custom tag to use the existing one-off tag prompts. Reusable
+tag selections snapshot template values into `review.json.tags` with
+`source: "tag_bank"`, `tag_bank_id`, and `tag_template_id`; custom tags and the
+direct `add-tag` command remain compatible.
+
 Guided export actions reuse the same underlying export services as the direct
 commands:
 
@@ -476,14 +483,36 @@ records by themselves. Review selection snapshots the chosen label and text
 into `review.json.comments`; later bank edits do not silently rewrite previous
 review records.
 
-The Tag Banks, Rubrics / Scoring Profiles, and Starter Materials screens remain
-guidance-only. They do not create directories, edit files, install starter data,
-mutate student submissions, route scans, change rosters or assignments, write
-exports, or update review records.
+Tag Banks opens a submenu:
+
+```text
+1. Create tag bank
+2. View tag banks
+3. Edit tag bank
+4. Add category
+5. Add tag template
+6. Validate tag bank
+7. Back
+```
+
+Tag-bank authoring writes confirmed, valid version `1` banks only under
+`shared/tag_banks/<tag_bank_id>.json`. It builds complete banks in memory,
+validates before writing, refuses accidental overwrites unless the teacher types
+exactly `OVERWRITE`, and does not write invalid partial files.
+
+Tag banks are teacher-authored reusable observations for quick tagging. They do
+not grade work, imply mastery, generate automatic feedback, or mutate student
+records by themselves.
+
+Rubrics / Scoring Profiles and Starter Materials remain guidance-only. They do
+not create directories, edit files, install starter data, mutate student
+submissions, route scans, change rosters or assignments, write exports, or
+update review records.
 
 Review materials are Quillan-owned teaching and review aids. They may later
 reference durable pds-core `profile_id` and `standard_id` values. Optional
-comment-bank `standard_ids` are pds-core references only; Quillan does not
+comment-bank and tag-bank `standard_ids` are pds-core references only; optional
+tag-bank `criterion_ids` are rubric/scoring metadata only. Quillan does not
 create, import, edit, retire, reactivate, or authoritatively validate standards.
 The menu does not duplicate or replace pds-core ownership of standards,
 workspace resolution, shared class routes, roster routes, scan routes, or route

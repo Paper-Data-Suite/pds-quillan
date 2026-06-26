@@ -267,7 +267,7 @@ Guided export actions preserve overwrite protection. Existing export files are n
 
 ### Review Materials
 
-The Review Materials menu is the preparation area for reusable teacher-authored review aids. It includes a Comment Banks submenu for creating, viewing, editing, extending, and validating shared reusable feedback banks. Tag banks, rubric/scoring profiles, and optional synthetic starter materials remain future workflows.
+The Review Materials menu is the preparation area for reusable teacher-authored review aids. It includes Comment Banks and Tag Banks submenus for creating, viewing, editing, extending, and validating shared reusable review materials. Rubric/scoring profiles and optional synthetic starter materials remain future workflows.
 
 These materials help teachers review written student work more quickly by selecting prepared comments, tags, and scoring criteria instead of typing everything during review.
 
@@ -277,9 +277,13 @@ Comment banks created through the menu are stored at `shared/comment_banks/<bank
 
 Comment banks store reusable teacher-authored feedback language. They do not grade work, imply mastery, generate comments automatically, or change student records by themselves. When a teacher selects a reusable comment during Review Student Work, Quillan snapshots the selected label and text into the review record with `source: "comment_bank"`, `bank_id`, and `comment_id`; later bank edits do not silently rewrite prior student review records.
 
+Tag banks created through the menu are stored at `shared/tag_banks/<tag_bank_id>.json` and validate against the version `1` tag-bank contract. Tag banks store reusable teacher-authored observations for quick review tagging. They are not grades, scores, mastery determinations, generated feedback, or automatic judgments. During Review Student Work -> Add structured tag, teachers can select a reusable tag by bank, category, and tag template, or choose a custom one-off tag. Selected reusable tags snapshot label, polarity, optional severity, optional standard/criterion metadata, teacher notes, and `source: "tag_bank"` provenance into `review.json.tags`.
+
 Optional `standard_ids` in comment metadata are durable pds-core references only. Quillan comment-bank authoring does not create, import, edit, retire, reactivate, or validate standards as authoritative.
 
-Comment-bank authoring does not modify student submissions, scans, rosters, assignments, exports, pds-core workspace preferences, pds-core route helpers, or pds-core standards. The authoring workflows write only confirmed, valid files under `shared/comment_banks/`.
+Optional `standard_ids` in tag templates are also durable pds-core references only. Optional `criterion_ids` are rubric/scoring metadata only. Quillan tag-bank authoring does not mutate pds-core standards, route helpers, workspace preferences, rosters, assignments, submissions, scans, exports, comment banks, or rubric files.
+
+Comment-bank authoring does not modify student submissions, scans, rosters, assignments, exports, pds-core workspace preferences, pds-core route helpers, or pds-core standards. Tag-bank authoring writes only confirmed, valid files under `shared/tag_banks/`; comment-bank authoring writes only confirmed, valid files under `shared/comment_banks/`.
 
 Review materials augment Quillan review workflows but do not replace pds-core ownership of standards, workspace resolution, or shared routes.
 
@@ -715,6 +719,12 @@ The comment-bank contract is documented in:
 
 ```text
 docs/comment_bank_contract.md
+```
+
+The tag-bank contract is documented in:
+
+```text
+docs/tag_bank_contract.md
 ```
 
 Synthetic example files are available in:

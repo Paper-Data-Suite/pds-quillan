@@ -38,6 +38,10 @@ REQUIRED_TAG_FIELDS: Final[frozenset[str]] = frozenset(
 )
 OPTIONAL_TAG_FIELDS: Final[frozenset[str]] = frozenset(
     {
+        "source",
+        "tag_bank_id",
+        "tag_template_id",
+        "criterion_id",
         "standard_id",
         "comment_id",
         "severity",
@@ -84,6 +88,9 @@ ALLOWED_TAG_POLARITIES: Final[frozenset[str]] = frozenset(
 )
 ALLOWED_COMMENT_SOURCES: Final[frozenset[str]] = frozenset(
     {"comment_bank", "custom"}
+)
+ALLOWED_TAG_SOURCES: Final[frozenset[str]] = frozenset(
+    {"tag_bank", "custom"}
 )
 ALLOWED_LOCATION_TYPES: Final[frozenset[str]] = frozenset(
     {
@@ -217,6 +224,7 @@ def _validate_tags(value: Any) -> None:
             item["polarity"], f"{context}.polarity", ALLOWED_TAG_POLARITIES
         )
         for field in (
+            "criterion_id",
             "standard_id",
             "comment_id",
             "teacher_note",
@@ -224,6 +232,22 @@ def _validate_tags(value: Any) -> None:
         ):
             if field in item:
                 _validate_non_empty_string(item[field], f"{context}.{field}")
+        if "tag_bank_id" in item:
+            _validate_identifier(item["tag_bank_id"], f"{context}.tag_bank_id")
+        if "tag_template_id" in item:
+            _validate_identifier(
+                item["tag_template_id"], f"{context}.tag_template_id"
+            )
+        if "source" in item:
+            source = _validate_allowed_value(
+                item["source"], f"{context}.source", ALLOWED_TAG_SOURCES
+            )
+            _validate_tag_provenance(item, source, context)
+        elif "tag_bank_id" in item or "tag_template_id" in item:
+            raise ReviewRecordError(
+                f"Field '{context}.source' is required when tag-bank "
+                "provenance fields are present."
+            )
         if "severity" in item:
             _validate_non_negative_integer(
                 item["severity"], f"{context}.severity"
@@ -238,6 +262,24 @@ def _validate_tags(value: Any) -> None:
             )
         _validate_timestamp(item["created_at"], f"{context}.created_at")
         _validate_json_object(item["module_details"], f"{context}.module_details")
+
+
+def _validate_tag_provenance(item: dict[str, Any], source: str, context: str) -> None:
+    if source == "tag_bank":
+        for field in ("tag_bank_id", "tag_template_id"):
+            if field not in item:
+                raise ReviewRecordError(
+                    f"Field '{context}.{field}' is required when "
+                    f"'{context}.source' is 'tag_bank'."
+                )
+        return
+
+    for field in ("tag_bank_id", "tag_template_id"):
+        if field in item:
+            raise ReviewRecordError(
+                f"Field '{context}.{field}' must be absent when "
+                f"'{context}.source' is 'custom'."
+            )
 
 
 def _validate_location(

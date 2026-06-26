@@ -73,6 +73,10 @@ def add_review_tag(
     polarity: str,
     standard_id: str | None = None,
     comment_id: str | None = None,
+    criterion_id: str | None = None,
+    source: str | None = None,
+    tag_bank_id: str | None = None,
+    tag_template_id: str | None = None,
     severity: int | None = None,
     teacher_note: str | None = None,
     page_number: int | None = None,
@@ -86,6 +90,12 @@ def add_review_tag(
     normalized_polarity = _normalize_polarity(polarity)
     normalized_standard = _normalize_optional_string(standard_id, "standard_id")
     normalized_comment = _normalize_optional_string(comment_id, "comment_id")
+    normalized_criterion = _normalize_optional_string(criterion_id, "criterion_id")
+    normalized_source = _normalize_optional_source(source)
+    normalized_tag_bank = _normalize_optional_identifier(tag_bank_id, "tag_bank_id")
+    normalized_tag_template = _normalize_optional_identifier(
+        tag_template_id, "tag_template_id"
+    )
     normalized_note = _normalize_optional_string(teacher_note, "teacher_note")
     normalized_evidence = _normalize_optional_string(evidence_id, "evidence_id")
     _validate_severity(severity)
@@ -95,6 +105,22 @@ def add_review_tag(
 
     if normalized_comment is not None and normalized_standard is None:
         raise ReviewTagError("comment_id requires standard_id.")
+    if normalized_source == "tag_bank" and (
+        normalized_tag_bank is None or normalized_tag_template is None
+    ):
+        raise ReviewTagError("tag_bank source requires tag_bank_id and tag_template_id.")
+    if normalized_source == "custom" and (
+        normalized_tag_bank is not None or normalized_tag_template is not None
+    ):
+        raise ReviewTagError(
+            "tag_bank_id and tag_template_id must be omitted for custom tags."
+        )
+    if normalized_source is None and (
+        normalized_tag_bank is not None or normalized_tag_template is not None
+    ):
+        raise ReviewTagError(
+            "source is required when tag_bank_id or tag_template_id is supplied."
+        )
 
     try:
         resolved_workspace_root = Path(workspace_root).resolve(strict=False)
@@ -206,8 +232,12 @@ def add_review_tag(
         "module_details": {},
     }
     optional_fields = {
+        "source": normalized_source,
+        "tag_bank_id": normalized_tag_bank,
+        "tag_template_id": normalized_tag_template,
         "standard_id": normalized_standard,
         "comment_id": normalized_comment,
+        "criterion_id": normalized_criterion,
         "severity": severity,
         "teacher_note": normalized_note,
         "page_number": page_number,
@@ -271,6 +301,27 @@ def _normalize_polarity(value: str) -> str:
             f"Invalid polarity {value!r}. Allowed values: {allowed}."
         )
     return value
+
+
+def _normalize_optional_source(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = _normalize_required_string(value, "source")
+    if normalized not in {"tag_bank", "custom"}:
+        raise ReviewTagError(
+            "Invalid source "
+            f"{normalized!r}. Allowed values: custom, tag_bank."
+        )
+    return normalized
+
+
+def _normalize_optional_identifier(value: str | None, field: str) -> str | None:
+    normalized = _normalize_optional_string(value, field)
+    if normalized is None:
+        return None
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", normalized):
+        raise ReviewTagError(f"{field} must be a valid identifier.")
+    return normalized
 
 
 def _validate_severity(value: int | None) -> None:

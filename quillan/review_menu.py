@@ -39,6 +39,7 @@ from quillan.standards_summary_export import (
     export_standards_summary,
 )
 from quillan.comment_banks import CommentBankError, load_comment_bank
+from quillan.tag_bank_writing import list_valid_tag_banks
 from quillan.review_comments import ReviewCommentError, add_review_comment
 from quillan.review_notes import ReviewNoteError, add_review_note
 from quillan.review_record import (
@@ -498,7 +499,61 @@ def _menu_add_review_tag(
     assignment_id: str,
     student_id: str,
 ) -> None:
-    label = input("Tag label: ").strip()
+    print("Add Tag")
+    print()
+    print("Tags are short teacher observations used for organization and summaries.")
+    print("Choose a reusable tag, or create a one-time custom tag.")
+    print()
+    print("1. Select reusable tag")
+    print("2. Custom tag")
+    print("3. Back")
+    print()
+    choice = input("Select an option: ").strip()
+    if choice in {"", "3"}:
+        print("Add tag canceled.")
+        return
+    if choice == "1":
+        _menu_add_reusable_review_tag(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+        )
+        return
+    if choice == "2":
+        _menu_add_custom_review_tag(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+        )
+        return
+
+    # Compatibility with the prior direct menu prompt sequence: if a caller
+    # supplies a tag label immediately after choosing Add structured tag, treat
+    # that first response as the custom label.
+    _menu_add_custom_review_tag(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        initial_label=choice,
+    )
+
+
+def _menu_add_custom_review_tag(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    initial_label: str | None = None,
+) -> None:
+    print("Custom Tag")
+    print()
+    print("Use this when none of the reusable tags fit.")
+    print()
+    label = initial_label if initial_label is not None else input("Tag label: ").strip()
     if not label:
         print("Add tag canceled. Tag label is required.")
         return
@@ -582,12 +637,270 @@ def _menu_add_review_tag(
             evidence_id=evidence_id,
             location_type=location_type,
             location_value=location_value,
+            source="custom",
         )
     except (ReviewTagError, OSError) as error:
         print(f"Error: could not add structured tag: {error}")
         return
 
     print_added_review_tag(added)
+
+
+def _menu_add_reusable_review_tag(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    files = list_valid_tag_banks(workspace_root)
+    if not files:
+        print("No valid shared tag banks found.")
+        print("Create one from Review Materials -> Tag Banks -> Create tag bank.")
+        print()
+        print("1. Custom tag")
+        print("2. Back")
+        selection = input("Select an option: ").strip()
+        if selection == "1":
+            _menu_add_custom_review_tag(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+        else:
+            print("Add tag canceled.")
+        return
+
+    bank = _prompt_tag_bank(files)
+    if bank is None:
+        return
+    category = _prompt_tag_category(bank)
+    if category is None:
+        return
+    tag = _prompt_tag_template(bank, category)
+    if tag is None:
+        return
+    if tag is _CUSTOM_TAG:
+        _menu_add_custom_review_tag(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+        )
+        return
+
+    assert isinstance(tag, dict)
+    standard_id = _prompt_tag_standard_id(tag)
+    criterion_id = _prompt_tag_criterion_id(tag)
+    teacher_note = _prompt_template_teacher_note(tag)
+    severity = tag.get("severity_default")
+    severity_value = severity if isinstance(severity, int) and not isinstance(severity, bool) else None
+
+    try:
+        added = add_review_tag(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            label=str(tag["label"]),
+            polarity=str(tag["polarity"]),
+            standard_id=standard_id,
+            criterion_id=criterion_id,
+            severity=severity_value,
+            teacher_note=teacher_note,
+            source="tag_bank",
+            tag_bank_id=str(bank["tag_bank_id"]),
+            tag_template_id=str(tag["tag_template_id"]),
+        )
+    except (ReviewTagError, OSError) as error:
+        if standard_id is not None:
+            print("This tag's saved standard IDs are not active for this assignment.")
+            print("The tag can still be added without a standard reference.")
+            print()
+            print("1. Add tag without standard")
+            print("2. Back")
+            if input("Select an option: ").strip() == "1":
+                try:
+                    added = add_review_tag(
+                        workspace_root,
+                        class_id,
+                        assignment_id,
+                        student_id,
+                        label=str(tag["label"]),
+                        polarity=str(tag["polarity"]),
+                        criterion_id=criterion_id,
+                        severity=severity_value,
+                        teacher_note=teacher_note,
+                        source="tag_bank",
+                        tag_bank_id=str(bank["tag_bank_id"]),
+                        tag_template_id=str(tag["tag_template_id"]),
+                    )
+                except (ReviewTagError, OSError) as retry_error:
+                    print(f"Error: could not add structured tag: {retry_error}")
+                    return
+            else:
+                print("Add tag canceled.")
+                return
+        else:
+            print(f"Error: could not add structured tag: {error}")
+            return
+
+    print_added_review_tag(added)
+
+
+def _prompt_tag_bank(files: tuple[Any, ...]) -> dict[str, Any] | None:
+    print("Available tag banks:")
+    banks: list[dict[str, Any]] = []
+    for item in files:
+        assert item.bank is not None
+        banks.append(item.bank)
+    for index, bank in enumerate(banks, start=1):
+        title = bank.get("title")
+        label = str(title).strip() if isinstance(title, str) and title.strip() else bank["tag_bank_id"]
+        print(f"{index}. {label}")
+    print("B. Back")
+    print()
+    selection = input("Select tag bank: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        print("Select tag canceled.")
+        return None
+    if selection.isdigit() and 1 <= int(selection) <= len(banks):
+        return banks[int(selection) - 1]
+    for bank in banks:
+        if bank["tag_bank_id"] == selection:
+            return bank
+    print("Invalid tag bank selection. Please choose a listed bank or Back.")
+    return None
+
+
+def _prompt_tag_category(bank: dict[str, Any]) -> dict[str, Any] | None:
+    categories = _sorted_records(bank["categories"])
+    print("Categories:")
+    for index, category in enumerate(categories, start=1):
+        print(f"{index}. {category['label']}")
+    print("B. Back")
+    print()
+    selection = input("Select category: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        print("Select tag canceled.")
+        return None
+    if selection.isdigit() and 1 <= int(selection) <= len(categories):
+        return categories[int(selection) - 1]
+    print("Invalid category selection. Please choose a listed category or Back.")
+    return None
+
+
+_CUSTOM_TAG = object()
+
+
+def _prompt_tag_template(bank: dict[str, Any], category: dict[str, Any]) -> dict[str, Any] | object | None:
+    tags = [
+        tag
+        for tag in _sorted_records(bank["tags"])
+        if tag.get("category_id") == category["category_id"]
+    ]
+    print(f"{category['label']} Tags:")
+    for index, tag in enumerate(tags, start=1):
+        print(f"{index}. {tag['label']}")
+    custom_index = len(tags) + 1
+    print(f"{custom_index}. Custom tag")
+    print("B. Back")
+    print()
+    selection = input("Select tag: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        print("Select tag canceled.")
+        return None
+    if selection.isdigit():
+        selected = int(selection)
+        if 1 <= selected <= len(tags):
+            return tags[selected - 1]
+        if selected == custom_index:
+            return _CUSTOM_TAG
+    print("Invalid tag selection. Please choose a listed tag or Back.")
+    return None
+
+
+def _sorted_records(records: list[Any]) -> list[dict[str, Any]]:
+    valid = [record for record in records if isinstance(record, dict)]
+    return sorted(
+        valid,
+        key=lambda item: (
+            item.get("sort_order") if isinstance(item.get("sort_order"), int) else 999999,
+            str(item.get("label", "")).casefold(),
+        ),
+    )
+
+
+def _prompt_tag_standard_id(tag: dict[str, Any]) -> str | None:
+    standard_ids = [
+        standard_id
+        for standard_id in tag.get("standard_ids", [])
+        if isinstance(standard_id, str) and standard_id.strip()
+    ]
+    if not standard_ids:
+        return None
+    if len(standard_ids) == 1:
+        return standard_ids[0]
+    print("Standard ID options:")
+    for index, standard_id in enumerate(standard_ids, start=1):
+        print(f"{index}. {standard_id}")
+    print(f"{len(standard_ids) + 1}. Skip standard")
+    print("B. Back")
+    print()
+    selection = input("Select standard ID: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        return None
+    if selection.isdigit():
+        selected = int(selection)
+        if 1 <= selected <= len(standard_ids):
+            return standard_ids[selected - 1]
+        if selected == len(standard_ids) + 1:
+            return None
+    if selection in standard_ids:
+        return selection
+    print("Invalid standard ID selection. Standard omitted.")
+    return None
+
+
+def _prompt_tag_criterion_id(tag: dict[str, Any]) -> str | None:
+    criterion_ids = [
+        criterion_id
+        for criterion_id in tag.get("criterion_ids", [])
+        if isinstance(criterion_id, str) and criterion_id.strip()
+    ]
+    if not criterion_ids:
+        return None
+    if len(criterion_ids) == 1:
+        return criterion_ids[0]
+    print("Criterion ID options:")
+    for index, criterion_id in enumerate(criterion_ids, start=1):
+        print(f"{index}. {criterion_id}")
+    print(f"{len(criterion_ids) + 1}. Skip criterion")
+    print("B. Back")
+    print()
+    selection = input("Select criterion ID: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        return None
+    if selection.isdigit():
+        selected = int(selection)
+        if 1 <= selected <= len(criterion_ids):
+            return criterion_ids[selected - 1]
+        if selected == len(criterion_ids) + 1:
+            return None
+    if selection in criterion_ids:
+        return selection
+    print("Invalid criterion ID selection. Criterion omitted.")
+    return None
+
+
+def _prompt_template_teacher_note(tag: dict[str, Any]) -> str | None:
+    prompt = tag.get("teacher_note_prompt")
+    if not isinstance(prompt, str) or not prompt.strip():
+        return None
+    print("Teacher note:")
+    print(prompt.strip())
+    print()
+    return input("Leave blank to skip: ").strip() or None
 
 
 def _load_available_comment_banks(
