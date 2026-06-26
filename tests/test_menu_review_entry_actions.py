@@ -166,11 +166,11 @@ def _enter_selected_student(student_choice: str = "1") -> list[str]:
 
 
 def _exit_selected_student_to_main() -> list[str]:
-    return ["9", "6", "", "2", "8"]
+    return ["9", "6", "", "2", "9"]
 
 
 def _exit_after_selected_student_action_to_main() -> list[str]:
-    return ["", "9", "6", "", "2", "8"]
+    return ["", "9", "6", "", "2", "9"]
 
 
 @pytest.fixture
