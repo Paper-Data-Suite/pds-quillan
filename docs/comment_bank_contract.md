@@ -24,9 +24,31 @@ does not evaluate writing, imply standards mastery, or place a comment in a
 student's review by itself.
 
 This document defines comment bank schema version `1`. Runtime loading,
-validation, and direct student-facing selection are implemented; bank editing,
-assignment activation, menus, feedback export, automatic suggestions, and
-AI-generated comments are not.
+validation, direct student-facing selection, and teacher-facing creation and
+editing through Review Materials -> Comment Banks are implemented. Assignment
+activation, automatic suggestions, and AI-generated comments are not.
+
+Teachers can create, view, edit, extend, and validate shared banks from:
+
+```text
+Quillan -> Review Materials -> Comment Banks
+```
+
+The authoring workflow writes only confirmed, valid banks under
+`shared/comment_banks/<bank_id>.json`. It does not write invalid partial banks,
+and it does not overwrite an existing bank unless the teacher explicitly types
+`OVERWRITE`. Created banks are immediately available from Review Student Work
+-> Select reusable comment because the menu uses the same schema and validation
+as review-time loading.
+
+Comment-bank authoring is subject-agnostic and writing-type-aware. Banks may
+support essays, constructed responses, lab reports, reflections, research
+papers, mathematical explanations, technical documentation, design rationale,
+portfolio reflection, and other local written-work contexts.
+
+Optional `standard_ids` are durable pds-core references only. Quillan stores
+them as metadata but does not create, import, edit, retire, reactivate, or
+authoritatively validate standards.
 
 ## Top-Level Structure
 

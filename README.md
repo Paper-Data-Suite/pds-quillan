@@ -267,13 +267,19 @@ Guided export actions preserve overwrite protection. Existing export files are n
 
 ### Review Materials
 
-The Review Materials menu is the preparation area for reusable teacher-authored review aids. It is intended for comment banks, tag banks, rubric/scoring profiles, and optional synthetic starter materials.
+The Review Materials menu is the preparation area for reusable teacher-authored review aids. It includes a Comment Banks submenu for creating, viewing, editing, extending, and validating shared reusable feedback banks. Tag banks, rubric/scoring profiles, and optional synthetic starter materials remain future workflows.
 
 These materials help teachers review written student work more quickly by selecting prepared comments, tags, and scoring criteria instead of typing everything during review.
 
 Review materials are subject-agnostic. They may support essays, constructed responses, lab reports, journals, reflections, creative writing, research papers, mathematical explanations, technical writing, and other local writing tasks.
 
-This menu does not modify student submissions, scans, rosters, assignments, exports, or pds-core standards. It does not create or edit review materials yet; those workflows are implemented in follow-up issues.
+Comment banks created through the menu are stored at `shared/comment_banks/<bank_id>.json` and validate against the same version `1` contract used by review-time selection. Banks are subject-agnostic and writing-type-aware, so they can support essays, constructed responses, lab reports, reflections, research papers, mathematical explanations, technical documentation, design rationale, portfolio reflection, and other local written-work contexts.
+
+Comment banks store reusable teacher-authored feedback language. They do not grade work, imply mastery, generate comments automatically, or change student records by themselves. When a teacher selects a reusable comment during Review Student Work, Quillan snapshots the selected label and text into the review record with `source: "comment_bank"`, `bank_id`, and `comment_id`; later bank edits do not silently rewrite prior student review records.
+
+Optional `standard_ids` in comment metadata are durable pds-core references only. Quillan comment-bank authoring does not create, import, edit, retire, reactivate, or validate standards as authoritative.
+
+Comment-bank authoring does not modify student submissions, scans, rosters, assignments, exports, pds-core workspace preferences, pds-core route helpers, or pds-core standards. The authoring workflows write only confirmed, valid files under `shared/comment_banks/`.
 
 Review materials augment Quillan review workflows but do not replace pds-core ownership of standards, workspace resolution, or shared routes.
 

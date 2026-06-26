@@ -29,7 +29,9 @@ def launch_review_materials_menu() -> int:
             if choice in {"", "5"}:
                 return 0
             if choice == "1":
-                _show_comment_banks_info()
+                from quillan.comment_bank_workflows import launch_comment_banks_menu
+
+                launch_comment_banks_menu()
             elif choice == "2":
                 _show_tag_banks_info()
             elif choice == "3":
@@ -43,27 +45,6 @@ def launch_review_materials_menu() -> int:
     except KeyboardInterrupt:
         print("\nExiting review materials menu.")
         return 0
-
-
-def _show_comment_banks_info() -> None:
-    from quillan.menu import clear_screen, pause_for_user, print_menu_header
-
-    clear_screen()
-    print_menu_header("Comment Banks")
-    print("Comment banks are reusable teacher-authored feedback comments.")
-    print(
-        "They can be selected during review and copied into a student's "
-        "review record."
-    )
-    print()
-    print("Comment bank creation and editing will be implemented in #165.")
-    print()
-    print("Expected workspace location:")
-    print("shared/comment_banks/")
-    print()
-    print("No files were changed.")
-    print()
-    pause_for_user()
 
 
 def _show_tag_banks_info() -> None:

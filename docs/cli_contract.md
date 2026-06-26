@@ -437,8 +437,8 @@ mastery, generate AI feedback, or perform AI work.
 
 #### Review Materials
 
-Review Materials provides an informational preparation area for reusable
-teacher-authored review aids:
+Review Materials provides a preparation area for reusable teacher-authored
+review aids:
 
 ```text
 1. Comment Banks
@@ -453,16 +453,41 @@ student work such as essays, constructed responses, lab reports, journals,
 reflections, research papers, mathematical explanations, technical writing, and
 other local writing tasks.
 
-The current screens explain the purpose of comment banks, tag banks,
-rubrics/scoring profiles, and optional starter materials. They are guidance
-only. They do not create directories, edit files, install starter data, mutate
-student submissions, route scans, change rosters or assignments, write exports,
-or update review records.
+Comment Banks opens a submenu:
+
+```text
+1. Create comment bank
+2. View comment banks
+3. Edit comment bank
+4. Add category
+5. Add comment
+6. Validate comment bank
+7. Back
+```
+
+Comment-bank authoring writes confirmed, valid version `1` banks only under
+`shared/comment_banks/<bank_id>.json`. New banks are immediately available to
+Review Student Work -> Select reusable comment because they use the same
+schema, loading logic, and validation as review-time selection.
+
+Comment banks are teacher-authored reusable feedback language. They do not
+grade work, imply mastery, generate automatic feedback, or mutate student
+records by themselves. Review selection snapshots the chosen label and text
+into `review.json.comments`; later bank edits do not silently rewrite previous
+review records.
+
+The Tag Banks, Rubrics / Scoring Profiles, and Starter Materials screens remain
+guidance-only. They do not create directories, edit files, install starter data,
+mutate student submissions, route scans, change rosters or assignments, write
+exports, or update review records.
 
 Review materials are Quillan-owned teaching and review aids. They may later
-reference durable pds-core `profile_id` and `standard_id` values, but this menu
-does not duplicate or replace pds-core ownership of standards, workspace
-resolution, shared class routes, roster routes, scan routes, or route helpers.
+reference durable pds-core `profile_id` and `standard_id` values. Optional
+comment-bank `standard_ids` are pds-core references only; Quillan does not
+create, import, edit, retire, reactivate, or authoritatively validate standards.
+The menu does not duplicate or replace pds-core ownership of standards,
+workspace resolution, shared class routes, roster routes, scan routes, or route
+helpers.
 
 #### Workspace Settings
 

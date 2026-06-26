@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 
 from quillan.cli import main
+import quillan.comment_bank_workflows as comment_bank_workflows
 import quillan.review_menu as review_menu
 from quillan.review_record_paths import review_record_path, write_review_record
 from quillan.submission_manifest_paths import (
@@ -339,6 +340,70 @@ def test_review_menu_selects_reusable_comment_by_number(
     assert review["comments"][0]["comment_id"] == "focus_is_clear"
     assert review["review_state"] == "in_progress"
     assert manifest_path.read_bytes() == manifest_before
+
+
+def test_comment_bank_created_by_workflow_is_selectable_in_review(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        comment_bank_workflows,
+        "resolve_workspace_root",
+        lambda: workspace,
+    )
+    _menu_input(
+        monkeypatch,
+        [
+            "General Written Response Comments",
+            "",
+            "Reusable comments for written responses across subjects.",
+            "general",
+            "3",
+            "",
+            "",
+            "Explanation needs more detail",
+            "",
+            "Your response identifies the idea, but explain your reasoning more fully.",
+            "1",
+            "2",
+            "",
+            "",
+            "",
+            "1",
+        ],
+    )
+
+    assert comment_bank_workflows.prompt_create_comment_bank() == 0
+
+    _menu_input(
+        monkeypatch,
+        _enter_selected_student()
+        + ["4", "1", "1", ""]
+        + _exit_after_selected_student_action_to_main(),
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "general_written_response_comments" in output
+    assert "Explanation needs more detail" in output
+    review = json.loads(
+        review_record_path(
+            workspace,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+        ).read_text(encoding="utf-8")
+    )
+    comment = review["comments"][0]
+    assert comment["source"] == "comment_bank"
+    assert comment["bank_id"] == "general_written_response_comments"
+    assert comment["comment_id"] == "explanation_needs_more_detail"
+    assert comment["label"] == "Explanation needs more detail"
+    assert (
+        comment["text"]
+        == "Your response identifies the idea, but explain your reasoning more fully."
+    )
 
 
 def test_review_menu_sets_criterion_score(
