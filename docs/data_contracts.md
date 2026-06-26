@@ -72,6 +72,12 @@ standards and criterion references, polarity, severity defaults, search
 metadata, and student-facing controls. Banks are not student records, do not
 grade work, and do not generate feedback by themselves.
 
+Teachers can create, view, edit, extend, and validate shared banks from Review
+Materials -> Comment Banks. The workflows write only confirmed, valid version
+`1` bank files under `shared/comment_banks/`, never invalid partial files.
+Existing banks are not overwritten unless the teacher explicitly confirms with
+`OVERWRITE`.
+
 Future assignments may optionally activate banks through `comment_bank_ids`.
 The implemented direct shared-bank selection copies chosen language into
 `review.json.comments` with `source: "comment_bank"`, `bank_id`, and
@@ -81,6 +87,11 @@ a stable snapshot rather than a live reference. The complete version `1`
 shape and validation rules are defined in
 [`comment_bank_contract.md`](comment_bank_contract.md). Runtime validation and
 direct selection are implemented; assignment activation remains future work.
+
+Comment banks are subject-agnostic and writing-type-aware teacher-authored
+review materials. Optional `standard_ids` are pds-core durable references only;
+Quillan does not create, import, edit, retire, reactivate, or authoritatively
+validate standards through comment-bank workflows.
 
 ## Assignment
 

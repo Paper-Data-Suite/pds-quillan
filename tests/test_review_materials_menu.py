@@ -93,7 +93,6 @@ def test_review_materials_menu_navigation_returns_to_main_menu(
 @pytest.mark.parametrize(
     ("choice", "header", "future_issue", "path_text"),
     [
-        ("1", "Comment Banks", "#165", "shared/comment_banks/"),
         ("2", "Tag Banks", "#166", "shared/tag_banks/"),
         ("3", "Rubrics / Scoring Profiles", "#167", "shared/rubrics/"),
         ("4", "Starter Materials", "#169", ""),
@@ -117,6 +116,21 @@ def test_review_materials_informational_screens_return_safely(
     assert "No files were changed." in output
     if path_text:
         assert path_text in output
+
+
+def test_review_materials_comment_banks_opens_submenu(
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(monkeypatch, ["1", "7", "5"])
+
+    assert launch_review_materials_menu() == 0
+
+    output = capsys.readouterr().out
+    assert "Comment banks store reusable teacher-authored feedback comments." in output
+    assert "1. Create comment bank" in output
+    assert "6. Validate comment bank" in output
+    assert "7. Back" in output
 
 
 def test_review_materials_invalid_selection_is_helpful(
@@ -145,7 +159,10 @@ def test_review_materials_menu_has_no_workspace_side_effects(
         (folder / "existing.txt").write_text("keep", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     before = _file_tree(tmp_path)
-    _menu_input(monkeypatch, ["6", "1", "", "2", "", "3", "", "4", "", "5", "9"])
+    _menu_input(
+        monkeypatch,
+        ["6", "1", "7", "2", "", "3", "", "4", "", "5", "9"],
+    )
 
     assert main(["menu"]) == 0
 
