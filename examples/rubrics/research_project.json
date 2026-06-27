@@ -1,0 +1,94 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "rubric",
+  "rubric_id": "research_project",
+  "title": "Research Project Rubric",
+  "description": "Synthetic starter rubric for testing research-project scoring workflows. It is not official curriculum or grading policy.",
+  "scope": "shared",
+  "writing_types": [
+    "research",
+    "source_use",
+    "informational"
+  ],
+  "criteria": [
+    {
+      "criterion_id": "source_use",
+      "label": "Source Use",
+      "max_score": 4,
+      "scale": "4_point",
+      "sort_order": 10,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Relevant sources",
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Some source support",
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Source support missing",
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "evidence_support",
+      "label": "Evidence / Support",
+      "max_score": 4,
+      "scale": "4_point",
+      "sort_order": 20,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Specific evidence",
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "General evidence",
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Evidence unclear",
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "synthesis_explanation",
+      "label": "Synthesis / Explanation",
+      "max_score": 4,
+      "scale": "4_point",
+      "sort_order": 30,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Ideas connected",
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Some connection",
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Connection missing",
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    }
+  ],
+  "created_at": "2026-01-01T00:00:00+00:00",
+  "updated_at": "2026-01-01T00:00:00+00:00",
+  "module_details": {}
+}

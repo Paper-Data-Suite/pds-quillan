@@ -1,0 +1,26 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "tag_bank",
+  "tag_bank_id": "creative_process_tags",
+  "title": "Creative Process Tags",
+  "description": "Synthetic starter tag bank for testing creative-process review workflows.",
+  "scope": "shared",
+  "writing_types": ["creative_writing", "narrative", "creative_project"],
+  "categories": [
+    {"category_id": "creative_choice", "label": "Creative Choice", "module_details": {}, "sort_order": 10},
+    {"category_id": "craft_revision", "label": "Craft / Revision", "module_details": {}, "sort_order": 20},
+    {"category_id": "audience_purpose", "label": "Audience / Purpose", "module_details": {}, "sort_order": 30}
+  ],
+  "tags": [
+    {"tag_template_id": "strong_design_choice", "label": "Strong design choice", "category_id": "creative_choice", "polarity": "positive", "module_details": {}},
+    {"tag_template_id": "choice_needs_explanation", "label": "Choice needs explanation", "category_id": "creative_choice", "polarity": "developing", "severity_default": 1, "module_details": {}},
+    {"tag_template_id": "vivid_detail", "label": "Vivid detail", "category_id": "craft_revision", "polarity": "positive", "module_details": {}},
+    {"tag_template_id": "revision_target_identified", "label": "Revision target identified", "category_id": "craft_revision", "polarity": "positive", "module_details": {}},
+    {"tag_template_id": "audience_impact_clear", "label": "Audience impact clear", "category_id": "audience_purpose", "polarity": "positive", "module_details": {}},
+    {"tag_template_id": "audience_impact_unclear", "label": "Audience impact unclear", "category_id": "audience_purpose", "polarity": "neutral", "teacher_note_prompt": "What audience response should be clarified?", "module_details": {}}
+  ],
+  "created_at": "2026-01-01T00:00:00+00:00",
+  "updated_at": "2026-01-01T00:00:00+00:00",
+  "module_details": {}
+}

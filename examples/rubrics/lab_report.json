@@ -1,0 +1,18 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "rubric",
+  "rubric_id": "lab_report",
+  "title": "Lab Report Rubric",
+  "description": "Synthetic starter rubric for testing lab-report scoring workflows. It is not official curriculum or grading policy.",
+  "scope": "shared",
+  "writing_types": ["lab_report", "scientific_explanation", "process_method"],
+  "criteria": [
+    {"criterion_id": "procedure_method", "label": "Procedure / Method", "max_score": 4, "scale": "4_point", "sort_order": 10, "levels": [{"score": 4, "label": "Repeatable method", "module_details": {}}, {"score": 2, "label": "Partly clear method", "module_details": {}}, {"score": 0, "label": "Method unclear", "module_details": {}}], "module_details": {}},
+    {"criterion_id": "data_observation", "label": "Data / Observation", "max_score": 4, "scale": "4_point", "sort_order": 20, "levels": [{"score": 4, "label": "Complete and clear", "module_details": {}}, {"score": 2, "label": "Some data present", "module_details": {}}, {"score": 0, "label": "Data missing", "module_details": {}}], "module_details": {}},
+    {"criterion_id": "analysis_conclusion", "label": "Analysis / Conclusion", "max_score": 4, "scale": "4_point", "sort_order": 30, "levels": [{"score": 4, "label": "Conclusion uses evidence", "module_details": {}}, {"score": 2, "label": "Conclusion partly supported", "module_details": {}}, {"score": 0, "label": "Conclusion unsupported", "module_details": {}}], "module_details": {}}
+  ],
+  "created_at": "2026-01-01T00:00:00+00:00",
+  "updated_at": "2026-01-01T00:00:00+00:00",
+  "module_details": {}
+}

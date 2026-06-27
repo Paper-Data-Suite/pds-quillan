@@ -80,6 +80,12 @@ writing, writes only valid files, atomically replaces existing files, and
 requires exact `OVERWRITE` confirmation before replacing an existing bank.
 Canceling creation does not create `shared/tag_banks/` or partial files.
 
+Optional synthetic starter tag banks live under
+[`../examples/tag_banks/`](../examples/tag_banks/). They can be installed from
+Review Materials -> Starter Materials into `shared/tag_banks/`; existing files
+are skipped unless exact overwrite confirmation is provided. See
+[`starter_materials.md`](starter_materials.md).
+
 Review mode can select reusable tags by bank, category, and template. Selected
 values are snapshotted into `review.json.tags` with `source: "tag_bank"`,
 `tag_bank_id`, and `tag_template_id`. Later edits to the source tag bank do not

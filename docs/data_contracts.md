@@ -42,6 +42,13 @@ For reusable teacher-authored rubric / scoring profile records stored at
 assignment linkage, and review-time score snapshots, see
 [`rubric_contract.md`](rubric_contract.md).
 
+For optional synthetic starter review materials that can be previewed,
+validated, and installed into `shared/comment_banks/`, `shared/tag_banks/`, and
+`shared/rubrics/`, see [`starter_materials.md`](starter_materials.md). Starter
+installation is limited to those review-material folders and does not create
+assignments, rosters, scans, submissions, review records, exports, or pds-core
+standards.
+
 For the required structure and human-readable elements of a printable
 writing-response page, see
 [`printable_response_template.md`](printable_response_template.md).

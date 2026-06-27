@@ -1,0 +1,26 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "tag_bank",
+  "tag_bank_id": "lab_report_tags",
+  "title": "Lab Report Tags",
+  "description": "Synthetic starter tag bank for testing lab-report review workflows.",
+  "scope": "shared",
+  "writing_types": ["lab_report", "scientific_explanation", "process_method"],
+  "categories": [
+    {"category_id": "procedure_method", "label": "Procedure / Method", "module_details": {}, "sort_order": 10},
+    {"category_id": "observation_data", "label": "Observation / Data", "module_details": {}, "sort_order": 20},
+    {"category_id": "analysis_conclusion", "label": "Analysis / Conclusion", "module_details": {}, "sort_order": 30}
+  ],
+  "tags": [
+    {"tag_template_id": "procedure_is_repeatable", "label": "Procedure is repeatable", "category_id": "procedure_method", "polarity": "positive", "module_details": {}},
+    {"tag_template_id": "variables_unclear", "label": "Variables unclear", "category_id": "procedure_method", "polarity": "developing", "severity_default": 1, "teacher_note_prompt": "Which variable or control is unclear?", "module_details": {}},
+    {"tag_template_id": "data_table_complete", "label": "Data table complete", "category_id": "observation_data", "polarity": "positive", "module_details": {}},
+    {"tag_template_id": "data_table_incomplete", "label": "Data table incomplete", "category_id": "observation_data", "polarity": "negative", "severity_default": 2, "module_details": {}},
+    {"tag_template_id": "conclusion_connects_to_evidence", "label": "Conclusion connects to evidence", "category_id": "analysis_conclusion", "polarity": "positive", "module_details": {}},
+    {"tag_template_id": "analysis_needs_connection", "label": "Analysis needs connection", "category_id": "analysis_conclusion", "polarity": "neutral", "teacher_note_prompt": "What evidence should be explained?", "module_details": {}}
+  ],
+  "created_at": "2026-01-01T00:00:00+00:00",
+  "updated_at": "2026-01-01T00:00:00+00:00",
+  "module_details": {}
+}

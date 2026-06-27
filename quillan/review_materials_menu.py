@@ -41,7 +41,11 @@ def launch_review_materials_menu() -> int:
 
                 launch_rubrics_menu()
             elif choice == "4":
-                _show_starter_materials_info()
+                from quillan.starter_material_workflows import (
+                    launch_starter_materials_menu,
+                )
+
+                launch_starter_materials_menu()
             else:
                 print("Invalid selection. Please enter a number from 1 to 5.")
                 print()
@@ -72,23 +76,6 @@ def _show_tag_banks_info() -> None:
     print()
     print("Expected future workspace location:")
     print("shared/tag_banks/")
-    print()
-    print("No files were changed.")
-    print()
-    pause_for_user()
-
-
-def _show_starter_materials_info() -> None:
-    from quillan.menu import clear_screen, pause_for_user, print_menu_header
-
-    clear_screen()
-    print_menu_header("Starter Materials")
-    print(
-        "Starter materials will provide optional synthetic examples for "
-        "local testing and setup."
-    )
-    print()
-    print("Starter material installation will be implemented in #169.")
     print()
     print("No files were changed.")
     print()

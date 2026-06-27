@@ -214,6 +214,12 @@ as secondary detail. Missing comment banks point teachers to Review Materials
 The source contract and future assignment-activation design are defined in
 [`comment_bank_contract.md`](comment_bank_contract.md).
 
+Optional synthetic starter comment banks, tag banks, and rubrics can be
+installed from Review Materials -> Starter Materials for onboarding and
+testing. They are subject-agnostic examples only, install into shared
+review-material folders, and do not create assignments, rosters, submissions,
+review records, exports, or pds-core standards.
+
 Reusable tag banks are also selected in a bank, category, and tag-template
 flow. Custom tags are framed as one-off/manual observations with enumerated
 polarity and optional details grouped behind an explicit prompt. Missing tag

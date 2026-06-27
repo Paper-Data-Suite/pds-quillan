@@ -273,7 +273,7 @@ Guided export actions preserve overwrite protection. Student feedback export exp
 
 ### Review Materials
 
-The Review Materials menu is the preparation area for reusable teacher-authored review aids. It includes Comment Banks, Tag Banks, and Rubrics / Scoring Profiles submenus for creating, viewing, editing, extending, and validating shared reusable review materials. Optional synthetic starter materials remain a future workflow.
+The Review Materials menu is the preparation area for reusable teacher-authored review aids. It includes Comment Banks, Tag Banks, and Rubrics / Scoring Profiles submenus for creating, viewing, editing, extending, and validating shared reusable review materials. It also includes optional synthetic starter materials for onboarding and local testing.
 
 These materials help teachers review written student work more quickly by selecting prepared comments, tags, and scoring criteria instead of typing everything during review.
 
@@ -286,6 +286,8 @@ Comment banks store reusable teacher-authored feedback language. They do not gra
 Tag banks created through the menu are stored at `shared/tag_banks/<tag_bank_id>.json` and validate against the version `1` tag-bank contract. Tag banks store reusable teacher-authored observations for quick review tagging. They are not grades, scores, mastery determinations, generated feedback, or automatic judgments. During Review Student Work -> Add structured tag, teachers can select a reusable tag by bank, category, and tag template, or choose a custom one-off tag. Selected reusable tags snapshot label, polarity, optional severity, optional standard/criterion metadata, teacher notes, and `source: "tag_bank"` provenance into `review.json.tags`.
 
 Rubrics / scoring profiles created through the menu are stored at `shared/rubrics/<rubric_id>.json` and validate against the version `1` rubric contract. Assignment creation can select a valid shared rubric by number, while custom or unresolved rubric IDs remain allowed for compatibility. During Review Student Work -> Set criterion score, teachers can score from the assignment rubric by selecting a criterion and level, or choose Custom criterion score. Selected rubric scores snapshot the criterion ID, label, selected score, max score, scale, and optional teacher note into the existing `review.json.scores` shape. Rubric level feedback metadata does not automatically create comments or feedback entries.
+
+Starter Materials can preview, validate, and install clearly synthetic example comment banks, tag banks, and rubrics for general written responses, lab reports, research responses, reflection journals, and creative work. Installation copies only validated JSON files into `shared/comment_banks/`, `shared/tag_banks/`, and `shared/rubrics/`. Existing workspace files are skipped by default; overwriting requires exact `OVERWRITE` confirmation. Starter materials do not create assignments, rosters, scans, submissions, review records, exports, pds-core standards, pds-core route helpers, or pds-core standards profiles. See [`docs/starter_materials.md`](docs/starter_materials.md).
 
 Optional `standard_ids` in comment metadata are durable pds-core references only. Quillan comment-bank authoring does not create, import, edit, retire, reactivate, or validate standards as authoritative.
 
