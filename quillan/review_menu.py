@@ -50,7 +50,9 @@ from quillan.review_record import (
 )
 from quillan.review_record_paths import review_record_path
 from quillan.review_scores import ReviewScoreError, set_review_score
+from quillan.rubrics import RubricError, load_rubric, rubric_path
 from quillan.review_tags import ReviewTagError, add_review_tag
+from quillan.storage import assignment_config_path
 from quillan.submission_review_opening import (
     SubmissionReviewOpeningError,
     open_student_submission_for_review,
@@ -1110,7 +1112,200 @@ def _menu_set_review_score(
     assignment_id: str,
     student_id: str,
 ) -> None:
-    criterion_id = input("Criterion ID: ").strip()
+    print("Set Score")
+    print()
+    print("Use the assignment rubric, or enter a custom criterion.")
+    print()
+    print("1. Score from rubric")
+    print("2. Custom criterion score")
+    print("3. Back")
+    print()
+    choice = input("Select an option: ").strip()
+    if choice in {"", "3"}:
+        print("Set score canceled.")
+        return
+    if choice == "1":
+        _menu_set_review_score_from_rubric(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+        )
+        return
+    if choice == "2":
+        _menu_set_custom_review_score(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+        )
+        return
+
+    # Compatibility with the prior direct menu prompt sequence: if a caller
+    # supplies a criterion ID immediately after choosing Set criterion score,
+    # treat that first response as the custom criterion ID.
+    _menu_set_custom_review_score(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        initial_criterion_id=choice,
+    )
+
+
+def _menu_set_review_score_from_rubric(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    assignment = _load_assignment_for_review(workspace_root, class_id, assignment_id)
+    if assignment is None:
+        return
+    rubric_id = assignment.get("rubric_id")
+    if not isinstance(rubric_id, str) or not rubric_id.strip():
+        _menu_missing_rubric(workspace_root, class_id, assignment_id, student_id, "")
+        return
+    try:
+        rubric = load_rubric(rubric_path(workspace_root, rubric_id))
+    except (OSError, RubricError):
+        _menu_missing_rubric(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            rubric_id,
+        )
+        return
+
+    criterion = _prompt_score_criterion(rubric)
+    if criterion is None:
+        return
+    level = _prompt_score_level(criterion)
+    if level is None:
+        return
+    teacher_note = input("Teacher note (leave blank to skip): ").strip() or None
+    try:
+        updated = set_review_score(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            criterion_id=criterion["criterion_id"],
+            label=criterion["label"],
+            score=level["score"],
+            max_score=criterion["max_score"],
+            scale=criterion["scale"],
+            teacher_note=teacher_note,
+        )
+    except (ReviewScoreError, OSError) as error:
+        print(f"Error: could not set review score: {error}")
+        return
+    print_updated_review_score(updated)
+
+
+def _menu_missing_rubric(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    rubric_id: str,
+) -> None:
+    print(
+        "This assignment's rubric_id does not resolve to a valid shared "
+        "rubric profile."
+    )
+    print()
+    print(f"Rubric ID: {rubric_id}")
+    print()
+    print(
+        "Create or fix the rubric from Review Materials -> "
+        "Rubrics / Scoring Profiles."
+    )
+    print()
+    print("1. Custom criterion score")
+    print("2. Back")
+    print()
+    choice = input("Select an option: ").strip()
+    if choice == "1":
+        _menu_set_custom_review_score(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+        )
+    else:
+        print("Set score canceled.")
+
+
+def _load_assignment_for_review(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> dict[str, Any] | None:
+    try:
+        return load_assignment_config(
+            assignment_config_path(workspace_root, class_id, assignment_id)
+        )
+    except (AssignmentConfigError, OSError) as error:
+        print(f"Error: could not load assignment config: {error}")
+        return None
+
+
+def _prompt_score_criterion(rubric: dict[str, Any]) -> dict[str, Any] | None:
+    criteria = _sorted_records(rubric["criteria"])
+    print(f"Rubric: {rubric['title']}")
+    print()
+    for index, criterion in enumerate(criteria, start=1):
+        print(f"{index}. {criterion['label']}")
+    print()
+    print("B. Back")
+    print()
+    selection = input("Select criterion: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        print("Set score canceled.")
+        return None
+    if selection.isdigit() and 1 <= int(selection) <= len(criteria):
+        return criteria[int(selection) - 1]
+    print("Invalid criterion selection. Please choose a listed criterion or Back.")
+    return None
+
+
+def _prompt_score_level(criterion: dict[str, Any]) -> dict[str, Any] | None:
+    levels = _sorted_records(criterion["levels"])
+    print(criterion["label"])
+    print()
+    for index, level in enumerate(levels, start=1):
+        print(f"{index}. {level['score']} - {level['label']}")
+    print()
+    print("B. Back")
+    print()
+    selection = input("Select score: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        print("Set score canceled.")
+        return None
+    if selection.isdigit() and 1 <= int(selection) <= len(levels):
+        return levels[int(selection) - 1]
+    for level in levels:
+        if selection == str(level["score"]):
+            return level
+    print("Invalid score selection. Please choose a listed score or Back.")
+    return None
+
+
+def _menu_set_custom_review_score(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    initial_criterion_id: str | None = None,
+) -> None:
+    criterion_id = (
+        initial_criterion_id
+        if initial_criterion_id is not None
+        else input("Criterion ID: ").strip()
+    )
     if not criterion_id:
         print("Set score canceled. criterion_id is required.")
         return

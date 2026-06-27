@@ -37,6 +37,11 @@ filters, optional standards references, optional criterion metadata, and
 review-time snapshot behavior, see
 [`tag_bank_contract.md`](tag_bank_contract.md).
 
+For reusable teacher-authored rubric / scoring profile records stored at
+`shared/rubrics/<rubric_id>.json`, including criteria, score levels,
+assignment linkage, and review-time score snapshots, see
+[`rubric_contract.md`](rubric_contract.md).
+
 For the required structure and human-readable elements of a printable
 writing-response page, see
 [`printable_response_template.md`](printable_response_template.md).
@@ -199,6 +204,11 @@ library, and `focus_standards` should contain shared `standard_id` values
 rather than teacher-facing display codes. Quillan-specific comments, hotwords,
 feedback templates, review tags, and writing-review scaffolding remain
 module-owned; Quillan does not maintain an independent standards universe.
+
+The `rubric_id` field may resolve to a shared Quillan rubric profile at
+`shared/rubrics/<rubric_id>.json`. Unresolved custom rubric IDs remain
+structurally valid assignment data; they simply cannot power rubric-based menu
+scoring until a matching valid shared rubric exists.
 
 ## Submission Manifest
 

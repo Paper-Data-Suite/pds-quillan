@@ -13,6 +13,12 @@ from quillan.cli import main
 import quillan.comment_bank_workflows as comment_bank_workflows
 import quillan.review_menu as review_menu
 from quillan.review_record_paths import review_record_path, write_review_record
+from quillan.rubric_writing import (
+    build_rubric,
+    build_rubric_criterion,
+    build_rubric_level,
+    write_rubric,
+)
 from quillan.tag_bank_writing import (
     build_tag_bank,
     build_tag_category,
@@ -189,6 +195,25 @@ def _write_tag_bank(root: Path) -> None:
         tags=[tag],
     )
     write_tag_bank(root, bank)
+
+
+def _write_rubric(root: Path) -> None:
+    level = build_rubric_level(score=3, label="Clear explanation")
+    criterion = build_rubric_criterion(
+        criterion_id="reasoning",
+        label="Reasoning / Explanation",
+        max_score=4,
+        scale="4_point",
+        levels=[level],
+    )
+    rubric = build_rubric(
+        rubric_id="synthetic_rubric",
+        title="Synthetic Rubric",
+        description="Synthetic scoring profile.",
+        writing_types=["argument"],
+        criteria=[criterion],
+    )
+    write_rubric(root, rubric)
 
 
 def _write_review_record(root: Path, review: dict[str, Any]) -> Path:
@@ -512,6 +537,63 @@ def test_review_menu_sets_criterion_score(
     assert review["scores"][0]["max_score"] == 4
     assert review["review_state"] == "in_progress"
     assert manifest_path.read_bytes() == manifest_before
+
+
+def test_review_menu_scores_from_assignment_rubric(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_rubric(workspace)
+    manifest_path = submission_manifest_path(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    )
+    manifest_before = manifest_path.read_bytes()
+
+    _menu_input(
+        monkeypatch,
+        _enter_selected_student()
+        + ["5", "1", "1", "1", "Private score note"]
+        + _exit_after_selected_student_action_to_main(),
+    )
+
+    assert main(["menu"]) == 0
+    review = json.loads(
+        review_record_path(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+        ).read_text(encoding="utf-8")
+    )
+    score = review["scores"][0]
+    assert score["criterion_id"] == "reasoning"
+    assert score["label"] == "Reasoning / Explanation"
+    assert score["score"] == 3
+    assert score["max_score"] == 4
+    assert score["scale"] == "4_point"
+    assert score["teacher_note"] == "Private score note"
+    assert manifest_path.read_bytes() == manifest_before
+    capsys.readouterr()
+
+
+def test_review_menu_missing_rubric_keeps_custom_score_available(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(
+        monkeypatch,
+        _enter_selected_student()
+        + ["5", "1", "1", "evidence", "Evidence", "2", "4", "", ""]
+        + _exit_after_selected_student_action_to_main(),
+    )
+
+    assert main(["menu"]) == 0
+    review = json.loads(
+        review_record_path(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+        ).read_text(encoding="utf-8")
+    )
+    assert review["scores"][0]["criterion_id"] == "evidence"
+    assert "does not resolve" in capsys.readouterr().out
 
 
 def test_review_menu_blank_score_cancels_without_review_record(

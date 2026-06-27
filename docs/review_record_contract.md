@@ -341,7 +341,8 @@ Score field rules are:
 
 * `score_id` is unique within `scores`.
 * `criterion_id` is non-empty and unique within `scores`. Schema version `1`
-  validates this field intrinsically; rubric-profile lookup is future work.
+  validates this field intrinsically; rubric-profile lookup is workflow-level
+  context, not a review-record schema requirement.
 * `label` is a non-empty, teacher-readable string.
 * `score` is a finite number greater than or equal to zero.
 * `max_score` is a finite number greater than zero.
@@ -361,6 +362,13 @@ when the criterion is not already present. It does not replace the entire
 `scores` array or erase unrelated criteria. Omitting optional `scale` or
 `teacher_note` values removes prior values from the updated criterion so the
 record reflects the latest explicit teacher input.
+
+Review mode can also set a criterion score from a valid shared rubric resolved
+through the assignment's `rubric_id`. That workflow snapshots the selected
+criterion and level into the same score shape. It does not store a live
+reference that changes when the rubric is later edited, and rubric level
+`student_facing_feedback` does not automatically create a comment or feedback
+export entry.
 
 ## Comments
 
@@ -579,10 +587,10 @@ unrelated notes, tags, scores, comments, top-level metadata, and
 `created_at`; validates the complete proposed record before an atomic write;
 and never mutates submission manifests, routed evidence, or retained scans.
 
-Criterion IDs are validated only as non-empty local identifiers in this
-workflow. The assignment's `rubric_id` does not provide a criterion contract;
-rubric-profile loading and criterion lookup remain future work. Quillan does
-not infer criterion scores or calculate an overall, weighted, percentage,
+Criterion IDs are validated only as non-empty local identifiers in the review
+record schema. The assignment's `rubric_id` may resolve to a shared rubric for
+menu selection, but unresolved rubric IDs remain structurally valid. Quillan
+does not infer criterion scores or calculate an overall, weighted, percentage,
 grade, or mastery score.
 
 ## Reusable Comment Selection
@@ -660,7 +668,6 @@ selected comment is stored in
 
 This contract does not implement:
 
-* rubric-profile loading, validation, or criterion lookup;
 * overall, weighted, percentage, grade, or mastery score calculation;
 * assignment-driven comment-bank activation, bank editing, or guided
   reusable-comment management;

@@ -425,6 +425,11 @@ tag selections snapshot template values into `review.json.tags` with
 `source: "tag_bank"`, `tag_bank_id`, and `tag_template_id`; custom tags and the
 direct `add-tag` command remain compatible.
 
+`Set criterion score` opens a score chooser. Teachers can score from a valid
+shared rubric resolved through `assignment.rubric_id`, or choose Custom
+criterion score to use the same manual fields as the direct `set-score`
+command. Rubric level feedback metadata is not converted into comments.
+
 Guided export actions reuse the same underlying export services as the direct
 commands:
 
