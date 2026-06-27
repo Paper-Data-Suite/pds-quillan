@@ -15,11 +15,10 @@ review without reading the student's work.
 This document defines the review model and data boundaries. Quillan currently
 validates relevant data contracts, can prepare printable writing-response
 pages, supports direct teacher-entered notes, tags, comments, and criterion
-scores, and can export student feedback and assignment summaries. It does not
-yet implement complete requirements-checking or terminal-menu review
-workflows. Its initial terminal menu is a navigation skeleton rather than a
-review implementation. AI tagging, AI scoring, AI feedback, and automatic
-grading are not implemented.
+scores, provides guided selected-student review actions in the terminal menu,
+and can export student feedback and assignment summaries. It does not yet
+implement complete requirements-checking. AI tagging, AI scoring, AI feedback,
+and automatic grading are not implemented.
 
 ## Source Evidence
 
@@ -153,9 +152,14 @@ score record represents teacher judgment, not software judgment.
 Quillan's direct `set-score` workflow records one criterion at a time in the
 canonical `review.json`. It updates an existing record by `criterion_id` or
 appends a new one without disturbing unrelated review data. Criterion IDs are
-accepted as explicit teacher input; rubric-profile lookup is not yet
-implemented. The workflow does not calculate an overall score, percentage,
-grade, weighted result, or mastery result.
+accepted as explicit teacher input.
+
+The guided Review Student Work menu can also resolve an assignment's shared
+rubric/scoring profile and let the teacher choose a criterion and score level
+before saving. Custom criterion scoring remains available as an advanced
+manual fallback. Neither path calculates an overall score, percentage, grade,
+weighted result, or mastery result, and rubric level feedback does not
+automatically create comments.
 
 ## Feedback Philosophy
 
@@ -185,6 +189,12 @@ scans, or source banks. Existing feedback is protected unless the teacher
 explicitly supplies `--overwrite`. Quillan must not present authoritative
 AI-generated feedback.
 
+The guided feedback export screen explains that export formats the current
+review record. It does not rescore work, generate AI feedback, or modify
+notes, tags, comments, scores, review state, submissions, scans, review
+materials, or pds-core records. If an export already exists, the teacher must
+explicitly choose overwrite before Quillan replaces it.
+
 Shared comment banks are reusable teacher-authored source data stored at
 `shared/comment_banks/<bank_id>.json`. They are not student records and do
 not grade, evaluate, or generate feedback by themselves. The direct
@@ -197,8 +207,24 @@ stable if the bank later changes; provenance does not create a live reference.
 The bank feedback default may be overridden by the teacher at selection time.
 Teacher-only bank comments are rejected, and selection does not itself export
 feedback.
+The guided Review Student Work menu presents comment banks by title, then
+category, then comment label and feedback preview. Source IDs remain visible
+as secondary detail. Missing comment banks point teachers to Review Materials
+-> Comment Banks.
 The source contract and future assignment-activation design are defined in
 [`comment_bank_contract.md`](comment_bank_contract.md).
+
+Reusable tag banks are also selected in a bank, category, and tag-template
+flow. Custom tags are framed as one-off/manual observations with enumerated
+polarity and optional details grouped behind an explicit prompt. Missing tag
+banks point teachers to Review Materials -> Tag Banks while preserving the
+custom fallback.
+
+When reusable comments or tags include pds-core `standard_id` references,
+Quillan may resolve display metadata through pds-core read-only helpers. This
+display does not mutate the standards library or turn Quillan into the
+authoritative standards owner. Unresolved standards fall back to durable IDs
+with metadata unavailable.
 
 ## Report Philosophy
 
@@ -243,6 +269,12 @@ Quillan requires an assembled submission record. When routed evidence exists
 but that record is missing, the review menu offers assignment-level assembly
 instead of actions that would fail. Assembly neither evaluates evidence nor
 changes review state, notes, tags, comments, scores, or exports.
+
+Selected-student review actions clear and reframe major action screens, use
+`B`/Back cancellation consistently, and avoid writing until the teacher has
+made the specific action decision. Updating submission review state is an
+explicit workflow status change; Quillan does not infer it from review
+artifacts or exports.
 
 [`comment_bank_contract.md`](comment_bank_contract.md) defines reusable shared
 comment source data and its boundary from selected review comments.

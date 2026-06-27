@@ -297,13 +297,9 @@ def test_review_menu_adds_structured_tag_to_review_record(
         _enter_selected_student()
         + [
             "3",
+            "2",
             "claim",
-            "positive",
-            "",
-            "",
-            "",
-            "",
-            "",
+            "1",
             "",
         ]
         + _exit_after_selected_student_action_to_main(),
@@ -401,7 +397,7 @@ def test_review_menu_no_comment_banks_returns_safely(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["4"]
+        + ["4", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -427,7 +423,7 @@ def test_review_menu_selects_reusable_comment_by_number(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["4", "1", "1", ""]
+        + ["4", "1", "1", "1", "1", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -482,7 +478,7 @@ def test_comment_bank_created_by_workflow_is_selectable_in_review(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["4", "1", "1", ""]
+        + ["4", "1", "1", "1", "1", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -553,7 +549,7 @@ def test_review_menu_scores_from_assignment_rubric(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["5", "1", "1", "1", "Private score note"]
+        + ["5", "1", "1", "1", "2", "Private score note"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -582,7 +578,7 @@ def test_review_menu_missing_rubric_keeps_custom_score_available(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["5", "1", "1", "evidence", "Evidence", "2", "4", "", ""]
+        + ["5", "1", "1", "Evidence", "", "2", "4", "", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 

@@ -380,9 +380,10 @@ menu provides:
 ```
 
 Selecting a student/submission lets the teacher pick a student by number. The
-selected-student view shows a current review summary with class, assignment,
-student, manifest/evidence status, review state, and existing `review.json`
-counts when a valid review record is already present.
+selected-student view shows a compact current review summary with class,
+assignment, student, submission/evidence status, review state, and existing
+`review.json` counts when a valid review record is already present. Long file
+paths are reserved for detail/output actions.
 
 The selected-student review menu provides:
 
@@ -420,15 +421,40 @@ quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 
 `Add structured tag` opens an Add Tag chooser. Teachers can select a reusable
 tag from `shared/tag_banks/<tag_bank_id>.json` by bank, category, and tag
-template, or choose Custom tag to use the existing one-off tag prompts. Reusable
-tag selections snapshot template values into `review.json.tags` with
+template, or choose Custom tag for a one-off/manual observation. Reusable tag
+screens show bank titles, category labels, tag labels, optional
+severity/polarity, and durable IDs as secondary detail. Custom tag polarity is
+selected from enumerated choices, and optional details are grouped behind an
+explicit prompt. Reusable tag selections snapshot template values into
+`review.json.tags` with
 `source: "tag_bank"`, `tag_bank_id`, and `tag_template_id`; custom tags and the
 direct `add-tag` command remain compatible.
 
+`Select reusable comment` is selection-first: the teacher chooses a comment
+bank, category, and student-facing comment, sees a feedback preview, then
+confirms the write or changes the include-in-feedback setting. Comment labels
+are primary; bank and comment IDs are displayed as secondary durable details.
+Missing comment banks point teachers to Review Materials -> Comment Banks.
+
 `Set criterion score` opens a score chooser. Teachers can score from a valid
 shared rubric resolved through `assignment.rubric_id`, or choose Custom
-criterion score to use the same manual fields as the direct `set-score`
-command. Rubric level feedback metadata is not converted into comments.
+criterion score when the rubric is missing or does not contain the needed
+criterion. Rubric scoring shows rubric metadata, criteria, levels, and a
+confirmation screen before writing. Custom scoring is label-first and suggests
+a `criterion_id`; the direct `set-score` command remains manual and
+compatible. Rubric level feedback metadata is informational only and is not
+converted into comments.
+
+When reusable comments or tags include pds-core `standard_id` references,
+review-time menus may resolve readable metadata through pds-core read-only
+selection helpers. Unresolved standards fall back to durable IDs with metadata
+unavailable. Quillan does not create, import, edit, retire, reactivate, or
+authoritatively validate pds-core standards from review mode.
+
+`Update submission review state` displays the allowed states with
+teacher-facing descriptions and requires confirmation before saving. This is
+an explicit workflow status change, not a grade, and is not inferred from
+notes, tags, comments, scores, or exports.
 
 Guided export actions reuse the same underlying export services as the direct
 commands:
@@ -439,9 +465,16 @@ quillan export-class-summary <class_id> <assignment_id> [--overwrite]
 quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
 ```
 
-Menu export actions preserve overwrite protection. Existing export files are
-not replaced unless the teacher explicitly confirms overwrite behavior.
-Invalid overwrite responses cancel safely.
+Menu export actions preserve overwrite protection. Student feedback export
+explains that it formats the current review record and does not rescore work
+or generate AI feedback. Existing export files are not replaced unless the
+teacher explicitly chooses overwrite.
+
+Major selected-student actions clear and reframe the action screen before
+prompting. `B`/Back cancels safely; blank input means Back only where the
+screen says so. Cancellation does not write review records, submission
+manifests, exports, scans, rosters, assignments, review materials, pds-core
+workspace preferences, or pds-core route/standards files.
 
 The Review Student Work menu does not automatically assemble submissions,
 route scans, run OCR, parse evidence contents, score work automatically, infer

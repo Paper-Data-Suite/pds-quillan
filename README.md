@@ -263,7 +263,13 @@ The selected-student review menu is:
 
 These guided actions reuse the same underlying services and data contracts as the direct CLI commands. The menu does not implement separate export logic, scoring logic, routing logic, or AI logic.
 
-Guided export actions preserve overwrite protection. Existing export files are not replaced unless the teacher explicitly confirms overwrite behavior. Invalid overwrite responses cancel safely.
+Review mode is selection-first. Teacher notes open with private-note guidance and safe Back behavior. Reusable comments are selected by comment bank, category, and comment, with label and feedback preview shown before writing. Reusable tags are selected by tag bank, category, and tag template, with a custom one-off fallback. Rubric scoring uses the assignment's resolved shared rubric when available, then asks the teacher to choose a criterion and level before confirming the saved score; custom scoring remains available when the rubric is missing or does not contain the needed criterion.
+
+Review-time standards metadata is display-only. When reusable comments or tags reference durable pds-core `standard_id` values, Quillan may resolve readable code/name metadata through pds-core read-only helpers for display. It still stores durable IDs in review records and does not create, import, edit, retire, reactivate, or authoritatively validate standards.
+
+Review state updates are explicit and teacher-controlled. The state screen explains `unreviewed`, `in_progress`, `needs_rescan`, and `reviewed`, then asks for confirmation before saving. It does not infer state from notes, tags, comments, scores, or exports.
+
+Guided export actions preserve overwrite protection. Student feedback export explains that it formats the current review record, does not rescore work, and does not generate AI feedback. Existing export files are not replaced unless the teacher explicitly confirms overwrite behavior.
 
 ### Review Materials
 
