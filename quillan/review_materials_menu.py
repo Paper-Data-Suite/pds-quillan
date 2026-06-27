@@ -37,7 +37,9 @@ def launch_review_materials_menu() -> int:
 
                 launch_tag_banks_menu()
             elif choice == "3":
-                _show_rubrics_info()
+                from quillan.rubric_workflows import launch_rubrics_menu
+
+                launch_rubrics_menu()
             elif choice == "4":
                 _show_starter_materials_info()
             else:
@@ -70,29 +72,6 @@ def _show_tag_banks_info() -> None:
     print()
     print("Expected future workspace location:")
     print("shared/tag_banks/")
-    print()
-    print("No files were changed.")
-    print()
-    pause_for_user()
-
-
-def _show_rubrics_info() -> None:
-    from quillan.menu import clear_screen, pause_for_user, print_menu_header
-
-    clear_screen()
-    print_menu_header("Rubrics / Scoring Profiles")
-    print(
-        "Rubrics and scoring profiles will help teachers score prepared "
-        "criteria without typing criterion IDs during review."
-    )
-    print()
-    print(
-        "Rubric profile creation and enumerated scoring will be implemented "
-        "in #167."
-    )
-    print()
-    print("Expected future workspace location:")
-    print("shared/rubrics/")
     print()
     print("No files were changed.")
     print()

@@ -22,6 +22,12 @@ from quillan.assignments import (
     load_assignment_config,
     validate_assignment_config,
 )
+from quillan.rubric_writing import (
+    build_rubric,
+    build_rubric_criterion,
+    build_rubric_level,
+    write_rubric,
+)
 
 
 def _assignment(
@@ -107,6 +113,25 @@ def _write_standards_library(workspace_root: Path) -> None:
             ),
         ),
     )
+
+
+def _write_rubric(workspace_root: Path) -> None:
+    level = build_rubric_level(score=3, label="Clear explanation")
+    criterion = build_rubric_criterion(
+        criterion_id="reasoning",
+        label="Reasoning / Explanation",
+        max_score=4,
+        scale="4_point",
+        levels=[level],
+    )
+    rubric = build_rubric(
+        rubric_id="general_response",
+        title="General Response Rubric",
+        description="Synthetic scoring profile.",
+        writing_types=["general"],
+        criteria=[criterion],
+    )
+    write_rubric(workspace_root, rubric)
 
 
 def _inputs(
@@ -258,6 +283,31 @@ def test_prompt_create_assignment_selects_roster_class_and_writes_config(
         "required_elements": ["claim", "textual evidence"],
     }
     assert "Saved assignment config:" in capsys.readouterr().out
+
+
+def test_prompt_create_assignment_can_select_shared_rubric(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_roster(tmp_path)
+    _write_standards_library(tmp_path)
+    _write_rubric(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    responses = _creation_responses()
+    responses[-1] = "1"
+    _inputs(monkeypatch, responses)
+
+    assert workflows.prompt_create_assignment() == 0
+
+    assignment = load_assignment_config(
+        tmp_path
+        / "classes"
+        / "english_12_p3"
+        / "assignments"
+        / "literary_analysis_essay"
+        / "assignment.json"
+    )
+    assert assignment["rubric_id"] == "general_response"
 
 
 def test_prompt_create_assignment_accepts_exact_class_id_and_blank_options(

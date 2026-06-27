@@ -27,6 +27,8 @@ from quillan.assignments import (
     validate_assignment_config,
 )
 from quillan.assignment_picker import prompt_assignment_choice
+from quillan.rubric_writing import list_valid_rubrics
+from quillan.rubrics import RubricError, load_rubric, rubric_path
 from quillan.storage import assignment_config_path
 
 _NUMERIC_REQUIREMENTS = (
@@ -125,24 +127,44 @@ def write_assignment_config(
 def format_assignment_summary(
     assignment: Mapping[str, Any],
     assignment_path: str | Path,
+    workspace_root: str | Path | None = None,
 ) -> str:
     """Return a concise human-readable assignment summary."""
     class_ids = ", ".join(str(value) for value in assignment["class_ids"])
     focus_standards = [str(value) for value in assignment["focus_standards"]]
     focus_text = ", ".join(focus_standards) if focus_standards else "(none)"
-    return "\n".join(
-        [
-            f"Assignment path: {Path(assignment_path)}",
-            f"Assignment ID: {assignment['assignment_id']}",
-            f"Title: {assignment['title']}",
-            f"Class IDs: {class_ids}",
-            f"Writing type: {assignment['writing_type']}",
-            f"Standards profile ID: {assignment['standards_profile_id']}",
-            f"Tagging mode: {assignment['tagging_mode']}",
-            f"Focus standards ({len(focus_standards)}): {focus_text}",
-            f"Rubric ID: {assignment['rubric_id']}",
-        ]
-    )
+    lines = [
+        f"Assignment path: {Path(assignment_path)}",
+        f"Assignment ID: {assignment['assignment_id']}",
+        f"Title: {assignment['title']}",
+        f"Class IDs: {class_ids}",
+        f"Writing type: {assignment['writing_type']}",
+        f"Standards profile ID: {assignment['standards_profile_id']}",
+        f"Tagging mode: {assignment['tagging_mode']}",
+        f"Focus standards ({len(focus_standards)}): {focus_text}",
+        f"Rubric ID: {assignment['rubric_id']}",
+    ]
+    if workspace_root is not None:
+        rubric = resolve_assignment_rubric(workspace_root, assignment)
+        if rubric is None:
+            lines.append("Rubric profile: not found in shared/rubrics/")
+        else:
+            lines.append(f"Rubric profile: resolved - {rubric['title']}")
+    return "\n".join(lines)
+
+
+def resolve_assignment_rubric(
+    workspace_root: str | Path,
+    assignment: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    """Load a valid shared rubric for an assignment, if one resolves."""
+    rubric_id = assignment.get("rubric_id")
+    if not isinstance(rubric_id, str) or not rubric_id.strip():
+        return None
+    try:
+        return load_rubric(rubric_path(workspace_root, rubric_id))
+    except (OSError, RubricError):
+        return None
 
 
 def _workspace_root() -> Path | None:
@@ -200,6 +222,36 @@ def _prompt_basic_requirements() -> dict[str, Any]:
     if required_elements:
         requirements["required_elements"] = required_elements
     return requirements
+
+
+def _prompt_rubric_id(workspace_root: Path) -> str:
+    rubrics = list_valid_rubrics(workspace_root)
+    if not rubrics:
+        print("No valid shared rubrics found.")
+        print()
+        print("Create one from Review Materials -> Rubrics / Scoring Profiles.")
+        print("You may still enter a custom rubric_id for now.")
+        print()
+        return _required_input("Rubric ID: ", "Rubric ID")
+
+    print("Available rubrics / scoring profiles:")
+    for index, item in enumerate(rubrics, start=1):
+        assert item.rubric is not None
+        print(f"{index}. {item.rubric['title']}")
+    custom_index = len(rubrics) + 1
+    print(f"{custom_index}. Custom rubric ID")
+    print()
+    selection = input("Select rubric: ").strip()
+    if selection.isdigit():
+        selected = int(selection)
+        if 1 <= selected <= len(rubrics):
+            rubric = rubrics[selected - 1].rubric
+            assert rubric is not None
+            return str(rubric["rubric_id"])
+        if selected == custom_index:
+            return _required_input("Rubric ID: ", "Rubric ID")
+    print(f"Error: rubric selection not found: {selection}")
+    raise ValueError("Rubric selection is required.")
 
 
 def _prompt_numbered_selection(
@@ -328,7 +380,7 @@ def prompt_create_assignment() -> int:
             allowed = "/".join(sorted(ALLOWED_TAGGING_MODES))
             raise ValueError(f"Tagging mode must be one of: {allowed}.")
         basic_requirements = _prompt_basic_requirements()
-        rubric_id = _required_input("Rubric ID: ", "Rubric ID")
+        rubric_id = _prompt_rubric_id(workspace_root)
         assignment = build_assignment_config(
             assignment_id=assignment_id,
             title=title,
@@ -395,7 +447,7 @@ def prompt_view_validate_assignment() -> int:
         print(f"Error: {error}")
         return 1
     print("Assignment config is valid.")
-    print(format_assignment_summary(assignment, choice.path))
+    print(format_assignment_summary(assignment, choice.path, workspace_root))
     return 0
 
 
