@@ -1,0 +1,26 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "comment_bank",
+  "bank_id": "research_response",
+  "title": "Research Response Comments",
+  "description": "Synthetic starter comment bank for testing research-response review workflows.",
+  "scope": "shared",
+  "writing_types": ["research", "source_use", "informational"],
+  "categories": [
+    {"category_id": "source_use", "label": "Source Use", "sort_order": 10},
+    {"category_id": "evidence_support", "label": "Evidence / Support", "sort_order": 20},
+    {"category_id": "organization", "label": "Organization", "sort_order": 30}
+  ],
+  "comments": [
+    {"comment_id": "relevant_source", "label": "Relevant source", "text": "The selected source is relevant to the research question.", "category_id": "source_use", "polarity": "positive", "include_in_feedback_default": true, "student_facing": true, "module_details": {}},
+    {"comment_id": "citation_support_needed", "label": "Citation support needed", "text": "Add citation information so the reader can identify the source.", "category_id": "source_use", "polarity": "developing", "include_in_feedback_default": true, "student_facing": true, "module_details": {}},
+    {"comment_id": "specific_evidence", "label": "Specific evidence", "text": "The response uses specific evidence instead of only a general claim.", "category_id": "evidence_support", "polarity": "positive", "include_in_feedback_default": true, "student_facing": true, "module_details": {}},
+    {"comment_id": "explain_evidence", "label": "Explain evidence", "text": "Explain how the evidence supports the point being made.", "category_id": "evidence_support", "polarity": "developing", "include_in_feedback_default": true, "student_facing": true, "module_details": {}},
+    {"comment_id": "logical_grouping", "label": "Logical grouping", "text": "Related ideas are grouped in a logical way.", "category_id": "organization", "polarity": "positive", "include_in_feedback_default": true, "student_facing": true, "module_details": {}},
+    {"comment_id": "transition_needed", "label": "Transition needed", "text": "Add a transition to show how this idea connects to the next one.", "category_id": "organization", "polarity": "neutral", "include_in_feedback_default": false, "student_facing": true, "module_details": {}}
+  ],
+  "created_at": "2026-01-01T00:00:00+00:00",
+  "updated_at": "2026-01-01T00:00:00+00:00",
+  "module_details": {}
+}

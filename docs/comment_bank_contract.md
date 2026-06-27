@@ -398,3 +398,9 @@ The repository example at
 [`../examples/comment_banks/general_writing_synthetic.json`](../examples/comment_banks/general_writing_synthetic.json)
 contains synthetic teacher language only and demonstrates the version `1`
 shape.
+
+Additional optional synthetic starter comment banks live under
+[`../examples/comment_banks/`](../examples/comment_banks/). They can be
+installed from Review Materials -> Starter Materials into
+`shared/comment_banks/`; existing files are skipped unless exact overwrite
+confirmation is provided. See [`starter_materials.md`](starter_materials.md).

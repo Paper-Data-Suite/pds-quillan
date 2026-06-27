@@ -1,0 +1,18 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "rubric",
+  "rubric_id": "creative_project_reflection",
+  "title": "Creative Project Reflection Rubric",
+  "description": "Synthetic starter rubric for testing creative-project reflection scoring workflows. It is not official curriculum or grading policy.",
+  "scope": "shared",
+  "writing_types": ["creative_writing", "narrative", "creative_project"],
+  "criteria": [
+    {"criterion_id": "creative_choice", "label": "Creative Choice", "max_score": 4, "scale": "4_point", "sort_order": 10, "levels": [{"score": 4, "label": "Choice explained", "module_details": {}}, {"score": 2, "label": "Choice named", "module_details": {}}, {"score": 0, "label": "Choice unclear", "module_details": {}}], "module_details": {}},
+    {"criterion_id": "process_reflection", "label": "Process Reflection", "max_score": 4, "scale": "4_point", "sort_order": 20, "levels": [{"score": 4, "label": "Process clearly described", "module_details": {}}, {"score": 2, "label": "Some process detail", "module_details": {}}, {"score": 0, "label": "Process unclear", "module_details": {}}], "module_details": {}},
+    {"criterion_id": "audience_purpose", "label": "Audience / Purpose", "max_score": 4, "scale": "4_point", "sort_order": 30, "levels": [{"score": 4, "label": "Audience impact clear", "module_details": {}}, {"score": 2, "label": "Audience partly addressed", "module_details": {}}, {"score": 0, "label": "Audience unclear", "module_details": {}}], "module_details": {}}
+  ],
+  "created_at": "2026-01-01T00:00:00+00:00",
+  "updated_at": "2026-01-01T00:00:00+00:00",
+  "module_details": {}
+}

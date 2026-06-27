@@ -94,7 +94,6 @@ def test_review_materials_menu_navigation_returns_to_main_menu(
     ("choice", "header", "future_issue", "path_text"),
     [
         ("2", "Tag Banks", "#166", "shared/tag_banks/"),
-        ("4", "Starter Materials", "#169", ""),
     ],
 )
 def test_review_materials_informational_screens_return_safely(
@@ -115,6 +114,22 @@ def test_review_materials_informational_screens_return_safely(
     assert "No files were changed." in output
     if path_text:
         assert path_text in output
+
+
+def test_review_materials_starter_materials_opens_real_submenu(
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(monkeypatch, ["4", "5", "5"])
+
+    assert launch_review_materials_menu() == 0
+
+    output = capsys.readouterr().out
+    assert "Starter Materials" in output
+    assert "1. Preview starter materials" in output
+    assert "2. Validate starter materials" in output
+    assert "3. Install all starter materials" in output
+    assert "4. Install selected starter materials" in output
 
 
 def test_review_materials_rubrics_opens_submenu(

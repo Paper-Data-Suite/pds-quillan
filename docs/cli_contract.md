@@ -542,10 +542,31 @@ Tag banks are teacher-authored reusable observations for quick tagging. They do
 not grade work, imply mastery, generate automatic feedback, or mutate student
 records by themselves.
 
-Rubrics / Scoring Profiles and Starter Materials remain guidance-only. They do
-not create directories, edit files, install starter data, mutate student
-submissions, route scans, change rosters or assignments, write exports, or
-update review records.
+Rubrics / Scoring Profiles opens a submenu for teacher-authored reusable
+scoring profiles. It writes confirmed, valid version `1` rubrics only under
+`shared/rubrics/<rubric_id>.json`; assignment creation and review-time rubric
+scoring can immediately resolve valid shared rubrics.
+
+Starter Materials opens a submenu:
+
+```text
+1. Preview starter materials
+2. Validate starter materials
+3. Install all starter materials
+4. Install selected starter materials
+5. Back
+```
+
+Starter materials are optional synthetic examples for onboarding and local
+testing. The workflow validates source JSON files with the same comment-bank,
+tag-bank, and rubric validators used at runtime. Installation copies validated
+JSON files only into `shared/comment_banks/`, `shared/tag_banks/`, and
+`shared/rubrics/`. Existing files are skipped by default, and bulk overwrite
+requires the exact confirmation text `OVERWRITE`.
+
+Starter installation does not create assignments, rosters, scans, submissions,
+review records, exports, pds-core standards, pds-core standards profiles, or
+pds-core route helpers.
 
 Review materials are Quillan-owned teaching and review aids. They may later
 reference durable pds-core `profile_id` and `standard_id` values. Optional
