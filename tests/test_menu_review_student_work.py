@@ -404,6 +404,7 @@ def test_review_menu_updates_submission_review_state(
             "1",
             "6",
             "in_progress",
+            "1",
             "",
             "9",
             "6",

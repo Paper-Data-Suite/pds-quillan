@@ -325,7 +325,7 @@ def test_menu_export_student_feedback_creates_feedback_file(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["7", ""]
+        + ["7", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -427,13 +427,13 @@ def test_menu_export_feedback_invalid_overwrite_cancels_without_writing(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["7", "maybe"]
+        + ["7", "2"]
         + _exit_after_selected_student_action_to_main(),
     )
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
-    assert "Export canceled. Please enter y or n." in output
+    assert "Export canceled." in output
     assert not feedback_path.exists()
 
 
@@ -458,7 +458,7 @@ def test_menu_export_feedback_reports_missing_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["7", ""]
+        + ["7", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -492,14 +492,14 @@ def test_menu_export_feedback_requires_overwrite_when_existing(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["7", ""]
+        + ["7", "1", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
-    assert "Error: could not export student feedback:" in output
-    assert "Use --overwrite to replace it." in output
+    assert "A feedback export already exists." in output
+    assert "Export canceled." in output
     assert feedback_path.read_text(encoding="utf-8") == "old feedback"
 
 
@@ -526,7 +526,7 @@ def test_menu_export_feedback_overwrites_existing_export(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["7", "y"]
+        + ["7", "1", "2"]
         + _exit_after_selected_student_action_to_main(),
     )
 
