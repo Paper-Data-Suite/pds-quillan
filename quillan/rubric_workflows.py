@@ -174,7 +174,8 @@ def prompt_view_rubrics() -> int:
         print("No valid shared rubrics found.")
         print()
         print(
-            "Create one from Review Materials -> Rubrics / Scoring Profiles -> "
+            "Create one from Review Student Work -> Manage Review Materials "
+            "-> Rubrics / Scoring Profiles -> "
             "Create rubric / scoring profile."
         )
         print()
@@ -533,7 +534,8 @@ def _prompt_valid_rubric() -> tuple[Path, dict[str, Any]] | None:
     if not files:
         print("No valid shared rubrics found.")
         print(
-            "Create one from Review Materials -> Rubrics / Scoring Profiles -> "
+            "Create one from Review Student Work -> Manage Review Materials "
+            "-> Rubrics / Scoring Profiles -> "
             "Create rubric / scoring profile."
         )
         return None

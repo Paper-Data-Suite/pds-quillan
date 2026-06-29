@@ -62,21 +62,22 @@ def test_cli_without_command_displays_menu_options_and_exits(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["9"])
+    _menu_input(monkeypatch, ["6"])
 
     assert main([]) == 0
 
     output = capsys.readouterr().out
     assert "Quillan" in output
-    assert "Assignment Management" in output
-    assert "Roster Management" in output
-    assert "Printable Response Pages" in output
-    assert "Scan Intake / Route Paper Responses" in output
-    assert "Review Student Work" in output
-    assert "Review Materials" in output
-    assert "Workspace Settings" in output
-    assert "Help" in output
-    assert "Exit" in output
+    assert "\033[32mQuillan\033[0m" in output
+    assert "1. Assignment Management" in output
+    assert "2. Review Student Work" in output
+    assert "3. Roster Management" in output
+    assert "4. Workspace Settings" in output
+    assert "5. Help" in output
+    assert "6. Exit" in output
+    assert "Printable Response Pages" not in output
+    assert "Scan Intake / Route Paper Responses" not in output
+    assert "Review Materials" not in output
     assert "Goodbye." in output
 
 
@@ -354,21 +355,22 @@ def test_menu_dispatch_displays_options_and_exits(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["9"])
+    _menu_input(monkeypatch, ["6"])
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
 
     assert "Quillan" in output
-    assert "Assignment Management" in output
-    assert "Roster Management" in output
-    assert "Printable Response Pages" in output
-    assert "Scan Intake / Route Paper Responses" in output
-    assert "Review Student Work" in output
-    assert "Review Materials" in output
-    assert "Workspace Settings" in output
-    assert "Help" in output
-    assert "Exit" in output
+    assert "\033[32mQuillan\033[0m" in output
+    assert "1. Assignment Management" in output
+    assert "2. Review Student Work" in output
+    assert "3. Roster Management" in output
+    assert "4. Workspace Settings" in output
+    assert "5. Help" in output
+    assert "6. Exit" in output
+    assert "Printable Response Pages" not in output
+    assert "Scan Intake / Route Paper Responses" not in output
+    assert "Review Materials" not in output
     assert "Goodbye." in output
 
 
@@ -376,7 +378,7 @@ def test_menu_help_explains_teacher_control_and_safe_data(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["8", "", "9"])
+    _menu_input(monkeypatch, ["5", "", "6"])
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
@@ -390,11 +392,11 @@ def test_menu_help_explains_teacher_control_and_safe_data(
     assert "quillan menu" in output
 
 
-def test_main_menu_opens_printable_response_submenu(
+def test_assignment_management_opens_printable_response_submenu(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["3", "2", "9"])
+    _menu_input(monkeypatch, ["1", "3", "2", "", "4", "6"])
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
@@ -408,13 +410,15 @@ def test_main_menu_opens_assignment_management_submenu(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["1", "3", "9"])
+    _menu_input(monkeypatch, ["1", "4", "6"])
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
     assert "Assignment Management" in output
+    assert "\033[32mQuillan\033[0m" in output
     assert "Create writing assignment" in output
     assert "View/validate assignment" in output
+    assert "Printable Response Pages" in output
     assert "Back" in output
     assert "Goodbye." in output
 
@@ -423,7 +427,7 @@ def test_main_menu_opens_roster_management_submenu(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["2", "5", "9"])
+    _menu_input(monkeypatch, ["3", "5", "6"])
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
@@ -449,7 +453,7 @@ def test_workspace_menu_reuses_workspace_show_handler(
         return 0
 
     monkeypatch.setattr(cli_workspace, "show_workspace", handle_workspace_show)
-    _menu_input(monkeypatch, ["7", "1", "", "5", "9"])
+    _menu_input(monkeypatch, ["4", "1", "", "5", "6"])
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
@@ -480,7 +484,7 @@ def test_workspace_menu_sets_workspace_folder(
         return 0
 
     monkeypatch.setattr(cli_workspace, "set_workspace", handle_workspace_set)
-    _menu_input(monkeypatch, ["7", "2", str(workspace_root), "", "5", "9"])
+    _menu_input(monkeypatch, ["4", "2", str(workspace_root), "", "5", "6"])
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
@@ -504,7 +508,7 @@ def test_workspace_menu_blank_set_cancels_without_change(
         return 0
 
     monkeypatch.setattr(cli_workspace, "set_workspace", handle_workspace_set)
-    _menu_input(monkeypatch, ["7", "2", "  ", "", "5", "9"])
+    _menu_input(monkeypatch, ["4", "2", "  ", "", "5", "6"])
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
@@ -531,7 +535,7 @@ def test_workspace_menu_validates_current_workspace(
         "validate_workspace",
         handle_workspace_validate,
     )
-    _menu_input(monkeypatch, ["7", "3", "", "5", "9"])
+    _menu_input(monkeypatch, ["4", "3", "", "5", "6"])
 
     assert main(["menu"]) == 0
     assert calls == 1
@@ -558,7 +562,7 @@ def test_workspace_menu_resets_saved_preference(
         "reset_workspace",
         handle_workspace_reset,
     )
-    _menu_input(monkeypatch, ["7", "4", "", "5", "9"])
+    _menu_input(monkeypatch, ["4", "4", "", "5", "6"])
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out

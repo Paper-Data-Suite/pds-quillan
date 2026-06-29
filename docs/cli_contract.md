@@ -14,7 +14,7 @@ development. It records:
 The CLI includes a developer-oriented, scriptable command layer and a
 teacher-facing terminal menu. The menu now covers assignment management, roster
 management, printable response pages, QR-aware scan intake, review navigation,
-guided review-entry actions, guided export actions, Review Materials guidance,
+guided review-entry actions, guided export actions, Manage Review Materials guidance,
 workspace settings, help, and exit.
 
 This contract describes implemented behavior separately from future design. A
@@ -194,14 +194,11 @@ The top-level menu provides:
 
 ```text
 1. Assignment Management
-2. Roster Management
-3. Printable Response Pages
-4. Scan Intake / Route Paper Responses
-5. Review Student Work
-6. Review Materials
-7. Workspace Settings
-8. Help
-9. Exit
+2. Review Student Work
+3. Roster Management
+4. Workspace Settings
+5. Help
+6. Exit
 ```
 
 Menu workflows should orchestrate reusable application functions. They should
@@ -215,7 +212,8 @@ Assignment Management provides:
 ```text
 1. Create writing assignment
 2. View/validate assignment
-3. Back
+3. Printable Response Pages
+4. Back
 ```
 
 Creation selects one class with an existing canonical roster, prompts for the
@@ -250,7 +248,7 @@ loader and validator, prints a concise summary, and does not rewrite the file.
 
 These workflows do not add assignment editing, deletion, import, scoring,
 feedback, tagging execution, requirements checking, reports, scan routing,
-OCR, AI, or printable packet generation.
+OCR, or AI.
 
 #### Roster Management
 
@@ -283,7 +281,7 @@ scans, reports, tags, scores, feedback, or historical evidence.
 
 #### Printable Response Pages
 
-Printable Response Pages provides:
+Printable Response Pages is reached through Assignment Management and provides:
 
 ```text
 1. Generate class packet
@@ -313,7 +311,8 @@ CLI command.
 
 #### Scan Intake / Route Paper Responses
 
-Scan Intake / Route Paper Responses prompts for a local scan source path:
+Scan Intake / Route Paper Responses is reached through Review Student Work and
+prompts for a local scan source path:
 
 ```text
 Scan file or folder path (leave blank to cancel):
@@ -351,14 +350,17 @@ run OCR, score, tag, generate feedback, or perform AI work.
 
 #### Review Student Work
 
-Review Student Work provides guided class, assignment, and student/submission
-navigation plus review-entry and export actions.
+Review Student Work provides guided scan intake, review-material management,
+class, assignment, and student/submission navigation plus review-entry and
+export actions.
 
 The first Review Student Work menu provides:
 
 ```text
-1. Select class and assignment
-2. Back
+1. Assignment Review Actions
+2. Scan Intake / Route Paper Responses
+3. Manage Review Materials
+4. Back
 ```
 
 The workflow lists available classes from the active workspace, lists
@@ -373,10 +375,11 @@ menu provides:
 
 ```text
 1. Select student/submission
-2. Export class review summary
-3. Export standards summary
-4. Refresh submission status
-5. Back
+2. Assemble routed submissions
+3. Export class review summary
+4. Export standards summary
+5. Refresh submission status
+6. Back
 ```
 
 Selecting a student/submission lets the teacher pick a student by number. The
@@ -435,7 +438,8 @@ direct `add-tag` command remain compatible.
 bank, category, and student-facing comment, sees a feedback preview, then
 confirms the write or changes the include-in-feedback setting. Comment labels
 are primary; bank and comment IDs are displayed as secondary durable details.
-Missing comment banks point teachers to Review Materials -> Comment Banks.
+Missing comment banks point teachers to Review Student Work ->
+Manage Review Materials -> Comment Banks.
 
 `Set criterion score` opens a score chooser. Teachers can score from a valid
 shared rubric resolved through `assignment.rubric_id`, or choose Custom
@@ -481,10 +485,10 @@ The Review Student Work menu does not automatically assemble submissions,
 route scans, run OCR, parse evidence contents, score work automatically, infer
 mastery, generate AI feedback, or perform AI work.
 
-#### Review Materials
+#### Manage Review Materials
 
-Review Materials provides a preparation area for reusable teacher-authored
-review aids:
+Manage Review Materials is reached through Review Student Work and provides a
+preparation area for reusable teacher-authored review aids:
 
 ```text
 1. Comment Banks

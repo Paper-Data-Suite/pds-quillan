@@ -85,7 +85,7 @@ workflow exists. `sort_order` is presented as optional display order.
 Tag banks are created and edited from:
 
 ```text
-Quillan -> Review Materials -> Tag Banks
+Quillan -> Review Student Work -> Manage Review Materials -> Tag Banks
 ```
 
 The workflow builds banks in memory, validates the complete bank before
@@ -95,7 +95,7 @@ Canceling creation does not create `shared/tag_banks/` or partial files.
 
 Optional synthetic starter tag banks live under
 [`../examples/tag_banks/`](../examples/tag_banks/). They can be installed from
-Review Materials -> Starter Materials into `shared/tag_banks/`; existing files
+Review Student Work -> Manage Review Materials -> Starter Materials into `shared/tag_banks/`; existing files
 are skipped unless exact overwrite confirmation is provided. See
 [`starter_materials.md`](starter_materials.md).
 

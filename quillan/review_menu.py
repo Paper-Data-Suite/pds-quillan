@@ -91,24 +91,33 @@ def launch_review_student_work_menu() -> int:
         while True:
             clear_screen()
             print_menu_header("Review Student Work")
-            print("1. Select class and assignment")
-            print("2. Back")
+            print("1. Assignment Review Actions")
+            print("2. Scan Intake / Route Paper Responses")
+            print("3. Manage Review Materials")
+            print("4. Back")
             print()
             choice = input("Select an option: ").strip()
             print()
 
-            if choice in {"", "2"}:
+            if choice in {"", "4"}:
                 return 0
-            if choice != "1":
-                print("Invalid selection. Please enter a number from 1 to 2.")
+            if choice == "1":
+                clear_screen()
+                _run_review_selection_workflow()
                 print()
                 pause_for_user()
-                continue
+            elif choice == "2":
+                from quillan.menu import launch_scan_intake_workflow
 
-            clear_screen()
-            _run_review_selection_workflow()
-            print()
-            pause_for_user()
+                launch_scan_intake_workflow()
+            elif choice == "3":
+                from quillan.review_materials_menu import launch_review_materials_menu
+
+                launch_review_materials_menu()
+            else:
+                print("Invalid selection. Please enter a number from 1 to 4.")
+                print()
+                pause_for_user()
     except KeyboardInterrupt:
         print("\nExiting review menu.")
         return 0
@@ -756,7 +765,10 @@ def _menu_add_reusable_review_tag(
         print("No valid shared tag banks found.")
         print()
         print("Create one from:")
-        print("Review Materials -> Tag Banks -> Create tag bank")
+        print(
+            "Review Student Work -> Manage Review Materials -> "
+            "Tag Banks -> Create tag bank"
+        )
         print()
         print("1. Custom tag")
         print("2. Back")
@@ -1119,7 +1131,10 @@ def _prompt_comment_from_bank(
         print("This bank has no student-facing comments.")
         print()
         print("Add one from:")
-        print("Review Materials -> Comment Banks -> Add comment")
+        print(
+            "Review Student Work -> Manage Review Materials -> "
+            "Comment Banks -> Add comment"
+        )
         print()
         print("1. Choose another bank")
         print("2. Back")
@@ -1274,7 +1289,10 @@ def _menu_add_review_comment(
         print("No valid shared comment banks found.")
         print()
         print("Create one from:")
-        print("Review Materials -> Comment Banks -> Create comment bank")
+        print(
+            "Review Student Work -> Manage Review Materials -> "
+            "Comment Banks -> Create comment bank"
+        )
         return
 
     bank = _prompt_comment_bank(banks)
@@ -1434,7 +1452,8 @@ def _menu_missing_rubric(
     print(f"Rubric ID: {rubric_id}")
     print()
     print(
-        "Create or fix the rubric from Review Materials -> "
+        "Create or fix the rubric from Review Student Work -> "
+        "Manage Review Materials -> "
         "Rubrics / Scoring Profiles."
     )
     print()

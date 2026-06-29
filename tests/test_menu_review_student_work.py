@@ -192,14 +192,16 @@ def test_main_menu_shows_and_opens_review_student_work(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["5", "2", "9"])
+    _menu_input(monkeypatch, ["2", "4", "6"])
 
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
-    assert "5. Review Student Work" in output
+    assert "2. Review Student Work" in output
     assert "Review Student Work" in output
-    assert "1. Select class and assignment" in output
+    assert "1. Assignment Review Actions" in output
+    assert "2. Scan Intake / Route Paper Responses" in output
+    assert "3. Manage Review Materials" in output
     assert "Goodbye." in output
 
 
@@ -220,7 +222,7 @@ def test_review_workflow_selects_context_and_shows_read_only_summary(
         for path in workspace.rglob("*")
         if path.is_file()
     )
-    _menu_input(monkeypatch, ["5", "1", "1", "1", "1", "1", "10", "6", "", "2", "9"])
+    _menu_input(monkeypatch, ["2", "1", "1", "1", "1", "1", "10", "6", "", "4", "6"])
 
     assert main(["menu"]) == 0
 
@@ -265,7 +267,7 @@ def test_review_summary_includes_existing_review_record_counts(
     review_before = review_path.read_bytes()
     _menu_input(
         monkeypatch,
-        ["5", "1", "1", "1", "1", "1", "10", "6", "", "2", "9"],
+        ["2", "1", "1", "1", "1", "1", "10", "6", "", "4", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -313,7 +315,7 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
     )
     _menu_input(
         monkeypatch,
-        ["5", "1", "1", "1", "1", "1", "1", "", "10", "6", "", "2", "9"],
+        ["2", "1", "1", "1", "1", "1", "1", "", "10", "6", "", "4", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -331,7 +333,7 @@ def test_review_menu_reports_missing_openable_evidence(
 ) -> None:
     _menu_input(
         monkeypatch,
-        ["5", "1", "1", "1", "1", "2", "1", "", "6", "", "2", "9"],
+        ["2", "1", "1", "1", "1", "2", "1", "", "6", "", "4", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -353,7 +355,7 @@ def test_review_menu_adds_teacher_note_to_review_record(
     _menu_input(
         monkeypatch,
         [
-            "5",
+            "2",
             "1",
             "1",
             "1",
@@ -365,8 +367,8 @@ def test_review_menu_adds_teacher_note_to_review_record(
             "10",
             "6",
             "",
-            "2",
-            "9",
+            "4",
+            "6",
         ],
     )
 
@@ -396,7 +398,7 @@ def test_review_menu_updates_submission_review_state(
     _menu_input(
         monkeypatch,
         [
-            "5",
+            "2",
             "1",
             "1",
             "1",
@@ -409,8 +411,8 @@ def test_review_menu_updates_submission_review_state(
             "10",
             "6",
             "",
-            "2",
-            "9",
+            "4",
+            "6",
         ],
     )
 
@@ -448,7 +450,7 @@ def test_review_menu_excludes_submission_page_without_touching_review_record(
     _menu_input(
         monkeypatch,
         [
-            "5",
+            "2",
             "1",
             "1",
             "1",
@@ -462,8 +464,8 @@ def test_review_menu_excludes_submission_page_without_touching_review_record(
             "10",
             "6",
             "",
-            "2",
-            "9",
+            "4",
+            "6",
         ],
     )
 
@@ -495,11 +497,11 @@ def test_review_menu_no_classes_and_invalid_selection_back_out_safely(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(review_menu, "resolve_workspace_root", lambda: tmp_path)
-    _menu_input(monkeypatch, ["5", "9", "", "1", "", "2", "9"])
+    _menu_input(monkeypatch, ["2", "9", "", "1", "", "4", "6"])
 
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
-    assert "Invalid selection. Please enter a number from 1 to 2." in output
+    assert "Invalid selection. Please enter a number from 1 to 4." in output
     assert "No classes found in the current workspace." in output
     assert "Goodbye." in output

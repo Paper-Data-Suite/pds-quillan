@@ -40,15 +40,15 @@ def _menu_input(monkeypatch: pytest.MonkeyPatch, responses: list[str]) -> None:
 
 
 def _enter_assignment_review_actions() -> list[str]:
-    return ["5", "1", "1", "1"]
+    return ["2", "1", "1", "1"]
 
 
 def _exit_assignment_review_actions_to_main() -> list[str]:
-    return ["6", "", "2", "9"]
+    return ["6", "", "4", "6"]
 
 
 def _exit_after_assignment_action_to_main() -> list[str]:
-    return ["", "6", "", "2", "9"]
+    return ["", "6", "", "4", "6"]
 
 
 def _enter_selected_student(student_choice: str = "1") -> list[str]:

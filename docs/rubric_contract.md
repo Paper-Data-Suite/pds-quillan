@@ -17,7 +17,7 @@ pds-core standards through rubric workflows.
 
 Optional synthetic starter rubrics live under
 [`../examples/rubrics/`](../examples/rubrics/). They can be installed from
-Review Materials -> Starter Materials into `shared/rubrics/`; existing files are
+Review Student Work -> Manage Review Materials -> Starter Materials into `shared/rubrics/`; existing files are
 skipped unless exact overwrite confirmation is provided. Starter rubrics are
 examples only and are not official curriculum or recommended grading policy.
 See [`starter_materials.md`](starter_materials.md).

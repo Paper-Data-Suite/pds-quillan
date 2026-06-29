@@ -33,7 +33,7 @@ comment banks, tag banks, and rubrics.
 Use:
 
 ```text
-Quillan -> Review Materials -> Starter Materials
+Quillan -> Review Student Work -> Manage Review Materials -> Starter Materials
 ```
 
 The submenu can preview, validate, install all, or install selected starter

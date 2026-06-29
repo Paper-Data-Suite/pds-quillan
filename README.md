@@ -32,7 +32,7 @@ Quillan currently supports:
 * teacher-facing class roster creation, viewing, staged editing, and validation through the Roster Management menu;
 * teacher-facing writing assignment config creation and validation through the Assignment Management menu;
 * teacher-facing generation of one combined printable response class packet from an existing canonical roster and assignment config;
-* teacher-facing Review Materials guidance for reusable review aids;
+* teacher-facing Manage Review Materials guidance for reusable review aids;
 * shared Paper Data Suite workspace status reporting;
 * assignment-local storage paths based on shared `pds-core` route helpers;
 * decoded response-page route planning that validates class, assignment, roster, and student relationships before writing routed evidence;
@@ -143,14 +143,11 @@ The current top-level menu is:
 
 ```text
 1. Assignment Management
-2. Roster Management
-3. Printable Response Pages
-4. Scan Intake / Route Paper Responses
-5. Review Student Work
-6. Review Materials
-7. Workspace Settings
-8. Help
-9. Exit
+2. Review Student Work
+3. Roster Management
+4. Workspace Settings
+5. Help
+6. Exit
 ```
 
 ### Assignment Management
@@ -160,7 +157,8 @@ The Assignment Management menu supports:
 ```text
 1. Create writing assignment
 2. View/validate assignment
-3. Back
+3. Printable Response Pages
+4. Back
 ```
 
 Assignment creation requires an existing canonical class roster and writes to:
@@ -209,7 +207,10 @@ Existing optional columns are displayed and preserved when students are added, e
 
 ### Printable Response Pages
 
-The Printable Response Pages menu selects an existing canonical class roster and assignment config, prompts for a positive number of pages per student, and generates one combined class packet at:
+Printable Response Pages is available from Assignment Management. It selects
+an existing canonical class roster and assignment config, prompts for a
+positive number of pages per student, and generates one combined class packet
+at:
 
 ```text
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/templates/printable_response_pages.pdf
@@ -223,7 +224,9 @@ Generation does not alter the roster or assignment config. Generated PDFs are lo
 
 ### Scan Intake / Route Paper Responses
 
-The Scan Intake / Route Paper Responses menu asks for an image, PDF, or non-recursive folder path and uses the same QR-aware behavior as:
+Scan Intake / Route Paper Responses is available from Review Student Work. It
+asks for an image, PDF, or non-recursive folder path and uses the same
+QR-aware behavior as:
 
 ```powershell
 quillan route-scan <source> --decode-qr
@@ -235,16 +238,27 @@ It does not expose direct payload mode. It does not move or archive original sou
 
 ### Review Student Work
 
-The Review Student Work menu supports class, assignment, and student/submission navigation plus guided review actions.
+The Review Student Work menu supports scan intake, review-material management,
+class/assignment/student navigation, and guided review actions.
+
+The top Review Student Work menu is:
+
+```text
+1. Assignment Review Actions
+2. Scan Intake / Route Paper Responses
+3. Manage Review Materials
+4. Back
+```
 
 The assignment-level review actions menu is:
 
 ```text
 1. Select student/submission
-2. Export class review summary
-3. Export standards summary
-4. Refresh submission status
-5. Back
+2. Assemble routed submissions
+3. Export class review summary
+4. Export standards summary
+5. Refresh submission status
+6. Back
 ```
 
 The selected-student review menu is:
@@ -272,9 +286,14 @@ Review state updates are explicit and teacher-controlled. The state screen expla
 
 Guided export actions preserve overwrite protection. Student feedback export explains that it formats the current review record, does not rescore work, and does not generate AI feedback. Existing export files are not replaced unless the teacher explicitly confirms overwrite behavior.
 
-### Review Materials
+### Manage Review Materials
 
-The Review Materials menu is the preparation area for reusable teacher-authored review aids. It includes Comment Banks, Tag Banks, and Rubrics / Scoring Profiles submenus for creating, viewing, editing, extending, and validating shared reusable review materials. It also includes optional synthetic starter materials for onboarding and local testing.
+Manage Review Materials is available from Review Student Work. It is the
+preparation area for reusable teacher-authored review aids. It includes
+Comment Banks, Tag Banks, and Rubrics / Scoring Profiles submenus for
+creating, viewing, editing, extending, and validating shared reusable review
+materials. It also includes optional synthetic starter materials for
+onboarding and local testing.
 
 These materials help teachers review written student work more quickly by selecting prepared comments, tags, and scoring criteria instead of typing everything during review.
 

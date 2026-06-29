@@ -182,7 +182,10 @@ def prompt_view_tag_banks() -> int:
     if not valid:
         print("No valid shared tag banks found.")
         print()
-        print("Create one from Review Materials -> Tag Banks -> Create tag bank.")
+        print(
+            "Create one from Review Student Work -> Manage Review Materials "
+            "-> Tag Banks -> Create tag bank."
+        )
         print()
         print("Expected location:")
         print("shared/tag_banks/")
@@ -651,7 +654,10 @@ def _prompt_valid_bank() -> tuple[Path, dict[str, Any]] | None:
     files = list_valid_tag_banks(workspace_root)
     if not files:
         print("No valid shared tag banks found.")
-        print("Create one from Review Materials -> Tag Banks -> Create tag bank.")
+        print(
+            "Create one from Review Student Work -> Manage Review Materials "
+            "-> Tag Banks -> Create tag bank."
+        )
         return None
     print("Available tag banks:")
     for index, item in enumerate(files, start=1):
