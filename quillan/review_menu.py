@@ -66,6 +66,12 @@ from quillan.submission_review_opening import (
     open_student_submission_for_review,
 )
 from quillan.submission_manifest import ALLOWED_SUBMISSION_STATES
+from quillan.submission_page_management import (
+    SubmissionPageManagementError,
+    exclude_submission_page,
+    mark_submission_page_needs_rescan,
+    restore_excluded_submission_page,
+)
 from quillan.submission_review_state import (
     SubmissionReviewStateError,
     update_submission_review_state,
@@ -372,20 +378,21 @@ def _launch_selected_student_review(
                 input("Press Enter to continue...")
             continue
         print("1. Open submission evidence")
-        print("2. Add teacher note")
-        print("3. Add structured tag")
-        print("4. Select reusable comment")
-        print("5. Set criterion score")
-        print("6. Update submission review state")
-        print("7. Export student feedback")
-        print("8. Refresh summary")
-        print("9. Back")
+        print("2. Manage submission pages")
+        print("3. Add teacher note")
+        print("4. Add structured tag")
+        print("5. Select reusable comment")
+        print("6. Set criterion score")
+        print("7. Update submission review state")
+        print("8. Export student feedback")
+        print("9. Refresh summary")
+        print("10. Back")
         print()
 
         choice = input("Select an option: ").strip()
         print()
 
-        if choice in {"", "9"}:
+        if choice in {"", "10"}:
             return 0
         if choice == "1":
             _open_submission_evidence(
@@ -396,7 +403,7 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "2":
-            _menu_add_review_note(
+            _menu_manage_submission_pages(
                 workspace_root,
                 class_id,
                 assignment_id,
@@ -404,7 +411,7 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "3":
-            _menu_add_review_tag(
+            _menu_add_review_note(
                 workspace_root,
                 class_id,
                 assignment_id,
@@ -412,7 +419,7 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "4":
-            _menu_add_review_comment(
+            _menu_add_review_tag(
                 workspace_root,
                 class_id,
                 assignment_id,
@@ -420,7 +427,7 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "5":
-            _menu_set_review_score(
+            _menu_add_review_comment(
                 workspace_root,
                 class_id,
                 assignment_id,
@@ -428,7 +435,7 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "6":
-            _menu_update_submission_review_state(
+            _menu_set_review_score(
                 workspace_root,
                 class_id,
                 assignment_id,
@@ -436,7 +443,7 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "7":
-            _menu_export_student_feedback(
+            _menu_update_submission_review_state(
                 workspace_root,
                 class_id,
                 assignment_id,
@@ -444,9 +451,17 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "8":
+            _menu_export_student_feedback(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+            input("Press Enter to continue...")
+        elif choice == "9":
             continue
         else:
-            print("Invalid selection. Please enter a number from 1 to 9.")
+            print("Invalid selection. Please enter a number from 1 to 10.")
             input("Press Enter to continue...")
 
 
@@ -848,7 +863,10 @@ def _prompt_tag_bank(files: tuple[Any, ...]) -> dict[str, Any] | None:
         print(f"   {_format_secondary_id(bank['tag_bank_id'])}")
         writing_types = bank.get("writing_types")
         if isinstance(writing_types, list) and writing_types:
-            print(f"   Writing types: {', '.join(str(item) for item in writing_types)}")
+            print(
+                "   Writing assignment types: "
+                f"{', '.join(str(item) for item in writing_types)}"
+            )
     print("B. Back")
     print()
     selection = input("Select tag bank: ").strip()
@@ -1038,7 +1056,10 @@ def _prompt_comment_bank(
         print(f"   {_format_secondary_id(bank['bank_id'])}")
         writing_types = bank.get("writing_types")
         if isinstance(writing_types, list) and writing_types:
-            print(f"   Writing types: {', '.join(str(item) for item in writing_types)}")
+            print(
+                "   Writing assignment types: "
+                f"{', '.join(str(item) for item in writing_types)}"
+            )
         comments = bank.get("comments")
         if isinstance(comments, list):
             print(f"   Comments: {len(comments)}")
@@ -1452,7 +1473,10 @@ def _prompt_score_criterion(rubric: dict[str, Any]) -> dict[str, Any] | None:
     print(f"{_format_secondary_id(rubric['rubric_id'])}")
     writing_types = rubric.get("writing_types")
     if isinstance(writing_types, list) and writing_types:
-        print(f"Writing types: {', '.join(str(item) for item in writing_types)}")
+        print(
+            "Writing assignment types: "
+            f"{', '.join(str(item) for item in writing_types)}"
+        )
     print()
     print("Criteria:")
     print()
@@ -1891,6 +1915,180 @@ def _open_submission_evidence(
         return
 
     print_opened_submission_review(opened)
+
+
+def _menu_manage_submission_pages(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    _print_review_action_header(
+        "Manage Submission Pages", class_id, assignment_id, student_id
+    )
+    print(
+        "Excluded pages are preserved in the submission record but left out "
+        "of active review."
+    )
+    print("Excluding a page does not delete the file.")
+    print()
+    status = _load_submission_status(workspace_root, class_id, assignment_id)
+    student_status = _student_submission_status(status, student_id)
+    if student_status is None or student_status.manifest_path is None:
+        print("No assembled submission record was found for this student.")
+        return
+
+    _print_manageable_pages(student_status.pages)
+    print()
+    print("Actions:")
+    print("1. Exclude page from review")
+    print("2. Restore excluded page")
+    print("3. Mark page as needs rescan")
+    print("4. Back")
+    print()
+    choice = input("Select an option: ").strip()
+    if choice in {"", "4"}:
+        print("Manage submission pages canceled.")
+        return
+    if choice == "1":
+        _menu_change_submission_page(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            student_status.pages,
+            action="exclude",
+        )
+    elif choice == "2":
+        _menu_change_submission_page(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            student_status.pages,
+            action="restore",
+        )
+    elif choice == "3":
+        _menu_change_submission_page(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            student_status.pages,
+            action="needs_rescan",
+        )
+    else:
+        print("Invalid selection. Please enter a number from 1 to 4.")
+
+
+def _print_manageable_pages(pages: tuple[Any, ...]) -> None:
+    print("Pages:")
+    for page in pages:
+        state = _teacher_page_state_label(page.page_state)
+        selected = page.selected_evidence_id or "no selected evidence"
+        print(
+            f"{page.page_number}. Page {page.page_number} - {state} - "
+            f"selected evidence: {selected}"
+        )
+
+
+def _teacher_page_state_label(page_state: str) -> str:
+    labels = {
+        "excluded": "excluded from active review",
+        "needs_rescan": "needs rescan",
+    }
+    return labels.get(page_state, page_state)
+
+
+def _menu_change_submission_page(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    pages: tuple[Any, ...],
+    *,
+    action: str,
+) -> None:
+    titles = {
+        "exclude": "Exclude Page From Review",
+        "restore": "Restore Excluded Page",
+        "needs_rescan": "Mark Page as Needing Rescan",
+    }
+    _print_review_action_header(titles[action], class_id, assignment_id, student_id)
+    if action == "exclude":
+        print("This keeps the evidence file but removes the page from active review.")
+        print(
+            "Use this for blank pages, wrong pages, accidental scans, or pages "
+            "that should not be scored."
+        )
+    elif action == "restore":
+        print("This returns an excluded page to active review.")
+        print("It does not change scores, tags, comments, or feedback.")
+    else:
+        print(
+            "Use this when a page is missing, damaged, unreadable, incomplete, "
+            "or the wrong page."
+        )
+    print()
+    _print_manageable_pages(pages)
+    print("B. Back")
+    print()
+    page_number = _prompt_page_number("Select page: ")
+    if page_number is None:
+        print("Page action canceled.")
+        return
+    if page_number not in {page.page_number for page in pages}:
+        print("Page action canceled. Please choose a listed page.")
+        return
+
+    confirm_labels = {
+        "exclude": f"Exclude page {page_number} from active review?",
+        "restore": f"Restore page {page_number} to active review?",
+        "needs_rescan": f"Mark page {page_number} as needing rescan?",
+    }
+    print()
+    print(confirm_labels[action])
+    print()
+    print("1. Save page change")
+    print("2. Back")
+    print()
+    if input("Select an option: ").strip() != "1":
+        print("Page action canceled. No file was changed.")
+        return
+
+    try:
+        if action == "exclude":
+            result = exclude_submission_page(
+                workspace_root, class_id, assignment_id, student_id, page_number
+            )
+        elif action == "restore":
+            result = restore_excluded_submission_page(
+                workspace_root, class_id, assignment_id, student_id, page_number
+            )
+        else:
+            result = mark_submission_page_needs_rescan(
+                workspace_root, class_id, assignment_id, student_id, page_number
+            )
+    except SubmissionPageManagementError as error:
+        print(f"Error: page change was not saved: {error}")
+        return
+
+    print("Page change saved.")
+    print(f"Page: {result.page_number}")
+    print(f"State: {_teacher_page_state_label(result.page_state)}")
+    print(f"Evidence records preserved: {result.evidence_count}")
+    print("Review notes, tags, comments, scores, and feedback were not changed.")
+
+
+def _prompt_page_number(prompt: str) -> int | None:
+    selection = input(prompt).strip()
+    if selection == "" or selection.casefold() == "b":
+        return None
+    try:
+        page_number = int(selection)
+    except ValueError:
+        return None
+    return page_number if page_number > 0 else None
 
 
 def _prompt_overwrite_export() -> bool | object:

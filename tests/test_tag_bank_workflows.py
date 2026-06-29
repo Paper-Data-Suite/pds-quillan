@@ -205,7 +205,6 @@ def test_add_tag_template_stores_optional_metadata(
             "criterion_1",
             "2",
             "What evidence needs clarification?",
-            "n",
             "10",
             "1",
         ],
@@ -220,8 +219,23 @@ def test_add_tag_template_stores_optional_metadata(
     assert added["criterion_ids"] == ["criterion_1"]
     assert added["severity_default"] == 2
     assert added["teacher_note_prompt"] == "What evidence needs clarification?"
-    assert added["student_facing_default"] is False
+    assert "student_facing_default" not in added
     capsys.readouterr()
+
+
+def test_tag_bank_menu_uses_teacher_facing_language(
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(monkeypatch, ["7"])
+
+    assert workflows.launch_tag_banks_menu() == 0
+
+    output = capsys.readouterr().out
+    assert "Add reusable tag" in output
+    assert "Add tag template" not in output
+    assert "Implemented in #166" not in output
+    assert "Opening this screen" not in output
 
 
 def test_validate_tag_bank_reports_invalid_without_modifying_file(

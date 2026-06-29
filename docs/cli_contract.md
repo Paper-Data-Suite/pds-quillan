@@ -389,14 +389,15 @@ The selected-student review menu provides:
 
 ```text
 1. Open submission evidence
-2. Add teacher note
-3. Add structured tag
-4. Select reusable comment
-5. Set criterion score
-6. Update submission review state
-7. Export student feedback
-8. Refresh summary
-9. Back
+2. Manage submission pages
+3. Add teacher note
+4. Add structured tag
+5. Select reusable comment
+6. Set criterion score
+7. Update submission review state
+8. Export student feedback
+9. Refresh summary
+10. Back
 ```
 
 Opening submission evidence delegates to the same existing safe selected
@@ -528,7 +529,7 @@ Tag Banks opens a submenu:
 2. View tag banks
 3. Edit tag bank
 4. Add category
-5. Add tag template
+5. Add reusable tag
 6. Validate tag bank
 7. Back
 ```
@@ -541,6 +542,17 @@ exactly `OVERWRITE`, and does not write invalid partial files.
 Tag banks are teacher-authored reusable observations for quick tagging. They do
 not grade work, imply mastery, generate automatic feedback, or mutate student
 records by themselves.
+
+Review-material authoring prompts use teacher-facing labels while preserving
+the JSON contracts. The UI calls `writing_types` "writing assignment types,"
+explains comma-separated values and underscores for multi-word values, suggests
+stored IDs from labels, and distinguishes labels from system IDs such as
+`bank_id`, `tag_bank_id`, `rubric_id`, `category_id`, `comment_id`,
+`tag_template_id`, and `criterion_id`. Optional tag details are explained as
+description, writing assignment type limits, linked standards, linked rubric
+criteria, priority/severity, private note question, and display order.
+`student_facing_default` is not prompted for until it has visible runtime
+behavior.
 
 Rubrics / Scoring Profiles opens a submenu for teacher-authored reusable
 scoring profiles. It writes confirmed, valid version `1` rubrics only under
@@ -563,6 +575,14 @@ tag-bank, and rubric validators used at runtime. Installation copies validated
 JSON files only into `shared/comment_banks/`, `shared/tag_banks/`, and
 `shared/rubrics/`. Existing files are skipped by default, and bulk overwrite
 requires the exact confirmation text `OVERWRITE`.
+
+Selected Student Review includes Manage Submission Pages. Teachers can exclude
+a page from active review, restore an excluded page, or mark a page as needing
+rescan after confirmation. These actions update only the selected student's
+`submission.json`, validate before writing, preserve evidence records and
+routed files, and do not modify review notes, tags, comments, scores, feedback
+exports, rosters, assignments, review materials, pds-core standards, or
+pds-core routes.
 
 Starter installation does not create assignments, rosters, scans, submissions,
 review records, exports, pds-core standards, pds-core standards profiles, or

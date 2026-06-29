@@ -220,7 +220,7 @@ def test_review_workflow_selects_context_and_shows_read_only_summary(
         for path in workspace.rglob("*")
         if path.is_file()
     )
-    _menu_input(monkeypatch, ["5", "1", "1", "1", "1", "1", "9", "6", "", "2", "9"])
+    _menu_input(monkeypatch, ["5", "1", "1", "1", "1", "1", "10", "6", "", "2", "9"])
 
     assert main(["menu"]) == 0
 
@@ -265,7 +265,7 @@ def test_review_summary_includes_existing_review_record_counts(
     review_before = review_path.read_bytes()
     _menu_input(
         monkeypatch,
-        ["5", "1", "1", "1", "1", "1", "9", "6", "", "2", "9"],
+        ["5", "1", "1", "1", "1", "1", "10", "6", "", "2", "9"],
     )
 
     assert main(["menu"]) == 0
@@ -313,7 +313,7 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
     )
     _menu_input(
         monkeypatch,
-        ["5", "1", "1", "1", "1", "1", "1", "", "9", "6", "", "2", "9"],
+        ["5", "1", "1", "1", "1", "1", "1", "", "10", "6", "", "2", "9"],
     )
 
     assert main(["menu"]) == 0
@@ -359,10 +359,10 @@ def test_review_menu_adds_teacher_note_to_review_record(
             "1",
             "1",
             "1",
-            "2",
+            "3",
             "This is a test note.",
             "",
-            "9",
+            "10",
             "6",
             "",
             "2",
@@ -402,11 +402,11 @@ def test_review_menu_updates_submission_review_state(
             "1",
             "1",
             "1",
-            "6",
+            "7",
             "in_progress",
             "1",
             "",
-            "9",
+            "10",
             "6",
             "",
             "2",
@@ -424,6 +424,69 @@ def test_review_menu_updates_submission_review_state(
     )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["submission_state"] == "in_progress"
+
+
+def test_review_menu_excludes_submission_page_without_touching_review_record(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    review_path = (
+        workspace
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "submissions"
+        / STUDENT_ID
+        / "review.json"
+    )
+    review_path.write_text(json.dumps(_review_record()), encoding="utf-8")
+    review_before = review_path.read_bytes()
+    evidence_path = workspace / EVIDENCE_RELATIVE_PATH
+    evidence_before = evidence_path.read_bytes()
+    _menu_input(
+        monkeypatch,
+        [
+            "5",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "2",
+            "1",
+            "1",
+            "1",
+            "",
+            "10",
+            "6",
+            "",
+            "2",
+            "9",
+        ],
+    )
+
+    assert main(["menu"]) == 0
+
+    output = capsys.readouterr().out
+    assert "Manage Submission Pages" in output
+    assert "Excluding a page does not delete the file." in output
+    assert "Page change saved." in output
+    manifest_path = submission_manifest_path(
+        workspace,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    page = manifest["pages"][0]
+    assert page["page_state"] == "excluded"
+    assert page["selected_evidence_id"] is None
+    assert page["evidence"][0]["evidence_role"] == "excluded"
+    assert page["evidence"][0]["evidence_state"] == "excluded"
+    assert evidence_path.read_bytes() == evidence_before
+    assert review_path.read_bytes() == review_before
 
 
 def test_review_menu_no_classes_and_invalid_selection_back_out_safely(

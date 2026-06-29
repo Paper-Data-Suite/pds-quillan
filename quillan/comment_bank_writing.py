@@ -176,7 +176,7 @@ def summarize_comment_bank(bank: Mapping[str, Any], path: str | Path) -> str:
             f"Title: {bank['title']}",
             f"Description: {bank['description']}",
             f"Scope: {bank['scope']}",
-            f"Writing types: {writing_types}",
+            f"Writing assignment types: {writing_types}",
             f"Categories: {len(bank['categories'])}",
             f"Comments: {len(bank['comments'])}",
             f"Path: {Path(path)}",

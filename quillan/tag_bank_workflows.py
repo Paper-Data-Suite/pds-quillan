@@ -7,6 +7,15 @@ from typing import Any
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
+from quillan.authoring_prompt_helpers import (
+    print_criterion_ids_help,
+    print_identifier_guidance,
+    print_priority_severity_help,
+    print_standard_ids_help,
+    prompt_display_order,
+    prompt_identifier_with_guidance,
+    prompt_writing_assignment_types,
+)
 from quillan.tag_banks import ALLOWED_POLARITIES, TagBankError, load_tag_bank
 from quillan.tag_bank_writing import (
     build_tag_bank,
@@ -45,14 +54,12 @@ def launch_tag_banks_menu() -> int:
             print_menu_header("Tag Banks")
             print("Tag banks store reusable teacher observations for quick review tagging.")
             print("Tags are review aids; they are not grades or automatic mastery judgments.")
-            print("Implemented in #166. Shared storage: shared/tag_banks/")
-            print("Opening this screen: No files were changed.")
             print()
             print("1. Create tag bank")
             print("2. View tag banks")
             print("3. Edit tag bank")
             print("4. Add category")
-            print("5. Add tag template")
+            print("5. Add reusable tag")
             print("6. Validate tag bank")
             print("7. Back")
             print()
@@ -92,19 +99,14 @@ def prompt_create_tag_bank() -> int:
     try:
         title = _required_input("Tag bank title:\nExample: General Written Response Tags\n")
         suggestion = suggest_identifier(title)
-        print(f"Suggested tag_bank_id:\n{suggestion}")
-        tag_bank_id = input(
-            "Press Enter to accept, or type a different tag_bank_id: "
-        ).strip()
-        if not tag_bank_id:
-            tag_bank_id = suggestion
+        tag_bank_id = prompt_identifier_with_guidance("tag_bank_id", suggestion)
         description = input(
             "Description:\n"
             "Example: Reusable teacher observations for written responses across subjects.\n"
         ).strip()
         writing_types = _prompt_writing_types()
         print()
-        print("Now add at least one category and one tag template before saving.")
+        print("Now add at least one category and one reusable tag before saving.")
         print()
         category = _prompt_new_category(existing_ids=set())
         if category is None:
@@ -137,7 +139,7 @@ def prompt_create_tag_bank() -> int:
     print()
     print(f"Tag Bank ID: {bank['tag_bank_id']}")
     print(f"Title: {bank['title']}")
-    print(f"Writing types: {', '.join(bank['writing_types'])}")
+    print(f"Writing assignment types: {', '.join(bank['writing_types'])}")
     print(f"Categories: {len(bank['categories'])}")
     print(f"Tags: {len(bank['tags'])}")
     print(f"Path: {path}")
@@ -162,6 +164,7 @@ def prompt_create_tag_bank() -> int:
         print(f"Error: {error}")
         return 1
     print(f"Saved tag bank: {saved_path}")
+    _prompt_after_tag_bank_saved(bank["title"])
     return 0
 
 
@@ -190,7 +193,7 @@ def prompt_view_tag_banks() -> int:
             bank = item.bank
             assert bank is not None
             print(f"{index}. {bank['tag_bank_id']} - {bank['title']}")
-            print(f"   Writing types: {', '.join(bank['writing_types'])}")
+            print(f"   Writing assignment types: {', '.join(bank['writing_types'])}")
             print(f"   Categories: {len(bank['categories'])}")
             print(f"   Tags: {len(bank['tags'])}")
             print()
@@ -220,7 +223,7 @@ def prompt_edit_tag_bank() -> int:
     print()
     print("1. Edit title")
     print("2. Edit description")
-    print("3. Edit writing types")
+    print("3. Edit writing assignment types")
     print("4. Back")
     print()
     choice = input("Select an option: ").strip()
@@ -288,14 +291,15 @@ def prompt_add_category() -> int:
         print("Existing tag bank was not changed.")
         return 1
     print(f"Saved tag bank: {path}")
+    _prompt_after_category_saved(bank, category)
     return 0
 
 
 def prompt_add_tag_template() -> int:
-    """Add a tag template to an existing valid bank."""
+    """Add a reusable tag to an existing valid bank."""
     from quillan.menu import print_menu_header
 
-    print_menu_header("Add Tag Template")
+    print_menu_header("Add Reusable Tag")
     selected = _prompt_valid_bank()
     if selected is None:
         return 1
@@ -313,19 +317,19 @@ def prompt_add_tag_template() -> int:
         )
     except (TagBankError, ValueError) as error:
         print(f"Error: {error}")
-        print("Add tag template canceled. No file was changed.")
+        print("Add reusable tag canceled. No file was changed.")
         return 1
     if tag is None:
-        print("Add tag template canceled. No file was changed.")
+        print("Add reusable tag canceled. No file was changed.")
         return 1
     updated = touch_updated_at(bank)
     updated["tags"] = [dict(item) for item in bank["tags"]] + [tag]
     print()
-    print(f"Add tag template '{tag['label']}' to {bank['tag_bank_id']}?")
+    print(f"Add reusable tag '{tag['label']}' to {bank['tag_bank_id']}?")
     print("1. Save")
     print("2. Cancel")
     if input("Select an option: ").strip() != "1":
-        print("Add tag template canceled. No file was changed.")
+        print("Add reusable tag canceled. No file was changed.")
         return 1
     try:
         write_tag_bank(path.parents[2], updated, overwrite=True)
@@ -334,6 +338,7 @@ def prompt_add_tag_template() -> int:
         print("Existing tag bank was not changed.")
         return 1
     print(f"Saved tag bank: {path}")
+    _prompt_after_tag_saved(bank, tag)
     return 0
 
 
@@ -396,13 +401,10 @@ def _required_input(prompt: str) -> str:
 
 
 def _prompt_writing_types() -> list[str]:
-    value = input(
-        "Writing types, comma-separated:\n"
-        "Examples: general, lab_report, reflection, research, constructed_response\n"
-    )
+    value = prompt_writing_assignment_types()
     writing_types = parse_comma_separated_values(value)
     if not writing_types:
-        raise ValueError("At least one writing type is required.")
+        raise ValueError("At least one writing assignment type is required.")
     return writing_types
 
 
@@ -433,14 +435,14 @@ def _prompt_new_category(existing_ids: set[str]) -> dict[str, Any] | None:
         print("Invalid category selection.")
         return None
     suggestion = suggest_identifier(label)
-    print(f"Suggested category_id:\n{suggestion}")
+    print_identifier_guidance("category_id", suggestion)
     category_id = input(
         "Press Enter to accept, or type a different category_id: "
     ).strip()
     if not category_id:
         category_id = suggestion
     sort_order = _parse_optional_nonnegative_int(
-        input("Sort order (leave blank to auto-assign): ")
+        prompt_display_order()
     )
     if sort_order is None:
         sort_order = len(existing_ids) + 1
@@ -460,11 +462,11 @@ def _prompt_new_tag_template(
     existing_ids: set[str],
 ) -> dict[str, Any] | None:
     print()
-    print("Add Tag Template")
+    print("Add Reusable Tag")
     print()
     label = _required_input("Tag label:\nExample: Explanation needs more detail\n")
     suggestion = suggest_identifier(label)
-    print(f"Suggested tag_template_id:\n{suggestion}")
+    print_identifier_guidance("tag_template_id", suggestion)
     tag_template_id = input(
         "Press Enter to accept, or type a different tag_template_id: "
     ).strip()
@@ -527,51 +529,92 @@ def _prompt_polarity() -> str | None:
 
 def _prompt_optional_metadata(bank_writing_types: list[str]) -> dict[str, Any] | None:
     print()
-    response = input("Add optional metadata? (y/N): ").strip().lower()
-    if response in {"", "n", "no"}:
+    print("Add optional details for this tag?")
+    print()
+    print(
+        "Optional details can help Quillan sort the tag, link it to standards "
+        "or rubric criteria, ask a private note question during review, or "
+        "reserve future feedback behavior."
+    )
+    print()
+    print("You can skip these now.")
+    print()
+    print("1. Add optional details")
+    print("2. Skip optional details")
+    print("B. Back")
+    print()
+    response = input("Select an option: ").strip().lower()
+    if response in {"", "2", "n", "no"}:
         return {}
-    if response not in {"y", "yes"}:
-        print("Invalid selection. Optional metadata skipped by canceling.")
+    if response not in {"1", "y", "yes"}:
+        print("Invalid selection. Optional details canceled.")
         return None
     metadata: dict[str, Any] = {}
-    description = input("description (leave blank to omit): ").strip()
+    print()
+    print("Description helps you remember when to use this tag.")
+    print("It is not automatically shown to students.")
+    print()
+    print("Example:")
+    print(
+        "Use when the speaker builds credibility through expertise, fairness, "
+        "or trustworthiness."
+    )
+    description = input("Description (leave blank to omit): ").strip()
     if description:
         metadata["description"] = description
+    print()
+    print("Limit this tag to specific writing assignment types from this tag bank.")
+    print("Leave blank if this tag applies to the whole bank.")
+    print()
+    print("Use lowercase words. For multi-word types, use underscores instead of spaces.")
+    print(f"Available writing assignment types: {', '.join(bank_writing_types)}")
+    print()
+    print("Examples:")
+    print("persuasive_speech, argumentative")
     writing_types = parse_comma_separated_values(
-        input("Tag writing types, comma-separated (leave blank to omit): ")
+        input("Tag writing assignment types, comma-separated (leave blank to omit): ")
     )
     if writing_types:
         outside = set(writing_types) - set(bank_writing_types)
         if outside:
             print(
                 "Invalid tag writing types. They must be part of the bank "
-                f"writing types: {', '.join(bank_writing_types)}."
+                f"writing assignment types: {', '.join(bank_writing_types)}."
             )
             return None
         metadata["writing_types"] = writing_types
-    for field in ("standard_ids", "criterion_ids"):
-        values = parse_comma_separated_values(
-            input(f"{field}, comma-separated (leave blank to omit): ")
-        )
-        if values:
-            metadata[field] = values
+    print_standard_ids_help()
+    standard_ids = parse_comma_separated_values(
+        input("Linked standards (leave blank to omit): ")
+    )
+    if standard_ids:
+        metadata["standard_ids"] = standard_ids
+    print_criterion_ids_help()
+    criterion_ids = parse_comma_separated_values(
+        input("Linked rubric criteria (leave blank to omit): ")
+    )
+    if criterion_ids:
+        metadata["criterion_ids"] = criterion_ids
+    print_priority_severity_help()
     severity = _parse_optional_nonnegative_int(
-        input("severity_default (leave blank to omit): ")
+        input("Default priority/severity (leave blank to omit): ")
     )
     if severity is not None:
         metadata["severity_default"] = severity
-    teacher_note_prompt = input(
-        "teacher_note_prompt (leave blank to omit): "
-    ).strip()
+    print()
+    print("Private note question to ask during review (optional)")
+    print()
+    print("If you enter a question here, Quillan will ask it when you select this tag.")
+    print("The teacher's answer is stored as a private note on that tag.")
+    print()
+    print("Example:")
+    print("What makes the speaker seem credible or trustworthy?")
+    print()
+    teacher_note_prompt = input("Private note question (leave blank to omit): ").strip()
     if teacher_note_prompt:
         metadata["teacher_note_prompt"] = teacher_note_prompt
-    student_facing = _parse_optional_boolean(
-        input("student_facing_default (y/n, leave blank to omit): ")
-    )
-    if student_facing is not None:
-        metadata["student_facing_default"] = student_facing
     sort_order = _parse_optional_nonnegative_int(
-        input("sort_order (leave blank to omit): ")
+        prompt_display_order(within="this category")
     )
     if sort_order is not None:
         metadata["sort_order"] = sort_order
@@ -579,6 +622,26 @@ def _prompt_optional_metadata(bank_writing_types: list[str]) -> dict[str, Any] |
     metadata["created_at"] = timestamp
     metadata["updated_at"] = timestamp
     return metadata
+
+
+def _prompt_after_tag_bank_saved(title: object) -> None:
+    print()
+    print(f"Tag bank saved: {title}")
+    print("Return to the Tag Banks menu to add more categories or reusable tags.")
+
+
+def _prompt_after_category_saved(
+    bank: dict[str, Any], category: dict[str, Any]
+) -> None:
+    print()
+    print(f"Category saved: {category['label']}")
+    print("Return to the Tag Banks menu to add more categories or reusable tags.")
+
+
+def _prompt_after_tag_saved(bank: dict[str, Any], tag: dict[str, Any]) -> None:
+    print()
+    print(f"Tag saved: {tag['label']}")
+    print("Return to the Tag Banks menu to add more categories or reusable tags.")
 
 
 def _prompt_valid_bank() -> tuple[Path, dict[str, Any]] | None:

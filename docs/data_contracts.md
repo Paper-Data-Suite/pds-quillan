@@ -330,6 +330,20 @@ Initial `page_state` values are:
 Page state records evidence-management status only. Known pages may be listed
 with an empty `evidence` array, including missing pages.
 
+Teacher-facing page management may change a selected student's page state to
+`excluded`, restore an excluded page to `present`, `missing`, or `duplicate`
+based on preserved evidence, or mark a page `needs_rescan`. These updates are
+manifest-only: routed evidence files and review records are preserved. Restore
+selects a single evidence candidate only when there is exactly one candidate;
+multiple candidates remain duplicate/unselected to avoid choosing the wrong
+evidence.
+
+When excluding a page, Quillan records each evidence candidate's prior
+`evidence_role` and `evidence_state` in that candidate's `module_details`
+before setting the active fields to `excluded`. Restoring an excluded page uses
+that preserved state when available, so prior candidate, replacement, damaged,
+or needs-rescan evidence-management information is not silently erased.
+
 ### Evidence Candidates
 
 A page may have zero, one, or many evidence candidates. Every candidate

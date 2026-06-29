@@ -165,7 +165,7 @@ def summarize_tag_bank(bank: Mapping[str, Any], path: str | Path) -> str:
             f"Title: {bank['title']}",
             f"Description: {bank['description']}",
             f"Scope: {bank['scope']}",
-            f"Writing types: {writing_types}",
+            f"Writing assignment types: {writing_types}",
             f"Categories: {len(bank['categories'])}",
             f"Tags: {len(bank['tags'])}",
             f"Path: {Path(path)}",

@@ -7,6 +7,15 @@ from typing import Any
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
+from quillan.authoring_prompt_helpers import (
+    print_criterion_ids_help,
+    print_identifier_guidance,
+    print_priority_severity_help,
+    print_standard_ids_help,
+    prompt_display_order,
+    prompt_identifier_with_guidance,
+    prompt_writing_assignment_types,
+)
 from quillan.comment_banks import (
     ALLOWED_POLARITIES,
     CommentBankError,
@@ -101,10 +110,7 @@ def prompt_create_comment_bank() -> int:
             "Bank title:\nExample: General Written Response Comments\n"
         )
         suggestion = suggest_identifier(title)
-        print(f"Suggested bank_id:\n{suggestion}")
-        bank_id = input("Press Enter to accept, or type a different bank_id: ").strip()
-        if not bank_id:
-            bank_id = suggestion
+        bank_id = prompt_identifier_with_guidance("bank_id", suggestion)
         description = input(
             "Description:\n"
             "Example: Reusable comments for written responses across subjects.\n"
@@ -144,7 +150,7 @@ def prompt_create_comment_bank() -> int:
     print()
     print(f"Bank ID: {bank['bank_id']}")
     print(f"Title: {bank['title']}")
-    print(f"Writing types: {', '.join(bank['writing_types'])}")
+    print(f"Writing assignment types: {', '.join(bank['writing_types'])}")
     print(f"Categories: {len(bank['categories'])}")
     print(f"Comments: {len(bank['comments'])}")
     print(f"Path: {path}")
@@ -202,7 +208,7 @@ def prompt_view_comment_banks() -> int:
             bank = item.bank
             assert bank is not None
             print(f"{index}. {bank['bank_id']} - {bank['title']}")
-            print(f"   Writing types: {', '.join(bank['writing_types'])}")
+            print(f"   Writing assignment types: {', '.join(bank['writing_types'])}")
             print(f"   Categories: {len(bank['categories'])}")
             print(f"   Comments: {len(bank['comments'])}")
             print()
@@ -233,7 +239,7 @@ def prompt_edit_comment_bank() -> int:
     print()
     print("1. Edit title")
     print("2. Edit description")
-    print("3. Edit writing types")
+    print("3. Edit writing assignment types")
     print("4. Back")
     print()
     choice = input("Select an option: ").strip()
@@ -410,13 +416,10 @@ def _required_input(prompt: str) -> str:
 
 
 def _prompt_writing_types() -> list[str]:
-    value = input(
-        "Writing types, comma-separated:\n"
-        "Examples: general, lab_report, reflection, research, constructed_response\n"
-    )
+    value = prompt_writing_assignment_types()
     writing_types = parse_comma_separated_values(value)
     if not writing_types:
-        raise ValueError("At least one writing type is required.")
+        raise ValueError("At least one writing assignment type is required.")
     return writing_types
 
 
@@ -447,14 +450,14 @@ def _prompt_new_category(existing_ids: set[str]) -> dict[str, Any] | None:
         print("Invalid category selection.")
         return None
     suggestion = suggest_identifier(label)
-    print(f"Suggested category_id:\n{suggestion}")
+    print_identifier_guidance("category_id", suggestion)
     category_id = input(
         "Press Enter to accept, or type a different category_id: "
     ).strip()
     if not category_id:
         category_id = suggestion
     sort_order = _parse_optional_nonnegative_int(
-        input("Sort order (leave blank to auto-assign): ")
+        prompt_display_order()
     )
     if sort_order is None:
         sort_order = len(existing_ids) + 1
@@ -478,7 +481,7 @@ def _prompt_new_comment(
     print()
     label = _required_input("Comment label:\nExample: Explanation needs more detail\n")
     suggestion = suggest_identifier(label)
-    print(f"Suggested comment_id:\n{suggestion}")
+    print_identifier_guidance("comment_id", suggestion)
     comment_id = input(
         "Press Enter to accept, or type a different comment_id: "
     ).strip()
@@ -578,11 +581,23 @@ def _prompt_yes_no(label: str, *, default: bool) -> bool | None:
 
 def _prompt_optional_metadata(bank_writing_types: list[str]) -> dict[str, Any] | None:
     print()
-    response = input("Add optional metadata? (y/N): ").strip().lower()
-    if response in {"", "n", "no"}:
+    print("Add optional details for this comment?")
+    print()
+    print(
+        "Optional details can help Quillan sort the comment, link it to "
+        "standards or rubric criteria, and filter it by writing assignment type."
+    )
+    print()
+    print("You can skip these now.")
+    print()
+    print("1. Add optional details")
+    print("2. Skip optional details")
+    print("B. Back")
+    response = input("Select an option: ").strip().lower()
+    if response in {"", "2", "n", "no"}:
         return {}
-    if response not in {"y", "yes"}:
-        print("Invalid selection. Optional metadata skipped by canceling.")
+    if response not in {"1", "y", "yes"}:
+        print("Invalid selection. Optional details canceled.")
         return None
     metadata: dict[str, Any] = {}
     for field in (
@@ -595,31 +610,49 @@ def _prompt_optional_metadata(bank_writing_types: list[str]) -> dict[str, Any] |
         value = input(f"{field} (leave blank to omit): ").strip()
         if value:
             metadata[field] = value
+    print()
+    print("Limit this comment to specific writing assignment types from this bank.")
+    print("Leave blank if this comment applies to the whole bank.")
+    print("Use lowercase words. For multi-word types, use underscores instead of spaces.")
+    print(f"Available writing assignment types: {', '.join(bank_writing_types)}")
     writing_types = parse_comma_separated_values(
-        input("Comment writing types, comma-separated (leave blank to omit): ")
+        input("Comment writing assignment types, comma-separated (leave blank to omit): ")
     )
     if writing_types:
         outside = set(writing_types) - set(bank_writing_types)
         if outside:
             print(
                 "Invalid comment writing types. They must be part of the bank "
-                f"writing types: {', '.join(bank_writing_types)}."
+                f"writing assignment types: {', '.join(bank_writing_types)}."
             )
             return None
         metadata["writing_types"] = writing_types
-    for field in ("standard_ids", "criterion_ids", "tags", "hotwords"):
+    print_standard_ids_help()
+    standard_ids = parse_comma_separated_values(
+        input("Linked standards (leave blank to omit): ")
+    )
+    if standard_ids:
+        metadata["standard_ids"] = standard_ids
+    print_criterion_ids_help()
+    criterion_ids = parse_comma_separated_values(
+        input("Linked rubric criteria (leave blank to omit): ")
+    )
+    if criterion_ids:
+        metadata["criterion_ids"] = criterion_ids
+    for field in ("tags", "hotwords"):
         values = parse_comma_separated_values(
             input(f"{field}, comma-separated (leave blank to omit): ")
         )
         if values:
             metadata[field] = values
+    print_priority_severity_help()
     severity = _parse_optional_nonnegative_int(
-        input("severity_default (leave blank to omit): ")
+        input("Default priority/severity (leave blank to omit): ")
     )
     if severity is not None:
         metadata["severity_default"] = severity
     sort_order = _parse_optional_nonnegative_int(
-        input("sort_order (leave blank to omit): ")
+        prompt_display_order(within="this category")
     )
     if sort_order is not None:
         metadata["sort_order"] = sort_order

@@ -226,11 +226,11 @@ def _enter_selected_student(student_choice: str = "1") -> list[str]:
 
 
 def _exit_selected_student_to_main() -> list[str]:
-    return ["9", "6", "", "2", "9"]
+    return ["10", "6", "", "2", "9"]
 
 
 def _exit_after_selected_student_action_to_main() -> list[str]:
-    return ["", "9", "6", "", "2", "9"]
+    return ["", "10", "6", "", "2", "9"]
 
 
 @pytest.fixture
@@ -252,11 +252,12 @@ def test_review_menu_selected_student_shows_review_entry_actions(
     output = capsys.readouterr().out
     assert "Selected Student Review" in output
     assert "1. Open submission evidence" in output
-    assert "2. Add teacher note" in output
-    assert "3. Add structured tag" in output
-    assert "4. Select reusable comment" in output
-    assert "5. Set criterion score" in output
-    assert "6. Update submission review state" in output
+    assert "2. Manage submission pages" in output
+    assert "3. Add teacher note" in output
+    assert "4. Add structured tag" in output
+    assert "5. Select reusable comment" in output
+    assert "6. Set criterion score" in output
+    assert "7. Update submission review state" in output
     assert "Review record: not started" in output
     assert not review_record_path(
         workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
@@ -276,7 +277,7 @@ def test_review_menu_blank_note_cancels_without_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["2", ""]
+        + ["3", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -296,7 +297,7 @@ def test_review_menu_adds_structured_tag_to_review_record(
         monkeypatch,
         _enter_selected_student()
         + [
-            "3",
+            "4",
             "2",
             "claim",
             "1",
@@ -330,7 +331,7 @@ def test_review_menu_selects_reusable_tag_by_bank_and_category(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["3", "1", "1", "1", "1", "The explanation names the idea only."]
+        + ["4", "1", "1", "1", "1", "The explanation names the idea only."]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -373,7 +374,7 @@ def test_review_menu_blank_tag_cancels_without_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["3", ""]
+        + ["4", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -397,7 +398,7 @@ def test_review_menu_no_comment_banks_returns_safely(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["4", "1"]
+        + ["5", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -423,7 +424,7 @@ def test_review_menu_selects_reusable_comment_by_number(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["4", "1", "1", "1", "1", "1"]
+        + ["5", "1", "1", "1", "1", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -478,7 +479,7 @@ def test_comment_bank_created_by_workflow_is_selectable_in_review(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["4", "1", "1", "1", "1", "1"]
+        + ["5", "1", "1", "1", "1", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -518,7 +519,7 @@ def test_review_menu_sets_criterion_score(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["5", "evidence", "Evidence", "3", "4", "", ""]
+        + ["6", "evidence", "Evidence", "3", "4", "", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -549,7 +550,7 @@ def test_review_menu_scores_from_assignment_rubric(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["5", "1", "1", "1", "2", "Private score note"]
+        + ["6", "1", "1", "1", "2", "Private score note"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -578,7 +579,7 @@ def test_review_menu_missing_rubric_keeps_custom_score_available(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["5", "1", "1", "Evidence", "", "2", "4", "", ""]
+        + ["6", "1", "1", "Evidence", "", "2", "4", "", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -605,7 +606,7 @@ def test_review_menu_blank_score_cancels_without_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["5", ""]
+        + ["6", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -657,7 +658,7 @@ def test_review_menu_invalid_score_does_not_corrupt_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["5", "evidence", "Evidence", "5", "4", "", ""]
+        + ["6", "evidence", "Evidence", "5", "4", "", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -679,7 +680,7 @@ def test_review_menu_invalid_state_does_not_corrupt_manifest(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["6", "not_a_state"]
+        + ["7", "not_a_state"]
         + _exit_after_selected_student_action_to_main(),
     )
 

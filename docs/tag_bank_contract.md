@@ -62,6 +62,19 @@ Optional fields are `description`, `writing_types`, `standard_ids`,
 `criterion_ids`, `severity_default`, `teacher_note_prompt`,
 `student_facing_default`, `sort_order`, `created_at`, and `updated_at`.
 
+Teacher-facing authoring menus describe these as optional tag details rather
+than metadata. The UI asks for a tag label first, suggests `tag_template_id`
+from that label, and explains that stored IDs use lowercase letters, numbers,
+underscores, or hyphens with underscores for multi-word values. The UI uses
+"writing assignment types" for `writing_types`.
+
+`severity_default` is presented as optional priority/severity for concerns; it
+is not a grade and does not affect scoring. `teacher_note_prompt` is presented
+as a private note question shown during review, and the teacher's response is
+stored as a private tag note. `student_facing_default` remains valid schema but
+is not prompted for in teacher authoring until a visible student-facing runtime
+workflow exists. `sort_order` is presented as optional display order.
+
 `polarity` is one of `positive`, `developing`, `negative`, or `neutral`.
 `category_id` must reference a category in the same bank. Template
 `writing_types`, when present, must be a subset of the bank-level

@@ -164,6 +164,13 @@ def print_assignment_submission_status(
         "reviewed",
     )
     page_states = ("present", "missing", "duplicate", "needs_rescan", "excluded")
+    page_state_labels = {
+        "present": "present",
+        "missing": "missing",
+        "duplicate": "duplicate",
+        "needs_rescan": "needs rescan",
+        "excluded": "excluded from active review",
+    }
     submission_counts = {
         state: sum(
             status.submission_state == state
@@ -206,7 +213,7 @@ def print_assignment_submission_status(
     print()
     print("Page states:")
     for state in page_states:
-        print(f"- {state}: {page_counts[state]}")
+        print(f"- {page_state_labels[state]}: {page_counts[state]}")
     print(f"- present but unselected: {unselected_count}")
 
     if result.student_statuses:
@@ -228,7 +235,7 @@ def print_assignment_submission_status(
                 for state in page_states
             }
             detail_parts = [
-                f"{state}={counts[state]}"
+                f"{page_state_labels[state]}={counts[state]}"
                 for state in page_states
                 if counts[state]
             ]
