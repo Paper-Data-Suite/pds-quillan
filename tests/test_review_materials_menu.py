@@ -39,20 +39,20 @@ def _file_tree(root: Path) -> tuple[tuple[str, str, bytes | None], ...]:
     return tuple(entries)
 
 
-def test_main_menu_includes_review_materials_and_exits_cleanly(
+def test_main_menu_excludes_review_materials_and_exits_cleanly(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["9"])
+    _menu_input(monkeypatch, ["6"])
 
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
-    assert "5. Review Student Work" in output
-    assert "6. Review Materials" in output
-    assert "7. Workspace Settings" in output
-    assert "8. Help" in output
-    assert "9. Exit" in output
+    assert "2. Review Student Work" in output
+    assert "4. Workspace Settings" in output
+    assert "5. Help" in output
+    assert "6. Exit" in output
+    assert "Review Materials" not in output
     assert "Goodbye." in output
 
 
@@ -60,19 +60,19 @@ def test_main_menu_invalid_selection_uses_new_range(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["bad", "", "9"])
+    _menu_input(monkeypatch, ["bad", "", "6"])
 
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
-    assert "Invalid selection. Please enter a number from 1 to 9." in output
+    assert "Invalid selection. Please enter a number from 1 to 6." in output
 
 
 def test_review_materials_menu_navigation_returns_to_main_menu(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["6", "5", "9"])
+    _menu_input(monkeypatch, ["2", "3", "5", "4", "6"])
 
     assert main(["menu"]) == 0
 
@@ -190,7 +190,7 @@ def test_review_materials_menu_has_no_workspace_side_effects(
     before = _file_tree(tmp_path)
     _menu_input(
         monkeypatch,
-        ["6", "1", "7", "2", "", "3", "", "4", "", "5", "9"],
+        ["2", "3", "1", "7", "2", "", "3", "", "4", "", "5", "4", "6"],
     )
 
     assert main(["menu"]) == 0

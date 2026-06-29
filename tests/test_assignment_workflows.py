@@ -519,13 +519,14 @@ def test_assignment_menu_displays_options_and_dispatches(
         "prompt_view_validate_assignment",
         lambda: record("view"),
     )
-    _inputs(monkeypatch, ["1", "", "2", "", "3"])
+    _inputs(monkeypatch, ["1", "", "2", "", "4"])
 
     assert workflows.launch_assignment_menu() == 0
     output = capsys.readouterr().out
     assert calls == ["create", "view"]
     assert "Create writing assignment" in output
     assert "View/validate assignment" in output
+    assert "Printable Response Pages" in output
     assert "Back" in output
 
 
@@ -533,7 +534,7 @@ def test_assignment_menu_invalid_selection_and_keyboard_interrupt(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    _inputs(monkeypatch, ["bad", "", "3"])
+    _inputs(monkeypatch, ["bad", "", "4"])
     assert workflows.launch_assignment_menu() == 0
     assert "Invalid selection" in capsys.readouterr().out
 

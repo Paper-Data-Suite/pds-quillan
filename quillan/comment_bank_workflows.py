@@ -195,7 +195,8 @@ def prompt_view_comment_banks() -> int:
         print("No valid shared comment banks found.")
         print()
         print(
-            "Create one from Review Materials -> Comment Banks -> "
+            "Create one from Review Student Work -> Manage Review Materials "
+            "-> Comment Banks -> "
             "Create comment bank."
         )
         print()
@@ -670,7 +671,8 @@ def _prompt_valid_bank() -> tuple[Path, dict[str, Any]] | None:
     if not files:
         print("No valid shared comment banks found.")
         print(
-            "Create one from Review Materials -> Comment Banks -> "
+            "Create one from Review Student Work -> Manage Review Materials "
+            "-> Comment Banks -> "
             "Create comment bank."
         )
         return None

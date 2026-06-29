@@ -128,7 +128,7 @@ banks are not student records, grades, scores, mastery determinations,
 generated feedback, automatic judgments, or automatic suggestions.
 
 Teachers can create, view, edit, extend, and validate shared tag banks from
-Review Materials -> Tag Banks. The workflows write only confirmed, valid
+Review Student Work -> Manage Review Materials -> Tag Banks. The workflows write only confirmed, valid
 version `1` bank files under `shared/tag_banks/`, never invalid partial files.
 Existing banks are not overwritten unless the teacher explicitly confirms with
 `OVERWRITE`.

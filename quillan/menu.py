@@ -32,7 +32,7 @@ def pause_for_user() -> None:
 
 def print_menu_header(title: str | None = None) -> None:
     """Print the Quillan identity and an optional section title."""
-    print("Quillan")
+    print("\033[32mQuillan\033[0m")
     if title:
         print(title)
     print()
@@ -334,14 +334,11 @@ def launch_menu(
             clear_screen()
             print_menu_header()
             print("1. Assignment Management")
-            print("2. Roster Management")
-            print("3. Printable Response Pages")
-            print("4. Scan Intake / Route Paper Responses")
-            print("5. Review Student Work")
-            print("6. Review Materials")
-            print("7. Workspace Settings")
-            print("8. Help")
-            print("9. Exit")
+            print("2. Review Student Work")
+            print("3. Roster Management")
+            print("4. Workspace Settings")
+            print("5. Help")
+            print("6. Exit")
             print()
 
             choice = input("Select an option: ").strip()
@@ -350,32 +347,26 @@ def launch_menu(
             if choice == "1":
                 launch_assignment_menu()
             elif choice == "2":
-                launch_roster_menu()
-            elif choice == "3":
-                launch_printable_response_menu()
-            elif choice == "4":
-                launch_scan_intake_workflow()
-            elif choice == "5":
                 launch_review_student_work_menu()
-            elif choice == "6":
-                launch_review_materials_menu()
-            elif choice == "7":
+            elif choice == "3":
+                launch_roster_menu()
+            elif choice == "4":
                 launch_workspace_menu(
                     workspace_show,
                     workspace_set,
                     workspace_validate,
                     workspace_reset,
                 )
-            elif choice == "8":
+            elif choice == "5":
                 clear_screen()
                 print_menu_help()
                 print()
                 pause_for_user()
-            elif choice == "9":
+            elif choice == "6":
                 print("Goodbye.")
                 return 0
             else:
-                print("Invalid selection. Please enter a number from 1 to 9.")
+                print("Invalid selection. Please enter a number from 1 to 6.")
                 print()
                 pause_for_user()
     except KeyboardInterrupt:

@@ -25,13 +25,14 @@ student's review by itself.
 
 This document defines comment bank schema version `1`. Runtime loading,
 validation, direct student-facing selection, and teacher-facing creation and
-editing through Review Materials -> Comment Banks are implemented. Assignment
+editing through Review Student Work -> Manage Review Materials -> Comment
+Banks are implemented. Assignment
 activation, automatic suggestions, and AI-generated comments are not.
 
 Teachers can create, view, edit, extend, and validate shared banks from:
 
 ```text
-Quillan -> Review Materials -> Comment Banks
+Quillan -> Review Student Work -> Manage Review Materials -> Comment Banks
 ```
 
 The authoring workflow writes only confirmed, valid banks under
@@ -410,6 +411,6 @@ shape.
 
 Additional optional synthetic starter comment banks live under
 [`../examples/comment_banks/`](../examples/comment_banks/). They can be
-installed from Review Materials -> Starter Materials into
+installed from Review Student Work -> Manage Review Materials -> Starter Materials into
 `shared/comment_banks/`; existing files are skipped unless exact overwrite
 confirmation is provided. See [`starter_materials.md`](starter_materials.md).

@@ -229,7 +229,10 @@ def _prompt_rubric_id(workspace_root: Path) -> str:
     if not rubrics:
         print("No valid shared rubrics found.")
         print()
-        print("Create one from Review Materials -> Rubrics / Scoring Profiles.")
+        print(
+            "Create one from Review Student Work -> Manage Review Materials "
+            "-> Rubrics / Scoring Profiles."
+        )
         print("You may still enter a custom rubric_id for now.")
         print()
         return _required_input("Rubric ID: ", "Rubric ID")
@@ -461,20 +464,27 @@ def launch_assignment_menu() -> int:
             print_menu_header("Assignment Management")
             print("1. Create writing assignment")
             print("2. View/validate assignment")
-            print("3. Back")
+            print("3. Printable Response Pages")
+            print("4. Back")
             print()
             choice = input("Select an option: ").strip()
             print()
 
-            if choice == "3":
+            if choice == "4":
                 return 0
             workflows = {
                 "1": prompt_create_assignment,
                 "2": prompt_view_validate_assignment,
             }
             workflow = workflows.get(choice)
-            if workflow is None:
-                print("Invalid selection. Please enter a number from 1 to 3.")
+            if choice == "3":
+                from quillan.printable_response_workflows import (
+                    launch_printable_response_menu,
+                )
+
+                launch_printable_response_menu()
+            elif workflow is None:
+                print("Invalid selection. Please enter a number from 1 to 4.")
             else:
                 clear_screen()
                 workflow()
