@@ -155,6 +155,12 @@ be a subset of the bank-level values. When the comment field is absent, the
 comment inherits all bank-level writing types. The value `general` is an
 ordinary writing-type label, not a wildcard.
 
+Teacher-facing authoring menus call these values "writing assignment types."
+Prompts explain comma-separated entry, lowercase values, and underscores
+instead of spaces for multi-word values. The UI asks for labels first, suggests
+stored IDs such as `bank_id`, `category_id`, and `comment_id`, and explains
+that labels can use spaces while IDs are short JSON names.
+
 ## Category Records
 
 Categories divide a bank into teacher-scannable sections and avoid one large
@@ -274,6 +280,8 @@ Comment field rules are:
   `neutral`.
 * `severity_default`, when present, must be a non-negative integer. It is a
   triage and organization default, not a score.
+  Teacher-facing authoring describes this as optional priority/severity for
+  concerns; positive or neutral comments usually leave it blank.
 * `include_in_feedback_default` must be a boolean. It is the initial
   preference used by the direct selection workflow, not an instruction to
   export the source comment automatically.
@@ -285,6 +293,7 @@ Comment field rules are:
 * `sort_order`, when present, must be an integer. Consumers should sort by
   category order, then comment `sort_order`, and then preserve file order as
   a stable tie-breaker.
+  Teacher-facing authoring describes this as display order.
 * `created_at` and `updated_at`, when present, must be timezone-aware ISO 8601
   strings. When both are present, `updated_at` must not precede `created_at`.
 * `module_details` must be an object.

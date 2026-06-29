@@ -251,14 +251,15 @@ The selected-student review menu is:
 
 ```text
 1. Open submission evidence
-2. Add teacher note
-3. Add structured tag
-4. Select reusable comment
-5. Set criterion score
-6. Update submission review state
-7. Export student feedback
-8. Refresh summary
-9. Back
+2. Manage submission pages
+3. Add teacher note
+4. Add structured tag
+5. Select reusable comment
+6. Set criterion score
+7. Update submission review state
+8. Export student feedback
+9. Refresh summary
+10. Back
 ```
 
 These guided actions reuse the same underlying services and data contracts as the direct CLI commands. The menu does not implement separate export logic, scoring logic, routing logic, or AI logic.
@@ -279,11 +280,15 @@ These materials help teachers review written student work more quickly by select
 
 Review materials are subject-agnostic. They may support essays, constructed responses, lab reports, journals, reflections, creative writing, research papers, mathematical explanations, technical writing, and other local writing tasks.
 
+Authoring prompts distinguish teacher-facing labels from stored system IDs. Labels may use spaces and capitalization. IDs such as `bank_id`, `tag_bank_id`, `rubric_id`, `category_id`, `comment_id`, `tag_template_id`, and `criterion_id` are short JSON names; the menus suggest IDs from labels and ask for lowercase letters, numbers, underscores, or hyphens. Multi-word ID-style values and `writing_types` values should use underscores instead of spaces. The teacher-facing term for `writing_types` is "writing assignment types."
+
 Comment banks created through the menu are stored at `shared/comment_banks/<bank_id>.json` and validate against the same version `1` contract used by review-time selection. Banks are subject-agnostic and writing-type-aware, so they can support essays, constructed responses, lab reports, reflections, research papers, mathematical explanations, technical documentation, design rationale, portfolio reflection, and other local written-work contexts.
 
 Comment banks store reusable teacher-authored feedback language. They do not grade work, imply mastery, generate comments automatically, or change student records by themselves. When a teacher selects a reusable comment during Review Student Work, Quillan snapshots the selected label and text into the review record with `source: "comment_bank"`, `bank_id`, and `comment_id`; later bank edits do not silently rewrite prior student review records.
 
 Tag banks created through the menu are stored at `shared/tag_banks/<tag_bank_id>.json` and validate against the version `1` tag-bank contract. Tag banks store reusable teacher-authored observations for quick review tagging. They are not grades, scores, mastery determinations, generated feedback, or automatic judgments. During Review Student Work -> Add structured tag, teachers can select a reusable tag by bank, category, and tag template, or choose a custom one-off tag. Selected reusable tags snapshot label, polarity, optional severity, optional standard/criterion metadata, teacher notes, and `source: "tag_bank"` provenance into `review.json.tags`.
+
+Tag-bank authoring asks for optional tag details in teacher-facing language. Optional details can include a description, writing assignment type limits, linked standards, linked rubric criteria, priority/severity, a private note question, and display order. `severity_default` is optional priority/severity for concerns only; it is not a grade and does not affect scoring. `teacher_note_prompt` is shown during review and stores the teacher's answer as a private tag note. `student_facing_default` remains a schema field, but the teacher menu does not prompt for it because it does not yet send anything to students by itself. `sort_order` is displayed as optional display order.
 
 Rubrics / scoring profiles created through the menu are stored at `shared/rubrics/<rubric_id>.json` and validate against the version `1` rubric contract. Assignment creation can select a valid shared rubric by number, while custom or unresolved rubric IDs remain allowed for compatibility. During Review Student Work -> Set criterion score, teachers can score from the assignment rubric by selecting a criterion and level, or choose Custom criterion score. Selected rubric scores snapshot the criterion ID, label, selected score, max score, scale, and optional teacher note into the existing `review.json.scores` shape. Rubric level feedback metadata does not automatically create comments or feedback entries.
 
@@ -481,6 +486,8 @@ The status includes:
 * duplicate pages;
 * needs-rescan pages;
 * excluded pages.
+
+Selected Student Review includes Manage Submission Pages. Teachers can exclude a page from active review, restore an excluded page, or mark a page as needing rescan. These actions update only that student's `submission.json`, preserve evidence records and files, and do not change review notes, tags, comments, scores, feedback exports, rosters, assignments, review materials, pds-core standards, or pds-core routes. Excluded pages are preserved, not deleted.
 
 Existing manifests are loaded and validated. An invalid manifest is an error.
 

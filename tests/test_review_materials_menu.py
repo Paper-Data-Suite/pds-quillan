@@ -91,15 +91,14 @@ def test_review_materials_menu_navigation_returns_to_main_menu(
 
 
 @pytest.mark.parametrize(
-    ("choice", "header", "future_issue", "path_text"),
+    ("choice", "header", "path_text"),
     [
-        ("2", "Tag Banks", "#166", "shared/tag_banks/"),
+        ("2", "Tag Banks", "shared/tag_banks/"),
     ],
 )
 def test_review_materials_informational_screens_return_safely(
     choice: str,
     header: str,
-    future_issue: str,
     path_text: str,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
@@ -110,10 +109,11 @@ def test_review_materials_informational_screens_return_safely(
 
     output = capsys.readouterr().out
     assert header in output
-    assert future_issue in output
-    assert "No files were changed." in output
+    assert "Add reusable tag" in output
+    assert "Implemented in #166" not in output
+    assert "Opening this screen" not in output
     if path_text:
-        assert path_text in output
+        assert path_text not in output
 
 
 def test_review_materials_starter_materials_opens_real_submenu(

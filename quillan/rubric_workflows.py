@@ -7,6 +7,13 @@ from typing import Any
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
+from quillan.authoring_prompt_helpers import (
+    print_identifier_guidance,
+    print_standard_ids_help,
+    prompt_display_order,
+    prompt_identifier_with_guidance,
+    prompt_writing_assignment_types,
+)
 from quillan.rubrics import RubricError, load_rubric
 from quillan.rubric_writing import (
     build_rubric,
@@ -93,12 +100,7 @@ def prompt_create_rubric() -> int:
             "Rubric title:\nExample: General Constructed Response 4-Point Rubric\n"
         )
         suggestion = suggest_identifier(title)
-        print(f"Suggested rubric_id:\n{suggestion}")
-        rubric_id = input(
-            "Press Enter to accept, or type a different rubric_id: "
-        ).strip()
-        if not rubric_id:
-            rubric_id = suggestion
+        rubric_id = prompt_identifier_with_guidance("rubric_id", suggestion)
         description = input(
             "Description:\n"
             "Example: Reusable scoring profile for written responses.\n"
@@ -129,7 +131,7 @@ def prompt_create_rubric() -> int:
     print()
     print(f"Rubric ID: {rubric['rubric_id']}")
     print(f"Title: {rubric['title']}")
-    print(f"Writing types: {', '.join(rubric['writing_types'])}")
+    print(f"Writing assignment types: {', '.join(rubric['writing_types'])}")
     print(f"Criteria: {len(rubric['criteria'])}")
     print(f"Levels: {sum(len(item['levels']) for item in rubric['criteria'])}")
     print(f"Path: {path}")
@@ -187,7 +189,7 @@ def prompt_view_rubrics() -> int:
             criteria = rubric["criteria"]
             levels = sum(len(criterion["levels"]) for criterion in criteria)
             print(f"{index}. {rubric['rubric_id']} - {rubric['title']}")
-            print(f"   Writing types: {', '.join(rubric['writing_types'])}")
+            print(f"   Writing assignment types: {', '.join(rubric['writing_types'])}")
             print(f"   Criteria: {len(criteria)}")
             print(f"   Levels: {levels}")
             print()
@@ -217,7 +219,7 @@ def prompt_edit_rubric() -> int:
     print()
     print("1. Edit title")
     print("2. Edit description")
-    print("3. Edit writing types")
+    print("3. Edit writing assignment types")
     print("4. Back")
     print()
     choice = input("Select an option: ").strip()
@@ -400,13 +402,10 @@ def _required_input(prompt: str) -> str:
 
 
 def _prompt_writing_types() -> list[str]:
-    value = input(
-        "Writing types, comma-separated:\n"
-        "Examples: general, lab_report, reflection, research, constructed_response\n"
-    )
+    value = prompt_writing_assignment_types()
     writing_types = parse_comma_separated_values(value)
     if not writing_types:
-        raise ValueError("At least one writing type is required.")
+        raise ValueError("At least one writing assignment type is required.")
     return writing_types
 
 
@@ -441,7 +440,7 @@ def _prompt_new_criterion(
         print("Invalid criterion selection.")
         return None
     suggestion = suggest_identifier(label)
-    print(f"Suggested criterion_id:\n{suggestion}")
+    print_identifier_guidance("criterion_id", suggestion)
     criterion_id = input(
         "Press Enter to accept, or type a different criterion_id: "
     ).strip()
@@ -450,11 +449,12 @@ def _prompt_new_criterion(
     ensure_unique_identifier(criterion_id, existing_ids, "criterion_id")
     max_score = _parse_required_number(input("Max score:\nExample: 4\n"))
     scale = _required_input("Scale:\nExample: 4_point\n")
+    print_standard_ids_help()
     standard_ids = parse_comma_separated_values(
-        input("Optional standard_ids, comma-separated (leave blank to omit): ")
+        input("Linked standards (leave blank to omit): ")
     )
     sort_order = _parse_optional_nonnegative_int(
-        input("Sort order (leave blank to auto-assign): ")
+        prompt_display_order()
     )
     if sort_order is None:
         sort_order = (criterion_count + 1) * 10
@@ -495,7 +495,7 @@ def _prompt_new_level(
     ).strip()
     teacher_note = input("Teacher note (optional, leave blank to omit): ").strip()
     sort_order = _parse_optional_nonnegative_int(
-        input("Sort order (leave blank to auto-assign): ")
+        prompt_display_order(within="this criterion")
     )
     if sort_order is None:
         sort_order = (level_count + 1) * 10

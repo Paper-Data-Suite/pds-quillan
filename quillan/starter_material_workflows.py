@@ -207,7 +207,10 @@ def _print_material_groups(
         for material in [item for item in materials if item.kind == kind]:
             print(f"{index}. {material.display_name}")
             print(f"   ID: {material.material_id}")
-            print(f"   Writing types: {', '.join(material.writing_types)}")
+            print(
+                "   Writing assignment types: "
+                f"{', '.join(material.writing_types)}"
+            )
             if material.kind == "rubric":
                 print(f"   Criteria: {material.item_count}")
             elif material.kind == "tag_bank":

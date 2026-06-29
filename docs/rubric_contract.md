@@ -39,6 +39,12 @@ Required top-level fields:
 * `updated_at`: timezone-aware ISO 8601 timestamp;
 * `module_details`: object.
 
+Teacher-facing authoring menus call `writing_types` "writing assignment
+types." Prompts explain comma-separated entry, lowercase values, and
+underscores instead of spaces for multi-word values. The UI asks for labels
+first, suggests stored IDs such as `rubric_id` and `criterion_id`, and explains
+that labels can use spaces while IDs are short JSON names.
+
 Example:
 
 ```json
@@ -94,6 +100,8 @@ Required criterion fields:
 Optional criterion fields are `description`, `standard_ids`, and `sort_order`.
 `standard_ids` are metadata references only; rubric workflows never mutate
 pds-core standards files.
+Teacher-facing authoring explains linked standards as optional pds-core
+references and describes `sort_order` as display order.
 
 ## Levels
 

@@ -157,7 +157,7 @@ def summarize_rubric(rubric: Mapping[str, Any], path: str | Path) -> str:
             f"Title: {rubric['title']}",
             f"Description: {rubric['description']}",
             f"Scope: {rubric['scope']}",
-            f"Writing types: {writing_types}",
+            f"Writing assignment types: {writing_types}",
             f"Criteria: {len(criteria)}",
             f"Levels: {level_count}",
             f"Path: {Path(path)}",

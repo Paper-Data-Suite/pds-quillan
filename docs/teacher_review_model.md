@@ -36,6 +36,15 @@ feedback exports, or reports.
 Keeping source evidence separate allows a teacher to compare later review
 artifacts with the writing that was actually submitted.
 
+Teachers can manage page state from Selected Student Review without changing
+teacher-review artifacts. Excluding a page removes it from active review while
+preserving the manifest entry and routed evidence file. Restoring an excluded
+page returns it to the active evidence set when safe; duplicate evidence is not
+silently selected. Marking a page as needing rescan records evidence-management
+status only. These actions update only the selected student's `submission.json`
+and do not alter `review.json`, exports, rosters, assignments, review
+materials, pds-core standards, or pds-core routes.
+
 ## Teacher-Review Artifacts
 
 Teacher-review artifacts are records created by the teacher or confirmed
