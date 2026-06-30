@@ -1,0 +1,549 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "tag_bank",
+  "tag_bank_id": "ela12_argument_writing_tags",
+  "title": "English 12 Argument and Persuasive Writing Tags",
+  "description": "English 12 starter tag bank for argument and persuasive writing aligned to grades 11-12 2023 NJSLS-ELA references. These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+  "scope": "shared",
+  "writing_types": [
+    "argument",
+    "persuasive_writing",
+    "argumentative",
+    "essay"
+  ],
+  "categories": [
+    {
+      "category_id": "claim",
+      "label": "Claim",
+      "description": "Reusable review items for claim.",
+      "sort_order": 10,
+      "module_details": {}
+    },
+    {
+      "category_id": "counterclaim",
+      "label": "Counterclaim",
+      "description": "Reusable review items for counterclaim.",
+      "sort_order": 20,
+      "module_details": {}
+    },
+    {
+      "category_id": "evidence",
+      "label": "Evidence",
+      "description": "Reusable review items for evidence.",
+      "sort_order": 30,
+      "module_details": {}
+    },
+    {
+      "category_id": "reasoning",
+      "label": "Reasoning",
+      "description": "Reusable review items for reasoning.",
+      "sort_order": 40,
+      "module_details": {}
+    },
+    {
+      "category_id": "organization",
+      "label": "Organization",
+      "description": "Reusable review items for organization.",
+      "sort_order": 50,
+      "module_details": {}
+    },
+    {
+      "category_id": "style_tone",
+      "label": "Style and Tone",
+      "description": "Reusable review items for style and tone.",
+      "sort_order": 60,
+      "module_details": {}
+    },
+    {
+      "category_id": "conclusion",
+      "label": "Conclusion",
+      "description": "Reusable review items for conclusion.",
+      "sort_order": 70,
+      "module_details": {}
+    },
+    {
+      "category_id": "conventions",
+      "label": "Conventions",
+      "description": "Reusable review items for conventions.",
+      "sort_order": 80,
+      "module_details": {}
+    },
+    {
+      "category_id": "revision_next_steps",
+      "label": "Revision Next Steps",
+      "description": "Reusable review items for revision next steps.",
+      "sort_order": 90,
+      "module_details": {}
+    }
+  ],
+  "tags": [
+    {
+      "tag_template_id": "claim_strong",
+      "label": "Claim strong",
+      "description": "Marks a strength related to claim.",
+      "category_id": "claim",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 10,
+      "module_details": {},
+      "criterion_ids": [
+        "claim"
+      ]
+    },
+    {
+      "tag_template_id": "claim_needs_work",
+      "label": "Claim needs work",
+      "description": "Marks a revision need related to claim.",
+      "category_id": "claim",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about claim?",
+      "student_facing_default": true,
+      "sort_order": 20,
+      "module_details": {},
+      "criterion_ids": [
+        "claim"
+      ]
+    },
+    {
+      "tag_template_id": "counterclaim_strong",
+      "label": "Counterclaim strong",
+      "description": "Marks a strength related to counterclaim.",
+      "category_id": "counterclaim",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1",
+        "njsls-ela:RI.AA.11-12.7"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 30,
+      "module_details": {},
+      "criterion_ids": [
+        "counterclaim"
+      ]
+    },
+    {
+      "tag_template_id": "counterclaim_needs_work",
+      "label": "Counterclaim needs work",
+      "description": "Marks a revision need related to counterclaim.",
+      "category_id": "counterclaim",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1",
+        "njsls-ela:RI.AA.11-12.7"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about counterclaim?",
+      "student_facing_default": true,
+      "sort_order": 40,
+      "module_details": {},
+      "criterion_ids": [
+        "counterclaim"
+      ]
+    },
+    {
+      "tag_template_id": "evidence_strong",
+      "label": "Evidence strong",
+      "description": "Marks a strength related to evidence.",
+      "category_id": "evidence",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1",
+        "njsls-ela:RI.CR.11-12.1"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 50,
+      "module_details": {},
+      "criterion_ids": [
+        "evidence"
+      ]
+    },
+    {
+      "tag_template_id": "evidence_needs_work",
+      "label": "Evidence needs work",
+      "description": "Marks a revision need related to evidence.",
+      "category_id": "evidence",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1",
+        "njsls-ela:RI.CR.11-12.1"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about evidence?",
+      "student_facing_default": true,
+      "sort_order": 60,
+      "module_details": {},
+      "criterion_ids": [
+        "evidence"
+      ]
+    },
+    {
+      "tag_template_id": "reasoning_strong",
+      "label": "Reasoning strong",
+      "description": "Marks a strength related to reasoning.",
+      "category_id": "reasoning",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 70,
+      "module_details": {},
+      "criterion_ids": [
+        "reasoning"
+      ]
+    },
+    {
+      "tag_template_id": "reasoning_needs_work",
+      "label": "Reasoning needs work",
+      "description": "Marks a revision need related to reasoning.",
+      "category_id": "reasoning",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about reasoning?",
+      "student_facing_default": true,
+      "sort_order": 80,
+      "module_details": {},
+      "criterion_ids": [
+        "reasoning"
+      ]
+    },
+    {
+      "tag_template_id": "organization_strong",
+      "label": "Organization strong",
+      "description": "Marks a strength related to organization.",
+      "category_id": "organization",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 90,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "tag_template_id": "organization_needs_work",
+      "label": "Organization needs work",
+      "description": "Marks a revision need related to organization.",
+      "category_id": "organization",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about organization?",
+      "student_facing_default": true,
+      "sort_order": 100,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "tag_template_id": "style_tone_strong",
+      "label": "Style and Tone strong",
+      "description": "Marks a strength related to style and tone.",
+      "category_id": "style_tone",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.KL.11-12.2",
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 110,
+      "module_details": {},
+      "criterion_ids": [
+        "style_conventions"
+      ]
+    },
+    {
+      "tag_template_id": "style_tone_needs_work",
+      "label": "Style and Tone needs work",
+      "description": "Marks a revision need related to style and tone.",
+      "category_id": "style_tone",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.KL.11-12.2",
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about style and tone?",
+      "student_facing_default": true,
+      "sort_order": 120,
+      "module_details": {},
+      "criterion_ids": [
+        "style_conventions"
+      ]
+    },
+    {
+      "tag_template_id": "conclusion_strong",
+      "label": "Conclusion strong",
+      "description": "Marks a strength related to conclusion.",
+      "category_id": "conclusion",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 130,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "tag_template_id": "conclusion_needs_work",
+      "label": "Conclusion needs work",
+      "description": "Marks a revision need related to conclusion.",
+      "category_id": "conclusion",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about conclusion?",
+      "student_facing_default": true,
+      "sort_order": 140,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "tag_template_id": "conventions_strong",
+      "label": "Conventions strong",
+      "description": "Marks a strength related to conventions.",
+      "category_id": "conventions",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 150,
+      "module_details": {},
+      "criterion_ids": [
+        "style_conventions"
+      ]
+    },
+    {
+      "tag_template_id": "conventions_needs_work",
+      "label": "Conventions needs work",
+      "description": "Marks a revision need related to conventions.",
+      "category_id": "conventions",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about conventions?",
+      "student_facing_default": true,
+      "sort_order": 160,
+      "module_details": {},
+      "criterion_ids": [
+        "style_conventions"
+      ]
+    },
+    {
+      "tag_template_id": "revision_next_steps_strong",
+      "label": "Revision Next Steps strong",
+      "description": "Marks a strength related to revision next steps.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 170,
+      "module_details": {}
+    },
+    {
+      "tag_template_id": "revision_next_steps_needs_work",
+      "label": "Revision Next Steps needs work",
+      "description": "Marks a revision need related to revision next steps.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about revision next steps?",
+      "student_facing_default": true,
+      "sort_order": 180,
+      "module_details": {}
+    },
+    {
+      "tag_template_id": "claim_missing",
+      "label": "Claim missing",
+      "description": "Marks a significant gap related to claim.",
+      "category_id": "claim",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1"
+      ],
+      "polarity": "negative",
+      "sort_order": 190,
+      "module_details": {},
+      "severity_default": 2,
+      "criterion_ids": [
+        "claim"
+      ]
+    },
+    {
+      "tag_template_id": "counterclaim_next_step",
+      "label": "Counterclaim next step",
+      "description": "Marks a neutral next step related to counterclaim.",
+      "category_id": "counterclaim",
+      "writing_types": [
+        "argument",
+        "persuasive_writing",
+        "argumentative",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1",
+        "njsls-ela:RI.AA.11-12.7"
+      ],
+      "polarity": "neutral",
+      "sort_order": 200,
+      "module_details": {},
+      "teacher_note_prompt": "What is the next step for counterclaim?",
+      "criterion_ids": [
+        "counterclaim"
+      ]
+    }
+  ],
+  "created_at": "2026-06-30T00:00:00+00:00",
+  "updated_at": "2026-06-30T00:00:00+00:00",
+  "module_details": {
+    "starter_pack": "nj_ela_2023",
+    "grade_band": "11-12",
+    "notice": "These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+    "emphasis": "precise and knowledgeable claims, significance, logical sequencing of claims and counterclaims, strongest relevant evidence, avoidance of fallacies, synthesis, sophisticated style, audience awareness, complexity, ambiguity, nuance, and independent revision."
+  }
+}

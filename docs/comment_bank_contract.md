@@ -409,8 +409,9 @@ The repository example at
 contains synthetic teacher language only and demonstrates the version `1`
 shape.
 
-Additional optional synthetic starter comment banks live under
+Additional optional synthetic and NJ ELA starter comment banks live under
 [`../examples/comment_banks/`](../examples/comment_banks/). They can be
 installed from Review Student Work -> Manage Review Materials -> Starter Materials into
 `shared/comment_banks/`; existing files are skipped unless exact overwrite
-confirmation is provided. See [`starter_materials.md`](starter_materials.md).
+confirmation is provided. See [`starter_materials.md`](starter_materials.md)
+and [`nj_ela_starter_materials.md`](nj_ela_starter_materials.md).

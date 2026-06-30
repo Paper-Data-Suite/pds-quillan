@@ -1,4 +1,4 @@
-"""Teacher-facing workflows for synthetic starter review materials."""
+"""Teacher-facing workflows for starter review materials."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from quillan.starter_materials import (
 
 
 def launch_starter_materials_menu() -> int:
-    """Launch the synthetic starter-materials submenu."""
+    """Launch the starter-materials submenu."""
     from quillan.menu import clear_screen, pause_for_user, print_menu_header
 
     try:
@@ -28,13 +28,13 @@ def launch_starter_materials_menu() -> int:
             clear_screen()
             print_menu_header("Starter Materials")
             print(
-                "Synthetic starter materials help teachers and developers test "
-                "Quillan without manually creating JSON files."
+                "Starter materials help teachers and developers test Quillan "
+                "or begin with editable review-material examples."
             )
             print()
             print(
-                "They include sample comment banks, tag banks, and rubrics for "
-                "varied written-work contexts."
+                "They include small synthetic examples and NJ ELA starter "
+                "comment banks, tag banks, and rubrics."
             )
             print()
             print("1. Preview starter materials")
@@ -92,21 +92,21 @@ def prompt_install_all_starter_materials() -> int:
     """Prompt for and install all valid starter materials."""
     from quillan.menu import print_menu_header
 
-    print_menu_header("Install Synthetic Starter Materials")
+    print_menu_header("Install Starter Materials")
     workspace_root = _workspace_root()
     if workspace_root is None:
         return 1
     materials = discover_starter_materials()
     print(
-        "This will copy synthetic comment banks, tag banks, and rubrics into "
+        "This will copy starter comment banks, tag banks, and rubrics into "
         "the active workspace."
     )
     print()
     _print_target_folders()
     print(
-        "These files are examples only. They do not create assignments, "
-        "rosters, scans, submissions, review records, exports, or "
-        "pds-core standards."
+        "These files are examples and editable starting points only. They do "
+        "not create assignments, rosters, scans, submissions, review records, "
+        "exports, or pds-core standards."
     )
     print()
     print("1. Install")

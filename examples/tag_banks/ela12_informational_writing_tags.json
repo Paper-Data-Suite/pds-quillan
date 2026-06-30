@@ -1,0 +1,557 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "tag_bank",
+  "tag_bank_id": "ela12_informational_writing_tags",
+  "title": "English 12 Informational and Expository Writing Tags",
+  "description": "English 12 starter tag bank for informational and expository writing aligned to grades 11-12 2023 NJSLS-ELA references. These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+  "scope": "shared",
+  "writing_types": [
+    "informational",
+    "expository",
+    "explanatory",
+    "essay"
+  ],
+  "categories": [
+    {
+      "category_id": "focus_topic",
+      "label": "Focus and Topic",
+      "description": "Reusable review items for focus and topic.",
+      "sort_order": 10,
+      "module_details": {}
+    },
+    {
+      "category_id": "development",
+      "label": "Development",
+      "description": "Reusable review items for development.",
+      "sort_order": 20,
+      "module_details": {}
+    },
+    {
+      "category_id": "evidence_examples",
+      "label": "Evidence and Examples",
+      "description": "Reusable review items for evidence and examples.",
+      "sort_order": 30,
+      "module_details": {}
+    },
+    {
+      "category_id": "organization",
+      "label": "Organization",
+      "description": "Reusable review items for organization.",
+      "sort_order": 40,
+      "module_details": {}
+    },
+    {
+      "category_id": "transitions",
+      "label": "Transitions",
+      "description": "Reusable review items for transitions.",
+      "sort_order": 50,
+      "module_details": {}
+    },
+    {
+      "category_id": "domain_vocabulary",
+      "label": "Domain Vocabulary",
+      "description": "Reusable review items for domain vocabulary.",
+      "sort_order": 60,
+      "module_details": {}
+    },
+    {
+      "category_id": "style_tone",
+      "label": "Style and Tone",
+      "description": "Reusable review items for style and tone.",
+      "sort_order": 70,
+      "module_details": {}
+    },
+    {
+      "category_id": "conclusion",
+      "label": "Conclusion",
+      "description": "Reusable review items for conclusion.",
+      "sort_order": 80,
+      "module_details": {}
+    },
+    {
+      "category_id": "conventions",
+      "label": "Conventions",
+      "description": "Reusable review items for conventions.",
+      "sort_order": 90,
+      "module_details": {}
+    },
+    {
+      "category_id": "revision_next_steps",
+      "label": "Revision Next Steps",
+      "description": "Reusable review items for revision next steps.",
+      "sort_order": 100,
+      "module_details": {}
+    }
+  ],
+  "tags": [
+    {
+      "tag_template_id": "focus_topic_strong",
+      "label": "Focus and Topic strong",
+      "description": "Marks a strength related to focus and topic.",
+      "category_id": "focus_topic",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 10,
+      "module_details": {},
+      "criterion_ids": [
+        "focus_topic"
+      ]
+    },
+    {
+      "tag_template_id": "focus_topic_needs_work",
+      "label": "Focus and Topic needs work",
+      "description": "Marks a revision need related to focus and topic.",
+      "category_id": "focus_topic",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about focus and topic?",
+      "student_facing_default": true,
+      "sort_order": 20,
+      "module_details": {},
+      "criterion_ids": [
+        "focus_topic"
+      ]
+    },
+    {
+      "tag_template_id": "development_strong",
+      "label": "Development strong",
+      "description": "Marks a strength related to development.",
+      "category_id": "development",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 30,
+      "module_details": {},
+      "criterion_ids": [
+        "development"
+      ]
+    },
+    {
+      "tag_template_id": "development_needs_work",
+      "label": "Development needs work",
+      "description": "Marks a revision need related to development.",
+      "category_id": "development",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about development?",
+      "student_facing_default": true,
+      "sort_order": 40,
+      "module_details": {},
+      "criterion_ids": [
+        "development"
+      ]
+    },
+    {
+      "tag_template_id": "evidence_examples_strong",
+      "label": "Evidence and Examples strong",
+      "description": "Marks a strength related to evidence and examples.",
+      "category_id": "evidence_examples",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2",
+        "njsls-ela:RI.CR.11-12.1"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 50,
+      "module_details": {},
+      "criterion_ids": [
+        "evidence_examples"
+      ]
+    },
+    {
+      "tag_template_id": "evidence_examples_needs_work",
+      "label": "Evidence and Examples needs work",
+      "description": "Marks a revision need related to evidence and examples.",
+      "category_id": "evidence_examples",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2",
+        "njsls-ela:RI.CR.11-12.1"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about evidence and examples?",
+      "student_facing_default": true,
+      "sort_order": 60,
+      "module_details": {},
+      "criterion_ids": [
+        "evidence_examples"
+      ]
+    },
+    {
+      "tag_template_id": "organization_strong",
+      "label": "Organization strong",
+      "description": "Marks a strength related to organization.",
+      "category_id": "organization",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 70,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "tag_template_id": "organization_needs_work",
+      "label": "Organization needs work",
+      "description": "Marks a revision need related to organization.",
+      "category_id": "organization",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about organization?",
+      "student_facing_default": true,
+      "sort_order": 80,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "tag_template_id": "transitions_strong",
+      "label": "Transitions strong",
+      "description": "Marks a strength related to transitions.",
+      "category_id": "transitions",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 90,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "tag_template_id": "transitions_needs_work",
+      "label": "Transitions needs work",
+      "description": "Marks a revision need related to transitions.",
+      "category_id": "transitions",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about transitions?",
+      "student_facing_default": true,
+      "sort_order": 100,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "tag_template_id": "domain_vocabulary_strong",
+      "label": "Domain Vocabulary strong",
+      "description": "Marks a strength related to domain vocabulary.",
+      "category_id": "domain_vocabulary",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2",
+        "njsls-ela:L.KL.11-12.2"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 110,
+      "module_details": {},
+      "criterion_ids": [
+        "language_style"
+      ]
+    },
+    {
+      "tag_template_id": "domain_vocabulary_needs_work",
+      "label": "Domain Vocabulary needs work",
+      "description": "Marks a revision need related to domain vocabulary.",
+      "category_id": "domain_vocabulary",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2",
+        "njsls-ela:L.KL.11-12.2"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about domain vocabulary?",
+      "student_facing_default": true,
+      "sort_order": 120,
+      "module_details": {},
+      "criterion_ids": [
+        "language_style"
+      ]
+    },
+    {
+      "tag_template_id": "style_tone_strong",
+      "label": "Style and Tone strong",
+      "description": "Marks a strength related to style and tone.",
+      "category_id": "style_tone",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.KL.11-12.2",
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 130,
+      "module_details": {},
+      "criterion_ids": [
+        "language_style"
+      ]
+    },
+    {
+      "tag_template_id": "style_tone_needs_work",
+      "label": "Style and Tone needs work",
+      "description": "Marks a revision need related to style and tone.",
+      "category_id": "style_tone",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.KL.11-12.2",
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about style and tone?",
+      "student_facing_default": true,
+      "sort_order": 140,
+      "module_details": {},
+      "criterion_ids": [
+        "language_style"
+      ]
+    },
+    {
+      "tag_template_id": "conclusion_strong",
+      "label": "Conclusion strong",
+      "description": "Marks a strength related to conclusion.",
+      "category_id": "conclusion",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 150,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "tag_template_id": "conclusion_needs_work",
+      "label": "Conclusion needs work",
+      "description": "Marks a revision need related to conclusion.",
+      "category_id": "conclusion",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about conclusion?",
+      "student_facing_default": true,
+      "sort_order": 160,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "tag_template_id": "conventions_strong",
+      "label": "Conventions strong",
+      "description": "Marks a strength related to conventions.",
+      "category_id": "conventions",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 170,
+      "module_details": {},
+      "criterion_ids": [
+        "conventions"
+      ]
+    },
+    {
+      "tag_template_id": "conventions_needs_work",
+      "label": "Conventions needs work",
+      "description": "Marks a revision need related to conventions.",
+      "category_id": "conventions",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about conventions?",
+      "student_facing_default": true,
+      "sort_order": 180,
+      "module_details": {},
+      "criterion_ids": [
+        "conventions"
+      ]
+    },
+    {
+      "tag_template_id": "revision_next_steps_strong",
+      "label": "Revision Next Steps strong",
+      "description": "Marks a strength related to revision next steps.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 190,
+      "module_details": {}
+    },
+    {
+      "tag_template_id": "revision_next_steps_needs_work",
+      "label": "Revision Next Steps needs work",
+      "description": "Marks a revision need related to revision next steps.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about revision next steps?",
+      "student_facing_default": true,
+      "sort_order": 200,
+      "module_details": {}
+    }
+  ],
+  "created_at": "2026-06-30T00:00:00+00:00",
+  "updated_at": "2026-06-30T00:00:00+00:00",
+  "module_details": {
+    "starter_pack": "nj_ela_2023",
+    "grade_band": "11-12",
+    "notice": "These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+    "emphasis": "precise and knowledgeable claims, significance, logical sequencing of claims and counterclaims, strongest relevant evidence, avoidance of fallacies, synthesis, sophisticated style, audience awareness, complexity, ambiguity, nuance, and independent revision."
+  }
+}

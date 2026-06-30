@@ -1,0 +1,1321 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "comment_bank",
+  "bank_id": "ela12_literary_analysis",
+  "title": "English 12 Literary and Comparative Analysis Comments",
+  "description": "English 12 starter comment bank for literary and comparative analysis aligned to grades 11-12 2023 NJSLS-ELA references. These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+  "scope": "shared",
+  "writing_types": [
+    "literary_analysis",
+    "textual_analysis",
+    "comparative_analysis",
+    "compare_contrast",
+    "essay"
+  ],
+  "categories": [
+    {
+      "category_id": "interpretive_claim",
+      "label": "Interpretive Claim",
+      "description": "Reusable review items for interpretive claim.",
+      "sort_order": 10,
+      "module_details": {}
+    },
+    {
+      "category_id": "textual_evidence",
+      "label": "Textual Evidence",
+      "description": "Reusable review items for textual evidence.",
+      "sort_order": 20,
+      "module_details": {}
+    },
+    {
+      "category_id": "analysis_explanation",
+      "label": "Analysis and Explanation",
+      "description": "Reusable review items for analysis and explanation.",
+      "sort_order": 30,
+      "module_details": {}
+    },
+    {
+      "category_id": "theme",
+      "label": "Theme",
+      "description": "Reusable review items for theme.",
+      "sort_order": 40,
+      "module_details": {}
+    },
+    {
+      "category_id": "character",
+      "label": "Character",
+      "description": "Reusable review items for character.",
+      "sort_order": 50,
+      "module_details": {}
+    },
+    {
+      "category_id": "structure",
+      "label": "Structure",
+      "description": "Reusable review items for structure.",
+      "sort_order": 60,
+      "module_details": {}
+    },
+    {
+      "category_id": "point_of_view",
+      "label": "Point of View",
+      "description": "Reusable review items for point of view.",
+      "sort_order": 70,
+      "module_details": {}
+    },
+    {
+      "category_id": "author_choices",
+      "label": "Author Choices",
+      "description": "Reusable review items for author choices.",
+      "sort_order": 80,
+      "module_details": {}
+    },
+    {
+      "category_id": "style_diction",
+      "label": "Style and Diction",
+      "description": "Reusable review items for style and diction.",
+      "sort_order": 90,
+      "module_details": {}
+    },
+    {
+      "category_id": "comparative_claim",
+      "label": "Comparative Claim",
+      "description": "Reusable review items for comparative claim.",
+      "sort_order": 100,
+      "module_details": {}
+    },
+    {
+      "category_id": "synthesis",
+      "label": "Synthesis Across Texts",
+      "description": "Reusable review items for synthesis across texts.",
+      "sort_order": 110,
+      "module_details": {}
+    },
+    {
+      "category_id": "organization",
+      "label": "Organization",
+      "description": "Reusable review items for organization.",
+      "sort_order": 120,
+      "module_details": {}
+    },
+    {
+      "category_id": "conventions",
+      "label": "Conventions",
+      "description": "Reusable review items for conventions.",
+      "sort_order": 130,
+      "module_details": {}
+    },
+    {
+      "category_id": "revision_next_steps",
+      "label": "Revision Next Steps",
+      "description": "Reusable review items for revision next steps.",
+      "sort_order": 140,
+      "module_details": {}
+    }
+  ],
+  "comments": [
+    {
+      "comment_id": "interpretive_claim_strength",
+      "label": "Interpretive Claim strength",
+      "short_text": "Your interpretive claim presents an interpretation instead of only a summary, which helps the reader understand the w....",
+      "text": "Your interpretive claim presents an interpretation instead of only a summary, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "interpretive_claim",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1",
+        "njsls-ela:RL.CI.11-12.2"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "interpretive_claim",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "interpretive claim"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen interpretive claim?",
+      "revision_action": "Keep this interpretive claim move and apply it in another paragraph or section.",
+      "sort_order": 10,
+      "module_details": {},
+      "criterion_ids": [
+        "interpretive_claim"
+      ]
+    },
+    {
+      "comment_id": "interpretive_claim_developing",
+      "label": "Interpretive Claim developing",
+      "short_text": "Your interpretive claim is on the right track, but it will be stronger if you make the claim more interpretive by nam....",
+      "text": "Your interpretive claim is on the right track, but it will be stronger if you make the claim more interpretive by naming what the text suggests.",
+      "category_id": "interpretive_claim",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1",
+        "njsls-ela:RL.CI.11-12.2"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "interpretive_claim",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "interpretive claim"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen interpretive claim?",
+      "revision_action": "Make the claim more interpretive by naming what the text suggests.",
+      "sort_order": 20,
+      "module_details": {},
+      "criterion_ids": [
+        "interpretive_claim"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "textual_evidence_strength",
+      "label": "Textual Evidence strength",
+      "short_text": "Your textual evidence selects textual evidence that supports the interpretation, which helps the reader understand th....",
+      "text": "Your textual evidence selects textual evidence that supports the interpretation, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "textual_evidence",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CR.11-12.1"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "textual_evidence",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "textual evidence"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen textual evidence?",
+      "revision_action": "Keep this textual evidence move and apply it in another paragraph or section.",
+      "sort_order": 30,
+      "module_details": {},
+      "criterion_ids": [
+        "textual_evidence"
+      ]
+    },
+    {
+      "comment_id": "textual_evidence_developing",
+      "label": "Textual Evidence developing",
+      "short_text": "Your textual evidence is on the right track, but it will be stronger if you integrate quotation or detail with enough....",
+      "text": "Your textual evidence is on the right track, but it will be stronger if you integrate quotation or detail with enough context.",
+      "category_id": "textual_evidence",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CR.11-12.1"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "textual_evidence",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "textual evidence"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen textual evidence?",
+      "revision_action": "Integrate quotation or detail with enough context.",
+      "sort_order": 40,
+      "module_details": {},
+      "criterion_ids": [
+        "textual_evidence"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "analysis_explanation_strength",
+      "label": "Analysis and Explanation strength",
+      "short_text": "Your analysis and explanation explains what the evidence reveals about the text, which helps the reader understand th....",
+      "text": "Your analysis and explanation explains what the evidence reveals about the text, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "analysis_explanation",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CR.11-12.1",
+        "njsls-ela:RL.IT.11-12.3"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "analysis_explanation",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "analysis and explanation",
+        "analysis explanation"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen analysis and explanation?",
+      "revision_action": "Keep this analysis and explanation move and apply it in another paragraph or section.",
+      "sort_order": 50,
+      "module_details": {},
+      "criterion_ids": [
+        "analysis"
+      ]
+    },
+    {
+      "comment_id": "analysis_explanation_developing",
+      "label": "Analysis and Explanation developing",
+      "short_text": "Your analysis and explanation is on the right track, but it will be stronger if you analyze the words or moment inste....",
+      "text": "Your analysis and explanation is on the right track, but it will be stronger if you analyze the words or moment instead of stopping after the quote.",
+      "category_id": "analysis_explanation",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CR.11-12.1",
+        "njsls-ela:RL.IT.11-12.3"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "analysis_explanation",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "analysis and explanation",
+        "analysis explanation"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen analysis and explanation?",
+      "revision_action": "Analyze the words or moment instead of stopping after the quote.",
+      "sort_order": 60,
+      "module_details": {},
+      "criterion_ids": [
+        "analysis"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "theme_strength",
+      "label": "Theme strength",
+      "short_text": "Your theme connects details to a larger theme, which helps the reader understand the work with precision and attentio....",
+      "text": "Your theme connects details to a larger theme, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "theme",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CI.11-12.2"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "theme",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "theme"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen theme?",
+      "revision_action": "Keep this theme move and apply it in another paragraph or section.",
+      "sort_order": 70,
+      "module_details": {},
+      "criterion_ids": [
+        "literary_concepts"
+      ]
+    },
+    {
+      "comment_id": "theme_developing",
+      "label": "Theme developing",
+      "short_text": "Your theme is on the right track, but it will be stronger if you state the theme as an idea the text develops, not on....",
+      "text": "Your theme is on the right track, but it will be stronger if you state the theme as an idea the text develops, not one word.",
+      "category_id": "theme",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CI.11-12.2"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "theme",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "theme"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen theme?",
+      "revision_action": "State the theme as an idea the text develops, not one word.",
+      "sort_order": 80,
+      "module_details": {},
+      "criterion_ids": [
+        "literary_concepts"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "character_strength",
+      "label": "Character strength",
+      "short_text": "Your character tracks how character choices or changes shape meaning, which helps the reader understand the work with....",
+      "text": "Your character tracks how character choices or changes shape meaning, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "character",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.IT.11-12.3"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "character",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "character"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen character?",
+      "revision_action": "Keep this character move and apply it in another paragraph or section.",
+      "sort_order": 90,
+      "module_details": {},
+      "criterion_ids": [
+        "literary_concepts"
+      ]
+    },
+    {
+      "comment_id": "character_developing",
+      "label": "Character developing",
+      "short_text": "Your character is on the right track, but it will be stronger if you explain how the character detail affects the int....",
+      "text": "Your character is on the right track, but it will be stronger if you explain how the character detail affects the interpretation.",
+      "category_id": "character",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.IT.11-12.3"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "character",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "character"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen character?",
+      "revision_action": "Explain how the character detail affects the interpretation.",
+      "sort_order": 100,
+      "module_details": {},
+      "criterion_ids": [
+        "literary_concepts"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "structure_strength",
+      "label": "Structure strength",
+      "short_text": "Your structure notices how structure shapes the reader understanding, which helps the reader understand the work with....",
+      "text": "Your structure notices how structure shapes the reader understanding, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "structure",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.TS.11-12.4"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "structure",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "structure"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen structure?",
+      "revision_action": "Keep this structure move and apply it in another paragraph or section.",
+      "sort_order": 110,
+      "module_details": {},
+      "criterion_ids": [
+        "literary_concepts"
+      ]
+    },
+    {
+      "comment_id": "structure_developing",
+      "label": "Structure developing",
+      "short_text": "Your structure is on the right track, but it will be stronger if you connect structure choices to meaning, pacing, or....",
+      "text": "Your structure is on the right track, but it will be stronger if you connect structure choices to meaning, pacing, or emphasis.",
+      "category_id": "structure",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.TS.11-12.4"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "structure",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "structure"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen structure?",
+      "revision_action": "Connect structure choices to meaning, pacing, or emphasis.",
+      "sort_order": 120,
+      "module_details": {},
+      "criterion_ids": [
+        "literary_concepts"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "point_of_view_strength",
+      "label": "Point of View strength",
+      "short_text": "Your point of view uses point of view to deepen the interpretation, which helps the reader understand the work with p....",
+      "text": "Your point of view uses point of view to deepen the interpretation, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "point_of_view",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.TS.11-12.4"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "point_of_view",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "point of view"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen point of view?",
+      "revision_action": "Keep this point of view move and apply it in another paragraph or section.",
+      "sort_order": 130,
+      "module_details": {},
+      "criterion_ids": [
+        "literary_concepts"
+      ]
+    },
+    {
+      "comment_id": "point_of_view_developing",
+      "label": "Point of View developing",
+      "short_text": "Your point of view is on the right track, but it will be stronger if you explain how perspective shapes what the read....",
+      "text": "Your point of view is on the right track, but it will be stronger if you explain how perspective shapes what the reader knows or questions.",
+      "category_id": "point_of_view",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.TS.11-12.4"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "point_of_view",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "point of view"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen point of view?",
+      "revision_action": "Explain how perspective shapes what the reader knows or questions.",
+      "sort_order": 140,
+      "module_details": {},
+      "criterion_ids": [
+        "literary_concepts"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "author_choices_strength",
+      "label": "Author Choices strength",
+      "short_text": "Your author choices connects author choices to purpose or effect, which helps the reader understand the work with pre....",
+      "text": "Your author choices connects author choices to purpose or effect, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "author_choices",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.IT.11-12.3",
+        "njsls-ela:RL.TS.11-12.4"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "author_choices",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "author choices"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen author choices?",
+      "revision_action": "Keep this author choices move and apply it in another paragraph or section.",
+      "sort_order": 150,
+      "module_details": {},
+      "criterion_ids": [
+        "analysis"
+      ]
+    },
+    {
+      "comment_id": "author_choices_developing",
+      "label": "Author Choices developing",
+      "short_text": "Your author choices is on the right track, but it will be stronger if you name the choice and explain its effect on m....",
+      "text": "Your author choices is on the right track, but it will be stronger if you name the choice and explain its effect on meaning.",
+      "category_id": "author_choices",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.IT.11-12.3",
+        "njsls-ela:RL.TS.11-12.4"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "author_choices",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "author choices"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen author choices?",
+      "revision_action": "Name the choice and explain its effect on meaning.",
+      "sort_order": 160,
+      "module_details": {},
+      "criterion_ids": [
+        "analysis"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "style_diction_strength",
+      "label": "Style and Diction strength",
+      "short_text": "Your style and diction uses diction or style details to support analysis, which helps the reader understand the work ....",
+      "text": "Your style and diction uses diction or style details to support analysis, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "style_diction",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.VI.11-12.4",
+        "njsls-ela:L.KL.11-12.2"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "style_diction",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "style and diction",
+        "style diction"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen style and diction?",
+      "revision_action": "Keep this style and diction move and apply it in another paragraph or section.",
+      "sort_order": 170,
+      "module_details": {},
+      "criterion_ids": [
+        "style_conventions"
+      ]
+    },
+    {
+      "comment_id": "style_diction_developing",
+      "label": "Style and Diction developing",
+      "short_text": "Your style and diction is on the right track, but it will be stronger if you zoom in on word choice instead of paraph....",
+      "text": "Your style and diction is on the right track, but it will be stronger if you zoom in on word choice instead of paraphrasing the passage.",
+      "category_id": "style_diction",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.VI.11-12.4",
+        "njsls-ela:L.KL.11-12.2"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "style_diction",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "style and diction",
+        "style diction"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen style and diction?",
+      "revision_action": "Zoom in on word choice instead of paraphrasing the passage.",
+      "sort_order": 180,
+      "module_details": {},
+      "criterion_ids": [
+        "style_conventions"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "comparative_claim_strength",
+      "label": "Comparative Claim strength",
+      "short_text": "Your comparative claim establishes a meaningful basis for comparison, which helps the reader understand the work with....",
+      "text": "Your comparative claim establishes a meaningful basis for comparison, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "comparative_claim",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CT.11-12.8",
+        "njsls-ela:RI.CT.11-12.8"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "comparative_claim",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "comparative claim"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen comparative claim?",
+      "revision_action": "Keep this comparative claim move and apply it in another paragraph or section.",
+      "sort_order": 190,
+      "module_details": {},
+      "criterion_ids": [
+        "comparison_synthesis"
+      ]
+    },
+    {
+      "comment_id": "comparative_claim_developing",
+      "label": "Comparative Claim developing",
+      "short_text": "Your comparative claim is on the right track, but it will be stronger if you make the comparison about significance, ....",
+      "text": "Your comparative claim is on the right track, but it will be stronger if you make the comparison about significance, not only similarity or difference.",
+      "category_id": "comparative_claim",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CT.11-12.8",
+        "njsls-ela:RI.CT.11-12.8"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "comparative_claim",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "comparative claim"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen comparative claim?",
+      "revision_action": "Make the comparison about significance, not only similarity or difference.",
+      "sort_order": 200,
+      "module_details": {},
+      "criterion_ids": [
+        "comparison_synthesis"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "synthesis_strength",
+      "label": "Synthesis Across Texts strength",
+      "short_text": "Your synthesis across texts connects sources or texts into a larger insight, which helps the reader understand the wo....",
+      "text": "Your synthesis across texts connects sources or texts into a larger insight, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "synthesis",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CT.11-12.8",
+        "njsls-ela:RI.CT.11-12.8"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "synthesis",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "synthesis across texts",
+        "synthesis"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen synthesis across texts?",
+      "revision_action": "Keep this synthesis across texts move and apply it in another paragraph or section.",
+      "sort_order": 210,
+      "module_details": {},
+      "criterion_ids": [
+        "comparison_synthesis"
+      ]
+    },
+    {
+      "comment_id": "synthesis_developing",
+      "label": "Synthesis Across Texts developing",
+      "short_text": "Your synthesis across texts is on the right track, but it will be stronger if you explain what the sources or texts s....",
+      "text": "Your synthesis across texts is on the right track, but it will be stronger if you explain what the sources or texts show together.",
+      "category_id": "synthesis",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CT.11-12.8",
+        "njsls-ela:RI.CT.11-12.8"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "synthesis",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "synthesis across texts",
+        "synthesis"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen synthesis across texts?",
+      "revision_action": "Explain what the sources or texts show together.",
+      "sort_order": 220,
+      "module_details": {},
+      "criterion_ids": [
+        "comparison_synthesis"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "organization_strength",
+      "label": "Organization strength",
+      "short_text": "Your organization guides the reader through the ideas in a logical order, which helps the reader understand the work ....",
+      "text": "Your organization guides the reader through the ideas in a logical order, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "organization",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "organization",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "organization"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen organization?",
+      "revision_action": "Keep this organization move and apply it in another paragraph or section.",
+      "sort_order": 230,
+      "module_details": {},
+      "criterion_ids": [
+        "style_conventions"
+      ]
+    },
+    {
+      "comment_id": "organization_developing",
+      "label": "Organization developing",
+      "short_text": "Your organization is on the right track, but it will be stronger if you reorder or group ideas so each paragraph has ....",
+      "text": "Your organization is on the right track, but it will be stronger if you reorder or group ideas so each paragraph has a clear job.",
+      "category_id": "organization",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "organization",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "organization"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen organization?",
+      "revision_action": "Reorder or group ideas so each paragraph has a clear job.",
+      "sort_order": 240,
+      "module_details": {},
+      "criterion_ids": [
+        "style_conventions"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "conventions_strength",
+      "label": "Conventions strength",
+      "short_text": "Your conventions keeps sentence control from distracting the reader, which helps the reader understand the work with ....",
+      "text": "Your conventions keeps sentence control from distracting the reader, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "conventions",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "conventions",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "conventions"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen conventions?",
+      "revision_action": "Keep this conventions move and apply it in another paragraph or section.",
+      "sort_order": 250,
+      "module_details": {},
+      "criterion_ids": [
+        "style_conventions"
+      ]
+    },
+    {
+      "comment_id": "conventions_developing",
+      "label": "Conventions developing",
+      "short_text": "Your conventions is on the right track, but it will be stronger if you edit sentence boundaries, punctuation, or usag....",
+      "text": "Your conventions is on the right track, but it will be stronger if you edit sentence boundaries, punctuation, or usage patterns that interrupt meaning.",
+      "category_id": "conventions",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "conventions",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "conventions"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen conventions?",
+      "revision_action": "Edit sentence boundaries, punctuation, or usage patterns that interrupt meaning.",
+      "sort_order": 260,
+      "module_details": {},
+      "criterion_ids": [
+        "style_conventions"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "revision_next_steps_strength",
+      "label": "Revision Next Steps strength",
+      "short_text": "Your revision next steps identifies a useful next revision move, which helps the reader understand the work with prec....",
+      "text": "Your revision next steps identifies a useful next revision move, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "revision_next_steps",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "revision next steps"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen revision next steps?",
+      "revision_action": "Keep this revision next steps move and apply it in another paragraph or section.",
+      "sort_order": 270,
+      "module_details": {}
+    },
+    {
+      "comment_id": "revision_next_steps_developing",
+      "label": "Revision Next Steps developing",
+      "short_text": "Your revision next steps is on the right track, but it will be stronger if you choose one high-impact revision target....",
+      "text": "Your revision next steps is on the right track, but it will be stronger if you choose one high-impact revision target before editing smaller details.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "revision_next_steps",
+        "literary_analysis"
+      ],
+      "hotwords": [
+        "revision next steps"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen revision next steps?",
+      "revision_action": "Choose one high-impact revision target before editing smaller details.",
+      "sort_order": 280,
+      "module_details": {},
+      "severity_default": 1
+    },
+    {
+      "comment_id": "interpretive_claim_hard_to_follow",
+      "label": "Interpretive Claim hard to follow",
+      "short_text": "The interpretive claim is difficult to follow right now.",
+      "text": "The interpretive claim is difficult to follow right now. Revisit this part first so the reader can understand the purpose of the writing.",
+      "category_id": "interpretive_claim",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.AW.11-12.1",
+        "njsls-ela:RL.CI.11-12.2"
+      ],
+      "polarity": "negative",
+      "severity_default": 2,
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "interpretive_claim",
+        "literary_analysis",
+        "priority_revision"
+      ],
+      "hotwords": [
+        "interpretive claim"
+      ],
+      "teacher_note": "Use when interpretive claim is a major barrier to understanding.",
+      "follow_up_prompt": "Where should the student begin revising interpretive claim?",
+      "revision_action": "Rewrite the section that most affects interpretive claim before polishing sentences.",
+      "sort_order": 290,
+      "module_details": {},
+      "criterion_ids": [
+        "interpretive_claim"
+      ]
+    },
+    {
+      "comment_id": "textual_evidence_hard_to_follow",
+      "label": "Textual Evidence hard to follow",
+      "short_text": "The textual evidence is difficult to follow right now.",
+      "text": "The textual evidence is difficult to follow right now. Revisit this part first so the reader can understand the purpose of the writing.",
+      "category_id": "textual_evidence",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CR.11-12.1"
+      ],
+      "polarity": "negative",
+      "severity_default": 2,
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "textual_evidence",
+        "literary_analysis",
+        "priority_revision"
+      ],
+      "hotwords": [
+        "textual evidence"
+      ],
+      "teacher_note": "Use when textual evidence is a major barrier to understanding.",
+      "follow_up_prompt": "Where should the student begin revising textual evidence?",
+      "revision_action": "Rewrite the section that most affects textual evidence before polishing sentences.",
+      "sort_order": 300,
+      "module_details": {},
+      "criterion_ids": [
+        "textual_evidence"
+      ]
+    },
+    {
+      "comment_id": "analysis_explanation_hard_to_follow",
+      "label": "Analysis and Explanation hard to follow",
+      "short_text": "The analysis and explanation is difficult to follow right now.",
+      "text": "The analysis and explanation is difficult to follow right now. Revisit this part first so the reader can understand the purpose of the writing.",
+      "category_id": "analysis_explanation",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CR.11-12.1",
+        "njsls-ela:RL.IT.11-12.3"
+      ],
+      "polarity": "negative",
+      "severity_default": 2,
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "analysis_explanation",
+        "literary_analysis",
+        "priority_revision"
+      ],
+      "hotwords": [
+        "analysis and explanation"
+      ],
+      "teacher_note": "Use when analysis and explanation is a major barrier to understanding.",
+      "follow_up_prompt": "Where should the student begin revising analysis and explanation?",
+      "revision_action": "Rewrite the section that most affects analysis and explanation before polishing sentences.",
+      "sort_order": 310,
+      "module_details": {},
+      "criterion_ids": [
+        "analysis"
+      ]
+    },
+    {
+      "comment_id": "theme_hard_to_follow",
+      "label": "Theme hard to follow",
+      "short_text": "The theme is difficult to follow right now.",
+      "text": "The theme is difficult to follow right now. Revisit this part first so the reader can understand the purpose of the writing.",
+      "category_id": "theme",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:RL.CI.11-12.2"
+      ],
+      "polarity": "negative",
+      "severity_default": 2,
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "theme",
+        "literary_analysis",
+        "priority_revision"
+      ],
+      "hotwords": [
+        "theme"
+      ],
+      "teacher_note": "Use when theme is a major barrier to understanding.",
+      "follow_up_prompt": "Where should the student begin revising theme?",
+      "revision_action": "Rewrite the section that most affects theme before polishing sentences.",
+      "sort_order": 320,
+      "module_details": {},
+      "criterion_ids": [
+        "literary_concepts"
+      ]
+    },
+    {
+      "comment_id": "conventions_next_revision_pass",
+      "label": "Conventions next revision pass",
+      "short_text": "For the next revision pass, focus on conventions: Revise one moment so the explanation addresses significance, comple....",
+      "text": "For the next revision pass, focus on conventions: Revise one moment so the explanation addresses significance, complexity, or audience impact.",
+      "category_id": "conventions",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "neutral",
+      "include_in_feedback_default": false,
+      "student_facing": true,
+      "tags": [
+        "conventions",
+        "next_step"
+      ],
+      "hotwords": [
+        "revision",
+        "conventions"
+      ],
+      "follow_up_prompt": "What single revision move would most improve conventions?",
+      "revision_action": "Make one focused pass for conventions and then reread the full piece.",
+      "sort_order": 330,
+      "module_details": {},
+      "criterion_ids": [
+        "style_conventions"
+      ]
+    },
+    {
+      "comment_id": "revision_next_steps_next_revision_pass",
+      "label": "Revision Next Steps next revision pass",
+      "short_text": "For the next revision pass, focus on revision next steps: Revise one moment so the explanation addresses significance....",
+      "text": "For the next revision pass, focus on revision next steps: Revise one moment so the explanation addresses significance, complexity, or audience impact.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "literary_analysis",
+        "textual_analysis",
+        "comparative_analysis",
+        "compare_contrast",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "neutral",
+      "include_in_feedback_default": false,
+      "student_facing": true,
+      "tags": [
+        "revision_next_steps",
+        "next_step"
+      ],
+      "hotwords": [
+        "revision",
+        "revision next steps"
+      ],
+      "follow_up_prompt": "What single revision move would most improve revision next steps?",
+      "revision_action": "Make one focused pass for revision next steps and then reread the full piece.",
+      "sort_order": 340,
+      "module_details": {}
+    }
+  ],
+  "created_at": "2026-06-30T00:00:00+00:00",
+  "updated_at": "2026-06-30T00:00:00+00:00",
+  "module_details": {
+    "starter_pack": "nj_ela_2023",
+    "grade_band": "11-12",
+    "notice": "These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+    "emphasis": "precise and knowledgeable claims, significance, logical sequencing of claims and counterclaims, strongest relevant evidence, avoidance of fallacies, synthesis, sophisticated style, audience awareness, complexity, ambiguity, nuance, and independent revision."
+  }
+}

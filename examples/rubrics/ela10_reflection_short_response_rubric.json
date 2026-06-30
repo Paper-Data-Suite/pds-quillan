@@ -1,0 +1,383 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "rubric",
+  "rubric_id": "ela10_reflection_short_response_rubric",
+  "title": "English 10 Reflection, Journal, and Short Response Rubric",
+  "description": "English 10 starter rubric for reflection, journal, and short response aligned to grades 9-10 2023 NJSLS-ELA references. These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+  "scope": "shared",
+  "writing_types": [
+    "journal",
+    "reflection",
+    "open_response",
+    "short_response",
+    "response_to_literature",
+    "general_ela"
+  ],
+  "criteria": [
+    {
+      "criterion_id": "focus",
+      "label": "Focus",
+      "description": "How clearly the response addresses the prompt or reflective purpose.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:W.RW.9-10.7"
+      ],
+      "sort_order": 10,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The focus is strong, purposeful, and effective for English 10.",
+          "student_facing_feedback": "The focus is strong, purposeful, and effective for English 10.",
+          "teacher_note": "Use when focus is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The focus is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The focus is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when focus is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The focus is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The focus is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when focus needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The focus is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The focus is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when focus needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of focus to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of focus to score this criterion yet.",
+          "teacher_note": "Use when focus needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "evidence_or_connection",
+      "label": "Evidence or Connection",
+      "description": "How well the response uses textual evidence, personal connection, or specific experience.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:RL.CR.9-10.1",
+        "njsls-ela:RI.CR.9-10.1"
+      ],
+      "sort_order": 20,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The evidence or connection is strong, purposeful, and effective for English 10.",
+          "student_facing_feedback": "The evidence or connection is strong, purposeful, and effective for English 10.",
+          "teacher_note": "Use when evidence or connection is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The evidence or connection is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The evidence or connection is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when evidence or connection is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The evidence or connection is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The evidence or connection is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when evidence or connection needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The evidence or connection is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The evidence or connection is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when evidence or connection needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of evidence or connection to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of evidence or connection to score this criterion yet.",
+          "teacher_note": "Use when evidence or connection needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "explanation",
+      "label": "Explanation",
+      "description": "How clearly the response explains its thinking.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:RL.CR.9-10.1",
+        "njsls-ela:RI.CR.9-10.1"
+      ],
+      "sort_order": 30,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The explanation is strong, purposeful, and effective for English 10.",
+          "student_facing_feedback": "The explanation is strong, purposeful, and effective for English 10.",
+          "teacher_note": "Use when explanation is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The explanation is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The explanation is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when explanation is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The explanation is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The explanation is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when explanation needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The explanation is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The explanation is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when explanation needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of explanation to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of explanation to score this criterion yet.",
+          "teacher_note": "Use when explanation needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "reflection_depth",
+      "label": "Reflection Depth",
+      "description": "How thoughtfully the response explores meaning, growth, questions, or implications.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:W.RW.9-10.7"
+      ],
+      "sort_order": 40,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The reflection depth is strong, purposeful, and effective for English 10.",
+          "student_facing_feedback": "The reflection depth is strong, purposeful, and effective for English 10.",
+          "teacher_note": "Use when reflection depth is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The reflection depth is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The reflection depth is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when reflection depth is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The reflection depth is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The reflection depth is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when reflection depth needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The reflection depth is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The reflection depth is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when reflection depth needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of reflection depth to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of reflection depth to score this criterion yet.",
+          "teacher_note": "Use when reflection depth needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "clarity",
+      "label": "Clarity",
+      "description": "How clearly sentences and organization help the reader follow the response.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:W.WP.9-10.4"
+      ],
+      "sort_order": 50,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The clarity is strong, purposeful, and effective for English 10.",
+          "student_facing_feedback": "The clarity is strong, purposeful, and effective for English 10.",
+          "teacher_note": "Use when clarity is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The clarity is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The clarity is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when clarity is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The clarity is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The clarity is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when clarity needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The clarity is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The clarity is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when clarity needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of clarity to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of clarity to score this criterion yet.",
+          "teacher_note": "Use when clarity needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "conventions",
+      "label": "Conventions",
+      "description": "How consistently conventions support readability.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:L.SS.9-10.1"
+      ],
+      "sort_order": 60,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The conventions is strong, purposeful, and effective for English 10.",
+          "student_facing_feedback": "The conventions is strong, purposeful, and effective for English 10.",
+          "teacher_note": "Use when conventions is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The conventions is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The conventions is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when conventions is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The conventions is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The conventions is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when conventions needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The conventions is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The conventions is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when conventions needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of conventions to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of conventions to score this criterion yet.",
+          "teacher_note": "Use when conventions needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    }
+  ],
+  "created_at": "2026-06-30T00:00:00+00:00",
+  "updated_at": "2026-06-30T00:00:00+00:00",
+  "module_details": {
+    "starter_pack": "nj_ela_2023",
+    "grade_band": "9-10",
+    "notice": "These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+    "emphasis": "clear claims, relevant evidence, clear explanation, organized ideas, transitions, conventions, basic synthesis, coherent narrative sequence, and reflection."
+  }
+}

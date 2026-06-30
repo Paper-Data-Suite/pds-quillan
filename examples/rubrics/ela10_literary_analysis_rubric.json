@@ -1,0 +1,386 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "rubric",
+  "rubric_id": "ela10_literary_analysis_rubric",
+  "title": "English 10 Literary and Comparative Analysis Rubric",
+  "description": "English 10 starter rubric for literary and comparative analysis aligned to grades 9-10 2023 NJSLS-ELA references. These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+  "scope": "shared",
+  "writing_types": [
+    "literary_analysis",
+    "textual_analysis",
+    "comparative_analysis",
+    "compare_contrast",
+    "essay"
+  ],
+  "criteria": [
+    {
+      "criterion_id": "interpretive_claim",
+      "label": "Interpretive Claim",
+      "description": "How clearly the response presents a meaningful interpretation.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:W.AW.9-10.1",
+        "njsls-ela:RL.CI.9-10.2"
+      ],
+      "sort_order": 10,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The interpretive claim is strong, purposeful, and effective for English 10.",
+          "student_facing_feedback": "The interpretive claim is strong, purposeful, and effective for English 10.",
+          "teacher_note": "Use when interpretive claim is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The interpretive claim is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The interpretive claim is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when interpretive claim is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The interpretive claim is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The interpretive claim is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when interpretive claim needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The interpretive claim is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The interpretive claim is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when interpretive claim needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of interpretive claim to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of interpretive claim to score this criterion yet.",
+          "teacher_note": "Use when interpretive claim needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "textual_evidence",
+      "label": "Textual Evidence",
+      "description": "How well evidence is selected, cited, and integrated.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:RL.CR.9-10.1"
+      ],
+      "sort_order": 20,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The textual evidence is strong, purposeful, and effective for English 10.",
+          "student_facing_feedback": "The textual evidence is strong, purposeful, and effective for English 10.",
+          "teacher_note": "Use when textual evidence is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The textual evidence is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The textual evidence is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when textual evidence is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The textual evidence is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The textual evidence is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when textual evidence needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The textual evidence is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The textual evidence is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when textual evidence needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of textual evidence to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of textual evidence to score this criterion yet.",
+          "teacher_note": "Use when textual evidence needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "analysis",
+      "label": "Analysis",
+      "description": "How well the explanation interprets what the evidence shows.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:RL.CR.9-10.1",
+        "njsls-ela:RL.IT.9-10.3"
+      ],
+      "sort_order": 30,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The analysis is strong, purposeful, and effective for English 10.",
+          "student_facing_feedback": "The analysis is strong, purposeful, and effective for English 10.",
+          "teacher_note": "Use when analysis is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The analysis is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The analysis is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when analysis is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The analysis is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The analysis is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when analysis needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The analysis is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The analysis is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when analysis needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of analysis to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of analysis to score this criterion yet.",
+          "teacher_note": "Use when analysis needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "literary_concepts",
+      "label": "Literary Concepts",
+      "description": "How accurately the writing uses theme, character, structure, point of view, and diction.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:RL.CI.9-10.2",
+        "njsls-ela:RL.IT.9-10.3",
+        "njsls-ela:RL.TS.9-10.4"
+      ],
+      "sort_order": 40,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The literary concepts is strong, purposeful, and effective for English 10.",
+          "student_facing_feedback": "The literary concepts is strong, purposeful, and effective for English 10.",
+          "teacher_note": "Use when literary concepts is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The literary concepts is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The literary concepts is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when literary concepts is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The literary concepts is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The literary concepts is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when literary concepts needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The literary concepts is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The literary concepts is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when literary concepts needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of literary concepts to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of literary concepts to score this criterion yet.",
+          "teacher_note": "Use when literary concepts needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "comparison_synthesis",
+      "label": "Comparison and Synthesis",
+      "description": "How well the writing compares texts and explains the significance of connections.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:RL.CT.9-10.8",
+        "njsls-ela:RI.CT.9-10.8"
+      ],
+      "sort_order": 50,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The comparison and synthesis is strong, purposeful, and effective for English 10.",
+          "student_facing_feedback": "The comparison and synthesis is strong, purposeful, and effective for English 10.",
+          "teacher_note": "Use when comparison and synthesis is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The comparison and synthesis is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The comparison and synthesis is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when comparison and synthesis is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The comparison and synthesis is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The comparison and synthesis is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when comparison and synthesis needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The comparison and synthesis is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The comparison and synthesis is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when comparison and synthesis needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of comparison and synthesis to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of comparison and synthesis to score this criterion yet.",
+          "teacher_note": "Use when comparison and synthesis needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "style_conventions",
+      "label": "Style and Conventions",
+      "description": "How effectively organization, style, and conventions support literary analysis.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:L.KL.9-10.2",
+        "njsls-ela:L.SS.9-10.1"
+      ],
+      "sort_order": 60,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The style and conventions is strong, purposeful, and effective for English 10.",
+          "student_facing_feedback": "The style and conventions is strong, purposeful, and effective for English 10.",
+          "teacher_note": "Use when style and conventions is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The style and conventions is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The style and conventions is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when style and conventions is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The style and conventions is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The style and conventions is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when style and conventions needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The style and conventions is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The style and conventions is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when style and conventions needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of style and conventions to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of style and conventions to score this criterion yet.",
+          "teacher_note": "Use when style and conventions needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    }
+  ],
+  "created_at": "2026-06-30T00:00:00+00:00",
+  "updated_at": "2026-06-30T00:00:00+00:00",
+  "module_details": {
+    "starter_pack": "nj_ela_2023",
+    "grade_band": "9-10",
+    "notice": "These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+    "emphasis": "clear claims, relevant evidence, clear explanation, organized ideas, transitions, conventions, basic synthesis, coherent narrative sequence, and reflection."
+  }
+}
