@@ -1,0 +1,381 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "rubric",
+  "rubric_id": "ela12_informational_writing_rubric",
+  "title": "English 12 Informational and Expository Writing Rubric",
+  "description": "English 12 starter rubric for informational and expository writing aligned to grades 11-12 2023 NJSLS-ELA references. These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+  "scope": "shared",
+  "writing_types": [
+    "informational",
+    "expository",
+    "explanatory",
+    "essay"
+  ],
+  "criteria": [
+    {
+      "criterion_id": "focus_topic",
+      "label": "Focus and Topic",
+      "description": "How clearly the writing introduces and maintains its explanatory focus.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "sort_order": 10,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The focus and topic is strong, purposeful, and effective for English 12.",
+          "student_facing_feedback": "The focus and topic is strong, purposeful, and effective for English 12.",
+          "teacher_note": "Use when focus and topic is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The focus and topic is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The focus and topic is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when focus and topic is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The focus and topic is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The focus and topic is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when focus and topic needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The focus and topic is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The focus and topic is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when focus and topic needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of focus and topic to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of focus and topic to score this criterion yet.",
+          "teacher_note": "Use when focus and topic needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "development",
+      "label": "Development",
+      "description": "How fully the ideas, concepts, and information are developed.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "sort_order": 20,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The development is strong, purposeful, and effective for English 12.",
+          "student_facing_feedback": "The development is strong, purposeful, and effective for English 12.",
+          "teacher_note": "Use when development is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The development is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The development is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when development is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The development is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The development is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when development needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The development is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The development is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when development needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of development to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of development to score this criterion yet.",
+          "teacher_note": "Use when development needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "evidence_examples",
+      "label": "Evidence and Examples",
+      "description": "How well facts, examples, and textual details support the explanation.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2",
+        "njsls-ela:RI.CR.11-12.1"
+      ],
+      "sort_order": 30,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The evidence and examples is strong, purposeful, and effective for English 12.",
+          "student_facing_feedback": "The evidence and examples is strong, purposeful, and effective for English 12.",
+          "teacher_note": "Use when evidence and examples is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The evidence and examples is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The evidence and examples is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when evidence and examples is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The evidence and examples is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The evidence and examples is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when evidence and examples needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The evidence and examples is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The evidence and examples is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when evidence and examples needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of evidence and examples to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of evidence and examples to score this criterion yet.",
+          "teacher_note": "Use when evidence and examples needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "organization",
+      "label": "Organization",
+      "description": "How effectively the structure and transitions guide the reader.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "sort_order": 40,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The organization is strong, purposeful, and effective for English 12.",
+          "student_facing_feedback": "The organization is strong, purposeful, and effective for English 12.",
+          "teacher_note": "Use when organization is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The organization is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The organization is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when organization is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The organization is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The organization is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when organization needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The organization is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The organization is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when organization needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of organization to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of organization to score this criterion yet.",
+          "teacher_note": "Use when organization needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "language_style",
+      "label": "Language and Style",
+      "description": "How accurately vocabulary, tone, and sentence choices fit the topic and audience.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:L.KL.11-12.2",
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "sort_order": 50,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The language and style is strong, purposeful, and effective for English 12.",
+          "student_facing_feedback": "The language and style is strong, purposeful, and effective for English 12.",
+          "teacher_note": "Use when language and style is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The language and style is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The language and style is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when language and style is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The language and style is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The language and style is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when language and style needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The language and style is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The language and style is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when language and style needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of language and style to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of language and style to score this criterion yet.",
+          "teacher_note": "Use when language and style needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "criterion_id": "conventions",
+      "label": "Conventions",
+      "description": "How consistently grammar, usage, capitalization, punctuation, and spelling support readability.",
+      "max_score": 4,
+      "scale": "4_point",
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "sort_order": 60,
+      "levels": [
+        {
+          "score": 4,
+          "label": "Advanced",
+          "description": "The conventions is strong, purposeful, and effective for English 12.",
+          "student_facing_feedback": "The conventions is strong, purposeful, and effective for English 12.",
+          "teacher_note": "Use when conventions is ready or nearly ready for classroom expectations.",
+          "sort_order": 10,
+          "module_details": {}
+        },
+        {
+          "score": 3,
+          "label": "Secure",
+          "description": "The conventions is clear and mostly effective, with a few places that could be developed further.",
+          "student_facing_feedback": "The conventions is clear and mostly effective, with a few places that could be developed further.",
+          "teacher_note": "Use when conventions is ready or nearly ready for classroom expectations.",
+          "sort_order": 20,
+          "module_details": {}
+        },
+        {
+          "score": 2,
+          "label": "Developing",
+          "description": "The conventions is present but uneven, general, or only partly connected to the writing purpose.",
+          "student_facing_feedback": "The conventions is present but uneven, general, or only partly connected to the writing purpose.",
+          "teacher_note": "Use when conventions needs targeted teacher feedback before final submission.",
+          "sort_order": 30,
+          "module_details": {}
+        },
+        {
+          "score": 1,
+          "label": "Beginning",
+          "description": "The conventions is limited or difficult to follow and needs substantial revision.",
+          "student_facing_feedback": "The conventions is limited or difficult to follow and needs substantial revision.",
+          "teacher_note": "Use when conventions needs targeted teacher feedback before final submission.",
+          "sort_order": 40,
+          "module_details": {}
+        },
+        {
+          "score": 0,
+          "label": "Insufficient evidence",
+          "description": "There is not enough evidence of conventions to score this criterion yet.",
+          "student_facing_feedback": "There is not enough evidence of conventions to score this criterion yet.",
+          "teacher_note": "Use when conventions needs targeted teacher feedback before final submission.",
+          "sort_order": 50,
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    }
+  ],
+  "created_at": "2026-06-30T00:00:00+00:00",
+  "updated_at": "2026-06-30T00:00:00+00:00",
+  "module_details": {
+    "starter_pack": "nj_ela_2023",
+    "grade_band": "11-12",
+    "notice": "These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+    "emphasis": "precise and knowledgeable claims, significance, logical sequencing of claims and counterclaims, strongest relevant evidence, avoidance of fallacies, synthesis, sophisticated style, audience awareness, complexity, ambiguity, nuance, and independent revision."
+  }
+}

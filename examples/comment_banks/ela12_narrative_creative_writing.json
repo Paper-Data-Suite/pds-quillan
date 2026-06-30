@@ -1,0 +1,1313 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "comment_bank",
+  "bank_id": "ela12_narrative_creative_writing",
+  "title": "English 12 Narrative, Memoir, Poetry, and Creative Writing Comments",
+  "description": "English 12 starter comment bank for narrative, memoir, poetry, and creative writing aligned to grades 11-12 2023 NJSLS-ELA references. These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+  "scope": "shared",
+  "writing_types": [
+    "narrative",
+    "memoir",
+    "personal_narrative",
+    "short_story",
+    "creative_writing",
+    "poetry",
+    "literary_writing"
+  ],
+  "categories": [
+    {
+      "category_id": "opening_orientation",
+      "label": "Opening and Orientation",
+      "description": "Reusable review items for opening and orientation.",
+      "sort_order": 10,
+      "module_details": {}
+    },
+    {
+      "category_id": "character_voice",
+      "label": "Character and Voice",
+      "description": "Reusable review items for character and voice.",
+      "sort_order": 20,
+      "module_details": {}
+    },
+    {
+      "category_id": "sequence_pacing",
+      "label": "Sequence and Pacing",
+      "description": "Reusable review items for sequence and pacing.",
+      "sort_order": 30,
+      "module_details": {}
+    },
+    {
+      "category_id": "dialogue",
+      "label": "Dialogue",
+      "description": "Reusable review items for dialogue.",
+      "sort_order": 40,
+      "module_details": {}
+    },
+    {
+      "category_id": "description_imagery",
+      "label": "Description and Imagery",
+      "description": "Reusable review items for description and imagery.",
+      "sort_order": 50,
+      "module_details": {}
+    },
+    {
+      "category_id": "reflection",
+      "label": "Reflection",
+      "description": "Reusable review items for reflection.",
+      "sort_order": 60,
+      "module_details": {}
+    },
+    {
+      "category_id": "structure",
+      "label": "Structure",
+      "description": "Reusable review items for structure.",
+      "sort_order": 70,
+      "module_details": {}
+    },
+    {
+      "category_id": "ending",
+      "label": "Ending",
+      "description": "Reusable review items for ending.",
+      "sort_order": 80,
+      "module_details": {}
+    },
+    {
+      "category_id": "style_voice",
+      "label": "Style and Voice",
+      "description": "Reusable review items for style and voice.",
+      "sort_order": 90,
+      "module_details": {}
+    },
+    {
+      "category_id": "line_breaks",
+      "label": "Poetry Line Breaks",
+      "description": "Reusable review items for poetry line breaks.",
+      "sort_order": 100,
+      "module_details": {}
+    },
+    {
+      "category_id": "sound",
+      "label": "Sound and Rhythm",
+      "description": "Reusable review items for sound and rhythm.",
+      "sort_order": 110,
+      "module_details": {}
+    },
+    {
+      "category_id": "conventions",
+      "label": "Conventions",
+      "description": "Reusable review items for conventions.",
+      "sort_order": 120,
+      "module_details": {}
+    },
+    {
+      "category_id": "revision_next_steps",
+      "label": "Revision Next Steps",
+      "description": "Reusable review items for revision next steps.",
+      "sort_order": 130,
+      "module_details": {}
+    }
+  ],
+  "comments": [
+    {
+      "comment_id": "opening_orientation_strength",
+      "label": "Opening and Orientation strength",
+      "short_text": "Your opening and orientation orients the reader to situation, speaker, or conflict, which helps the reader understand....",
+      "text": "Your opening and orientation orients the reader to situation, speaker, or conflict, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "opening_orientation",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "opening_orientation",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "opening and orientation",
+        "opening orientation"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen opening and orientation?",
+      "revision_action": "Keep this opening and orientation move and apply it in another paragraph or section.",
+      "sort_order": 10,
+      "module_details": {},
+      "criterion_ids": [
+        "orientation"
+      ]
+    },
+    {
+      "comment_id": "opening_orientation_developing",
+      "label": "Opening and Orientation developing",
+      "short_text": "Your opening and orientation is on the right track, but it will be stronger if you give the reader enough context to ....",
+      "text": "Your opening and orientation is on the right track, but it will be stronger if you give the reader enough context to enter the scene or idea.",
+      "category_id": "opening_orientation",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "opening_orientation",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "opening and orientation",
+        "opening orientation"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen opening and orientation?",
+      "revision_action": "Give the reader enough context to enter the scene or idea.",
+      "sort_order": 20,
+      "module_details": {},
+      "criterion_ids": [
+        "orientation"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "character_voice_strength",
+      "label": "Character and Voice strength",
+      "short_text": "Your character and voice creates a voice that feels purposeful and consistent, which helps the reader understand the ....",
+      "text": "Your character and voice creates a voice that feels purposeful and consistent, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "character_voice",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "character_voice",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "character and voice",
+        "character voice"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen character and voice?",
+      "revision_action": "Keep this character and voice move and apply it in another paragraph or section.",
+      "sort_order": 30,
+      "module_details": {},
+      "criterion_ids": [
+        "language_voice"
+      ]
+    },
+    {
+      "comment_id": "character_voice_developing",
+      "label": "Character and Voice developing",
+      "short_text": "Your character and voice is on the right track, but it will be stronger if you make voice choices more intentional th....",
+      "text": "Your character and voice is on the right track, but it will be stronger if you make voice choices more intentional through diction and detail.",
+      "category_id": "character_voice",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "character_voice",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "character and voice",
+        "character voice"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen character and voice?",
+      "revision_action": "Make voice choices more intentional through diction and detail.",
+      "sort_order": 40,
+      "module_details": {},
+      "criterion_ids": [
+        "language_voice"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "sequence_pacing_strength",
+      "label": "Sequence and Pacing strength",
+      "short_text": "Your sequence and pacing paces events or images so important moments stand out, which helps the reader understand the....",
+      "text": "Your sequence and pacing paces events or images so important moments stand out, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "sequence_pacing",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "sequence_pacing",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "sequence and pacing",
+        "sequence pacing"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen sequence and pacing?",
+      "revision_action": "Keep this sequence and pacing move and apply it in another paragraph or section.",
+      "sort_order": 50,
+      "module_details": {},
+      "criterion_ids": [
+        "structure_pacing"
+      ]
+    },
+    {
+      "comment_id": "sequence_pacing_developing",
+      "label": "Sequence and Pacing developing",
+      "short_text": "Your sequence and pacing is on the right track, but it will be stronger if you slow down important moments and compre....",
+      "text": "Your sequence and pacing is on the right track, but it will be stronger if you slow down important moments and compress less important ones.",
+      "category_id": "sequence_pacing",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "sequence_pacing",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "sequence and pacing",
+        "sequence pacing"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen sequence and pacing?",
+      "revision_action": "Slow down important moments and compress less important ones.",
+      "sort_order": 60,
+      "module_details": {},
+      "criterion_ids": [
+        "structure_pacing"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "dialogue_strength",
+      "label": "Dialogue strength",
+      "short_text": "Your dialogue uses dialogue to reveal character or tension, which helps the reader understand the work with precision....",
+      "text": "Your dialogue uses dialogue to reveal character or tension, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "dialogue",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "dialogue",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "dialogue"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen dialogue?",
+      "revision_action": "Keep this dialogue move and apply it in another paragraph or section.",
+      "sort_order": 70,
+      "module_details": {},
+      "criterion_ids": [
+        "technique"
+      ]
+    },
+    {
+      "comment_id": "dialogue_developing",
+      "label": "Dialogue developing",
+      "short_text": "Your dialogue is on the right track, but it will be stronger if you trim or revise dialogue so it does more than exch....",
+      "text": "Your dialogue is on the right track, but it will be stronger if you trim or revise dialogue so it does more than exchange information.",
+      "category_id": "dialogue",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "dialogue",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "dialogue"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen dialogue?",
+      "revision_action": "Trim or revise dialogue so it does more than exchange information.",
+      "sort_order": 80,
+      "module_details": {},
+      "criterion_ids": [
+        "technique"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "description_imagery_strength",
+      "label": "Description and Imagery strength",
+      "short_text": "Your description and imagery uses sensory detail or imagery to make moments vivid, which helps the reader understand ....",
+      "text": "Your description and imagery uses sensory detail or imagery to make moments vivid, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "description_imagery",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3",
+        "njsls-ela:L.VI.11-12.4"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "description_imagery",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "description and imagery",
+        "description imagery"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen description and imagery?",
+      "revision_action": "Keep this description and imagery move and apply it in another paragraph or section.",
+      "sort_order": 90,
+      "module_details": {},
+      "criterion_ids": [
+        "technique"
+      ]
+    },
+    {
+      "comment_id": "description_imagery_developing",
+      "label": "Description and Imagery developing",
+      "short_text": "Your description and imagery is on the right track, but it will be stronger if you replace general description with p....",
+      "text": "Your description and imagery is on the right track, but it will be stronger if you replace general description with precise sensory detail.",
+      "category_id": "description_imagery",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3",
+        "njsls-ela:L.VI.11-12.4"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "description_imagery",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "description and imagery",
+        "description imagery"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen description and imagery?",
+      "revision_action": "Replace general description with precise sensory detail.",
+      "sort_order": 100,
+      "module_details": {},
+      "criterion_ids": [
+        "technique"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "reflection_strength",
+      "label": "Reflection strength",
+      "short_text": "Your reflection connects experience to meaning or growth, which helps the reader understand the work with precision a....",
+      "text": "Your reflection connects experience to meaning or growth, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "reflection",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "reflection",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "reflection"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen reflection?",
+      "revision_action": "Keep this reflection move and apply it in another paragraph or section.",
+      "sort_order": 110,
+      "module_details": {},
+      "criterion_ids": [
+        "development"
+      ]
+    },
+    {
+      "comment_id": "reflection_developing",
+      "label": "Reflection developing",
+      "short_text": "Your reflection is on the right track, but it will be stronger if you add reflection that shows what changed or what ....",
+      "text": "Your reflection is on the right track, but it will be stronger if you add reflection that shows what changed or what the moment means.",
+      "category_id": "reflection",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "reflection",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "reflection"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen reflection?",
+      "revision_action": "Add reflection that shows what changed or what the moment means.",
+      "sort_order": 120,
+      "module_details": {},
+      "criterion_ids": [
+        "development"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "structure_strength",
+      "label": "Structure strength",
+      "short_text": "Your structure notices how structure shapes the reader understanding, which helps the reader understand the work with....",
+      "text": "Your structure notices how structure shapes the reader understanding, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "structure",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "structure",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "structure"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen structure?",
+      "revision_action": "Keep this structure move and apply it in another paragraph or section.",
+      "sort_order": 130,
+      "module_details": {},
+      "criterion_ids": [
+        "structure_pacing"
+      ]
+    },
+    {
+      "comment_id": "structure_developing",
+      "label": "Structure developing",
+      "short_text": "Your structure is on the right track, but it will be stronger if you connect structure choices to meaning, pacing, or....",
+      "text": "Your structure is on the right track, but it will be stronger if you connect structure choices to meaning, pacing, or emphasis.",
+      "category_id": "structure",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "structure",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "structure"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen structure?",
+      "revision_action": "Connect structure choices to meaning, pacing, or emphasis.",
+      "sort_order": 140,
+      "module_details": {},
+      "criterion_ids": [
+        "structure_pacing"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "ending_strength",
+      "label": "Ending strength",
+      "short_text": "Your ending gives the piece a purposeful sense of closure, which helps the reader understand the work with precision ....",
+      "text": "Your ending gives the piece a purposeful sense of closure, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "ending",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "ending",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "ending"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen ending?",
+      "revision_action": "Keep this ending move and apply it in another paragraph or section.",
+      "sort_order": 150,
+      "module_details": {},
+      "criterion_ids": [
+        "structure_pacing"
+      ]
+    },
+    {
+      "comment_id": "ending_developing",
+      "label": "Ending developing",
+      "short_text": "Your ending is on the right track, but it will be stronger if you revise the ending so it resolves, echoes, or compli....",
+      "text": "Your ending is on the right track, but it will be stronger if you revise the ending so it resolves, echoes, or complicates the main idea.",
+      "category_id": "ending",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "ending",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "ending"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen ending?",
+      "revision_action": "Revise the ending so it resolves, echoes, or complicates the main idea.",
+      "sort_order": 160,
+      "module_details": {},
+      "criterion_ids": [
+        "structure_pacing"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "style_voice_strength",
+      "label": "Style and Voice strength",
+      "short_text": "Your style and voice uses language choices that fit the creative purpose, which helps the reader understand the work ....",
+      "text": "Your style and voice uses language choices that fit the creative purpose, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "style_voice",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.KL.11-12.2",
+        "njsls-ela:L.VI.11-12.4"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "style_voice",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "style and voice",
+        "style voice"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen style and voice?",
+      "revision_action": "Keep this style and voice move and apply it in another paragraph or section.",
+      "sort_order": 170,
+      "module_details": {},
+      "criterion_ids": [
+        "language_voice"
+      ]
+    },
+    {
+      "comment_id": "style_voice_developing",
+      "label": "Style and Voice developing",
+      "short_text": "Your style and voice is on the right track, but it will be stronger if you make diction and syntax support the voice ....",
+      "text": "Your style and voice is on the right track, but it will be stronger if you make diction and syntax support the voice more consistently.",
+      "category_id": "style_voice",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.KL.11-12.2",
+        "njsls-ela:L.VI.11-12.4"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "style_voice",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "style and voice",
+        "style voice"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen style and voice?",
+      "revision_action": "Make diction and syntax support the voice more consistently.",
+      "sort_order": 180,
+      "module_details": {},
+      "criterion_ids": [
+        "language_voice"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "line_breaks_strength",
+      "label": "Poetry Line Breaks strength",
+      "short_text": "Your poetry line breaks uses line breaks to shape emphasis and meaning, which helps the reader understand the work wi....",
+      "text": "Your poetry line breaks uses line breaks to shape emphasis and meaning, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "line_breaks",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3",
+        "njsls-ela:L.VI.11-12.4"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "line_breaks",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "poetry line breaks",
+        "line breaks"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen poetry line breaks?",
+      "revision_action": "Keep this poetry line breaks move and apply it in another paragraph or section.",
+      "sort_order": 190,
+      "module_details": {},
+      "criterion_ids": [
+        "technique"
+      ]
+    },
+    {
+      "comment_id": "line_breaks_developing",
+      "label": "Poetry Line Breaks developing",
+      "short_text": "Your poetry line breaks is on the right track, but it will be stronger if you revise line breaks so they create purpo....",
+      "text": "Your poetry line breaks is on the right track, but it will be stronger if you revise line breaks so they create purposeful pauses or turns.",
+      "category_id": "line_breaks",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3",
+        "njsls-ela:L.VI.11-12.4"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "line_breaks",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "poetry line breaks",
+        "line breaks"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen poetry line breaks?",
+      "revision_action": "Revise line breaks so they create purposeful pauses or turns.",
+      "sort_order": 200,
+      "module_details": {},
+      "criterion_ids": [
+        "technique"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "sound_strength",
+      "label": "Sound and Rhythm strength",
+      "short_text": "Your sound and rhythm uses sound or rhythm to add effect, which helps the reader understand the work with precision a....",
+      "text": "Your sound and rhythm uses sound or rhythm to add effect, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "sound",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3",
+        "njsls-ela:L.VI.11-12.4"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "sound",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "sound and rhythm",
+        "sound"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen sound and rhythm?",
+      "revision_action": "Keep this sound and rhythm move and apply it in another paragraph or section.",
+      "sort_order": 210,
+      "module_details": {},
+      "criterion_ids": [
+        "technique"
+      ]
+    },
+    {
+      "comment_id": "sound_developing",
+      "label": "Sound and Rhythm developing",
+      "short_text": "Your sound and rhythm is on the right track, but it will be stronger if you read aloud and revise sound patterns that....",
+      "text": "Your sound and rhythm is on the right track, but it will be stronger if you read aloud and revise sound patterns that feel accidental.",
+      "category_id": "sound",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3",
+        "njsls-ela:L.VI.11-12.4"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "sound",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "sound and rhythm",
+        "sound"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen sound and rhythm?",
+      "revision_action": "Read aloud and revise sound patterns that feel accidental.",
+      "sort_order": 220,
+      "module_details": {},
+      "criterion_ids": [
+        "technique"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "conventions_strength",
+      "label": "Conventions strength",
+      "short_text": "Your conventions keeps sentence control from distracting the reader, which helps the reader understand the work with ....",
+      "text": "Your conventions keeps sentence control from distracting the reader, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "conventions",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "conventions",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "conventions"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen conventions?",
+      "revision_action": "Keep this conventions move and apply it in another paragraph or section.",
+      "sort_order": 230,
+      "module_details": {},
+      "criterion_ids": [
+        "conventions"
+      ]
+    },
+    {
+      "comment_id": "conventions_developing",
+      "label": "Conventions developing",
+      "short_text": "Your conventions is on the right track, but it will be stronger if you edit sentence boundaries, punctuation, or usag....",
+      "text": "Your conventions is on the right track, but it will be stronger if you edit sentence boundaries, punctuation, or usage patterns that interrupt meaning.",
+      "category_id": "conventions",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "conventions",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "conventions"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen conventions?",
+      "revision_action": "Edit sentence boundaries, punctuation, or usage patterns that interrupt meaning.",
+      "sort_order": 240,
+      "module_details": {},
+      "criterion_ids": [
+        "conventions"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "revision_next_steps_strength",
+      "label": "Revision Next Steps strength",
+      "short_text": "Your revision next steps identifies a useful next revision move, which helps the reader understand the work with prec....",
+      "text": "Your revision next steps identifies a useful next revision move, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "revision_next_steps",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "revision next steps"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen revision next steps?",
+      "revision_action": "Keep this revision next steps move and apply it in another paragraph or section.",
+      "sort_order": 250,
+      "module_details": {}
+    },
+    {
+      "comment_id": "revision_next_steps_developing",
+      "label": "Revision Next Steps developing",
+      "short_text": "Your revision next steps is on the right track, but it will be stronger if you choose one high-impact revision target....",
+      "text": "Your revision next steps is on the right track, but it will be stronger if you choose one high-impact revision target before editing smaller details.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "revision_next_steps",
+        "narrative_creative_writing"
+      ],
+      "hotwords": [
+        "revision next steps"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen revision next steps?",
+      "revision_action": "Choose one high-impact revision target before editing smaller details.",
+      "sort_order": 260,
+      "module_details": {},
+      "severity_default": 1
+    },
+    {
+      "comment_id": "opening_orientation_hard_to_follow",
+      "label": "Opening and Orientation hard to follow",
+      "short_text": "The opening and orientation is difficult to follow right now.",
+      "text": "The opening and orientation is difficult to follow right now. Revisit this part first so the reader can understand the purpose of the writing.",
+      "category_id": "opening_orientation",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "negative",
+      "severity_default": 2,
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "opening_orientation",
+        "narrative_creative_writing",
+        "priority_revision"
+      ],
+      "hotwords": [
+        "opening and orientation"
+      ],
+      "teacher_note": "Use when opening and orientation is a major barrier to understanding.",
+      "follow_up_prompt": "Where should the student begin revising opening and orientation?",
+      "revision_action": "Rewrite the section that most affects opening and orientation before polishing sentences.",
+      "sort_order": 270,
+      "module_details": {},
+      "criterion_ids": [
+        "orientation"
+      ]
+    },
+    {
+      "comment_id": "character_voice_hard_to_follow",
+      "label": "Character and Voice hard to follow",
+      "short_text": "The character and voice is difficult to follow right now.",
+      "text": "The character and voice is difficult to follow right now. Revisit this part first so the reader can understand the purpose of the writing.",
+      "category_id": "character_voice",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "negative",
+      "severity_default": 2,
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "character_voice",
+        "narrative_creative_writing",
+        "priority_revision"
+      ],
+      "hotwords": [
+        "character and voice"
+      ],
+      "teacher_note": "Use when character and voice is a major barrier to understanding.",
+      "follow_up_prompt": "Where should the student begin revising character and voice?",
+      "revision_action": "Rewrite the section that most affects character and voice before polishing sentences.",
+      "sort_order": 280,
+      "module_details": {},
+      "criterion_ids": [
+        "language_voice"
+      ]
+    },
+    {
+      "comment_id": "sequence_pacing_hard_to_follow",
+      "label": "Sequence and Pacing hard to follow",
+      "short_text": "The sequence and pacing is difficult to follow right now.",
+      "text": "The sequence and pacing is difficult to follow right now. Revisit this part first so the reader can understand the purpose of the writing.",
+      "category_id": "sequence_pacing",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "negative",
+      "severity_default": 2,
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "sequence_pacing",
+        "narrative_creative_writing",
+        "priority_revision"
+      ],
+      "hotwords": [
+        "sequence and pacing"
+      ],
+      "teacher_note": "Use when sequence and pacing is a major barrier to understanding.",
+      "follow_up_prompt": "Where should the student begin revising sequence and pacing?",
+      "revision_action": "Rewrite the section that most affects sequence and pacing before polishing sentences.",
+      "sort_order": 290,
+      "module_details": {},
+      "criterion_ids": [
+        "structure_pacing"
+      ]
+    },
+    {
+      "comment_id": "dialogue_hard_to_follow",
+      "label": "Dialogue hard to follow",
+      "short_text": "The dialogue is difficult to follow right now.",
+      "text": "The dialogue is difficult to follow right now. Revisit this part first so the reader can understand the purpose of the writing.",
+      "category_id": "dialogue",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.NW.11-12.3"
+      ],
+      "polarity": "negative",
+      "severity_default": 2,
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "dialogue",
+        "narrative_creative_writing",
+        "priority_revision"
+      ],
+      "hotwords": [
+        "dialogue"
+      ],
+      "teacher_note": "Use when dialogue is a major barrier to understanding.",
+      "follow_up_prompt": "Where should the student begin revising dialogue?",
+      "revision_action": "Rewrite the section that most affects dialogue before polishing sentences.",
+      "sort_order": 300,
+      "module_details": {},
+      "criterion_ids": [
+        "technique"
+      ]
+    },
+    {
+      "comment_id": "conventions_next_revision_pass",
+      "label": "Conventions next revision pass",
+      "short_text": "For the next revision pass, focus on conventions: Revise one moment so the explanation addresses significance, comple....",
+      "text": "For the next revision pass, focus on conventions: Revise one moment so the explanation addresses significance, complexity, or audience impact.",
+      "category_id": "conventions",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "neutral",
+      "include_in_feedback_default": false,
+      "student_facing": true,
+      "tags": [
+        "conventions",
+        "next_step"
+      ],
+      "hotwords": [
+        "revision",
+        "conventions"
+      ],
+      "follow_up_prompt": "What single revision move would most improve conventions?",
+      "revision_action": "Make one focused pass for conventions and then reread the full piece.",
+      "sort_order": 310,
+      "module_details": {},
+      "criterion_ids": [
+        "conventions"
+      ]
+    },
+    {
+      "comment_id": "revision_next_steps_next_revision_pass",
+      "label": "Revision Next Steps next revision pass",
+      "short_text": "For the next revision pass, focus on revision next steps: Revise one moment so the explanation addresses significance....",
+      "text": "For the next revision pass, focus on revision next steps: Revise one moment so the explanation addresses significance, complexity, or audience impact.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "narrative",
+        "memoir",
+        "personal_narrative",
+        "short_story",
+        "creative_writing",
+        "poetry",
+        "literary_writing"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "neutral",
+      "include_in_feedback_default": false,
+      "student_facing": true,
+      "tags": [
+        "revision_next_steps",
+        "next_step"
+      ],
+      "hotwords": [
+        "revision",
+        "revision next steps"
+      ],
+      "follow_up_prompt": "What single revision move would most improve revision next steps?",
+      "revision_action": "Make one focused pass for revision next steps and then reread the full piece.",
+      "sort_order": 320,
+      "module_details": {}
+    }
+  ],
+  "created_at": "2026-06-30T00:00:00+00:00",
+  "updated_at": "2026-06-30T00:00:00+00:00",
+  "module_details": {
+    "starter_pack": "nj_ela_2023",
+    "grade_band": "11-12",
+    "notice": "These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+    "emphasis": "precise and knowledgeable claims, significance, logical sequencing of claims and counterclaims, strongest relevant evidence, avoidance of fallacies, synthesis, sophisticated style, audience awareness, complexity, ambiguity, nuance, and independent revision."
+  }
+}

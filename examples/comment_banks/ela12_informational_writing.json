@@ -1,0 +1,983 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "comment_bank",
+  "bank_id": "ela12_informational_writing",
+  "title": "English 12 Informational and Expository Writing Comments",
+  "description": "English 12 starter comment bank for informational and expository writing aligned to grades 11-12 2023 NJSLS-ELA references. These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+  "scope": "shared",
+  "writing_types": [
+    "informational",
+    "expository",
+    "explanatory",
+    "essay"
+  ],
+  "categories": [
+    {
+      "category_id": "focus_topic",
+      "label": "Focus and Topic",
+      "description": "Reusable review items for focus and topic.",
+      "sort_order": 10,
+      "module_details": {}
+    },
+    {
+      "category_id": "development",
+      "label": "Development",
+      "description": "Reusable review items for development.",
+      "sort_order": 20,
+      "module_details": {}
+    },
+    {
+      "category_id": "evidence_examples",
+      "label": "Evidence and Examples",
+      "description": "Reusable review items for evidence and examples.",
+      "sort_order": 30,
+      "module_details": {}
+    },
+    {
+      "category_id": "organization",
+      "label": "Organization",
+      "description": "Reusable review items for organization.",
+      "sort_order": 40,
+      "module_details": {}
+    },
+    {
+      "category_id": "transitions",
+      "label": "Transitions",
+      "description": "Reusable review items for transitions.",
+      "sort_order": 50,
+      "module_details": {}
+    },
+    {
+      "category_id": "domain_vocabulary",
+      "label": "Domain Vocabulary",
+      "description": "Reusable review items for domain vocabulary.",
+      "sort_order": 60,
+      "module_details": {}
+    },
+    {
+      "category_id": "style_tone",
+      "label": "Style and Tone",
+      "description": "Reusable review items for style and tone.",
+      "sort_order": 70,
+      "module_details": {}
+    },
+    {
+      "category_id": "conclusion",
+      "label": "Conclusion",
+      "description": "Reusable review items for conclusion.",
+      "sort_order": 80,
+      "module_details": {}
+    },
+    {
+      "category_id": "conventions",
+      "label": "Conventions",
+      "description": "Reusable review items for conventions.",
+      "sort_order": 90,
+      "module_details": {}
+    },
+    {
+      "category_id": "revision_next_steps",
+      "label": "Revision Next Steps",
+      "description": "Reusable review items for revision next steps.",
+      "sort_order": 100,
+      "module_details": {}
+    }
+  ],
+  "comments": [
+    {
+      "comment_id": "focus_topic_strength",
+      "label": "Focus and Topic strength",
+      "short_text": "Your focus and topic keeps the explanation centered on a clear topic, which helps the reader understand the work with....",
+      "text": "Your focus and topic keeps the explanation centered on a clear topic, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "focus_topic",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "focus_topic",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "focus and topic",
+        "focus topic"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen focus and topic?",
+      "revision_action": "Keep this focus and topic move and apply it in another paragraph or section.",
+      "sort_order": 10,
+      "module_details": {},
+      "criterion_ids": [
+        "focus_topic"
+      ]
+    },
+    {
+      "comment_id": "focus_topic_developing",
+      "label": "Focus and Topic developing",
+      "short_text": "Your focus and topic is on the right track, but it will be stronger if you narrow the topic so the reader knows exact....",
+      "text": "Your focus and topic is on the right track, but it will be stronger if you narrow the topic so the reader knows exactly what is being explained.",
+      "category_id": "focus_topic",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "focus_topic",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "focus and topic",
+        "focus topic"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen focus and topic?",
+      "revision_action": "Narrow the topic so the reader knows exactly what is being explained.",
+      "sort_order": 20,
+      "module_details": {},
+      "criterion_ids": [
+        "focus_topic"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "development_strength",
+      "label": "Development strength",
+      "short_text": "Your development develops ideas with enough detail for the reader, which helps the reader understand the work with pr....",
+      "text": "Your development develops ideas with enough detail for the reader, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "development",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "development",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "development"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen development?",
+      "revision_action": "Keep this development move and apply it in another paragraph or section.",
+      "sort_order": 30,
+      "module_details": {},
+      "criterion_ids": [
+        "development"
+      ]
+    },
+    {
+      "comment_id": "development_developing",
+      "label": "Development developing",
+      "short_text": "Your development is on the right track, but it will be stronger if you add explanation, examples, or context where th....",
+      "text": "Your development is on the right track, but it will be stronger if you add explanation, examples, or context where the idea moves too quickly.",
+      "category_id": "development",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "development",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "development"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen development?",
+      "revision_action": "Add explanation, examples, or context where the idea moves too quickly.",
+      "sort_order": 40,
+      "module_details": {},
+      "criterion_ids": [
+        "development"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "evidence_examples_strength",
+      "label": "Evidence and Examples strength",
+      "short_text": "Your evidence and examples uses examples that make the explanation concrete, which helps the reader understand the wo....",
+      "text": "Your evidence and examples uses examples that make the explanation concrete, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "evidence_examples",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2",
+        "njsls-ela:RI.CR.11-12.1"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "evidence_examples",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "evidence and examples",
+        "evidence examples"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen evidence and examples?",
+      "revision_action": "Keep this evidence and examples move and apply it in another paragraph or section.",
+      "sort_order": 50,
+      "module_details": {},
+      "criterion_ids": [
+        "evidence_examples"
+      ]
+    },
+    {
+      "comment_id": "evidence_examples_developing",
+      "label": "Evidence and Examples developing",
+      "short_text": "Your evidence and examples is on the right track, but it will be stronger if you select examples that directly clarif....",
+      "text": "Your evidence and examples is on the right track, but it will be stronger if you select examples that directly clarify the topic.",
+      "category_id": "evidence_examples",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2",
+        "njsls-ela:RI.CR.11-12.1"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "evidence_examples",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "evidence and examples",
+        "evidence examples"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen evidence and examples?",
+      "revision_action": "Select examples that directly clarify the topic.",
+      "sort_order": 60,
+      "module_details": {},
+      "criterion_ids": [
+        "evidence_examples"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "organization_strength",
+      "label": "Organization strength",
+      "short_text": "Your organization guides the reader through the ideas in a logical order, which helps the reader understand the work ....",
+      "text": "Your organization guides the reader through the ideas in a logical order, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "organization",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "organization",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "organization"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen organization?",
+      "revision_action": "Keep this organization move and apply it in another paragraph or section.",
+      "sort_order": 70,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "comment_id": "organization_developing",
+      "label": "Organization developing",
+      "short_text": "Your organization is on the right track, but it will be stronger if you reorder or group ideas so each paragraph has ....",
+      "text": "Your organization is on the right track, but it will be stronger if you reorder or group ideas so each paragraph has a clear job.",
+      "category_id": "organization",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "organization",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "organization"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen organization?",
+      "revision_action": "Reorder or group ideas so each paragraph has a clear job.",
+      "sort_order": 80,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "transitions_strength",
+      "label": "Transitions strength",
+      "short_text": "Your transitions uses transitions that show relationships among ideas, which helps the reader understand the work wit....",
+      "text": "Your transitions uses transitions that show relationships among ideas, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "transitions",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "transitions",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "transitions"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen transitions?",
+      "revision_action": "Keep this transitions move and apply it in another paragraph or section.",
+      "sort_order": 90,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "comment_id": "transitions_developing",
+      "label": "Transitions developing",
+      "short_text": "Your transitions is on the right track, but it will be stronger if you add transition language that shows sequence, c....",
+      "text": "Your transitions is on the right track, but it will be stronger if you add transition language that shows sequence, cause, contrast, or emphasis.",
+      "category_id": "transitions",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "transitions",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "transitions"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen transitions?",
+      "revision_action": "Add transition language that shows sequence, cause, contrast, or emphasis.",
+      "sort_order": 100,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "domain_vocabulary_strength",
+      "label": "Domain Vocabulary strength",
+      "short_text": "Your domain vocabulary uses topic-specific vocabulary accurately, which helps the reader understand the work with pre....",
+      "text": "Your domain vocabulary uses topic-specific vocabulary accurately, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "domain_vocabulary",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2",
+        "njsls-ela:L.KL.11-12.2"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "domain_vocabulary",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "domain vocabulary"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen domain vocabulary?",
+      "revision_action": "Keep this domain vocabulary move and apply it in another paragraph or section.",
+      "sort_order": 110,
+      "module_details": {},
+      "criterion_ids": [
+        "language_style"
+      ]
+    },
+    {
+      "comment_id": "domain_vocabulary_developing",
+      "label": "Domain Vocabulary developing",
+      "short_text": "Your domain vocabulary is on the right track, but it will be stronger if you define or replace terms that may confuse....",
+      "text": "Your domain vocabulary is on the right track, but it will be stronger if you define or replace terms that may confuse the reader.",
+      "category_id": "domain_vocabulary",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2",
+        "njsls-ela:L.KL.11-12.2"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "domain_vocabulary",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "domain vocabulary"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen domain vocabulary?",
+      "revision_action": "Define or replace terms that may confuse the reader.",
+      "sort_order": 120,
+      "module_details": {},
+      "criterion_ids": [
+        "language_style"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "style_tone_strength",
+      "label": "Style and Tone strength",
+      "short_text": "Your style and tone matches language and tone to the task and audience, which helps the reader understand the work wi....",
+      "text": "Your style and tone matches language and tone to the task and audience, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "style_tone",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.KL.11-12.2",
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "style_tone",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "style and tone",
+        "style tone"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen style and tone?",
+      "revision_action": "Keep this style and tone move and apply it in another paragraph or section.",
+      "sort_order": 130,
+      "module_details": {},
+      "criterion_ids": [
+        "language_style"
+      ]
+    },
+    {
+      "comment_id": "style_tone_developing",
+      "label": "Style and Tone developing",
+      "short_text": "Your style and tone is on the right track, but it will be stronger if you replace casual or vague phrasing with more ....",
+      "text": "Your style and tone is on the right track, but it will be stronger if you replace casual or vague phrasing with more precise academic language.",
+      "category_id": "style_tone",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.KL.11-12.2",
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "style_tone",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "style and tone",
+        "style tone"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen style and tone?",
+      "revision_action": "Replace casual or vague phrasing with more precise academic language.",
+      "sort_order": 140,
+      "module_details": {},
+      "criterion_ids": [
+        "language_style"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "conclusion_strength",
+      "label": "Conclusion strength",
+      "short_text": "Your conclusion brings the piece back to its main point, which helps the reader understand the work with precision an....",
+      "text": "Your conclusion brings the piece back to its main point, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "conclusion",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "conclusion",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "conclusion"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen conclusion?",
+      "revision_action": "Keep this conclusion move and apply it in another paragraph or section.",
+      "sort_order": 150,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "comment_id": "conclusion_developing",
+      "label": "Conclusion developing",
+      "short_text": "Your conclusion is on the right track, but it will be stronger if you move beyond repeating the introduction by expla....",
+      "text": "Your conclusion is on the right track, but it will be stronger if you move beyond repeating the introduction by explaining why the idea matters.",
+      "category_id": "conclusion",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "conclusion",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "conclusion"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen conclusion?",
+      "revision_action": "Move beyond repeating the introduction by explaining why the idea matters.",
+      "sort_order": 160,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "conventions_strength",
+      "label": "Conventions strength",
+      "short_text": "Your conventions keeps sentence control from distracting the reader, which helps the reader understand the work with ....",
+      "text": "Your conventions keeps sentence control from distracting the reader, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "conventions",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "conventions",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "conventions"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen conventions?",
+      "revision_action": "Keep this conventions move and apply it in another paragraph or section.",
+      "sort_order": 170,
+      "module_details": {},
+      "criterion_ids": [
+        "conventions"
+      ]
+    },
+    {
+      "comment_id": "conventions_developing",
+      "label": "Conventions developing",
+      "short_text": "Your conventions is on the right track, but it will be stronger if you edit sentence boundaries, punctuation, or usag....",
+      "text": "Your conventions is on the right track, but it will be stronger if you edit sentence boundaries, punctuation, or usage patterns that interrupt meaning.",
+      "category_id": "conventions",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "conventions",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "conventions"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen conventions?",
+      "revision_action": "Edit sentence boundaries, punctuation, or usage patterns that interrupt meaning.",
+      "sort_order": 180,
+      "module_details": {},
+      "criterion_ids": [
+        "conventions"
+      ],
+      "severity_default": 1
+    },
+    {
+      "comment_id": "revision_next_steps_strength",
+      "label": "Revision Next Steps strength",
+      "short_text": "Your revision next steps identifies a useful next revision move, which helps the reader understand the work with prec....",
+      "text": "Your revision next steps identifies a useful next revision move, which helps the reader understand the work with precision and attention to complexity.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "positive",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "revision_next_steps",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "revision next steps"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen revision next steps?",
+      "revision_action": "Keep this revision next steps move and apply it in another paragraph or section.",
+      "sort_order": 190,
+      "module_details": {}
+    },
+    {
+      "comment_id": "revision_next_steps_developing",
+      "label": "Revision Next Steps developing",
+      "short_text": "Your revision next steps is on the right track, but it will be stronger if you choose one high-impact revision target....",
+      "text": "Your revision next steps is on the right track, but it will be stronger if you choose one high-impact revision target before editing smaller details.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "developing",
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "revision_next_steps",
+        "informational_writing"
+      ],
+      "hotwords": [
+        "revision next steps"
+      ],
+      "follow_up_prompt": "What is one place where you can strengthen revision next steps?",
+      "revision_action": "Choose one high-impact revision target before editing smaller details.",
+      "sort_order": 200,
+      "module_details": {},
+      "severity_default": 1
+    },
+    {
+      "comment_id": "focus_topic_hard_to_follow",
+      "label": "Focus and Topic hard to follow",
+      "short_text": "The focus and topic is difficult to follow right now.",
+      "text": "The focus and topic is difficult to follow right now. Revisit this part first so the reader can understand the purpose of the writing.",
+      "category_id": "focus_topic",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "negative",
+      "severity_default": 2,
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "focus_topic",
+        "informational_writing",
+        "priority_revision"
+      ],
+      "hotwords": [
+        "focus and topic"
+      ],
+      "teacher_note": "Use when focus and topic is a major barrier to understanding.",
+      "follow_up_prompt": "Where should the student begin revising focus and topic?",
+      "revision_action": "Rewrite the section that most affects focus and topic before polishing sentences.",
+      "sort_order": 210,
+      "module_details": {},
+      "criterion_ids": [
+        "focus_topic"
+      ]
+    },
+    {
+      "comment_id": "development_hard_to_follow",
+      "label": "Development hard to follow",
+      "short_text": "The development is difficult to follow right now.",
+      "text": "The development is difficult to follow right now. Revisit this part first so the reader can understand the purpose of the writing.",
+      "category_id": "development",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "negative",
+      "severity_default": 2,
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "development",
+        "informational_writing",
+        "priority_revision"
+      ],
+      "hotwords": [
+        "development"
+      ],
+      "teacher_note": "Use when development is a major barrier to understanding.",
+      "follow_up_prompt": "Where should the student begin revising development?",
+      "revision_action": "Rewrite the section that most affects development before polishing sentences.",
+      "sort_order": 220,
+      "module_details": {},
+      "criterion_ids": [
+        "development"
+      ]
+    },
+    {
+      "comment_id": "evidence_examples_hard_to_follow",
+      "label": "Evidence and Examples hard to follow",
+      "short_text": "The evidence and examples is difficult to follow right now.",
+      "text": "The evidence and examples is difficult to follow right now. Revisit this part first so the reader can understand the purpose of the writing.",
+      "category_id": "evidence_examples",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2",
+        "njsls-ela:RI.CR.11-12.1"
+      ],
+      "polarity": "negative",
+      "severity_default": 2,
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "evidence_examples",
+        "informational_writing",
+        "priority_revision"
+      ],
+      "hotwords": [
+        "evidence and examples"
+      ],
+      "teacher_note": "Use when evidence and examples is a major barrier to understanding.",
+      "follow_up_prompt": "Where should the student begin revising evidence and examples?",
+      "revision_action": "Rewrite the section that most affects evidence and examples before polishing sentences.",
+      "sort_order": 230,
+      "module_details": {},
+      "criterion_ids": [
+        "evidence_examples"
+      ]
+    },
+    {
+      "comment_id": "organization_hard_to_follow",
+      "label": "Organization hard to follow",
+      "short_text": "The organization is difficult to follow right now.",
+      "text": "The organization is difficult to follow right now. Revisit this part first so the reader can understand the purpose of the writing.",
+      "category_id": "organization",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.11-12.2"
+      ],
+      "polarity": "negative",
+      "severity_default": 2,
+      "include_in_feedback_default": true,
+      "student_facing": true,
+      "tags": [
+        "organization",
+        "informational_writing",
+        "priority_revision"
+      ],
+      "hotwords": [
+        "organization"
+      ],
+      "teacher_note": "Use when organization is a major barrier to understanding.",
+      "follow_up_prompt": "Where should the student begin revising organization?",
+      "revision_action": "Rewrite the section that most affects organization before polishing sentences.",
+      "sort_order": 240,
+      "module_details": {},
+      "criterion_ids": [
+        "organization"
+      ]
+    },
+    {
+      "comment_id": "conventions_next_revision_pass",
+      "label": "Conventions next revision pass",
+      "short_text": "For the next revision pass, focus on conventions: Revise one moment so the explanation addresses significance, comple....",
+      "text": "For the next revision pass, focus on conventions: Revise one moment so the explanation addresses significance, complexity, or audience impact.",
+      "category_id": "conventions",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.SS.11-12.1"
+      ],
+      "polarity": "neutral",
+      "include_in_feedback_default": false,
+      "student_facing": true,
+      "tags": [
+        "conventions",
+        "next_step"
+      ],
+      "hotwords": [
+        "revision",
+        "conventions"
+      ],
+      "follow_up_prompt": "What single revision move would most improve conventions?",
+      "revision_action": "Make one focused pass for conventions and then reread the full piece.",
+      "sort_order": 250,
+      "module_details": {},
+      "criterion_ids": [
+        "conventions"
+      ]
+    },
+    {
+      "comment_id": "revision_next_steps_next_revision_pass",
+      "label": "Revision Next Steps next revision pass",
+      "short_text": "For the next revision pass, focus on revision next steps: Revise one moment so the explanation addresses significance....",
+      "text": "For the next revision pass, focus on revision next steps: Revise one moment so the explanation addresses significance, complexity, or audience impact.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "informational",
+        "expository",
+        "explanatory",
+        "essay"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.11-12.4"
+      ],
+      "polarity": "neutral",
+      "include_in_feedback_default": false,
+      "student_facing": true,
+      "tags": [
+        "revision_next_steps",
+        "next_step"
+      ],
+      "hotwords": [
+        "revision",
+        "revision next steps"
+      ],
+      "follow_up_prompt": "What single revision move would most improve revision next steps?",
+      "revision_action": "Make one focused pass for revision next steps and then reread the full piece.",
+      "sort_order": 260,
+      "module_details": {}
+    }
+  ],
+  "created_at": "2026-06-30T00:00:00+00:00",
+  "updated_at": "2026-06-30T00:00:00+00:00",
+  "module_details": {
+    "starter_pack": "nj_ela_2023",
+    "grade_band": "11-12",
+    "notice": "These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+    "emphasis": "precise and knowledgeable claims, significance, logical sequencing of claims and counterclaims, strongest relevant evidence, avoidance of fallacies, synthesis, sophisticated style, audience awareness, complexity, ambiguity, nuance, and independent revision."
+  }
+}

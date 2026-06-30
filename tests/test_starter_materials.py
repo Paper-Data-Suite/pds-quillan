@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -23,6 +25,25 @@ from quillan.starter_materials import (
 )
 from quillan.tag_bank_writing import list_valid_tag_banks
 from quillan.tag_banks import load_tag_bank
+
+NJ_FAMILY_STEMS = (
+    "ela10_argument_writing",
+    "ela10_informational_writing",
+    "ela10_literary_analysis",
+    "ela10_research_writing",
+    "ela10_narrative_creative_writing",
+    "ela10_reflection_short_response",
+    "ela12_argument_writing",
+    "ela12_informational_writing",
+    "ela12_literary_analysis",
+    "ela12_research_writing",
+    "ela12_narrative_creative_writing",
+    "ela12_reflection_short_response",
+)
+NJ_COMMENT_FILES = {f"{stem}.json" for stem in NJ_FAMILY_STEMS}
+NJ_TAG_FILES = {f"{stem}_tags.json" for stem in NJ_FAMILY_STEMS}
+NJ_RUBRIC_FILES = {f"{stem}_rubric.json" for stem in NJ_FAMILY_STEMS}
+SNAKE_CASE_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
 def _menu_input(monkeypatch: pytest.MonkeyPatch, responses: list[str]) -> None:
@@ -52,10 +73,27 @@ def _file_tree(root: Path) -> tuple[tuple[str, str, bytes | None], ...]:
     return tuple(entries)
 
 
+def _load_material_source(material_source: Path) -> dict[str, Any]:
+    if "comment_banks" in material_source.parts:
+        return load_comment_bank(material_source)
+    if "tag_banks" in material_source.parts:
+        return load_tag_bank(material_source)
+    return load_rubric(material_source)
+
+
+def _standard_ids(data: dict[str, Any]) -> set[str]:
+    values: set[str] = set()
+    for field in ("comments", "tags", "criteria"):
+        for item in data.get(field, []):
+            if isinstance(item, dict):
+                values.update(str(value) for value in item.get("standard_ids", []))
+    return values
+
+
 def test_every_starter_material_validates_and_id_matches_filename() -> None:
     materials = discover_starter_materials()
 
-    assert len(materials) == 15
+    assert len(materials) == 51
     assert all(result.is_valid for result in validate_all_starter_materials(materials))
     for material in materials:
         if material.kind == "comment_bank":
@@ -67,10 +105,148 @@ def test_every_starter_material_validates_and_id_matches_filename() -> None:
         else:
             data = load_rubric(material.source_path)
             assert data["rubric_id"] == material.source_path.stem
-        assert "Synthetic starter" in data["description"]
-        assert not any("standard_ids" in item for item in data.get("comments", []))
-        assert not any("standard_ids" in item for item in data.get("tags", []))
-        assert not any("standard_ids" in item for item in data.get("criteria", []))
+        if material.material_id.startswith("ela"):
+            assert "2023 NJSLS-ELA" in data["description"]
+            assert _standard_ids(data)
+        else:
+            assert "Synthetic starter" in data["description"]
+            assert not any("standard_ids" in item for item in data.get("comments", []))
+            assert not any("standard_ids" in item for item in data.get("tags", []))
+            assert not any("standard_ids" in item for item in data.get("criteria", []))
+
+
+def test_nj_ela_starter_materials_are_discovered_by_type() -> None:
+    materials = discover_starter_materials()
+
+    comment_files = {
+        material.source_path.name
+        for material in materials
+        if material.kind == "comment_bank"
+    }
+    tag_files = {
+        material.source_path.name for material in materials if material.kind == "tag_bank"
+    }
+    rubric_files = {
+        material.source_path.name for material in materials if material.kind == "rubric"
+    }
+
+    assert NJ_COMMENT_FILES <= comment_files
+    assert NJ_TAG_FILES <= tag_files
+    assert NJ_RUBRIC_FILES <= rubric_files
+
+
+def test_nj_ela_metadata_is_structural_and_grade_appropriate() -> None:
+    for material in discover_starter_materials():
+        if not material.material_id.startswith("ela"):
+            continue
+        data = _load_material_source(material.source_path)
+        assert data["scope"] == "shared"
+        assert data["module_details"]["starter_pack"] == "nj_ela_2023"
+        assert all(
+            SNAKE_CASE_PATTERN.fullmatch(writing_type)
+            for writing_type in data["writing_types"]
+        )
+
+        if material.kind == "comment_bank":
+            assert data["categories"]
+            assert len(data["comments"]) >= 24
+            bank_writing_types = set(data["writing_types"])
+            for comment in data["comments"]:
+                assert set(comment.get("writing_types", bank_writing_types)) <= (
+                    bank_writing_types
+                )
+        elif material.kind == "tag_bank":
+            assert data["categories"]
+            assert len(data["tags"]) >= 20
+            bank_writing_types = set(data["writing_types"])
+            for tag in data["tags"]:
+                assert set(tag.get("writing_types", bank_writing_types)) <= (
+                    bank_writing_types
+                )
+        else:
+            assert data["criteria"]
+            assert all(criterion["levels"] for criterion in data["criteria"])
+
+        standard_ids = _standard_ids(data)
+        assert all(standard_id.startswith("njsls-ela:") for standard_id in standard_ids)
+        if material.material_id.startswith("ela10"):
+            assert not any("11-12" in standard_id for standard_id in standard_ids)
+            assert any("9-10" in standard_id for standard_id in standard_ids)
+        else:
+            assert not any("9-10" in standard_id for standard_id in standard_ids)
+            assert any("11-12" in standard_id for standard_id in standard_ids)
+
+
+def test_nj_ela_comment_tag_criterion_ids_match_family_rubrics() -> None:
+    materials_by_name = {
+        material.source_path.name: material for material in discover_starter_materials()
+    }
+
+    for stem in NJ_FAMILY_STEMS:
+        rubric = load_rubric(materials_by_name[f"{stem}_rubric.json"].source_path)
+        rubric_criteria = {
+            criterion["criterion_id"] for criterion in rubric["criteria"]
+        }
+
+        bank = load_comment_bank(materials_by_name[f"{stem}.json"].source_path)
+        for comment in bank["comments"]:
+            assert set(comment.get("criterion_ids", [])) <= rubric_criteria
+
+        tag_bank = load_tag_bank(materials_by_name[f"{stem}_tags.json"].source_path)
+        for tag in tag_bank["tags"]:
+            assert set(tag.get("criterion_ids", [])) <= rubric_criteria
+
+
+def test_nj_ela_core_category_smoke_coverage() -> None:
+    required_by_family = {
+        "argument_writing": {"claim", "evidence", "reasoning", "organization"},
+        "informational_writing": {
+            "focus_topic",
+            "development",
+            "evidence_examples",
+            "organization",
+        },
+        "literary_analysis": {
+            "textual_evidence",
+            "analysis_explanation",
+            "comparative_claim",
+            "synthesis",
+        },
+        "research_writing": {
+            "research_question",
+            "source_quality",
+            "source_integration",
+            "citation",
+        },
+        "narrative_creative_writing": {
+            "sequence_pacing",
+            "style_voice",
+            "line_breaks",
+            "sound",
+        },
+        "reflection_short_response": {
+            "text_connection",
+            "evidence",
+            "reflection",
+            "depth",
+        },
+    }
+
+    materials_by_name = {
+        material.source_path.name: material for material in discover_starter_materials()
+    }
+    for stem in NJ_FAMILY_STEMS:
+        family = stem.removeprefix("ela10_").removeprefix("ela12_")
+        required = required_by_family[family]
+        bank = load_comment_bank(materials_by_name[f"{stem}.json"].source_path)
+        tag_bank = load_tag_bank(materials_by_name[f"{stem}_tags.json"].source_path)
+
+        bank_categories = {category["category_id"] for category in bank["categories"]}
+        tag_categories = {
+            category["category_id"] for category in tag_bank["categories"]
+        }
+        assert required <= bank_categories
+        assert required <= tag_categories
 
 
 def test_starter_materials_avoid_obvious_real_or_placeholder_content() -> None:
@@ -97,28 +273,18 @@ def test_install_all_copies_only_review_material_files(tmp_path: Path) -> None:
 
     result = install_starter_materials(tmp_path, materials)
 
-    assert len(result.installed) == 15
+    assert len(result.installed) == 51
     assert not result.skipped_existing
-    assert len(list_valid_comment_banks(tmp_path)) == 5
-    assert len(list_valid_tag_banks(tmp_path)) == 5
-    assert len(list_valid_rubrics(tmp_path)) == 5
-    assert sorted(path.relative_to(tmp_path).parts[:2] for path in result.installed) == [
+    assert len(list_valid_comment_banks(tmp_path)) == 17
+    assert len(list_valid_tag_banks(tmp_path)) == 17
+    assert len(list_valid_rubrics(tmp_path)) == 17
+    assert {
+        path.relative_to(tmp_path).parts[:2] for path in result.installed
+    } == {
         ("shared", "comment_banks"),
-        ("shared", "comment_banks"),
-        ("shared", "comment_banks"),
-        ("shared", "comment_banks"),
-        ("shared", "comment_banks"),
-        ("shared", "rubrics"),
-        ("shared", "rubrics"),
-        ("shared", "rubrics"),
-        ("shared", "rubrics"),
-        ("shared", "rubrics"),
         ("shared", "tag_banks"),
-        ("shared", "tag_banks"),
-        ("shared", "tag_banks"),
-        ("shared", "tag_banks"),
-        ("shared", "tag_banks"),
-    ]
+        ("shared", "rubrics"),
+    }
     assert not (tmp_path / "classes").exists()
     assert not (tmp_path / "assignments").exists()
     assert not (tmp_path / "scans").exists()
@@ -176,7 +342,11 @@ def test_install_selected_one_of_each_type(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _patch_workspace(monkeypatch, tmp_path)
-    _menu_input(monkeypatch, ["1,6,11", "1"])
+    materials = discover_starter_materials()
+    comment_count = sum(1 for material in materials if material.kind == "comment_bank")
+    tag_count = sum(1 for material in materials if material.kind == "tag_bank")
+    selections = f"1,{comment_count + 1},{comment_count + tag_count + 1}"
+    _menu_input(monkeypatch, [selections, "1"])
 
     assert workflows.prompt_install_selected_starter_materials() == 0
 

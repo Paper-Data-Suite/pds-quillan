@@ -1,0 +1,537 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "tag_bank",
+  "tag_bank_id": "ela10_research_writing_tags",
+  "title": "English 10 Research Writing Tags",
+  "description": "English 10 starter tag bank for research writing aligned to grades 9-10 2023 NJSLS-ELA references. These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+  "scope": "shared",
+  "writing_types": [
+    "research",
+    "research_paper",
+    "informational",
+    "argument"
+  ],
+  "categories": [
+    {
+      "category_id": "research_question",
+      "label": "Research Question",
+      "description": "Reusable review items for research question.",
+      "sort_order": 10,
+      "module_details": {}
+    },
+    {
+      "category_id": "source_quality",
+      "label": "Source Quality",
+      "description": "Reusable review items for source quality.",
+      "sort_order": 20,
+      "module_details": {}
+    },
+    {
+      "category_id": "source_integration",
+      "label": "Source Integration",
+      "description": "Reusable review items for source integration.",
+      "sort_order": 30,
+      "module_details": {}
+    },
+    {
+      "category_id": "citation",
+      "label": "Citation",
+      "description": "Reusable review items for citation.",
+      "sort_order": 40,
+      "module_details": {}
+    },
+    {
+      "category_id": "synthesis",
+      "label": "Synthesis",
+      "description": "Reusable review items for synthesis.",
+      "sort_order": 50,
+      "module_details": {}
+    },
+    {
+      "category_id": "organization",
+      "label": "Organization",
+      "description": "Reusable review items for organization.",
+      "sort_order": 60,
+      "module_details": {}
+    },
+    {
+      "category_id": "academic_style",
+      "label": "Academic Style",
+      "description": "Reusable review items for academic style.",
+      "sort_order": 70,
+      "module_details": {}
+    },
+    {
+      "category_id": "revision_next_steps",
+      "label": "Revision Next Steps",
+      "description": "Reusable review items for revision next steps.",
+      "sort_order": 80,
+      "module_details": {}
+    }
+  ],
+  "tags": [
+    {
+      "tag_template_id": "research_question_strong",
+      "label": "Research Question strong",
+      "description": "Marks a strength related to research question.",
+      "category_id": "research_question",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WR.9-10.5"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 10,
+      "module_details": {},
+      "criterion_ids": [
+        "research_question"
+      ]
+    },
+    {
+      "tag_template_id": "research_question_needs_work",
+      "label": "Research Question needs work",
+      "description": "Marks a revision need related to research question.",
+      "category_id": "research_question",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WR.9-10.5"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about research question?",
+      "student_facing_default": true,
+      "sort_order": 20,
+      "module_details": {},
+      "criterion_ids": [
+        "research_question"
+      ]
+    },
+    {
+      "tag_template_id": "source_quality_strong",
+      "label": "Source Quality strong",
+      "description": "Marks a strength related to source quality.",
+      "category_id": "source_quality",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.SE.9-10.6"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 30,
+      "module_details": {},
+      "criterion_ids": [
+        "source_quality"
+      ]
+    },
+    {
+      "tag_template_id": "source_quality_needs_work",
+      "label": "Source Quality needs work",
+      "description": "Marks a revision need related to source quality.",
+      "category_id": "source_quality",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.SE.9-10.6"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about source quality?",
+      "student_facing_default": true,
+      "sort_order": 40,
+      "module_details": {},
+      "criterion_ids": [
+        "source_quality"
+      ]
+    },
+    {
+      "tag_template_id": "source_integration_strong",
+      "label": "Source Integration strong",
+      "description": "Marks a strength related to source integration.",
+      "category_id": "source_integration",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.SE.9-10.6"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 50,
+      "module_details": {},
+      "criterion_ids": [
+        "source_integration"
+      ]
+    },
+    {
+      "tag_template_id": "source_integration_needs_work",
+      "label": "Source Integration needs work",
+      "description": "Marks a revision need related to source integration.",
+      "category_id": "source_integration",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.SE.9-10.6"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about source integration?",
+      "student_facing_default": true,
+      "sort_order": 60,
+      "module_details": {},
+      "criterion_ids": [
+        "source_integration"
+      ]
+    },
+    {
+      "tag_template_id": "citation_strong",
+      "label": "Citation strong",
+      "description": "Marks a strength related to citation.",
+      "category_id": "citation",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.SE.9-10.6"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 70,
+      "module_details": {},
+      "criterion_ids": [
+        "citation"
+      ]
+    },
+    {
+      "tag_template_id": "citation_needs_work",
+      "label": "Citation needs work",
+      "description": "Marks a revision need related to citation.",
+      "category_id": "citation",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.SE.9-10.6"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about citation?",
+      "student_facing_default": true,
+      "sort_order": 80,
+      "module_details": {},
+      "criterion_ids": [
+        "citation"
+      ]
+    },
+    {
+      "tag_template_id": "synthesis_strong",
+      "label": "Synthesis strong",
+      "description": "Marks a strength related to synthesis.",
+      "category_id": "synthesis",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WR.9-10.5",
+        "njsls-ela:W.SE.9-10.6"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 90,
+      "module_details": {},
+      "criterion_ids": [
+        "synthesis"
+      ]
+    },
+    {
+      "tag_template_id": "synthesis_needs_work",
+      "label": "Synthesis needs work",
+      "description": "Marks a revision need related to synthesis.",
+      "category_id": "synthesis",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WR.9-10.5",
+        "njsls-ela:W.SE.9-10.6"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about synthesis?",
+      "student_facing_default": true,
+      "sort_order": 100,
+      "module_details": {},
+      "criterion_ids": [
+        "synthesis"
+      ]
+    },
+    {
+      "tag_template_id": "organization_strong",
+      "label": "Organization strong",
+      "description": "Marks a strength related to organization.",
+      "category_id": "organization",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.9-10.2"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 110,
+      "module_details": {},
+      "criterion_ids": [
+        "organization_style"
+      ]
+    },
+    {
+      "tag_template_id": "organization_needs_work",
+      "label": "Organization needs work",
+      "description": "Marks a revision need related to organization.",
+      "category_id": "organization",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.IW.9-10.2"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about organization?",
+      "student_facing_default": true,
+      "sort_order": 120,
+      "module_details": {},
+      "criterion_ids": [
+        "organization_style"
+      ]
+    },
+    {
+      "tag_template_id": "academic_style_strong",
+      "label": "Academic Style strong",
+      "description": "Marks a strength related to academic style.",
+      "category_id": "academic_style",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.KL.9-10.2",
+        "njsls-ela:L.SS.9-10.1"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 130,
+      "module_details": {},
+      "criterion_ids": [
+        "organization_style"
+      ]
+    },
+    {
+      "tag_template_id": "academic_style_needs_work",
+      "label": "Academic Style needs work",
+      "description": "Marks a revision need related to academic style.",
+      "category_id": "academic_style",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:L.KL.9-10.2",
+        "njsls-ela:L.SS.9-10.1"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about academic style?",
+      "student_facing_default": true,
+      "sort_order": 140,
+      "module_details": {},
+      "criterion_ids": [
+        "organization_style"
+      ]
+    },
+    {
+      "tag_template_id": "revision_next_steps_strong",
+      "label": "Revision Next Steps strong",
+      "description": "Marks a strength related to revision next steps.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.9-10.4"
+      ],
+      "polarity": "positive",
+      "student_facing_default": true,
+      "sort_order": 150,
+      "module_details": {}
+    },
+    {
+      "tag_template_id": "revision_next_steps_needs_work",
+      "label": "Revision Next Steps needs work",
+      "description": "Marks a revision need related to revision next steps.",
+      "category_id": "revision_next_steps",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WP.9-10.4"
+      ],
+      "polarity": "developing",
+      "severity_default": 1,
+      "teacher_note_prompt": "What should the student revise about revision next steps?",
+      "student_facing_default": true,
+      "sort_order": 160,
+      "module_details": {}
+    },
+    {
+      "tag_template_id": "research_question_missing",
+      "label": "Research Question missing",
+      "description": "Marks a significant gap related to research question.",
+      "category_id": "research_question",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.WR.9-10.5"
+      ],
+      "polarity": "negative",
+      "sort_order": 170,
+      "module_details": {},
+      "severity_default": 2,
+      "criterion_ids": [
+        "research_question"
+      ]
+    },
+    {
+      "tag_template_id": "source_quality_next_step",
+      "label": "Source Quality next step",
+      "description": "Marks a neutral next step related to source quality.",
+      "category_id": "source_quality",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.SE.9-10.6"
+      ],
+      "polarity": "neutral",
+      "sort_order": 180,
+      "module_details": {},
+      "teacher_note_prompt": "What is the next step for source quality?",
+      "criterion_ids": [
+        "source_quality"
+      ]
+    },
+    {
+      "tag_template_id": "source_integration_missing",
+      "label": "Source Integration missing",
+      "description": "Marks a significant gap related to source integration.",
+      "category_id": "source_integration",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.SE.9-10.6"
+      ],
+      "polarity": "negative",
+      "sort_order": 190,
+      "module_details": {},
+      "severity_default": 2,
+      "criterion_ids": [
+        "source_integration"
+      ]
+    },
+    {
+      "tag_template_id": "citation_next_step",
+      "label": "Citation next step",
+      "description": "Marks a neutral next step related to citation.",
+      "category_id": "citation",
+      "writing_types": [
+        "research",
+        "research_paper",
+        "informational",
+        "argument"
+      ],
+      "standard_ids": [
+        "njsls-ela:W.SE.9-10.6"
+      ],
+      "polarity": "neutral",
+      "sort_order": 200,
+      "module_details": {},
+      "teacher_note_prompt": "What is the next step for citation?",
+      "criterion_ids": [
+        "citation"
+      ]
+    }
+  ],
+  "created_at": "2026-06-30T00:00:00+00:00",
+  "updated_at": "2026-06-30T00:00:00+00:00",
+  "module_details": {
+    "starter_pack": "nj_ela_2023",
+    "grade_band": "9-10",
+    "notice": "These materials are teacher-editable starter review materials aligned to common high school ELA writing tasks and 2023 NJSLS-ELA references. They are not official state curriculum, not district grading policy, and not automatic evaluation.",
+    "emphasis": "clear claims, relevant evidence, clear explanation, organized ideas, transitions, conventions, basic synthesis, coherent narrative sequence, and reflection."
+  }
+}
