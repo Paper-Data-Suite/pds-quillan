@@ -222,7 +222,7 @@ def test_review_workflow_selects_context_and_shows_read_only_summary(
         for path in workspace.rglob("*")
         if path.is_file()
     )
-    _menu_input(monkeypatch, ["2", "1", "1", "1", "1", "1", "11", "6", "", "4", "6"])
+    _menu_input(monkeypatch, ["2", "1", "1", "1", "1", "1", "12", "6", "", "4", "6"])
 
     assert main(["menu"]) == 0
 
@@ -267,7 +267,7 @@ def test_review_summary_includes_existing_review_record_counts(
     review_before = review_path.read_bytes()
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "11", "6", "", "4", "6"],
+        ["2", "1", "1", "1", "1", "1", "12", "6", "", "4", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -277,6 +277,62 @@ def test_review_summary_includes_existing_review_record_counts(
     assert "Review record state: in_progress" in output
     assert "Notes: 1" in output
     assert "Tags: 0" in output
+    assert review_path.read_bytes() == review_before
+
+
+def test_review_menu_views_current_review_details_read_only(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    review = _review_record()
+    review["tags"] = [
+        {
+            "tag_id": "tag_0001",
+            "label": "Clear evidence",
+            "polarity": "positive",
+            "location": {"type": "paragraph", "value": 2},
+            "created_at": TIMESTAMP,
+            "module_details": {},
+        }
+    ]
+    review["comments"] = [
+        {
+            "comment_record_id": "comment_record_0001",
+            "label": "Explain evidence",
+            "text": "Explain how this evidence supports the claim.",
+            "source": "custom",
+            "include_in_feedback": True,
+            "location": {"type": "paragraph", "value": [3, 4]},
+            "created_at": TIMESTAMP,
+            "module_details": {},
+        }
+    ]
+    review_path = (
+        workspace
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "submissions"
+        / STUDENT_ID
+        / "review.json"
+    )
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+    review_before = review_path.read_bytes()
+
+    _menu_input(
+        monkeypatch,
+        ["2", "1", "1", "1", "1", "1", "2", "", "12", "6", "", "4", "6"],
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Current Review Details" in output
+    assert "[positive] Clear evidence" in output
+    assert "Target: Paragraph 2" in output
+    assert "Explain evidence" in output
+    assert "Target: Paragraphs 3-4" in output
     assert review_path.read_bytes() == review_before
 
 
@@ -315,7 +371,7 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
     )
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "", "11", "6", "", "4", "6"],
+        ["2", "1", "1", "1", "1", "1", "1", "", "12", "6", "", "4", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -361,10 +417,10 @@ def test_review_menu_adds_teacher_note_to_review_record(
             "1",
             "1",
             "1",
-            "4",
+            "5",
             "This is a test note.",
             "",
-            "11",
+            "12",
             "6",
             "",
             "4",
@@ -404,11 +460,11 @@ def test_review_menu_updates_submission_review_state(
             "1",
             "1",
             "1",
-            "8",
+            "9",
             "in_progress",
             "1",
             "",
-            "11",
+            "12",
             "6",
             "",
             "4",
@@ -456,12 +512,12 @@ def test_review_menu_excludes_submission_page_without_touching_review_record(
             "1",
             "1",
             "1",
-            "3",
+            "4",
             "1",
             "1",
             "1",
             "",
-            "11",
+            "12",
             "6",
             "",
             "4",

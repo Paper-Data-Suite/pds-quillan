@@ -272,10 +272,24 @@ Allowed location types are:
 * `custom`.
 
 For `whole_submission`, `value` must be `null`. For `page`, `paragraph`,
-`sentence`, and `line`, `value` must be a positive integer. For `section`,
-`scene`, `stanza`, and `custom`, `value` must be either a positive integer or
-a non-empty string. A `page` location must agree with `page_number` when both
-are present.
+`sentence`, and `line`, a single-value `value` must be a positive integer.
+For `paragraph`, `value` may also be a non-empty list of unique positive
+integers:
+
+```json
+{
+  "type": "paragraph",
+  "value": [2, 3, 4]
+}
+```
+
+The preferred convention is to store one paragraph as an integer and multiple
+paragraphs as a list. Existing single-integer paragraph locations remain
+valid. For `section`, `scene`, `stanza`, and `custom`, `value` must be either
+a positive integer or a non-empty string. A `page` location must agree with
+`page_number` when both are present. Paragraph targets are teacher-entered
+metadata; Quillan does not parse writing, count paragraphs, run OCR, or infer
+where a tag applies.
 
 ### Reusable Tag Snapshots
 
@@ -450,6 +464,11 @@ Each comment contains:
   "text": "The evidence is relevant, but the explanation needs to show more clearly how it supports the claim.",
   "source": "comment_bank",
   "include_in_feedback": true,
+  "page_number": 1,
+  "location": {
+    "type": "paragraph",
+    "value": [2, 3]
+  },
   "created_at": "2026-06-22T00:00:00+00:00",
   "module_details": {}
 }
@@ -468,8 +487,11 @@ Required comment fields are:
 Optional comment fields are:
 
 * `bank_id`;
-* `comment_id`; and
-* `standard_id`.
+* `comment_id`;
+* `standard_id`;
+* `page_number`;
+* `evidence_id`; and
+* `location`.
 
 Comment field rules are:
 
@@ -480,6 +502,13 @@ Comment field rules are:
   globally unique across comment banks.
 * `standard_id`, when present, is durable pds-core provenance for the
   associated standard.
+* `page_number`, when present, is a positive integer.
+* `evidence_id`, when present, is a non-empty reference to the submission
+  manifest as described above.
+* `location`, when present, uses the same controlled shape and paragraph
+  rules as tag locations. Comments may target a paragraph, multiple
+  paragraphs, a page, page plus paragraphs, evidence, or the whole
+  submission.
 * `label` and `text` are non-empty strings.
 * `source` is one of `comment_bank` or `custom`.
 * `include_in_feedback` is a boolean expressing the teacher's export choice.
@@ -492,9 +521,12 @@ Source-specific rules are:
 * `custom` comments must omit `bank_id`, `comment_id`, and `standard_id`.
 
 Comments are teacher-selected or teacher-entered; they are not generated from
-student writing or supplied as AI judgments. Comments are append-only for the
-MVP. Editing, deletion, and toggling export inclusion are reserved for future
-explicit workflows, which must not silently erase other comment records.
+student writing or supplied as AI judgments. Comment targets are optional,
+teacher-entered context; Quillan does not parse student writing to determine
+paragraph numbers or infer which paragraph a comment applies to. Comments are
+append-only for the MVP. Editing, deletion, and toggling export inclusion are
+reserved for future explicit workflows, which must not silently erase other
+comment records.
 
 For a shared-bank selection, `source` must be `"comment_bank"`. `bank_id` is
 provenance metadata only: validation does not load or look up the bank file.
@@ -618,8 +650,10 @@ quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity
 
 It appends one teacher-entered tag to `tags`, using sequential IDs such as
 `tag_0001`. Optional references to pages and evidence IDs are validated
-against the adjacent submission manifest. Optional standard references use
-shared `pds-core` `standard_id` values from the workspace standards library.
+against the adjacent submission manifest. Optional paragraph targets may name
+one paragraph or multiple paragraphs, but they are not checked against parsed
+student writing. Optional standard references use shared `pds-core`
+`standard_id` values from the workspace standards library.
 Reusable comment references remain Quillan-owned module data; their labels and
 polarities must match the stored Quillan comment/profile values.
 
@@ -674,6 +708,11 @@ missing review record using the same state and preservation rules as notes and
 tags, and does not mutate the source bank, submission manifest, evidence, or
 retained scans. It does not export feedback, select comments automatically,
 analyze writing, score work, or infer mastery.
+
+Selected comments may also store optional `page_number`, `evidence_id`, and
+`location` fields using the same target model as tags. Page and evidence
+references are validated against the adjacent submission manifest when
+supplied. Paragraph numbers are teacher-entered metadata only.
 
 ## Derived Artifacts and Historical Names
 

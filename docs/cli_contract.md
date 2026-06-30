@@ -595,6 +595,29 @@ JSON files only into `shared/comment_banks/`, `shared/tag_banks/`, and
 `shared/rubrics/`. Existing files are skipped by default, and bulk overwrite
 requires the exact confirmation text `OVERWRITE`.
 
+Selected Student Review presents the assembled student's review workspace as:
+
+```text
+1. Open submission evidence
+2. View current review details
+3. Record minimum requirement checks
+4. Manage submission pages
+5. Add teacher note
+6. Add structured tag
+7. Select reusable comment
+8. Set criterion score
+9. Update submission review state
+10. Export student feedback
+11. Refresh summary
+12. Back
+```
+
+View current review details is terminal-only and read-only. It displays the
+current `review.json` contents for the selected student, including requirement
+checks, notes, tags, comments, scores, comment feedback-inclusion settings,
+and tag/comment targets. It does not generate an export file and does not
+modify `review.json`, `submission.json`, or evidence files.
+
 Selected Student Review includes Manage Submission Pages. Teachers can exclude
 a page from active review, restore an excluded page, or mark a page as needing
 rescan after confirmation. These actions update only the selected student's
@@ -919,6 +942,13 @@ polarity, review state, and workspace-relative review-record path.
 The command never mutates the submission manifest, routed evidence, or
 retained source scans, and it does not score, analyze, or generate feedback.
 
+The guided Selected Student Review tag flow uses teacher-facing target prompts
+instead of raw JSON. Teachers may choose whole submission, specific
+paragraph(s), a specific page, page plus paragraph(s), skip location, or Back.
+Paragraph input accepts values such as `2`, `2-4`, `2,4,6`, and `2, 4-6`.
+Targets are teacher-entered metadata; Quillan does not parse writing, run OCR,
+use AI, count paragraphs, or infer where a tag belongs.
+
 ## Reusable Comment Selection
 
 ```powershell
@@ -927,6 +957,13 @@ quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --c
 
 This direct command validates a shared comment bank and appends one
 teacher-selected student-facing comment to canonical `review.json`.
+
+In the guided Selected Student Review reusable-comment flow, the teacher is
+also prompted for the same optional target choices used by tags. The
+confirmation screen shows the selected comment text, target, and
+include-in-feedback setting before writing. Comment targets are stored in
+`review.json.comments` as optional `page_number`, `evidence_id`, and
+`location` fields.
 
 Optional flags are:
 

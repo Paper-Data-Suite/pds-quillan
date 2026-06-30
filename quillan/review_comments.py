@@ -26,6 +26,7 @@ from quillan.review_record_paths import (
     review_record_path,
     write_review_record,
 )
+from quillan.review_targets import ReviewTargetError, build_location
 from quillan.submission_manifest import (
     SubmissionManifestError,
     load_submission_manifest,
@@ -71,12 +72,22 @@ def add_review_comment(
     comment_id: str,
     standard_id: str | None = None,
     include_in_feedback: bool | None = None,
+    page_number: int | None = None,
+    evidence_id: str | None = None,
+    location_type: str | None = None,
+    location_value: int | list[int] | str | None = None,
     created_at: datetime | str | None = None,
 ) -> AddedReviewComment:
     """Append one snapshotted shared-bank comment to a review record."""
     normalized_bank_id = _normalize_identifier(bank_id, "bank_id")
     normalized_comment_id = _normalize_identifier(comment_id, "comment_id")
     normalized_standard = _normalize_optional_string(standard_id, "standard_id")
+    normalized_evidence = _normalize_optional_string(evidence_id, "evidence_id")
+    _validate_page_number(page_number)
+    try:
+        location = build_location(location_type, location_value, page_number)
+    except ReviewTargetError as error:
+        raise ReviewCommentError(str(error)) from error
     if include_in_feedback is not None and not isinstance(
         include_in_feedback, bool
     ):
@@ -149,6 +160,19 @@ def add_review_comment(
     _validate_identity(
         manifest, "Submission manifest", class_id, assignment_id, student_id
     )
+    _validate_manifest_references(
+        manifest,
+        page_number=(
+            page_number
+            if page_number is not None
+            else (
+                location["value"]
+                if location is not None and location["type"] == "page"
+                else None
+            )
+        ),
+        evidence_id=normalized_evidence,
+    )
 
     if record_path.exists():
         try:
@@ -197,6 +221,18 @@ def add_review_comment(
         "created_at": normalized_created_at,
         "module_details": {},
     }
+    optional_target_fields = {
+        "page_number": page_number,
+        "evidence_id": normalized_evidence,
+        "location": location,
+    }
+    selected_comment.update(
+        {
+            field: value
+            for field, value in optional_target_fields.items()
+            if value is not None
+        }
+    )
     if selected_standard is not None:
         selected_comment["standard_id"] = selected_standard
     updated_review["comments"].append(selected_comment)
@@ -270,6 +306,42 @@ def _normalize_optional_string(value: str | None, field: str) -> str | None:
     if not isinstance(value, str) or not value.strip():
         raise ReviewCommentError(f"{field} must be a non-empty string.")
     return value.strip()
+
+
+def _validate_page_number(value: int | None) -> None:
+    if value is not None and (
+        isinstance(value, bool) or not isinstance(value, int) or value < 1
+    ):
+        raise ReviewCommentError("page_number must be a positive integer.")
+
+
+def _validate_manifest_references(
+    manifest: dict[str, Any],
+    *,
+    page_number: int | None,
+    evidence_id: str | None,
+) -> None:
+    pages = {page["page_number"]: page for page in manifest["pages"]}
+    if page_number is not None and page_number not in pages:
+        raise ReviewCommentError(
+            f"page_number {page_number} does not exist in the submission manifest."
+        )
+    if evidence_id is None:
+        return
+    evidence_pages = {
+        candidate["evidence_id"]: page["page_number"]
+        for page in manifest["pages"]
+        for candidate in page["evidence"]
+    }
+    if evidence_id not in evidence_pages:
+        raise ReviewCommentError(
+            f"evidence_id {evidence_id!r} does not exist in the submission manifest."
+        )
+    if page_number is not None and evidence_pages[evidence_id] != page_number:
+        raise ReviewCommentError(
+            f"evidence_id {evidence_id!r} occurs on page "
+            f"{evidence_pages[evidence_id]}, not page {page_number}."
+        )
 
 
 def _normalize_timestamp(value: datetime | str | None) -> str:
