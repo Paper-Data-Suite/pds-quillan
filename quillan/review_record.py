@@ -30,6 +30,9 @@ REQUIRED_REVIEW_FIELDS: Final[frozenset[str]] = frozenset(
         "module_details",
     }
 )
+OPTIONAL_REVIEW_FIELDS: Final[frozenset[str]] = frozenset(
+    {"requirement_checks"}
+)
 REQUIRED_NOTE_FIELDS: Final[frozenset[str]] = frozenset(
     {"note_id", "text", "created_at", "updated_at", "module_details"}
 )
@@ -78,6 +81,20 @@ REQUIRED_COMMENT_FIELDS: Final[frozenset[str]] = frozenset(
 )
 OPTIONAL_COMMENT_FIELDS: Final[frozenset[str]] = frozenset(
     {"bank_id", "comment_id", "standard_id"}
+)
+REQUIRED_REQUIREMENT_CHECK_FIELDS: Final[frozenset[str]] = frozenset(
+    {
+        "requirement_check_id",
+        "requirement_key",
+        "label",
+        "expected",
+        "met",
+        "updated_at",
+        "module_details",
+    }
+)
+OPTIONAL_REQUIREMENT_CHECK_FIELDS: Final[frozenset[str]] = frozenset(
+    {"teacher_note"}
 )
 
 ALLOWED_REVIEW_STATES: Final[frozenset[str]] = frozenset(
@@ -147,7 +164,9 @@ def validate_review_record(record: dict[str, Any]) -> None:
     """Validate the intrinsic version 1 submission review record contract."""
     if not isinstance(record, dict):
         raise ReviewRecordError("Review record must be an object.")
-    _validate_fields(record, REQUIRED_REVIEW_FIELDS, frozenset(), "review record")
+    _validate_fields(
+        record, REQUIRED_REVIEW_FIELDS, OPTIONAL_REVIEW_FIELDS, "review record"
+    )
     _validate_exact_value(record["schema_version"], "schema_version", "1")
     _validate_exact_value(record["module"], "module", "quillan")
     _validate_exact_value(
@@ -172,6 +191,8 @@ def validate_review_record(record: dict[str, Any]) -> None:
     _validate_tags(record["tags"])
     _validate_scores(record["scores"])
     _validate_comments(record["comments"])
+    if "requirement_checks" in record:
+        _validate_requirement_checks(record["requirement_checks"])
 
 
 def _validate_submission_manifest_path(record: dict[str, Any]) -> None:
@@ -402,6 +423,41 @@ def _validate_comments(value: Any) -> None:
         _validate_json_object(item["module_details"], f"{context}.module_details")
 
 
+def _validate_requirement_checks(value: Any) -> None:
+    checks = _validate_array(value, "requirement_checks")
+    seen_ids: set[str] = set()
+    seen_keys: set[str] = set()
+    for index, check in enumerate(checks):
+        context = f"requirement_checks[{index}]"
+        item = _validate_record(check, context)
+        _validate_fields(
+            item,
+            REQUIRED_REQUIREMENT_CHECK_FIELDS,
+            OPTIONAL_REQUIREMENT_CHECK_FIELDS,
+            context,
+        )
+        _validate_unique_local_id(
+            item["requirement_check_id"],
+            f"{context}.requirement_check_id",
+            seen_ids,
+        )
+        _validate_unique_local_id(
+            item["requirement_key"],
+            f"{context}.requirement_key",
+            seen_keys,
+        )
+        _validate_non_empty_string(item["label"], f"{context}.label")
+        _validate_requirement_expected(item["expected"], f"{context}.expected")
+        if not isinstance(item["met"], bool):
+            raise ReviewRecordError(f"Field '{context}.met' must be a boolean.")
+        if "teacher_note" in item:
+            _validate_non_empty_string(
+                item["teacher_note"], f"{context}.teacher_note"
+            )
+        _validate_timestamp(item["updated_at"], f"{context}.updated_at")
+        _validate_json_object(item["module_details"], f"{context}.module_details")
+
+
 def _validate_comment_provenance(
     item: dict[str, Any], source: str, context: str
 ) -> None:
@@ -523,6 +579,20 @@ def _validate_finite_number(value: Any, field: str) -> float:
     ):
         raise ReviewRecordError(f"Field '{field}' must be a finite number.")
     return float(value)
+
+
+def _validate_requirement_expected(value: Any, field: str) -> None:
+    if isinstance(value, str) and value.strip():
+        return
+    if (
+        not isinstance(value, bool)
+        and isinstance(value, (int, float))
+        and math.isfinite(value)
+    ):
+        return
+    raise ReviewRecordError(
+        f"Field '{field}' must be a non-empty string or finite number."
+    )
 
 
 def _validate_allowed_value(

@@ -99,7 +99,7 @@ A **retained source scan** is the canonical active source copy Quillan keeps dur
 
 A **student submission manifest** is the structured record connecting one student and assignment to pages, page states, selected evidence, alternate evidence, and provenance.
 
-A **review record** is the teacher-controlled `review.json` containing notes, tags, selected comments, and criterion scores.
+A **review record** is the teacher-controlled `review.json` containing notes, tags, selected comments, criterion scores, and teacher-entered requirement checks.
 
 An **export** is a derived artifact produced from canonical records.
 
@@ -119,7 +119,7 @@ The supported sequence is:
 10. Quillan assembles submission manifests from routed evidence.
 11. The teacher lists submission status.
 12. The teacher opens selected evidence locally.
-13. The teacher adds notes, structured tags, reusable comments, and scores.
+13. The teacher records minimum requirement checks and adds notes, structured tags, reusable comments, and scores.
 14. The teacher updates lightweight submission review state when appropriate.
 15. The teacher exports student feedback, class review summary, and standards summary.
 
@@ -265,20 +265,21 @@ The selected-student review menu is:
 
 ```text
 1. Open submission evidence
-2. Manage submission pages
-3. Add teacher note
-4. Add structured tag
-5. Select reusable comment
-6. Set criterion score
-7. Update submission review state
-8. Export student feedback
-9. Refresh summary
-10. Back
+2. Record minimum requirement checks
+3. Manage submission pages
+4. Add teacher note
+5. Add structured tag
+6. Select reusable comment
+7. Set criterion score
+8. Update submission review state
+9. Export student feedback
+10. Refresh summary
+11. Back
 ```
 
 These guided actions reuse the same underlying services and data contracts as the direct CLI commands. The menu does not implement separate export logic, scoring logic, routing logic, or AI logic.
 
-Review mode is selection-first. Teacher notes open with private-note guidance and safe Back behavior. Reusable comments are selected by comment bank, category, and comment, with label and feedback preview shown before writing. Reusable tags are selected by tag bank, category, and tag template, with a custom one-off fallback. Rubric scoring uses the assignment's resolved shared rubric when available, then asks the teacher to choose a criterion and level before confirming the saved score; custom scoring remains available when the rubric is missing or does not contain the needed criterion.
+Review mode is selection-first. Selection screens clear between major levels so the current student, assignment, bank, category, or criterion context is visible without old summaries above it. `B. Back` returns to the immediate previous selection screen. Teacher notes open with private-note guidance and safe Back behavior. Minimum requirement checks are generated from assignment `basic_requirements` and stored as teacher-entered booleans in `review.json.requirement_checks`; Quillan does not count words or paragraphs, parse writing, run OCR, use AI, infer requirement completion, or change scores from those checks. Reusable comments are selected by comment bank, category, and comment, with label and feedback preview shown before writing. Reusable tags are selected by tag bank, category, and tag template, with a custom one-off fallback. Rubric scoring uses the assignment's resolved shared rubric when available, then asks the teacher to choose a criterion and level before confirming the saved score; custom scoring remains available when the rubric is missing or does not contain the needed criterion.
 
 Review-time standards metadata is display-only. When reusable comments or tags reference durable pds-core `standard_id` values, Quillan may resolve readable code/name metadata through pds-core read-only helpers for display. It still stores durable IDs in review records and does not create, import, edit, retire, reactivate, or authoritatively validate standards.
 
@@ -909,7 +910,7 @@ Quillan does not currently provide:
 * automatic mastery calculation;
 * automatic evidence selection among duplicates;
 * automatic review-state decisions;
-* complete requirements-checking workflows;
+* automatic requirements evaluation;
 * recursive raw scan folder intake;
 * production inbox draining;
 * source cleanup/archive automation;

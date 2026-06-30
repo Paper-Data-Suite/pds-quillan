@@ -15,7 +15,8 @@ manifest:
 * `submission.json` answers what evidence exists, where it came from, which
   evidence is selected, and what evidence-management state it is in.
 * `review.json` answers what the teacher recorded about that evidence,
-  including notes, tags, scores, selected comments, and review/export state.
+  including notes, tags, scores, selected comments, requirement checks, and
+  review/export state.
 
 Teacher review must not rewrite or duplicate the evidence manifest. In
 particular, `review.json` references evidence by `evidence_id` and optional
@@ -45,14 +46,17 @@ Every version `1` review record contains:
   "tags": [],
   "scores": [],
   "comments": [],
+  "requirement_checks": [],
   "created_at": "2026-06-22T00:00:00+00:00",
   "updated_at": "2026-06-22T00:00:00+00:00",
   "module_details": {}
 }
 ```
 
-All fields shown above are required, including arrays that are initially
-empty.
+All fields shown above except `requirement_checks` are required, including
+arrays that are initially empty. `requirement_checks` is optional for older
+schema version `1` records; new records written by current review workflows
+include it as an empty array until the teacher records checks.
 
 Field requirements are:
 
@@ -66,6 +70,8 @@ Field requirements are:
 * `review_state`: one of the controlled values below;
 * `notes`, `tags`, `scores`, and `comments`: arrays of the records defined
   below;
+* `requirement_checks`: optional array of teacher-entered assignment
+  requirement checks;
 * `created_at`: the review-record creation timestamp;
 * `updated_at`: the timestamp of the most recent change anywhere in the
   review record; and
@@ -94,9 +100,10 @@ classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submissi
 ```
 
 Review-local identifiers such as `note_id`, `tag_id`, `score_id`, and
-`comment_record_id` are opaque, non-empty strings. Each identifier must be
-unique within its own array. Consumers must not derive ordering, timestamps,
-or meaning from an identifier's spelling.
+`comment_record_id` are opaque, non-empty strings. Requirement checks use
+`requirement_check_id`. Each identifier must be unique within its own array.
+Consumers must not derive ordering, timestamps, or meaning from an
+identifier's spelling.
 
 When present:
 
@@ -370,6 +377,60 @@ reference that changes when the rubric is later edited, and rubric level
 `student_facing_feedback` does not automatically create a comment or feedback
 export entry.
 
+## Requirement Checks
+
+`requirement_checks` records teacher-entered boolean checks against the
+assignment's `basic_requirements`. Quillan prompts from configured
+`paragraphs_min`, `paragraphs_max`, `word_count_min`, `word_count_max`, and
+individual `required_elements`, but it does not count paragraphs, count words,
+parse writing, run OCR, or use AI. The teacher records whether each
+requirement is met.
+
+Example:
+
+```json
+{
+  "requirement_check_id": "requirement_check_0001",
+  "requirement_key": "paragraphs_min",
+  "label": "Minimum paragraphs",
+  "expected": 5,
+  "met": true,
+  "updated_at": "2026-06-29T00:00:00+00:00",
+  "module_details": {}
+}
+```
+
+Required elements use a key that includes the element value:
+
+```json
+{
+  "requirement_check_id": "requirement_check_0002",
+  "requirement_key": "required_elements:thesis_statement",
+  "label": "Required element: thesis_statement",
+  "expected": "thesis_statement",
+  "met": false,
+  "updated_at": "2026-06-29T00:00:00+00:00",
+  "module_details": {},
+  "teacher_note": "Missing a clear thesis statement."
+}
+```
+
+Field requirements:
+
+* `requirement_check_id` is unique within `requirement_checks`;
+* `requirement_key` is non-empty and unique within `requirement_checks`;
+* `label` is a non-empty teacher-facing label;
+* `expected` is a finite number or non-empty string copied from assignment
+  configuration;
+* `met` is a boolean;
+* `updated_at` is the last teacher update timestamp; and
+* `module_details` is an object.
+
+Requirement checks are mutable by `requirement_key`. Updating a check
+preserves its `requirement_check_id`, replaces the recorded boolean and
+optional note, updates top-level `updated_at`, and preserves notes, tags,
+scores, comments, review state semantics, and evidence references.
+
 ## Comments
 
 `comments` contains teacher-selected reusable language or teacher-entered
@@ -616,8 +677,8 @@ analyze writing, score work, or infer mastery.
 
 ## Derived Artifacts and Historical Names
 
-`review.json` is the canonical active v0.7 teacher-review record for notes,
-tags, criterion scores, and selected comments.
+`review.json` is the canonical active teacher-review record for notes, tags,
+criterion scores, selected comments, and teacher-entered requirement checks.
 
 Earlier design documents used separate `tags.json` and `scores.json` files.
 Those names are historical design background, not alternate active v0.7
@@ -630,9 +691,10 @@ across those files.
 artifacts. They may be
 generated from teacher-controlled review records, but they do
 not replace `review.json` and are not authoritative independent evidence.
-`requirements.json` remains a separate reserved structural-check record
-because requirements checks are not teacher evaluation artifacts in this
-schema.
+Earlier design documents reserved `requirements.json` for structural checks.
+Current teacher-entered assignment requirement checks are stored in
+`review.json.requirement_checks`; implementations must not write a sibling
+`requirements.json` for this workflow.
 
 The Markdown feedback export requires valid matching canonical
 `submission.json` and `review.json` records and uses only snapshotted review

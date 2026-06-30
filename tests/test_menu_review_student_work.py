@@ -222,7 +222,7 @@ def test_review_workflow_selects_context_and_shows_read_only_summary(
         for path in workspace.rglob("*")
         if path.is_file()
     )
-    _menu_input(monkeypatch, ["2", "1", "1", "1", "1", "1", "10", "6", "", "4", "6"])
+    _menu_input(monkeypatch, ["2", "1", "1", "1", "1", "1", "11", "6", "", "4", "6"])
 
     assert main(["menu"]) == 0
 
@@ -267,7 +267,7 @@ def test_review_summary_includes_existing_review_record_counts(
     review_before = review_path.read_bytes()
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "10", "6", "", "4", "6"],
+        ["2", "1", "1", "1", "1", "1", "11", "6", "", "4", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -315,7 +315,7 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
     )
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "", "10", "6", "", "4", "6"],
+        ["2", "1", "1", "1", "1", "1", "1", "", "11", "6", "", "4", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -361,10 +361,10 @@ def test_review_menu_adds_teacher_note_to_review_record(
             "1",
             "1",
             "1",
-            "3",
+            "4",
             "This is a test note.",
             "",
-            "10",
+            "11",
             "6",
             "",
             "4",
@@ -404,11 +404,11 @@ def test_review_menu_updates_submission_review_state(
             "1",
             "1",
             "1",
-            "7",
+            "8",
             "in_progress",
             "1",
             "",
-            "10",
+            "11",
             "6",
             "",
             "4",
@@ -456,12 +456,12 @@ def test_review_menu_excludes_submission_page_without_touching_review_record(
             "1",
             "1",
             "1",
-            "2",
+            "3",
             "1",
             "1",
             "1",
             "",
-            "10",
+            "11",
             "6",
             "",
             "4",

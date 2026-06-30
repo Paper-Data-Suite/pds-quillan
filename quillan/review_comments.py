@@ -179,6 +179,7 @@ def add_review_comment(
             "tags": [],
             "scores": [],
             "comments": [],
+            "requirement_checks": [],
             "created_at": normalized_created_at,
             "updated_at": normalized_created_at,
             "module_details": {},

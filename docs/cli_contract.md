@@ -388,19 +388,26 @@ assignment, student, submission/evidence status, review state, and existing
 `review.json` counts when a valid review record is already present. Long file
 paths are reserved for detail/output actions.
 
+Assignment-level student selection clears the prior assignment-status summary
+before showing the student list. Nested review selections such as reusable
+tags, reusable comments, and rubric scoring also clear between levels so each
+screen stands on its own. `B. Back` returns to the immediate previous
+selection screen.
+
 The selected-student review menu provides:
 
 ```text
 1. Open submission evidence
-2. Manage submission pages
-3. Add teacher note
-4. Add structured tag
-5. Select reusable comment
-6. Set criterion score
-7. Update submission review state
-8. Export student feedback
-9. Refresh summary
-10. Back
+2. Record minimum requirement checks
+3. Manage submission pages
+4. Add teacher note
+5. Add structured tag
+6. Select reusable comment
+7. Set criterion score
+8. Update submission review state
+9. Export student feedback
+10. Refresh summary
+11. Back
 ```
 
 Opening submission evidence delegates to the same existing safe selected
@@ -411,6 +418,14 @@ quillan open-submission <class_id> <assignment_id> <student_id>
 ```
 
 Missing manifests or missing selected evidence are reported clearly.
+
+`Record minimum requirement checks` lists checks generated from the selected
+assignment's `basic_requirements`: minimum/maximum paragraph count,
+minimum/maximum word count, and each configured required element. The teacher
+records each check as `1` for met/yes or `2` for not met/no. Quillan stores
+the teacher-entered boolean in `review.json.requirement_checks`; it does not
+count words or paragraphs, parse writing, run OCR, use AI, infer a result, or
+change rubric scores.
 
 Guided review-entry actions reuse the same underlying review services as the
 direct commands:

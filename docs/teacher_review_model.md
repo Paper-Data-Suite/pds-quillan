@@ -16,9 +16,10 @@ This document defines the review model and data boundaries. Quillan currently
 validates relevant data contracts, can prepare printable writing-response
 pages, supports direct teacher-entered notes, tags, comments, and criterion
 scores, provides guided selected-student review actions in the terminal menu,
-and can export student feedback and assignment summaries. It does not yet
-implement complete requirements-checking. AI tagging, AI scoring, AI feedback,
-and automatic grading are not implemented.
+supports teacher-entered minimum requirement checks from assignment
+configuration, and can export student feedback and assignment summaries. AI
+tagging, AI scoring, AI feedback, automatic requirements evaluation, and
+automatic grading are not implemented.
 
 ## Source Evidence
 
@@ -50,14 +51,14 @@ materials, pds-core standards, or pds-core routes.
 Teacher-review artifacts are records created by the teacher or confirmed
 through teacher review:
 
-* `requirements.json`
 * `review.json`
 
 `review.json` is the canonical active v0.7 record for teacher-entered notes,
-tags, criterion scores, and teacher-selected comments. It is adjacent to and
-references `submission.json`, but remains separate so teacher judgment does
-not alter the student's original work. `requirements.json` remains a
-separate, reserved structural-check support artifact.
+tags, criterion scores, teacher-selected comments, and teacher-entered
+requirement checks. It is adjacent to and references `submission.json`, but
+remains separate so teacher judgment does not alter the student's original
+work. Current requirement checks are stored in
+`review.json.requirement_checks`, not in a sibling `requirements.json`.
 
 Earlier designs named separate `tags.json` and `scores.json` files. Those are
 historical concepts, not alternate active v0.7 records. Their content belongs
@@ -138,10 +139,12 @@ These checks help a teacher see whether basic assignment conditions were met.
 They do not measure writing quality and must not be treated as a
 writing-quality score.
 
-Requirements results may be entered manually, confirmed by the teacher, or
-eventually computed for low-risk structural facts. A computed result remains
-distinct from scoring and feedback, and the teacher retains responsibility
-for interpreting it in context.
+Current Quillan requirement checks are manual teacher-entered booleans
+generated from assignment `basic_requirements`. Quillan does not infer
+paragraph counts, word counts, or required-element presence, and it does not
+use OCR, AI, or automatic text parsing. Requirement checks remain distinct
+from scoring and feedback, and the teacher retains responsibility for
+interpreting them in context.
 
 ## Score Philosophy
 
