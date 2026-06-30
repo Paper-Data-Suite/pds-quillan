@@ -17,10 +17,7 @@ from pds_core.standards import (
 
 from quillan.assignments import AssignmentConfigError, load_assignment_config
 from quillan.review_record import (
-    ALLOWED_LOCATION_TYPES,
     ALLOWED_TAG_POLARITIES,
-    FLEXIBLE_LOCATION_TYPES,
-    INTEGER_LOCATION_TYPES,
     ReviewRecordError,
     load_review_record,
     validate_review_record,
@@ -30,6 +27,7 @@ from quillan.review_record_paths import (
     review_record_path,
     write_review_record,
 )
+from quillan.review_targets import ReviewTargetError, build_location
 from quillan.storage import assignment_config_path
 from quillan.submission_manifest import (
     SubmissionManifestError,
@@ -82,7 +80,7 @@ def add_review_tag(
     page_number: int | None = None,
     evidence_id: str | None = None,
     location_type: str | None = None,
-    location_value: int | str | None = None,
+    location_value: int | list[int] | str | None = None,
     created_at: datetime | str | None = None,
 ) -> AddedReviewTag:
     """Append one teacher-entered structured tag to a review record."""
@@ -100,7 +98,10 @@ def add_review_tag(
     normalized_evidence = _normalize_optional_string(evidence_id, "evidence_id")
     _validate_severity(severity)
     _validate_page_number(page_number)
-    location = _build_location(location_type, location_value, page_number)
+    try:
+        location = build_location(location_type, location_value, page_number)
+    except ReviewTargetError as error:
+        raise ReviewTagError(str(error)) from error
     normalized_created_at = _normalize_timestamp(created_at)
 
     if normalized_comment is not None and normalized_standard is None:
@@ -337,66 +338,6 @@ def _validate_page_number(value: int | None) -> None:
         isinstance(value, bool) or not isinstance(value, int) or value < 1
     ):
         raise ReviewTagError("page_number must be a positive integer.")
-
-
-def _build_location(
-    location_type: str | None,
-    location_value: int | str | None,
-    page_number: int | None,
-) -> dict[str, Any] | None:
-    if location_type is None:
-        if location_value is not None:
-            raise ReviewTagError("location_value requires location_type.")
-        return None
-    if location_type not in ALLOWED_LOCATION_TYPES:
-        allowed = ", ".join(sorted(ALLOWED_LOCATION_TYPES))
-        raise ReviewTagError(
-            f"Invalid location_type {location_type!r}. Allowed values: {allowed}."
-        )
-    if location_type == "whole_submission":
-        if location_value is not None:
-            raise ReviewTagError(
-                "location_value must be omitted for whole_submission."
-            )
-        return {"type": location_type, "value": None}
-    if location_type in INTEGER_LOCATION_TYPES:
-        if (
-            isinstance(location_value, bool)
-            or not isinstance(location_value, int)
-            or location_value < 1
-        ):
-            raise ReviewTagError(
-                f"location_value must be a positive integer for {location_type}."
-            )
-    elif location_type in FLEXIBLE_LOCATION_TYPES and (
-        isinstance(location_value, bool)
-        or not (
-            isinstance(location_value, int)
-            and location_value >= 1
-            or isinstance(location_value, str)
-            and bool(location_value.strip())
-        )
-    ):
-        raise ReviewTagError(
-            f"location_value must be a positive integer or non-empty string "
-            f"for {location_type}."
-        )
-    if (
-        location_type == "page"
-        and page_number is not None
-        and location_value != page_number
-    ):
-        raise ReviewTagError(
-            "page location_value must agree with page_number."
-        )
-    return {
-        "type": location_type,
-        "value": (
-            location_value.strip()
-            if isinstance(location_value, str)
-            else location_value
-        ),
-    }
 
 
 def _normalize_timestamp(value: datetime | str | None) -> str:

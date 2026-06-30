@@ -308,6 +308,30 @@ def test_creates_structured_tag_without_mutating_submission_or_evidence(
     assert retained_path.read_bytes() == b"retained source"
 
 
+def test_add_review_tag_stores_multiple_paragraph_target(tmp_path: Path) -> None:
+    _write_manifest(tmp_path)
+
+    result = add_review_tag(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        label="Explain evidence",
+        polarity="developing",
+        page_number=1,
+        location_type="paragraph",
+        location_value=[2, 3, 4],
+        created_at=FIRST_TAG_TIMESTAMP,
+    )
+
+    written = json.loads(result.review_record_path.read_text(encoding="utf-8"))
+    assert written["tags"][0]["page_number"] == 1
+    assert written["tags"][0]["location"] == {
+        "type": "paragraph",
+        "value": [2, 3, 4],
+    }
+
+
 def test_appends_tag_and_preserves_existing_review_sections(tmp_path: Path) -> None:
     _write_manifest(tmp_path)
     original = _review()
@@ -414,6 +438,10 @@ def test_tag_id_uses_highest_conforming_sequence(tmp_path: Path) -> None:
         (
             {"location_type": "paragraph", "location_value": "two"},
             "positive integer",
+        ),
+        (
+            {"location_type": "paragraph", "location_value": [2, 2]},
+            "more than once",
         ),
         (
             {"location_type": "whole_submission", "location_value": 1},

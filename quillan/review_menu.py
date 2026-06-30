@@ -51,12 +51,17 @@ from quillan.tag_bank_writing import list_valid_tag_banks
 from quillan.review_comments import ReviewCommentError, add_review_comment
 from quillan.review_notes import ReviewNoteError, add_review_note
 from quillan.review_record import (
-    ALLOWED_LOCATION_TYPES,
     ALLOWED_TAG_POLARITIES,
     ReviewRecordError,
     load_review_record,
 )
 from quillan.review_record_paths import review_record_path
+from quillan.review_snapshot import current_review_details_text
+from quillan.review_targets import (
+    ReviewTargetError,
+    format_review_target,
+    parse_paragraph_selection,
+)
 from quillan.review_requirements import (
     ReviewRequirementError,
     set_requirement_check,
@@ -402,22 +407,23 @@ def _launch_selected_student_review(
                 input("Press Enter to continue...")
             continue
         print("1. Open submission evidence")
-        print("2. Record minimum requirement checks")
-        print("3. Manage submission pages")
-        print("4. Add teacher note")
-        print("5. Add structured tag")
-        print("6. Select reusable comment")
-        print("7. Set criterion score")
-        print("8. Update submission review state")
-        print("9. Export student feedback")
-        print("10. Refresh summary")
-        print("11. Back")
+        print("2. View current review details")
+        print("3. Record minimum requirement checks")
+        print("4. Manage submission pages")
+        print("5. Add teacher note")
+        print("6. Add structured tag")
+        print("7. Select reusable comment")
+        print("8. Set criterion score")
+        print("9. Update submission review state")
+        print("10. Export student feedback")
+        print("11. Refresh summary")
+        print("12. Back")
         print()
 
         choice = input("Select an option: ").strip()
         print()
 
-        if choice in {"", "11"}:
+        if choice in {"", "12"}:
             return 0
         if choice == "1":
             _open_submission_evidence(
@@ -428,13 +434,21 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "2":
+            _menu_view_current_review_details(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+            input("Press Enter to continue...")
+        elif choice == "3":
             _menu_record_requirement_checks(
                 workspace_root,
                 class_id,
                 assignment_id,
                 student_id,
             )
-        elif choice == "3":
+        elif choice == "4":
             _menu_manage_submission_pages(
                 workspace_root,
                 class_id,
@@ -442,7 +456,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "4":
+        elif choice == "5":
             _menu_add_review_note(
                 workspace_root,
                 class_id,
@@ -450,7 +464,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "5":
+        elif choice == "6":
             _menu_add_review_tag(
                 workspace_root,
                 class_id,
@@ -458,7 +472,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "6":
+        elif choice == "7":
             _menu_add_review_comment(
                 workspace_root,
                 class_id,
@@ -466,7 +480,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "7":
+        elif choice == "8":
             _menu_set_review_score(
                 workspace_root,
                 class_id,
@@ -474,7 +488,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "8":
+        elif choice == "9":
             _menu_update_submission_review_state(
                 workspace_root,
                 class_id,
@@ -482,7 +496,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "9":
+        elif choice == "10":
             _menu_export_student_feedback(
                 workspace_root,
                 class_id,
@@ -490,10 +504,10 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "10":
+        elif choice == "11":
             continue
         else:
-            print("Invalid selection. Please enter a number from 1 to 11.")
+            print("Invalid selection. Please enter a number from 1 to 12.")
             input("Press Enter to continue...")
 
 
@@ -538,6 +552,18 @@ def _print_review_action_header(
     print(f"Assignment: {assignment_id}")
     print(f"Student: {student_id}")
     print()
+
+
+def _menu_view_current_review_details(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    _print_review_action_header(
+        "Current Review Details", class_id, assignment_id, student_id
+    )
+    print(current_review_details_text(workspace_root, class_id, assignment_id, student_id))
 
 
 def _format_secondary_id(value: object) -> str:
@@ -698,7 +724,7 @@ def _menu_add_custom_review_tag(
     page_number = None
     evidence_id = None
     location_type = None
-    location_value: str | int | None = None
+    location_value: str | int | list[int] | None = None
     if initial_label is not None or _prompt_yes_no_default_no("Add optional details?"):
         standard_id = input(
             "Standard ID (leave blank if not applicable): "
@@ -714,42 +740,20 @@ def _menu_add_custom_review_tag(
         teacher_note = input(
             "Private teacher note (leave blank if not applicable): "
         ).strip() or None
-        page_number = _parse_optional_positive_int(
-            input("Page number (leave blank if not applicable): ")
+        target = _prompt_review_target(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
         )
-        evidence_id = input(
-            "Evidence ID (leave blank if not applicable): "
-        ).strip() or None
-        location_type = input(
-            "Location type (leave blank if not applicable): "
-        ).strip() or None
-        if location_type:
-            if location_type not in ALLOWED_LOCATION_TYPES:
-                print(
-                    "Add tag canceled. Invalid location type. "
-                    f"Allowed values: {', '.join(sorted(ALLOWED_LOCATION_TYPES))}."
-                )
-                return
-            raw_location = input(
-                "Location value (leave blank if not applicable): "
-            ).strip()
-            if raw_location:
-                if location_type in {
-                    "page",
-                    "paragraph",
-                    "sentence",
-                    "line",
-                }:
-                    try:
-                        location_value = int(raw_location)
-                    except ValueError:
-                        print(
-                            "Add tag canceled. Location value must be a positive "
-                            f"integer for {location_type}."
-                        )
-                        return
-                else:
-                    location_value = raw_location
+        if target is _BACK:
+            print("Add tag canceled.")
+            return
+        assert isinstance(target, dict)
+        page_number = target.get("page_number")
+        evidence_id = target.get("evidence_id")
+        location_type = target.get("location_type")
+        location_value = target.get("location_value")
 
     try:
         added = add_review_tag(
@@ -897,6 +901,16 @@ def _add_selected_reusable_tag(
     severity_value = (
         severity if isinstance(severity, int) and not isinstance(severity, bool) else None
     )
+    target = _prompt_review_target(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+    )
+    if target is _BACK:
+        print("Add tag canceled.")
+        return False
+    assert isinstance(target, dict)
 
     try:
         added = add_review_tag(
@@ -913,6 +927,7 @@ def _add_selected_reusable_tag(
             source="tag_bank",
             tag_bank_id=str(bank["tag_bank_id"]),
             tag_template_id=str(tag["tag_template_id"]),
+            **target,
         )
     except (ReviewTagError, OSError) as error:
         if standard_id is not None:
@@ -936,6 +951,7 @@ def _add_selected_reusable_tag(
                         source="tag_bank",
                         tag_bank_id=str(bank["tag_bank_id"]),
                         tag_template_id=str(tag["tag_template_id"]),
+                        **target,
                     )
                 except (ReviewTagError, OSError) as retry_error:
                     print(f"Error: could not add structured tag: {retry_error}")
@@ -1348,29 +1364,49 @@ def _prompt_optional_boolean(
 def _confirm_comment_selection(
     comment: dict[str, Any],
     include_default: bool,
-) -> bool | object:
+    target: dict[str, Any],
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> tuple[bool, dict[str, Any]] | object:
     include_in_feedback = include_default
+    selected_target = target
     while True:
         print("Add this comment?")
         print()
         print(f"Comment: {comment['label']}")
         print(f"Feedback: {comment['text']}")
+        print(f"Target: {_format_prompt_target(selected_target)}")
         print(f"Include in feedback: {_format_yes_no(include_in_feedback)}")
         print()
         print("1. Add comment")
         print("2. Change include-in-feedback setting")
-        print("3. Back")
+        print("3. Change target")
+        print("4. Back")
         print()
         selection = input("Select an option: ").strip()
         if selection == "1":
-            return include_in_feedback
+            return include_in_feedback, selected_target
         if selection == "2":
             include_in_feedback = not include_in_feedback
             continue
-        if selection in {"", "3"} or selection.casefold() == "b":
+        if selection == "3":
+            updated_target = _prompt_review_target(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+            if updated_target is _BACK:
+                continue
+            assert isinstance(updated_target, dict)
+            selected_target = updated_target
+            continue
+        if selection in {"", "4"} or selection.casefold() == "b":
             print("Select comment canceled.")
             return _CANCEL
-        print("Invalid selection. Please enter a number from 1 to 3.")
+        print("Invalid selection. Please enter a number from 1 to 4.")
 
 
 def _menu_add_review_comment(
@@ -1484,12 +1520,29 @@ def _add_selected_reusable_comment(
     comment: dict[str, Any],
 ) -> bool:
     standard_id = _prompt_optional_standard_id(workspace_root, comment)
-    include_in_feedback = _confirm_comment_selection(
+    target = _prompt_review_target(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+    )
+    if target is _BACK:
+        print("Select comment canceled.")
+        return False
+    assert isinstance(target, dict)
+    selection = _confirm_comment_selection(
         comment,
         bool(comment["include_in_feedback_default"]),
+        target,
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
     )
-    if include_in_feedback is _CANCEL:
+    if selection is _CANCEL:
         return False
+    assert isinstance(selection, tuple)
+    include_in_feedback, selected_target = selection
 
     val_include: bool | None = (
         include_in_feedback if isinstance(include_in_feedback, bool) else None
@@ -1505,6 +1558,7 @@ def _add_selected_reusable_comment(
             comment_id=comment["comment_id"],
             standard_id=standard_id,
             include_in_feedback=val_include,
+            **selected_target,
         )
     except (ReviewCommentError, OSError) as error:
         print(f"Error: could not select review comment: {error}")
@@ -2629,6 +2683,86 @@ def _prompt_page_number(prompt: str) -> int | None:
     except ValueError:
         return None
     return page_number if page_number > 0 else None
+
+
+def _prompt_review_target(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> dict[str, Any] | object:
+    while True:
+        _print_review_action_header(
+            "Review Target", class_id, assignment_id, student_id
+        )
+        print("Where does this apply?")
+        print()
+        print("1. Whole submission")
+        print("2. Specific paragraph(s)")
+        print("3. Specific page")
+        print("4. Specific page and paragraph(s)")
+        print("5. Skip location")
+        print("B. Back")
+        print()
+        selection = input("Select target: ").strip()
+        if selection == "" or selection.casefold() == "b":
+            return _BACK
+        if selection == "1":
+            return {"location_type": "whole_submission", "location_value": None}
+        if selection == "2":
+            paragraphs = _prompt_paragraph_numbers()
+            if paragraphs is _BACK:
+                return _BACK
+            return {"location_type": "paragraph", "location_value": paragraphs}
+        if selection == "3":
+            page_number = _prompt_page_number("Page number: ")
+            if page_number is None:
+                return _BACK
+            return {"page_number": page_number}
+        if selection == "4":
+            page_number = _prompt_page_number("Page number: ")
+            if page_number is None:
+                return _BACK
+            paragraphs = _prompt_paragraph_numbers()
+            if paragraphs is _BACK:
+                return _BACK
+            return {
+                "page_number": page_number,
+                "location_type": "paragraph",
+                "location_value": paragraphs,
+            }
+        if selection == "5":
+            return {}
+
+        print("Invalid selection. Please enter a number from 1 to 5 or B.")
+
+
+def _prompt_paragraph_numbers() -> int | list[int] | object:
+    print()
+    print("Paragraph number(s):")
+    print("Examples: 2, 2-4, 2,4,6")
+    while True:
+        raw = input("Paragraph number(s): ").strip()
+        if raw == "" or raw.casefold() == "b":
+            return _BACK
+        try:
+            return parse_paragraph_selection(raw)
+        except ReviewTargetError as error:
+            print(f"Invalid paragraph target: {error}")
+
+
+def _format_prompt_target(target: dict[str, Any]) -> str:
+    item: dict[str, Any] = {}
+    if "page_number" in target:
+        item["page_number"] = target["page_number"]
+    if "evidence_id" in target:
+        item["evidence_id"] = target["evidence_id"]
+    if "location_type" in target:
+        item["location"] = {
+            "type": target["location_type"],
+            "value": target.get("location_value"),
+        }
+    return format_review_target(item)
 
 
 def _prompt_overwrite_export() -> bool | object:

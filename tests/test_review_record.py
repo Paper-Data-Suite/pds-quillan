@@ -393,6 +393,42 @@ def test_page_location_must_agree_with_page_number() -> None:
         validate_review_record(record)
 
 
+@pytest.mark.parametrize("value", [2, [2, 3, 4]])
+def test_tag_paragraph_location_values_are_valid(value: int | list[int]) -> None:
+    record = _record()
+    tag = _tag()
+    tag["location"] = {"type": "paragraph", "value": value}
+    record["tags"] = [tag]
+
+    validate_review_record(record)
+
+
+@pytest.mark.parametrize("value", [2, [2, 3, 4]])
+def test_comment_paragraph_location_values_are_valid(value: int | list[int]) -> None:
+    record = _record()
+    comment = _comment()
+    comment["page_number"] = 1
+    comment["evidence_id"] = "evidence_001"
+    comment["location"] = {"type": "paragraph", "value": value}
+    record["comments"] = [comment]
+
+    validate_review_record(record)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [0, -1, True, 2.5, "", [], [1, 1], [1, 0], [1, "two"]],
+)
+def test_invalid_paragraph_location_value_is_rejected(value: Any) -> None:
+    record = _record()
+    tag = _tag()
+    tag["location"] = {"type": "paragraph", "value": value}
+    record["tags"] = [tag]
+
+    with pytest.raises(ReviewRecordError, match="location"):
+        validate_review_record(record)
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [

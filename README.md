@@ -265,21 +265,24 @@ The selected-student review menu is:
 
 ```text
 1. Open submission evidence
-2. Record minimum requirement checks
-3. Manage submission pages
-4. Add teacher note
-5. Add structured tag
-6. Select reusable comment
-7. Set criterion score
-8. Update submission review state
-9. Export student feedback
-10. Refresh summary
-11. Back
+2. View current review details
+3. Record minimum requirement checks
+4. Manage submission pages
+5. Add teacher note
+6. Add structured tag
+7. Select reusable comment
+8. Set criterion score
+9. Update submission review state
+10. Export student feedback
+11. Refresh summary
+12. Back
 ```
 
 These guided actions reuse the same underlying services and data contracts as the direct CLI commands. The menu does not implement separate export logic, scoring logic, routing logic, or AI logic.
 
-Review mode is selection-first. Selection screens clear between major levels so the current student, assignment, bank, category, or criterion context is visible without old summaries above it. `B. Back` returns to the immediate previous selection screen. Teacher notes open with private-note guidance and safe Back behavior. Minimum requirement checks are generated from assignment `basic_requirements` and stored as teacher-entered booleans in `review.json.requirement_checks`; Quillan does not count words or paragraphs, parse writing, run OCR, use AI, infer requirement completion, or change scores from those checks. Reusable comments are selected by comment bank, category, and comment, with label and feedback preview shown before writing. Reusable tags are selected by tag bank, category, and tag template, with a custom one-off fallback. Rubric scoring uses the assignment's resolved shared rubric when available, then asks the teacher to choose a criterion and level before confirming the saved score; custom scoring remains available when the rubric is missing or does not contain the needed criterion.
+Review mode is selection-first. Selection screens clear between major levels so the current student, assignment, bank, category, or criterion context is visible without old summaries above it. `B. Back` returns to the immediate previous selection screen. Teacher notes open with private-note guidance and safe Back behavior. Minimum requirement checks are generated from assignment `basic_requirements` and stored as teacher-entered booleans in `review.json.requirement_checks`; Quillan does not count words or paragraphs, parse writing, run OCR, use AI, infer requirement completion, or change scores from those checks. Reusable comments are selected by comment bank, category, and comment, with label, feedback preview, target, and include-in-feedback setting shown before writing. Reusable tags are selected by tag bank, category, and tag template, with a custom one-off fallback. Tags and comments can optionally be attached to whole submission, page, paragraph, multiple paragraphs, or page plus paragraphs. Paragraph targets are teacher-entered metadata; Quillan does not parse the student's writing to determine paragraph numbers or infer where feedback belongs. Rubric scoring uses the assignment's resolved shared rubric when available, then asks the teacher to choose a criterion and level before confirming the saved score; custom scoring remains available when the rubric is missing or does not contain the needed criterion.
+
+Selected Student Review includes a read-only `View current review details` option near the top of the menu. It displays the current student's saved requirement checks, notes, tags, comments, scores, feedback-inclusion choices, and tag/comment targets in the terminal. It does not generate an export file and is separate from full reporting and student feedback export, so Quillan remains useful as a standalone review tool with only pds-core.
 
 Review-time standards metadata is display-only. When reusable comments or tags reference durable pds-core `standard_id` values, Quillan may resolve readable code/name metadata through pds-core read-only helpers for display. It still stores durable IDs in review records and does not create, import, edit, retire, reactivate, or authoritatively validate standards.
 
@@ -574,7 +577,8 @@ Optional flags can reference:
 * teacher note;
 * page;
 * evidence ID;
-* controlled location metadata.
+* controlled location metadata, including optional teacher-entered paragraph
+  or page targets.
 
 A missing review record is created only for a valid matching `submission.json`.
 
@@ -593,6 +597,11 @@ shared/comment_banks/<bank_id>.json
 ```
 
 The direct `add-comment` workflow validates a bank and copies selected teacher-authored language into the canonical review record.
+
+Reusable comments selected from the guided review menu can also store optional
+teacher-entered page and paragraph targets in `review.json.comments`. Existing
+comments without targets remain valid, and exports continue to use the
+snapshotted comment text and include-in-feedback setting.
 
 The selected review comment stores `bank_id + comment_id` provenance and copies label and text, so later bank edits do not change an existing review.
 

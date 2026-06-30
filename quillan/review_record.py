@@ -80,7 +80,14 @@ REQUIRED_COMMENT_FIELDS: Final[frozenset[str]] = frozenset(
     }
 )
 OPTIONAL_COMMENT_FIELDS: Final[frozenset[str]] = frozenset(
-    {"bank_id", "comment_id", "standard_id"}
+    {
+        "bank_id",
+        "comment_id",
+        "standard_id",
+        "page_number",
+        "evidence_id",
+        "location",
+    }
 )
 REQUIRED_REQUIREMENT_CHECK_FIELDS: Final[frozenset[str]] = frozenset(
     {
@@ -319,6 +326,10 @@ def _validate_location(
             raise ReviewRecordError(
                 f"Field '{context}.value' must be null for whole_submission."
             )
+    elif location_type == "paragraph":
+        location_value = _validate_paragraph_location_value(
+            location_value, f"{context}.value"
+        )
     elif location_type in INTEGER_LOCATION_TYPES:
         location_value = _validate_positive_integer(
             location_value, f"{context}.value"
@@ -344,8 +355,24 @@ def _validate_location(
         and location_value != page_number
     ):
         raise ReviewRecordError(
-            f"Field '{context}.value' must agree with the tag's page_number."
+            f"Field '{context}.value' must agree with the item's page_number."
         )
+
+
+def _validate_paragraph_location_value(value: Any, field: str) -> int | list[int]:
+    if isinstance(value, list):
+        if not value:
+            raise ReviewRecordError(f"Field '{field}' must not be an empty list.")
+        seen: set[int] = set()
+        for item in value:
+            paragraph = _validate_positive_integer(item, field)
+            if paragraph in seen:
+                raise ReviewRecordError(
+                    f"Field '{field}' must not contain duplicate paragraph numbers."
+                )
+            seen.add(paragraph)
+        return value
+    return _validate_positive_integer(value, field)
 
 
 def _validate_scores(value: Any) -> None:
@@ -406,11 +433,19 @@ def _validate_comments(value: Any) -> None:
         )
         for field in ("label", "text"):
             _validate_non_empty_string(item[field], f"{context}.{field}")
-        for field in ("comment_id", "standard_id"):
+        for field in ("comment_id", "standard_id", "evidence_id"):
             if field in item:
                 _validate_non_empty_string(item[field], f"{context}.{field}")
         if "bank_id" in item:
             _validate_identifier(item["bank_id"], f"{context}.bank_id")
+        if "page_number" in item:
+            _validate_positive_integer(
+                item["page_number"], f"{context}.page_number"
+            )
+        if "location" in item:
+            _validate_location(
+                item["location"], f"{context}.location", item.get("page_number")
+            )
         source = _validate_allowed_value(
             item["source"], f"{context}.source", ALLOWED_COMMENT_SOURCES
         )

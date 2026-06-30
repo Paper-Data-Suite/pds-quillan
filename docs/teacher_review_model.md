@@ -60,6 +60,12 @@ remains separate so teacher judgment does not alter the student's original
 work. Current requirement checks are stored in
 `review.json.requirement_checks`, not in a sibling `requirements.json`.
 
+Tags and selected comments may include optional teacher-entered target
+metadata such as page number, evidence ID, paragraph, multiple paragraphs, or
+whole submission. Paragraph targets are not discovered from the student work:
+Quillan does not parse writing, run OCR, use AI, count paragraphs, or infer
+where a tag or comment applies.
+
 Earlier designs named separate `tags.json` and `scores.json` files. Those are
 historical concepts, not alternate active v0.7 records. Their content belongs
 in `review.json`.
@@ -77,6 +83,13 @@ assignment-level CSV reports are
 aggregations. These outputs are not independent evidence or substitutes for
 `review.json`; they should remain traceable to the teacher-confirmed records
 from which they were derived.
+
+Selected Student Review also includes a terminal-only `View current review
+details` view. It reads the current student's `review.json` and displays saved
+requirement checks, tags, comments, scores, notes, target labels, and
+include-in-feedback settings so a teacher can resume an interrupted review
+without exporting a report. It is read-only and is not a replacement for full
+reporting or student feedback export.
 
 ## Tag Philosophy
 

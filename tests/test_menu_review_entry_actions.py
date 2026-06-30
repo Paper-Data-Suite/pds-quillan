@@ -226,11 +226,11 @@ def _enter_selected_student(student_choice: str = "1") -> list[str]:
 
 
 def _exit_selected_student_to_main() -> list[str]:
-    return ["11", "6", "", "4", "6"]
+    return ["12", "6", "", "4", "6"]
 
 
 def _exit_after_selected_student_action_to_main() -> list[str]:
-    return ["", "11", "6", "", "4", "6"]
+    return ["", "12", "6", "", "4", "6"]
 
 
 @pytest.fixture
@@ -252,13 +252,14 @@ def test_review_menu_selected_student_shows_review_entry_actions(
     output = capsys.readouterr().out
     assert "Selected Student Review" in output
     assert "1. Open submission evidence" in output
-    assert "2. Record minimum requirement checks" in output
-    assert "3. Manage submission pages" in output
-    assert "4. Add teacher note" in output
-    assert "5. Add structured tag" in output
-    assert "6. Select reusable comment" in output
-    assert "7. Set criterion score" in output
-    assert "8. Update submission review state" in output
+    assert "2. View current review details" in output
+    assert "3. Record minimum requirement checks" in output
+    assert "4. Manage submission pages" in output
+    assert "5. Add teacher note" in output
+    assert "6. Add structured tag" in output
+    assert "7. Select reusable comment" in output
+    assert "8. Set criterion score" in output
+    assert "9. Update submission review state" in output
     assert "Review record: not started" in output
     assert not review_record_path(
         workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
@@ -278,7 +279,7 @@ def test_review_menu_blank_note_cancels_without_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["4", ""]
+        + ["5", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -302,7 +303,7 @@ def test_review_menu_records_minimum_requirement_check(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["2", "1", "1", "", "", "b"]
+        + ["3", "1", "1", "", "", "b"]
         + _exit_selected_student_to_main(),
     )
 
@@ -350,7 +351,7 @@ def test_review_menu_reports_no_minimum_requirements_without_writing(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["2", ""]
+        + ["3", ""]
         + _exit_selected_student_to_main(),
     )
 
@@ -370,7 +371,7 @@ def test_review_menu_adds_structured_tag_to_review_record(
         monkeypatch,
         _enter_selected_student()
         + [
-            "5",
+            "6",
             "2",
             "claim",
             "1",
@@ -390,6 +391,154 @@ def test_review_menu_adds_structured_tag_to_review_record(
     assert review["review_state"] == "in_progress"
 
 
+def test_review_target_invalid_choice_reprompts_then_saves_valid_target(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(
+        monkeypatch,
+        _enter_selected_student()
+        + [
+            "6",
+            "2",
+            "claim",
+            "1",
+            "y",
+            "",
+            "",
+            "",
+            "",
+            "9",
+            "2",
+            "2",
+        ]
+        + _exit_after_selected_student_action_to_main(),
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Invalid selection. Please enter a number from 1 to 5 or B." in output
+    review = json.loads(
+        review_record_path(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+        ).read_text(encoding="utf-8")
+    )
+    assert review["tags"][0]["location"] == {"type": "paragraph", "value": 2}
+
+
+def test_review_target_invalid_paragraph_reprompts_then_saves_valid_target(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(
+        monkeypatch,
+        _enter_selected_student()
+        + [
+            "6",
+            "2",
+            "claim",
+            "1",
+            "y",
+            "",
+            "",
+            "",
+            "",
+            "2",
+            "2,,4",
+            "2-3",
+        ]
+        + _exit_after_selected_student_action_to_main(),
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Invalid paragraph target: Paragraph entries must not be empty." in output
+    review = json.loads(
+        review_record_path(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+        ).read_text(encoding="utf-8")
+    )
+    assert review["tags"][0]["location"] == {"type": "paragraph", "value": [2, 3]}
+
+
+@pytest.mark.parametrize("target_back", ["", "b"])
+def test_review_target_back_cancels_without_writing(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    target_back: str,
+) -> None:
+    manifest_path = submission_manifest_path(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    )
+    manifest_before = manifest_path.read_bytes()
+
+    _menu_input(
+        monkeypatch,
+        _enter_selected_student()
+        + [
+            "6",
+            "2",
+            "claim",
+            "1",
+            "y",
+            "",
+            "",
+            "",
+            "",
+            target_back,
+        ]
+        + _exit_after_selected_student_action_to_main(),
+    )
+
+    assert main(["menu"]) == 0
+    assert "Add tag canceled." in capsys.readouterr().out
+    assert not review_record_path(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    ).exists()
+    assert manifest_path.read_bytes() == manifest_before
+
+
+def test_invalid_review_target_then_back_does_not_write_or_modify_submission(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_path = submission_manifest_path(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    )
+    manifest_before = manifest_path.read_bytes()
+
+    _menu_input(
+        monkeypatch,
+        _enter_selected_student()
+        + [
+            "6",
+            "2",
+            "claim",
+            "1",
+            "y",
+            "",
+            "",
+            "",
+            "",
+            "9",
+            "",
+        ]
+        + _exit_after_selected_student_action_to_main(),
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Invalid selection. Please enter a number from 1 to 5 or B." in output
+    assert not review_record_path(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    ).exists()
+    assert manifest_path.read_bytes() == manifest_before
+
+
 def test_review_menu_selects_reusable_tag_by_bank_and_category(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
@@ -404,7 +553,16 @@ def test_review_menu_selects_reusable_tag_by_bank_and_category(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["5", "1", "1", "1", "1", "The explanation names the idea only."]
+        + [
+            "6",
+            "1",
+            "1",
+            "1",
+            "1",
+            "The explanation names the idea only.",
+            "2",
+            "2-4",
+        ]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -429,6 +587,7 @@ def test_review_menu_selects_reusable_tag_by_bank_and_category(
     assert tag["severity"] == 2
     assert tag["criterion_id"] == "explanation"
     assert tag["teacher_note"] == "The explanation names the idea only."
+    assert tag["location"] == {"type": "paragraph", "value": [2, 3, 4]}
     assert "standard_id" not in tag
     assert review["review_state"] == "in_progress"
     assert manifest_path.read_bytes() == manifest_before
@@ -444,7 +603,7 @@ def test_reusable_tag_back_returns_one_level_at_a_time(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["5", "1", "1", "1", "b", "b", "b"]
+        + ["6", "1", "1", "1", "b", "b", "b"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -470,7 +629,7 @@ def test_review_menu_blank_tag_cancels_without_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["5", ""]
+        + ["6", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -494,7 +653,7 @@ def test_review_menu_no_comment_banks_returns_safely(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["6", "1"]
+        + ["7", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -520,7 +679,7 @@ def test_review_menu_selects_reusable_comment_by_number(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["6", "1", "1", "1", "1", "1"]
+        + ["7", "1", "1", "1", "1", "2", "2", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -534,6 +693,7 @@ def test_review_menu_selects_reusable_comment_by_number(
     )
     assert review["comments"][0]["bank_id"] == BANK_ID
     assert review["comments"][0]["comment_id"] == "focus_is_clear"
+    assert review["comments"][0]["location"] == {"type": "paragraph", "value": 2}
     assert review["review_state"] == "in_progress"
     assert manifest_path.read_bytes() == manifest_before
 
@@ -575,7 +735,7 @@ def test_comment_bank_created_by_workflow_is_selectable_in_review(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["6", "1", "1", "1", "1", "1"]
+        + ["7", "1", "1", "1", "1", "5", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -615,7 +775,7 @@ def test_review_menu_sets_criterion_score(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["7", "evidence", "Evidence", "3", "4", "", ""]
+        + ["8", "evidence", "Evidence", "3", "4", "", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -646,7 +806,7 @@ def test_review_menu_scores_from_assignment_rubric(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["7", "1", "1", "1", "2", "Private score note"]
+        + ["8", "1", "1", "1", "2", "Private score note"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -675,7 +835,7 @@ def test_review_menu_missing_rubric_keeps_custom_score_available(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["7", "1", "1", "Evidence", "", "2", "4", "", ""]
+        + ["8", "1", "1", "Evidence", "", "2", "4", "", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -702,7 +862,7 @@ def test_review_menu_blank_score_cancels_without_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["7", ""]
+        + ["8", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -754,7 +914,7 @@ def test_review_menu_invalid_score_does_not_corrupt_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["7", "evidence", "Evidence", "5", "4", "", ""]
+        + ["8", "evidence", "Evidence", "5", "4", "", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -776,7 +936,7 @@ def test_review_menu_invalid_state_does_not_corrupt_manifest(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["8", "not_a_state"]
+        + ["9", "not_a_state"]
         + _exit_after_selected_student_action_to_main(),
     )
 

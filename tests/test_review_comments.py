@@ -90,6 +90,57 @@ def test_creates_snapshotted_comment_without_mutating_sources(tmp_path: Path) ->
     assert bank_path.read_bytes() == bank_before
 
 
+def test_add_review_comment_stores_paragraph_target_without_mutating_manifest(
+    tmp_path: Path,
+) -> None:
+    manifest_path = _write_manifest(tmp_path)
+    _write_bank(tmp_path)
+    manifest_before = manifest_path.read_bytes()
+
+    result = _add(
+        tmp_path,
+        page_number=1,
+        evidence_id="evidence_001",
+        location_type="paragraph",
+        location_value=[2, 3],
+    )
+
+    written = json.loads(result.review_record_path.read_text(encoding="utf-8"))
+    comment = written["comments"][0]
+    assert comment["page_number"] == 1
+    assert comment["evidence_id"] == "evidence_001"
+    assert comment["location"] == {"type": "paragraph", "value": [2, 3]}
+    assert manifest_path.read_bytes() == manifest_before
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"page_number": 3}, "does not exist"),
+        ({"evidence_id": "missing"}, "does not exist"),
+        ({"page_number": 1, "evidence_id": "evidence_002"}, "occurs on page 2"),
+        (
+            {"location_type": "paragraph", "location_value": [2, 2]},
+            "more than once",
+        ),
+    ],
+)
+def test_invalid_comment_target_is_rejected(
+    tmp_path: Path,
+    overrides: dict[str, Any],
+    message: str,
+) -> None:
+    _write_manifest(tmp_path)
+    _write_bank(tmp_path)
+
+    with pytest.raises(ReviewCommentError, match=message):
+        _add(tmp_path, **overrides)
+
+    assert not review_record_path(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    ).exists()
+
+
 @pytest.mark.parametrize(
     ("override", "expected"),
     [(True, True), (False, False), (None, True)],
