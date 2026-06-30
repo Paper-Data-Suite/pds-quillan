@@ -57,6 +57,10 @@ from quillan.review_record import (
     load_review_record,
 )
 from quillan.review_record_paths import review_record_path
+from quillan.review_requirements import (
+    ReviewRequirementError,
+    set_requirement_check,
+)
 from quillan.review_scores import ReviewScoreError, set_review_score
 from quillan.rubrics import RubricError, load_rubric, rubric_path
 from quillan.review_tags import ReviewTagError, add_review_tag
@@ -81,6 +85,8 @@ from quillan.submission_status import (
     StudentSubmissionStatus,
     list_assignment_submission_status,
 )
+
+_BACK = object()
 
 
 def launch_review_student_work_menu() -> int:
@@ -246,12 +252,21 @@ def _load_submission_status(
 def _prompt_student_id(
     workspace_root: Path,
     class_id: str,
+    assignment_id: str,
     status: AssignmentSubmissionStatus,
 ) -> str | None:
+    from quillan.menu import clear_screen, print_menu_header
+
     student_ids = _student_choices(workspace_root, class_id, status)
     if not student_ids:
         print("No students or submissions found for this class assignment.")
         return None
+
+    clear_screen()
+    print_menu_header("Select Student/Submission")
+    print(f"Class: {class_id}")
+    print(f"Assignment: {assignment_id}")
+    print()
 
     status_by_student = {
         student_status.student_id: student_status
@@ -387,21 +402,22 @@ def _launch_selected_student_review(
                 input("Press Enter to continue...")
             continue
         print("1. Open submission evidence")
-        print("2. Manage submission pages")
-        print("3. Add teacher note")
-        print("4. Add structured tag")
-        print("5. Select reusable comment")
-        print("6. Set criterion score")
-        print("7. Update submission review state")
-        print("8. Export student feedback")
-        print("9. Refresh summary")
-        print("10. Back")
+        print("2. Record minimum requirement checks")
+        print("3. Manage submission pages")
+        print("4. Add teacher note")
+        print("5. Add structured tag")
+        print("6. Select reusable comment")
+        print("7. Set criterion score")
+        print("8. Update submission review state")
+        print("9. Export student feedback")
+        print("10. Refresh summary")
+        print("11. Back")
         print()
 
         choice = input("Select an option: ").strip()
         print()
 
-        if choice in {"", "10"}:
+        if choice in {"", "11"}:
             return 0
         if choice == "1":
             _open_submission_evidence(
@@ -412,6 +428,13 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "2":
+            _menu_record_requirement_checks(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+        elif choice == "3":
             _menu_manage_submission_pages(
                 workspace_root,
                 class_id,
@@ -419,7 +442,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "3":
+        elif choice == "4":
             _menu_add_review_note(
                 workspace_root,
                 class_id,
@@ -427,7 +450,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "4":
+        elif choice == "5":
             _menu_add_review_tag(
                 workspace_root,
                 class_id,
@@ -435,7 +458,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "5":
+        elif choice == "6":
             _menu_add_review_comment(
                 workspace_root,
                 class_id,
@@ -443,7 +466,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "6":
+        elif choice == "7":
             _menu_set_review_score(
                 workspace_root,
                 class_id,
@@ -451,7 +474,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "7":
+        elif choice == "8":
             _menu_update_submission_review_state(
                 workspace_root,
                 class_id,
@@ -459,7 +482,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "8":
+        elif choice == "9":
             _menu_export_student_feedback(
                 workspace_root,
                 class_id,
@@ -467,10 +490,10 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "9":
+        elif choice == "10":
             continue
         else:
-            print("Invalid selection. Please enter a number from 1 to 10.")
+            print("Invalid selection. Please enter a number from 1 to 11.")
             input("Press Enter to continue...")
 
 
@@ -759,9 +782,11 @@ def _menu_add_reusable_review_tag(
     assignment_id: str,
     student_id: str,
 ) -> None:
-    _print_review_action_header("Select Reusable Tag", class_id, assignment_id, student_id)
     files = list_valid_tag_banks(workspace_root)
     if not files:
+        _print_review_action_header(
+            "Select Reusable Tag", class_id, assignment_id, student_id
+        )
         print("No valid shared tag banks found.")
         print()
         print("Create one from:")
@@ -784,30 +809,94 @@ def _menu_add_reusable_review_tag(
             print("Add tag canceled.")
         return
 
-    bank = _prompt_tag_bank(files)
-    if bank is None:
-        return
-    category = _prompt_tag_category(bank)
-    if category is None:
-        return
-    tag = _prompt_tag_template(bank, category)
-    if tag is None:
-        return
-    if tag is _CUSTOM_TAG:
-        _menu_add_custom_review_tag(
-            workspace_root,
-            class_id,
-            assignment_id,
-            student_id,
+    while True:
+        _print_review_action_header(
+            "Select Reusable Tag", class_id, assignment_id, student_id
         )
-        return
+        bank = _prompt_tag_bank(files)
+        if bank is _BACK:
+            return
+        if bank is None:
+            input("Press Enter to continue...")
+            continue
+        assert isinstance(bank, dict)
 
-    assert isinstance(tag, dict)
+        while True:
+            _print_tag_context_header(
+                "Select Tag Category",
+                class_id,
+                assignment_id,
+                student_id,
+                bank=bank,
+            )
+            category = _prompt_tag_category(bank)
+            if category is _BACK:
+                break
+            if category is None:
+                input("Press Enter to continue...")
+                continue
+            assert isinstance(category, dict)
+
+            while True:
+                _print_tag_context_header(
+                    "Select Tag",
+                    class_id,
+                    assignment_id,
+                    student_id,
+                    bank=bank,
+                    category=category,
+                )
+                tag = _prompt_tag_template(bank, category)
+                if tag is _BACK:
+                    break
+                if tag is None:
+                    input("Press Enter to continue...")
+                    continue
+                if tag is _CUSTOM_TAG:
+                    _menu_add_custom_review_tag(
+                        workspace_root,
+                        class_id,
+                        assignment_id,
+                        student_id,
+                    )
+                    return
+
+                assert isinstance(tag, dict)
+                _print_tag_context_header(
+                    "Reusable Tag Details",
+                    class_id,
+                    assignment_id,
+                    student_id,
+                    bank=bank,
+                    category=category,
+                )
+                if _add_selected_reusable_tag(
+                    workspace_root,
+                    class_id,
+                    assignment_id,
+                    student_id,
+                    bank,
+                    tag,
+                ):
+                    return
+                input("Press Enter to continue...")
+
+
+def _add_selected_reusable_tag(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    bank: dict[str, Any],
+    tag: dict[str, Any],
+) -> bool:
     standard_id = _prompt_tag_standard_id(tag)
     criterion_id = _prompt_tag_criterion_id(tag)
     teacher_note = _prompt_template_teacher_note(tag)
     severity = tag.get("severity_default")
-    severity_value = severity if isinstance(severity, int) and not isinstance(severity, bool) else None
+    severity_value = (
+        severity if isinstance(severity, int) and not isinstance(severity, bool) else None
+    )
 
     try:
         added = add_review_tag(
@@ -850,18 +939,47 @@ def _menu_add_reusable_review_tag(
                     )
                 except (ReviewTagError, OSError) as retry_error:
                     print(f"Error: could not add structured tag: {retry_error}")
-                    return
+                    return False
             else:
                 print("Add tag canceled.")
-                return
+                return False
         else:
             print(f"Error: could not add structured tag: {error}")
-            return
+            return False
 
     print_added_review_tag(added)
+    return True
 
 
-def _prompt_tag_bank(files: tuple[Any, ...]) -> dict[str, Any] | None:
+def _print_tag_context_header(
+    title: str,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    bank: dict[str, Any],
+    category: dict[str, Any] | None = None,
+) -> None:
+    from quillan.menu import clear_screen, print_menu_header
+
+    clear_screen()
+    print_menu_header(title)
+    bank_title = bank.get("title")
+    bank_label = (
+        bank_title.strip()
+        if isinstance(bank_title, str) and bank_title.strip()
+        else str(bank["tag_bank_id"])
+    )
+    print(f"Tag Bank: {bank_label}")
+    if category is not None:
+        print(f"Category: {category['label']}")
+    print(f"Class: {class_id}")
+    print(f"Assignment: {assignment_id}")
+    print(f"Student: {student_id}")
+    print()
+
+
+def _prompt_tag_bank(files: tuple[Any, ...]) -> dict[str, Any] | object | None:
     print("Available tag banks:")
     print()
     banks: list[dict[str, Any]] = []
@@ -883,8 +1001,7 @@ def _prompt_tag_bank(files: tuple[Any, ...]) -> dict[str, Any] | None:
     print()
     selection = input("Select tag bank: ").strip()
     if selection == "" or selection.casefold() == "b":
-        print("Select tag canceled.")
-        return None
+        return _BACK
     if selection.isdigit() and 1 <= int(selection) <= len(banks):
         return banks[int(selection) - 1]
     for bank in banks:
@@ -894,7 +1011,7 @@ def _prompt_tag_bank(files: tuple[Any, ...]) -> dict[str, Any] | None:
     return None
 
 
-def _prompt_tag_category(bank: dict[str, Any]) -> dict[str, Any] | None:
+def _prompt_tag_category(bank: dict[str, Any]) -> dict[str, Any] | object | None:
     categories = _sorted_records(bank["categories"])
     print("Categories:")
     for index, category in enumerate(categories, start=1):
@@ -903,8 +1020,7 @@ def _prompt_tag_category(bank: dict[str, Any]) -> dict[str, Any] | None:
     print()
     selection = input("Select category: ").strip()
     if selection == "" or selection.casefold() == "b":
-        print("Select tag canceled.")
-        return None
+        return _BACK
     if selection.isdigit() and 1 <= int(selection) <= len(categories):
         return categories[int(selection) - 1]
     print("Invalid category selection. Please choose a listed category or Back.")
@@ -940,8 +1056,7 @@ def _prompt_tag_template(bank: dict[str, Any], category: dict[str, Any]) -> dict
     print()
     selection = input("Select tag: ").strip()
     if selection == "" or selection.casefold() == "b":
-        print("Select tag canceled.")
-        return None
+        return _BACK
     if selection.isdigit():
         selected = int(selection)
         if 1 <= selected <= len(tags):
@@ -1058,7 +1173,7 @@ def _load_available_comment_banks(
 
 def _prompt_comment_bank(
     banks: tuple[dict[str, Any], ...],
-) -> dict[str, Any] | None:
+) -> dict[str, Any] | object | None:
     print("Available comment banks:")
     print()
     for index, bank in enumerate(banks, start=1):
@@ -1081,8 +1196,7 @@ def _prompt_comment_bank(
     while True:
         selection = input("Select comment bank: ").strip()
         if selection == "" or selection.casefold() == "b":
-            print("Select comment canceled.")
-            return None
+            return _BACK
         if selection.isdigit():
             index = int(selection) - 1
             if 0 <= index < len(banks):
@@ -1096,7 +1210,7 @@ def _prompt_comment_bank(
         )
 
 
-def _prompt_comment_category(bank: dict[str, Any]) -> dict[str, Any] | None:
+def _prompt_comment_category(bank: dict[str, Any]) -> dict[str, Any] | object | None:
     categories = _sorted_records(bank["categories"])
     print("Categories:")
     print()
@@ -1106,8 +1220,7 @@ def _prompt_comment_category(bank: dict[str, Any]) -> dict[str, Any] | None:
     print()
     selection = input("Select category: ").strip()
     if selection == "" or selection.casefold() == "b":
-        print("Select comment canceled.")
-        return None
+        return _BACK
     if selection.isdigit() and 1 <= int(selection) <= len(categories):
         return categories[int(selection) - 1]
     print("Invalid category selection. Please choose a listed category or Back.")
@@ -1117,7 +1230,7 @@ def _prompt_comment_category(bank: dict[str, Any]) -> dict[str, Any] | None:
 def _prompt_comment_from_bank(
     bank: dict[str, Any],
     category: dict[str, Any],
-) -> dict[str, Any] | None:
+) -> dict[str, Any] | object | None:
     raw_comments = bank.get("comments")
     if not isinstance(raw_comments, list):
         return None
@@ -1159,8 +1272,7 @@ def _prompt_comment_from_bank(
     while True:
         selection = input("Select comment: ").strip()
         if selection == "" or selection.casefold() == "b":
-            print("Select comment canceled.")
-            return None
+            return _BACK
         if selection.isdigit():
             index = int(selection) - 1
             if 0 <= index < len(comments):
@@ -1286,6 +1398,9 @@ def _menu_add_review_comment(
 
     banks = _load_available_comment_banks(workspace_root)
     if not banks:
+        _print_review_action_header(
+            "Select Comment Bank", class_id, assignment_id, student_id
+        )
         print("No valid shared comment banks found.")
         print()
         print("Create one from:")
@@ -1295,25 +1410,86 @@ def _menu_add_review_comment(
         )
         return
 
-    bank = _prompt_comment_bank(banks)
-    if bank is None:
-        return
+    while True:
+        _print_review_action_header(
+            "Select Comment Bank", class_id, assignment_id, student_id
+        )
+        bank = _prompt_comment_bank(banks)
+        if bank is _BACK:
+            return
+        if bank is None:
+            input("Press Enter to continue...")
+            continue
+        assert isinstance(bank, dict)
 
-    category = _prompt_comment_category(bank)
-    if category is None:
-        return
+        while True:
+            _print_comment_context_header(
+                "Select Comment Category",
+                class_id,
+                assignment_id,
+                student_id,
+                bank=bank,
+            )
+            category = _prompt_comment_category(bank)
+            if category is _BACK:
+                break
+            if category is None:
+                input("Press Enter to continue...")
+                continue
+            assert isinstance(category, dict)
 
-    comment = _prompt_comment_from_bank(bank, category)
-    if comment is None:
-        return
+            while True:
+                _print_comment_context_header(
+                    "Select Comment",
+                    class_id,
+                    assignment_id,
+                    student_id,
+                    bank=bank,
+                    category=category,
+                )
+                comment = _prompt_comment_from_bank(bank, category)
+                if comment is _BACK:
+                    break
+                if comment is None:
+                    input("Press Enter to continue...")
+                    continue
+                assert isinstance(comment, dict)
 
+                _print_comment_context_header(
+                    "Confirm Comment",
+                    class_id,
+                    assignment_id,
+                    student_id,
+                    bank=bank,
+                    category=category,
+                )
+                if _add_selected_reusable_comment(
+                    workspace_root,
+                    class_id,
+                    assignment_id,
+                    student_id,
+                    bank,
+                    comment,
+                ):
+                    return
+                input("Press Enter to continue...")
+
+
+def _add_selected_reusable_comment(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    bank: dict[str, Any],
+    comment: dict[str, Any],
+) -> bool:
     standard_id = _prompt_optional_standard_id(workspace_root, comment)
     include_in_feedback = _confirm_comment_selection(
         comment,
         bool(comment["include_in_feedback_default"]),
     )
     if include_in_feedback is _CANCEL:
-        return
+        return False
 
     val_include: bool | None = (
         include_in_feedback if isinstance(include_in_feedback, bool) else None
@@ -1332,9 +1508,38 @@ def _menu_add_review_comment(
         )
     except (ReviewCommentError, OSError) as error:
         print(f"Error: could not select review comment: {error}")
-        return
+        return False
 
     print_added_review_comment(added)
+    return True
+
+
+def _print_comment_context_header(
+    title: str,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    bank: dict[str, Any],
+    category: dict[str, Any] | None = None,
+) -> None:
+    from quillan.menu import clear_screen, print_menu_header
+
+    clear_screen()
+    print_menu_header(title)
+    bank_title = bank.get("title")
+    bank_label = (
+        bank_title.strip()
+        if isinstance(bank_title, str) and bank_title.strip()
+        else str(bank["bank_id"])
+    )
+    print(f"Comment Bank: {bank_label}")
+    if category is not None:
+        print(f"Category: {category['label']}")
+    print(f"Class: {class_id}")
+    print(f"Assignment: {assignment_id}")
+    print(f"Student: {student_id}")
+    print()
 
 
 def _menu_set_review_score(
@@ -1408,33 +1613,68 @@ def _menu_set_review_score_from_rubric(
         )
         return
 
-    criterion = _prompt_score_criterion(rubric)
-    if criterion is None:
-        return
-    level = _prompt_score_level(criterion)
-    if level is None:
-        return
-    teacher_note = _confirm_score_selection(criterion, level)
-    if teacher_note is _CANCEL:
-        return
-    score_teacher_note = teacher_note if isinstance(teacher_note, str) else None
-    try:
-        updated = set_review_score(
-            workspace_root,
-            class_id,
-            assignment_id,
-            student_id,
-            criterion_id=criterion["criterion_id"],
-            label=criterion["label"],
-            score=level["score"],
-            max_score=criterion["max_score"],
-            scale=criterion["scale"],
-            teacher_note=score_teacher_note,
+    while True:
+        _print_review_action_header(
+            "Select Score Criterion", class_id, assignment_id, student_id
         )
-    except (ReviewScoreError, OSError) as error:
-        print(f"Error: could not set review score: {error}")
-        return
-    print_updated_review_score(updated)
+        criterion = _prompt_score_criterion(rubric)
+        if criterion is _BACK:
+            return
+        if criterion is None:
+            input("Press Enter to continue...")
+            continue
+        assert isinstance(criterion, dict)
+
+        while True:
+            _print_score_context_header(
+                "Select Score Level",
+                class_id,
+                assignment_id,
+                student_id,
+                criterion=criterion,
+            )
+            level = _prompt_score_level(criterion)
+            if level is _BACK:
+                break
+            if level is None:
+                input("Press Enter to continue...")
+                continue
+            assert isinstance(level, dict)
+
+            _print_score_context_header(
+                "Confirm Score",
+                class_id,
+                assignment_id,
+                student_id,
+                criterion=criterion,
+            )
+            teacher_note = _confirm_score_selection(criterion, level)
+            if teacher_note is _BACK:
+                continue
+            if teacher_note is _CANCEL:
+                return
+            score_teacher_note = (
+                teacher_note if isinstance(teacher_note, str) else None
+            )
+            try:
+                updated = set_review_score(
+                    workspace_root,
+                    class_id,
+                    assignment_id,
+                    student_id,
+                    criterion_id=criterion["criterion_id"],
+                    label=criterion["label"],
+                    score=level["score"],
+                    max_score=criterion["max_score"],
+                    scale=criterion["scale"],
+                    teacher_note=score_teacher_note,
+                )
+            except (ReviewScoreError, OSError) as error:
+                print(f"Error: could not set review score: {error}")
+                input("Press Enter to continue...")
+                continue
+            print_updated_review_score(updated)
+            return
 
 
 def _menu_missing_rubric(
@@ -1486,7 +1726,7 @@ def _load_assignment_for_review(
         return None
 
 
-def _prompt_score_criterion(rubric: dict[str, Any]) -> dict[str, Any] | None:
+def _prompt_score_criterion(rubric: dict[str, Any]) -> dict[str, Any] | object | None:
     criteria = _sorted_records(rubric["criteria"])
     print(f"Rubric: {rubric['title']}")
     print(f"{_format_secondary_id(rubric['rubric_id'])}")
@@ -1511,15 +1751,14 @@ def _prompt_score_criterion(rubric: dict[str, Any]) -> dict[str, Any] | None:
     print()
     selection = input("Select criterion: ").strip()
     if selection == "" or selection.casefold() == "b":
-        print("Set score canceled.")
-        return None
+        return _BACK
     if selection.isdigit() and 1 <= int(selection) <= len(criteria):
         return criteria[int(selection) - 1]
     print("Invalid criterion selection. Please choose a listed criterion or Back.")
     return None
 
 
-def _prompt_score_level(criterion: dict[str, Any]) -> dict[str, Any] | None:
+def _prompt_score_level(criterion: dict[str, Any]) -> dict[str, Any] | object | None:
     levels = _sorted_records(criterion["levels"])
     print(criterion["label"])
     print()
@@ -1533,8 +1772,7 @@ def _prompt_score_level(criterion: dict[str, Any]) -> dict[str, Any] | None:
     print()
     selection = input("Select score: ").strip()
     if selection == "" or selection.casefold() == "b":
-        print("Set score canceled.")
-        return None
+        return _BACK
     if selection.isdigit() and 1 <= int(selection) <= len(levels):
         return levels[int(selection) - 1]
     for level in levels:
@@ -1566,13 +1804,30 @@ def _confirm_score_selection(
         if selection == "2":
             note = input("Teacher note, or B to go back: ").strip()
             if note.casefold() == "b":
-                print("Set score canceled.")
-                return _CANCEL
+                return _BACK
             return note or None
         if selection in {"", "3"} or selection.casefold() == "b":
-            print("Set score canceled.")
-            return _CANCEL
+            return _BACK
         print("Invalid selection. Please enter a number from 1 to 3.")
+
+
+def _print_score_context_header(
+    title: str,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    criterion: dict[str, Any],
+) -> None:
+    from quillan.menu import clear_screen, print_menu_header
+
+    clear_screen()
+    print_menu_header(title)
+    print(f"Criterion: {criterion['label']}")
+    print(f"Class: {class_id}")
+    print(f"Assignment: {assignment_id}")
+    print(f"Student: {student_id}")
+    print()
 
 
 def _menu_set_custom_review_score(
@@ -1894,6 +2149,12 @@ def _print_review_record_summary(
     if not path.exists():
         print("Review record: not started")
         print("Review record file: missing")
+        _print_requirement_check_summary(
+            workspace_root,
+            class_id,
+            assignment_id,
+            {},
+        )
         return
 
     try:
@@ -1909,11 +2170,59 @@ def _print_review_record_summary(
     print(f"Tags: {_count_record_items(record, 'tags')}")
     print(f"Comments: {_count_record_items(record, 'comments')}")
     print(f"Scores: {_count_record_items(record, 'scores')}")
+    _print_requirement_check_summary(
+        workspace_root,
+        class_id,
+        assignment_id,
+        _current_requirement_checks(workspace_root, class_id, assignment_id, student_id),
+    )
 
 
 def _count_record_items(record: dict[str, Any], field: str) -> int:
     value = record.get(field)
     return len(value) if isinstance(value, list) else 0
+
+
+def _print_requirement_check_summary(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    checks: dict[str, dict[str, Any]],
+) -> None:
+    assignment = _load_assignment_for_summary(workspace_root, class_id, assignment_id)
+    requirements = (
+        _requirement_items_from_assignment(assignment)
+        if assignment is not None
+        else []
+    )
+    if not requirements:
+        print("Minimum requirements: none configured")
+        return
+    requirement_keys = {str(requirement["key"]) for requirement in requirements}
+    relevant_checks = [
+        check
+        for key, check in checks.items()
+        if key in requirement_keys and isinstance(check, dict)
+    ]
+    unmet_count = sum(1 for check in relevant_checks if check.get("met") is False)
+    print(
+        "Requirement checks: "
+        f"{len(relevant_checks)}/{len(requirements)} complete; "
+        f"{unmet_count} unmet"
+    )
+
+
+def _load_assignment_for_summary(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> dict[str, Any] | None:
+    try:
+        return load_assignment_config(
+            assignment_config_path(workspace_root, class_id, assignment_id)
+        )
+    except (AssignmentConfigError, OSError):
+        return None
 
 
 def _open_submission_evidence(
@@ -1934,6 +2243,218 @@ def _open_submission_evidence(
         return
 
     print_opened_submission_review(opened)
+
+
+def _menu_record_requirement_checks(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    while True:
+        _print_review_action_header(
+            "Requirement Checks", class_id, assignment_id, student_id
+        )
+        assignment = _load_assignment_for_review(
+            workspace_root, class_id, assignment_id
+        )
+        if assignment is None:
+            input("Press Enter to continue...")
+            return
+        requirements = _requirement_items_from_assignment(assignment)
+        if not requirements:
+            print("Minimum requirements: none configured")
+            print()
+            print("No review record was changed.")
+            input("Press Enter to continue...")
+            return
+
+        existing = _current_requirement_checks(
+            workspace_root, class_id, assignment_id, student_id
+        )
+        print("Requirement Checks")
+        print()
+        for index, requirement in enumerate(requirements, start=1):
+            print(
+                f"{index}. {requirement['label']}: "
+                f"{_requirement_status(existing.get(requirement['key']))}"
+            )
+        print("B. Back")
+        print()
+        selection = input("Select requirement: ").strip()
+        if selection == "" or selection.casefold() == "b":
+            return
+        if not selection.isdigit() or not (1 <= int(selection) <= len(requirements)):
+            print("Invalid requirement selection. Please choose a listed item or Back.")
+            input("Press Enter to continue...")
+            continue
+
+        requirement = requirements[int(selection) - 1]
+        result = _prompt_and_set_requirement_check(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            requirement,
+            existing.get(requirement["key"]),
+        )
+        if result is _BACK:
+            continue
+        input("Press Enter to continue...")
+
+
+def _prompt_and_set_requirement_check(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    requirement: dict[str, Any],
+    current_check: dict[str, Any] | None,
+) -> object | None:
+    _print_review_action_header(
+        "Record Requirement Check", class_id, assignment_id, student_id
+    )
+    print(requirement["question"])
+    print()
+    print(requirement["detail"])
+    print(f"Current value: {_requirement_status(current_check)}")
+    print()
+    print("1. True / Yes / Met")
+    print("2. False / No / Not met")
+    print("B. Back")
+    print()
+    selection = input("Select status: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        return _BACK
+    if selection == "1":
+        met = True
+    elif selection == "2":
+        met = False
+    else:
+        print("Invalid status. Enter 1 for met or 2 for not met.")
+        return None
+
+    teacher_note = input(
+        "Teacher note (leave blank if not applicable): "
+    ).strip() or None
+    try:
+        updated = set_requirement_check(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            requirement_key=str(requirement["key"]),
+            label=str(requirement["label"]),
+            expected=requirement["expected"],
+            met=met,
+            teacher_note=teacher_note,
+        )
+    except (ReviewRequirementError, OSError) as error:
+        print(f"Error: could not record requirement check: {error}")
+        return None
+
+    print()
+    print("Recorded requirement check:")
+    print(f"Requirement: {updated.requirement_key}")
+    print(f"Met: {_format_yes_no(updated.met)}")
+    print(f"Action: {'created' if updated.was_created else 'updated'}")
+    print(f"Review state: {updated.review_state}")
+    print(f"Review record: {updated.review_record_relative_path}")
+    return None
+
+
+def _requirement_items_from_assignment(
+    assignment: dict[str, Any],
+) -> list[dict[str, Any]]:
+    basic_requirements = assignment.get("basic_requirements")
+    if not isinstance(basic_requirements, dict):
+        return []
+
+    items: list[dict[str, Any]] = []
+    numeric_specs = (
+        (
+            "paragraphs_min",
+            "Minimum paragraphs",
+            "Does the submission meet the minimum paragraph requirement?",
+            "Minimum: {value} paragraphs",
+        ),
+        (
+            "paragraphs_max",
+            "Maximum paragraphs",
+            "Does the submission stay within the maximum paragraph requirement?",
+            "Maximum: {value} paragraphs",
+        ),
+        (
+            "word_count_min",
+            "Minimum word count",
+            "Does the submission meet the minimum word count?",
+            "Minimum: {value} words",
+        ),
+        (
+            "word_count_max",
+            "Maximum word count",
+            "Does the submission stay within the maximum word count?",
+            "Maximum: {value} words",
+        ),
+    )
+    for key, label, question, detail_template in numeric_specs:
+        value = basic_requirements.get(key)
+        if isinstance(value, int) and not isinstance(value, bool):
+            items.append(
+                {
+                    "key": key,
+                    "label": label,
+                    "expected": value,
+                    "question": question,
+                    "detail": detail_template.format(value=value),
+                }
+            )
+
+    required_elements = basic_requirements.get("required_elements")
+    if isinstance(required_elements, list):
+        for element in required_elements:
+            if not isinstance(element, str) or not element.strip():
+                continue
+            normalized = element.strip()
+            items.append(
+                {
+                    "key": f"required_elements:{normalized}",
+                    "label": f"Required element: {normalized}",
+                    "expected": normalized,
+                    "question": "Does the submission include this required element?",
+                    "detail": f"Required element: {normalized}",
+                }
+            )
+    return items
+
+
+def _current_requirement_checks(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> dict[str, dict[str, Any]]:
+    path = review_record_path(workspace_root, class_id, assignment_id, student_id)
+    if not path.exists():
+        return {}
+    try:
+        record = load_review_record(path)
+    except (OSError, ReviewRecordError):
+        return {}
+    checks = record.get("requirement_checks")
+    if not isinstance(checks, list):
+        return {}
+    return {
+        str(check["requirement_key"]): check
+        for check in checks
+        if isinstance(check, dict) and isinstance(check.get("requirement_key"), str)
+    }
+
+
+def _requirement_status(check: dict[str, Any] | None) -> str:
+    if check is None:
+        return "not checked"
+    return "met" if check.get("met") is True else "not met"
 
 
 def _menu_manage_submission_pages(
@@ -2260,7 +2781,9 @@ def _launch_assignment_review_actions(
         if choice in {"", "6"}:
             return 0
         elif choice == "1":
-            student_id = _prompt_student_id(workspace_root, class_id, status)
+            student_id = _prompt_student_id(
+                workspace_root, class_id, assignment_id, status
+            )
             if student_id is not None:
                 _launch_selected_student_review(
                     workspace_root,

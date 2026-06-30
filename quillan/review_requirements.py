@@ -1,4 +1,4 @@
-"""Teacher-entered criterion scores for submission review records."""
+"""Teacher-entered assignment requirement checks for review records."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ from quillan.review_record_paths import (
     review_record_path,
     write_review_record,
 )
+from quillan.submission_guidance import missing_submission_guidance
 from quillan.submission_manifest import (
     SubmissionManifestError,
     load_submission_manifest,
@@ -28,74 +29,65 @@ from quillan.submission_manifest_paths import (
     SubmissionManifestPathError,
     submission_manifest_path,
 )
-from quillan.submission_guidance import missing_submission_guidance
 
-_SEQUENTIAL_SCORE_ID = re.compile(r"^score_(\d{4})$")
+_SEQUENTIAL_REQUIREMENT_CHECK_ID = re.compile(r"^requirement_check_(\d{4})$")
 
 
-class ReviewScoreError(Exception):
-    """Raised when a teacher score cannot be set safely."""
+class ReviewRequirementError(Exception):
+    """Raised when a requirement check cannot be set safely."""
 
 
 @dataclass(frozen=True, slots=True)
-class UpdatedReviewScore:
-    """Information about a criterion score set in a review record."""
+class UpdatedRequirementCheck:
+    """Information about a requirement check set in a review record."""
 
     class_id: str
     assignment_id: str
     student_id: str
     review_record_path: Path
     review_record_relative_path: str
-    score_id: str
-    criterion_id: str
-    score: int | float
-    max_score: int | float
+    requirement_check_id: str
+    requirement_key: str
+    met: bool
     review_state: str
     updated_at: str
     was_created: bool
 
 
-def set_review_score(
+def set_requirement_check(
     workspace_root: str | Path,
     class_id: str,
     assignment_id: str,
     student_id: str,
     *,
-    criterion_id: str,
+    requirement_key: str,
     label: str,
-    score: int | float,
-    max_score: int | float,
-    scale: str | None = None,
+    expected: str | int | float,
+    met: bool,
     teacher_note: str | None = None,
     updated_at: datetime | str | None = None,
-) -> UpdatedReviewScore:
-    """Set or update one teacher-entered criterion score."""
-    normalized_criterion_id = _normalize_required_string(
-        criterion_id, "criterion_id"
+) -> UpdatedRequirementCheck:
+    """Set or update one teacher-entered assignment requirement check."""
+    normalized_key = _normalize_required_string(
+        requirement_key, "requirement_key"
     )
     normalized_label = _normalize_required_string(label, "label")
-    normalized_score = _normalize_number(score, "score", minimum=0)
-    normalized_max_score = _normalize_number(
-        max_score, "max_score", minimum=0, exclusive_minimum=True
-    )
-    if normalized_score > normalized_max_score:
-        raise ReviewScoreError("score must be less than or equal to max_score.")
-    normalized_scale = _normalize_optional_string(scale, "scale")
-    normalized_teacher_note = _normalize_optional_string(
-        teacher_note, "teacher_note"
-    )
+    normalized_expected = _normalize_expected(expected)
+    if not isinstance(met, bool):
+        raise ReviewRequirementError("met must be a boolean.")
+    normalized_note = _normalize_optional_string(teacher_note, "teacher_note")
     normalized_updated_at = _normalize_timestamp(updated_at)
 
     try:
-        resolved_workspace_root = Path(workspace_root).resolve(strict=False)
+        resolved_root = Path(workspace_root).resolve(strict=False)
         manifest_path = submission_manifest_path(
-            resolved_workspace_root,
+            resolved_root,
             class_id,
             assignment_id,
             student_id,
         )
         record_path = review_record_path(
-            resolved_workspace_root,
+            resolved_root,
             class_id,
             assignment_id,
             student_id,
@@ -106,15 +98,15 @@ def set_review_score(
         SubmissionManifestPathError,
         ReviewRecordPathError,
     ) as error:
-        raise ReviewScoreError(str(error)) from error
+        raise ReviewRequirementError(str(error)) from error
 
     if not manifest_path.exists():
-        raise ReviewScoreError(missing_submission_guidance())
+        raise ReviewRequirementError(missing_submission_guidance())
 
     try:
         manifest = load_submission_manifest(manifest_path)
     except (OSError, SubmissionManifestError) as error:
-        raise ReviewScoreError(
+        raise ReviewRequirementError(
             f"Could not load submission manifest: {error}"
         ) from error
     _validate_identity(
@@ -129,7 +121,7 @@ def set_review_score(
         try:
             review = load_review_record(record_path)
         except (OSError, ReviewRecordError) as error:
-            raise ReviewScoreError(
+            raise ReviewRequirementError(
                 f"Could not load review record: {error}"
             ) from error
         _validate_identity(
@@ -140,12 +132,10 @@ def set_review_score(
             student_id=student_id,
         )
         updated_review = copy.deepcopy(review)
+        updated_review.setdefault("requirement_checks", [])
         if updated_review["review_state"] == "not_started":
             updated_review["review_state"] = "in_progress"
     else:
-        manifest_relative_path = _workspace_relative_path(
-            manifest_path, resolved_workspace_root, "submission manifest"
-        )
         updated_review = {
             "schema_version": "1",
             "module": "quillan",
@@ -153,7 +143,9 @@ def set_review_score(
             "class_id": class_id,
             "assignment_id": assignment_id,
             "student_id": student_id,
-            "submission_manifest_path": manifest_relative_path,
+            "submission_manifest_path": _workspace_relative_path(
+                manifest_path, resolved_root, "submission manifest"
+            ),
             "review_state": "in_progress",
             "notes": [],
             "tags": [],
@@ -165,38 +157,37 @@ def set_review_score(
             "module_details": {},
         }
 
-    existing_score = next(
+    checks = updated_review["requirement_checks"]
+    existing_check = next(
         (
             candidate
-            for candidate in updated_review["scores"]
-            if candidate["criterion_id"] == normalized_criterion_id
+            for candidate in checks
+            if candidate["requirement_key"] == normalized_key
         ),
         None,
     )
-    was_created = existing_score is None
-    if existing_score is None:
-        score_id = _next_score_id(updated_review["scores"])
-        existing_score = {"score_id": score_id}
-        updated_review["scores"].append(existing_score)
+    was_created = existing_check is None
+    if existing_check is None:
+        check_id = _next_requirement_check_id(checks)
+        existing_check = {"requirement_check_id": check_id}
+        checks.append(existing_check)
     else:
-        score_id = existing_score["score_id"]
+        check_id = existing_check["requirement_check_id"]
 
-    existing_score.clear()
-    existing_score.update(
+    existing_check.clear()
+    existing_check.update(
         {
-            "score_id": score_id,
-            "criterion_id": normalized_criterion_id,
+            "requirement_check_id": check_id,
+            "requirement_key": normalized_key,
             "label": normalized_label,
-            "score": normalized_score,
-            "max_score": normalized_max_score,
+            "expected": normalized_expected,
+            "met": met,
             "updated_at": normalized_updated_at,
             "module_details": {},
         }
     )
-    if normalized_scale is not None:
-        existing_score["scale"] = normalized_scale
-    if normalized_teacher_note is not None:
-        existing_score["teacher_note"] = normalized_teacher_note
+    if normalized_note is not None:
+        existing_check["teacher_note"] = normalized_note
     updated_review["updated_at"] = normalized_updated_at
 
     try:
@@ -206,8 +197,8 @@ def set_review_score(
             updated_review,
             overwrite=record_path.exists(),
         )
-        record_relative_path = _workspace_relative_path(
-            record_path, resolved_workspace_root, "review record"
+        relative_path = _workspace_relative_path(
+            record_path, resolved_root, "review record"
         )
     except (
         OSError,
@@ -216,18 +207,19 @@ def set_review_score(
         ReviewRecordError,
         ReviewRecordPathError,
     ) as error:
-        raise ReviewScoreError(f"Could not write review record: {error}") from error
+        raise ReviewRequirementError(
+            f"Could not write review record: {error}"
+        ) from error
 
-    return UpdatedReviewScore(
+    return UpdatedRequirementCheck(
         class_id=class_id,
         assignment_id=assignment_id,
         student_id=student_id,
         review_record_path=record_path,
-        review_record_relative_path=record_relative_path,
-        score_id=score_id,
-        criterion_id=normalized_criterion_id,
-        score=normalized_score,
-        max_score=normalized_max_score,
+        review_record_relative_path=relative_path,
+        requirement_check_id=check_id,
+        requirement_key=normalized_key,
+        met=met,
         review_state=updated_review["review_state"],
         updated_at=normalized_updated_at,
         was_created=was_created,
@@ -236,7 +228,7 @@ def set_review_score(
 
 def _normalize_required_string(value: str, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
-        raise ReviewScoreError(f"{field} must be a non-empty string.")
+        raise ReviewRequirementError(f"{field} must be a non-empty string.")
     return value.strip()
 
 
@@ -246,24 +238,20 @@ def _normalize_optional_string(value: str | None, field: str) -> str | None:
     return _normalize_required_string(value, field)
 
 
-def _normalize_number(
-    value: int | float,
-    field: str,
-    *,
-    minimum: int,
-    exclusive_minimum: bool = False,
-) -> int | float:
+def _normalize_expected(value: str | int | float) -> str | int | float:
+    if isinstance(value, str):
+        if not value.strip():
+            raise ReviewRequirementError(
+                "expected must be a non-empty string or finite number."
+            )
+        return value.strip()
     if (
         isinstance(value, bool)
         or not isinstance(value, (int, float))
         or not math.isfinite(value)
     ):
-        raise ReviewScoreError(f"{field} must be a finite number.")
-    if exclusive_minimum and value <= minimum:
-        raise ReviewScoreError(f"{field} must be greater than {minimum}.")
-    if not exclusive_minimum and value < minimum:
-        raise ReviewScoreError(
-            f"{field} must be greater than or equal to {minimum}."
+        raise ReviewRequirementError(
+            "expected must be a non-empty string or finite number."
         )
     return value
 
@@ -273,20 +261,22 @@ def _normalize_timestamp(value: datetime | str | None) -> str:
         return datetime.now(timezone.utc).isoformat()
     if isinstance(value, datetime):
         if value.tzinfo is None or value.utcoffset() is None:
-            raise ReviewScoreError("updated_at datetime must be timezone-aware.")
+            raise ReviewRequirementError(
+                "updated_at datetime must be timezone-aware."
+            )
         return value.isoformat()
     if not isinstance(value, str):
-        raise ReviewScoreError(
+        raise ReviewRequirementError(
             "updated_at must be a timezone-aware datetime or ISO 8601 string."
         )
     try:
         parsed = datetime.fromisoformat(value)
     except ValueError as error:
-        raise ReviewScoreError(
+        raise ReviewRequirementError(
             "updated_at must be a timezone-aware ISO 8601 string."
         ) from error
     if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise ReviewScoreError(
+        raise ReviewRequirementError(
             "updated_at must be a timezone-aware ISO 8601 string."
         )
     return value
@@ -300,32 +290,31 @@ def _validate_identity(
     assignment_id: str,
     student_id: str,
 ) -> None:
-    requested = {
+    for field, expected in {
         "class_id": class_id,
         "assignment_id": assignment_id,
         "student_id": student_id,
-    }
-    for field, expected in requested.items():
+    }.items():
         actual = record[field]
         if actual != expected:
-            raise ReviewScoreError(
+            raise ReviewRequirementError(
                 f"{record_name} {field} is {actual!r}, expected {expected!r}."
             )
 
 
-def _next_score_id(scores: list[dict[str, Any]]) -> str:
-    existing_ids = {score["score_id"] for score in scores}
+def _next_requirement_check_id(checks: list[dict[str, Any]]) -> str:
+    existing_ids = {check["requirement_check_id"] for check in checks}
     highest = max(
         (
             int(match.group(1))
-            for score_id in existing_ids
-            if (match := _SEQUENTIAL_SCORE_ID.fullmatch(score_id))
+            for check_id in existing_ids
+            if (match := _SEQUENTIAL_REQUIREMENT_CHECK_ID.fullmatch(check_id))
         ),
         default=0,
     )
     candidate_number = highest + 1
     while True:
-        candidate = f"score_{candidate_number:04d}"
+        candidate = f"requirement_check_{candidate_number:04d}"
         if candidate not in existing_ids:
             return candidate
         candidate_number += 1
@@ -339,6 +328,6 @@ def _workspace_relative_path(
     try:
         return path.resolve(strict=False).relative_to(workspace_root).as_posix()
     except (OSError, RuntimeError, ValueError) as error:
-        raise ReviewScoreError(
+        raise ReviewRequirementError(
             f"Could not resolve workspace-relative {description} path: {error}"
         ) from error
