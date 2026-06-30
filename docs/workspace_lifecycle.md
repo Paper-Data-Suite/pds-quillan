@@ -19,6 +19,12 @@ The shared `pds-core` contracts define assignment and submission locations as
 well as the active scan source-retention and routing-review layout.
 Quillan-specific files remain inside those shared routes.
 
+Quillan is subject-agnostic. The workspace layout supports written-response
+review across disciplines; optional NJ ELA starter materials are one
+installable starter pack, not a separate workspace model. For the
+prepared-review sequence and subject-neutral storage map, see
+[`prepared_review_workflow.md`](prepared_review_workflow.md).
+
 ## Workspace vs. Installation
 
 The PDS workspace root is teacher-controlled data storage. It is separate from
@@ -66,6 +72,19 @@ The expected current and reserved layout is:
             class_summary.csv
           debug/
 ```
+
+Reusable prepared-review materials live outside individual assignments:
+
+```text
+<PDS workspace root>/shared/comment_banks/<bank_id>.json
+<PDS workspace root>/shared/tag_banks/<tag_bank_id>.json
+<PDS workspace root>/shared/rubrics/<rubric_id>.json
+```
+
+Starter-material installation is bounded to those shared review-material
+folders. It does not create assignments, rosters, scans, submissions, review
+records, exports, pds-core standards files, pds-core standards profiles, or
+pds-core route helpers.
 
 The active scan paths, assignment directory, `assignment.json`,
 `submissions/`, and each student's submission directory follow shared PDS
@@ -173,10 +192,11 @@ evidence is not rewritten as teacher judgment is added.
 
 ### `submissions/<student_id>/requirements.json`
 
-A future requirements-check result for basic teacher-defined assignment
-requirements. It should record whether requirements were met, partially met,
-not met, or not checked. It is a teacher-review support artifact, not a score.
-Requirements checking is not implemented by this document.
+A reserved future requirements-check location for basic teacher-defined
+assignment requirements. The implemented workflow stores current
+teacher-entered requirement checks in `review.json.requirement_checks`, not in
+a sibling `requirements.json`. Requirement checks are teacher-review support
+artifacts, not scores.
 
 ### `submissions/<student_id>/review.json`
 
@@ -188,8 +208,8 @@ comments, and an explicit `review_state`. It references the adjacent
 `review_state` is independent of `submission_state`; neither state
 automatically determines the other. The complete record contract is defined
 in [`review_record_contract.md`](review_record_contract.md). Loading, writing,
-direct review commands, and derived exports are implemented by the runtime;
-guided teacher-facing menu review is not.
+direct review commands, guided teacher-facing menu review, and derived exports
+are implemented by the runtime.
 
 Earlier separate `tags.json` and `scores.json` designs are historical and are
 not alternate active v0.7 paths.
@@ -251,13 +271,13 @@ tags, selected comments, or feedback export.
 Teacher-review artifacts are records created by the teacher or confirmed
 through teacher review:
 
-* `requirements.json`
 * `review.json`
 
 These records support efficient review while preserving the teacher as the
 source of evaluative judgment. They should remain connected to, but separate
 from, the source evidence. `review.json` is the canonical active v0.7
-container for notes, tags, criterion scores, and selected comments.
+container for notes, tags, criterion scores, selected comments, and
+teacher-entered requirement checks.
 
 ### Derived Exports and Reports
 

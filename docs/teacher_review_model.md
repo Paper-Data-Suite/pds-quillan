@@ -12,6 +12,12 @@ teacher-approved language, and summarize confirmed records. It must not
 present an unconfirmed software judgment as a teacher evaluation or encourage
 review without reading the student's work.
 
+Quillan is subject-agnostic. It can support teacher review of written
+responses across disciplines, such as lab explanations, research responses,
+reflection journals, technical explanations, design rationales, short
+constructed responses, and ELA writing. ELA starter materials are one optional
+starter pack, not the boundary of the review model.
+
 This document defines the review model and data boundaries. Quillan currently
 validates relevant data contracts, can prepare printable writing-response
 pages, supports direct teacher-entered notes, tags, comments, and criterion
@@ -20,6 +26,10 @@ supports teacher-entered minimum requirement checks from assignment
 configuration, and can export student feedback and assignment summaries. AI
 tagging, AI scoring, AI feedback, automatic requirements evaluation, and
 automatic grading are not implemented.
+
+For the teacher workflow before and during review, including reusable
+materials, snapshot behavior, storage paths, and starter-material boundaries,
+see [`prepared_review_workflow.md`](prepared_review_workflow.md).
 
 ## Source Evidence
 
@@ -69,6 +79,11 @@ where a tag or comment applies.
 Earlier designs named separate `tags.json` and `scores.json` files. Those are
 historical concepts, not alternate active v0.7 records. Their content belongs
 in `review.json`.
+
+Prepared reusable materials, source evidence, teacher-review artifacts, and
+exports serve different roles: source banks and rubrics live under `shared/`,
+`submission.json` describes reviewable evidence, `review.json` stores teacher
+review decisions, and exports are derived from those canonical records.
 
 ## Derived Exports and Reports
 

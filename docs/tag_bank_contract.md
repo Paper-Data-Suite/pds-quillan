@@ -10,7 +10,14 @@ shared/tag_banks/<tag_bank_id>.json
 ```
 
 Tags are review aids. They are not grades, scores, mastery determinations,
-generated feedback, automatic judgments, or automatic tag suggestions.
+generated feedback, student-facing feedback by default, automatic judgments,
+or automatic tag suggestions.
+
+Tag banks are subject-agnostic and can support teacher observations for
+written work across disciplines. For the full prepared-review workflow and
+the relationship among tag banks, comment banks, rubrics, notes, requirement
+checks, review targets, exports, and snapshots, see
+[`prepared_review_workflow.md`](prepared_review_workflow.md).
 
 Quillan owns tag-bank review-material files. Optional `standard_ids` are
 pds-core durable standard references only; Quillan does not create, import,
@@ -102,7 +109,8 @@ are skipped unless exact overwrite confirmation is provided. See
 
 Review mode can select reusable tags by bank, category, and template. Selected
 values are snapshotted into `review.json.tags` with `source: "tag_bank"`,
-`tag_bank_id`, and `tag_template_id`. Later edits to the source tag bank do not
+`tag_bank_id`, and `tag_template_id`, plus copied label, polarity, optional
+severity, and optional metadata. Later edits to the source tag bank do not
 rewrite prior review records.
 
 Custom one-off tags remain available and existing direct CLI add-tag behavior
