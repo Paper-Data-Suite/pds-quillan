@@ -4,6 +4,13 @@ Rubrics and scoring profiles are teacher-authored reusable review materials.
 They let a teacher score prepared criteria by selecting a criterion and level
 during review instead of typing raw score fields.
 
+Rubrics are subject-agnostic scoring profiles. They define criteria and
+levels; they do not automatically grade, calculate final grades or
+percentages, infer mastery, or generate feedback. For the full
+prepared-review workflow and the relationship among rubrics, comment banks,
+tag banks, notes, requirement checks, review targets, exports, and snapshots,
+see [`prepared_review_workflow.md`](prepared_review_workflow.md).
+
 Quillan stores shared rubric profiles at:
 
 ```text

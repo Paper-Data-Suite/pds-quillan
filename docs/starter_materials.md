@@ -6,6 +6,13 @@ local development, and teacher-editable classroom starting points.
 Starter materials are examples and starting points only. They are not official
 curriculum, not a recommended grading policy, and not a substitute for
 teacher-created local review materials.
+They are not automatic evaluation.
+
+Quillan itself is subject-agnostic. Synthetic examples are portable examples
+for testing and onboarding, while NJ ELA starter materials are one optional
+subject-specific starter pack. Neither group changes the underlying
+prepared-review workflow described in
+[`prepared_review_workflow.md`](prepared_review_workflow.md).
 
 ## What Is Included
 
@@ -25,6 +32,10 @@ banks, and rubrics for argument, informational/expository writing, literary and
 comparative analysis, research writing, narrative/creative writing, poetry,
 journals, reflections, open responses, short responses, short stories, and
 memoir/personal narrative contexts.
+
+Both groups install through the same workflow and copy only shared review
+materials. Neither group creates assignments, rosters, submissions, review
+records, exports, or standards profiles.
 
 The source files live under:
 

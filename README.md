@@ -1,8 +1,17 @@
 # Quillan
 
-Quillan is a local-first standards-based writing evidence capture system for teachers.
+Quillan is a local-first, subject-agnostic prepared-review system for
+teachers reviewing written student work.
 
-It helps teachers organize, review, tag, score, and respond to student writing by connecting specific written work to standards, comments, rubric scores, review states, and structured instructional data.
+It helps teachers organize, review, tag, score, and respond to written
+responses by connecting specific student evidence to standards metadata,
+comments, rubric scores, review states, and structured instructional data.
+
+Quillan is not an ELA-only grader. It supports written response review across
+subjects, including English / ELA, history / social studies, science, computer
+science, technical writing, world languages, arts/humanities, and
+interdisciplinary writing tasks. NJ ELA starter materials are one optional
+installable starter pack, not the identity of the whole application.
 
 Quillan is part of the broader Paper Data Suite concept, alongside ScoreForm.
 
@@ -83,11 +92,30 @@ Opening evidence delegates only to the local system viewer. Exports are derived 
 
 Quillan is not an AI essay grader.
 
-It is a teacher-controlled system for turning student writing into structured instructional evidence.
+It is a teacher-controlled system for turning written student work into
+structured instructional evidence.
 
 Teacher judgment remains primary. Teachers read the work, decide what matters, choose tags and comments, enter scores, and decide review state.
 
 Quillan may eventually help summarize teacher-created data, but final scoring and feedback decisions belong to the teacher.
+
+## Prepared Review Workflow
+
+Teachers prepare reusable review materials before grading, then select and
+snapshot those materials while reviewing actual student evidence. Comment
+banks provide student-facing feedback language, tag banks provide structured
+teacher observations, rubrics/scoring profiles provide reusable criteria and
+levels, notes remain private teacher context, and requirement checks document
+teacher-confirmed assignment conditions.
+
+Selected comments, tags, and rubric scores are copied into `review.json` with
+source provenance. Later edits to source banks or rubrics do not silently
+change old reviews. Student feedback, class summaries, and standards summaries
+are derived from teacher-confirmed review records, not live source banks.
+
+The full subject-agnostic workflow, storage map, snapshot behavior, and
+starter-material boundaries are documented in
+[`docs/prepared_review_workflow.md`](docs/prepared_review_workflow.md).
 
 ## Implemented v0.8.0 Workflow
 
@@ -751,6 +779,12 @@ The canonical teacher-review `review.json` contract is documented in:
 docs/review_record_contract.md
 ```
 
+The subject-agnostic prepared-review workflow is documented in:
+
+```text
+docs/prepared_review_workflow.md
+```
+
 The printable response contract and implemented generator are described in:
 
 ```text
@@ -761,6 +795,12 @@ The shared workspace layout and the distinction between active and reserved path
 
 ```text
 docs/workspace_lifecycle.md
+```
+
+The rubric / scoring profile contract is documented in:
+
+```text
+docs/rubric_contract.md
 ```
 
 The scan-routing rules and failure behavior are documented in:

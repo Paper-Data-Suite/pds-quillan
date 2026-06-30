@@ -28,6 +28,11 @@ contract. Runtime loading and validation are implemented by
 implemented by `quillan.review_record_paths`. Teacher-facing commands and
 derived exports are implemented for the v0.7 review workflows.
 
+For the subject-agnostic prepared-review workflow that explains how reusable
+materials, source evidence, review artifacts, exports, targets, and snapshots
+fit together, see
+[`prepared_review_workflow.md`](prepared_review_workflow.md).
+
 ## Top-Level Structure
 
 Every version `1` review record contains:

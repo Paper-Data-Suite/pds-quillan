@@ -18,6 +18,11 @@ contract is implemented and used by printable PDF generation.
 For the expected workspace layout and file lifecycle of these records, see
 [`workspace_lifecycle.md`](workspace_lifecycle.md).
 
+For the subject-agnostic prepared-review workflow, including the differences
+among reusable materials, source evidence, review artifacts, exports, snapshot
+behavior, and starter-material boundaries, see
+[`prepared_review_workflow.md`](prepared_review_workflow.md).
+
 For the teacher-controlled relationship among evidence, review artifacts,
 scores, feedback, and reports, see
 [`teacher_review_model.md`](teacher_review_model.md).
@@ -53,7 +58,12 @@ For the required structure and human-readable elements of a printable
 writing-response page, see
 [`printable_response_template.md`](printable_response_template.md).
 
-All examples must use synthetic data only. No real student names, writing, rosters, scores, or personally identifiable student information should be committed to the repository.
+All examples must use synthetic data only. No real student names, writing,
+rosters, scores, or personally identifiable student information should be
+committed to the repository. ELA starter files are examples of one
+subject-specific starter pack. They do not make Quillan's data contracts
+ELA-specific, and ordinary examples should remain synthetic unless they are
+explicitly starter-material content.
 
 ## Design Principles
 
@@ -81,7 +91,8 @@ Quillan does not store or validate an independent standards-profile JSON shape. 
 
 ## Shared Comment Bank
 
-A shared comment bank is reusable teacher-authored source data stored at:
+A shared comment bank is subject-agnostic, reusable teacher-authored feedback
+language stored at:
 
 ```text
 shared/comment_banks/<bank_id>.json
@@ -115,7 +126,8 @@ validate standards through comment-bank workflows.
 
 ## Shared Tag Bank
 
-A shared tag bank is reusable teacher-authored source data stored at:
+A shared tag bank is subject-agnostic, reusable teacher-authored observation
+source data stored at:
 
 ```text
 shared/tag_banks/<tag_bank_id>.json
@@ -487,51 +499,37 @@ writing area, and output location are defined in
 ## Requirements Check
 
 A requirements check records structural or compliance information about basic
-assignment conditions. It may be manually entered, teacher-confirmed, or
-eventually computed for low-risk facts such as word count or paragraph count.
-It remains separate from writing-quality scoring and does not determine a
-score or feedback decision.
+assignment conditions. Current Quillan requirement checks are teacher-entered
+booleans generated from assignment `basic_requirements`. They remain separate
+from writing-quality scoring and do not determine a score or feedback
+decision.
 
-Suggested path:
+Storage location:
 
 ```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/requirements.json
+review.json.requirement_checks
 ```
 
-Requirement status values:
+Quillan does not count words, count paragraphs, parse writing, run OCR, use
+AI, or infer whether a required element is present. The teacher records
+whether each requirement was met.
 
-* `met`
-* `partially_met`
-* `not_met`
-* `not_checked`
-
-Example:
+Example item:
 
 ```json
 {
-  "submission_id": "sub_0001_villainy_final_essay_synthetic",
-  "student_id": "stu_0001",
-  "assignment_id": "villainy_final_essay_synthetic",
-  "requirements_check": {
-    "paragraph_count": {
-      "expected_min": 4,
-      "expected_max": 6,
-      "actual": 5,
-      "status": "met"
-    },
-    "word_count": {
-      "expected_min": 500,
-      "actual": 487,
-      "status": "partially_met"
-    },
-    "required_elements": {
-      "thesis": "met",
-      "textual evidence": "met",
-      "comparative reasoning": "partially_met"
-    }
-  }
+  "requirement_check_id": "requirement_check_0001",
+  "requirement_key": "required_elements:claim",
+  "label": "Required element: claim",
+  "expected": "claim",
+  "met": true,
+  "updated_at": "2026-06-29T00:00:00+00:00",
+  "module_details": {}
 }
 ```
+
+The complete current shape is defined in
+[`review_record_contract.md`](review_record_contract.md#requirement-checks).
 
 ## Review Tags and Scores
 

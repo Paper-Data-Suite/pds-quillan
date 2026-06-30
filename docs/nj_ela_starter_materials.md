@@ -11,6 +11,12 @@ common high school ELA writing tasks and 2023 NJSLS-ELA references. They are
 not official state curriculum, not district grading policy, and not automatic
 evaluation.
 
+Quillan is not an ELA-only grader. These files are one optional installable
+starter pack for ELA classrooms; Quillan's comment-bank, tag-bank, rubric,
+assignment, submission, and review-record structures remain subject-agnostic.
+For the general prepared-review model, see
+[`prepared_review_workflow.md`](prepared_review_workflow.md).
+
 ## What Is Included
 
 Each grade band includes comment banks, tag banks, and rubrics for:
