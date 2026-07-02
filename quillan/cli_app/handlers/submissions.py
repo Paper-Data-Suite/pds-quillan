@@ -79,7 +79,7 @@ def handle_open_evidence(args: argparse.Namespace) -> int:
 
 
 def handle_open_submission(args: argparse.Namespace) -> int:
-    """Open the selected evidence for one canonical student submission."""
+    """Open selected evidence for one canonical student submission."""
     try:
         workspace_root = resolve_workspace_root()
         opened = open_student_submission_for_review(
@@ -87,6 +87,7 @@ def handle_open_submission(args: argparse.Namespace) -> int:
             args.class_id,
             args.assignment_id,
             args.student_id,
+            page_number=args.page,
         )
     except (WorkspaceRootError, SubmissionReviewOpeningError) as error:
         print(f"Error: could not open student submission: {error}")

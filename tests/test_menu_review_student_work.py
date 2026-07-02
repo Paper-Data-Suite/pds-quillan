@@ -16,7 +16,10 @@ from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
 )
-from quillan.submission_review_opening import OpenedSubmissionReview
+from quillan.submission_review_opening import (
+    OpenedSubmissionEvidencePage,
+    OpenedSubmissionReview,
+)
 
 CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"
@@ -154,6 +157,42 @@ def _write_manifest(root: Path) -> Path:
         STUDENT_ID,
     )
     return write_submission_manifest(path, manifest)
+
+
+def _write_two_page_manifest(root: Path) -> Path:
+    path = submission_manifest_path(
+        root,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+    )
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    second_evidence_path = (
+        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/"
+        "response_stu_0001_pg_002.pdf"
+    )
+    (root / second_evidence_path).write_bytes(b"synthetic evidence page 2")
+    manifest["expected_pages"] = 2
+    manifest["pages"].append(
+        {
+            "page_number": 2,
+            "page_state": "present",
+            "selected_evidence_id": "evidence_002",
+            "evidence": [
+                {
+                    "evidence_id": "evidence_002",
+                    "routed_evidence_path": second_evidence_path,
+                    "evidence_role": "selected",
+                    "evidence_state": "active",
+                    "duplicate_number": None,
+                    "created_at": TIMESTAMP,
+                    "retained_source": None,
+                    "module_details": {},
+                }
+            ],
+        }
+    )
+    return write_submission_manifest(path, manifest, overwrite=True)
 
 
 def _review_record() -> dict[str, Any]:
@@ -348,20 +387,27 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
         class_id: str,
         assignment_id: str,
         student_id: str,
+        *,
+        page_number: int | None = None,
     ) -> OpenedSubmissionReview:
         calls.append((Path(workspace_root), class_id, assignment_id, student_id))
+        assert page_number == 1
         return OpenedSubmissionReview(
             class_id=class_id,
             assignment_id=assignment_id,
             student_id=student_id,
             manifest_path=workspace / "submission.json",
             manifest_relative_path="classes/class/submissions/submission.json",
-            page_number=1,
-            evidence_id="evidence_001",
-            evidence_path=workspace / "evidence.pdf",
-            evidence_relative_path="classes/class/scans/evidence.pdf",
             submission_state="unreviewed",
-            page_state="present",
+            opened_pages=(
+                OpenedSubmissionEvidencePage(
+                    page_number=1,
+                    evidence_id="evidence_001",
+                    evidence_path=workspace / "evidence.pdf",
+                    evidence_relative_path="classes/class/scans/evidence.pdf",
+                    page_state="present",
+                ),
+            ),
         )
 
     monkeypatch.setattr(
@@ -379,7 +425,124 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
     output = capsys.readouterr().out
     assert calls == [(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)]
     assert "Opened submission evidence for review:" in output
-    assert "Path: classes/class/scans/evidence.pdf" in output
+    assert (
+        "- Page 1: present; Evidence: evidence_001; "
+        "Path: classes/class/scans/evidence.pdf"
+    ) in output
+
+
+def test_review_menu_multi_page_open_submission_selects_one_page(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_two_page_manifest(workspace)
+    calls: list[int | None] = []
+
+    def open_submission(
+        _workspace_root: str | Path,
+        class_id: str,
+        assignment_id: str,
+        student_id: str,
+        *,
+        page_number: int | None = None,
+    ) -> OpenedSubmissionReview:
+        calls.append(page_number)
+        return OpenedSubmissionReview(
+            class_id=class_id,
+            assignment_id=assignment_id,
+            student_id=student_id,
+            manifest_path=workspace / "submission.json",
+            manifest_relative_path="classes/class/submissions/submission.json",
+            submission_state="unreviewed",
+            opened_pages=(
+                OpenedSubmissionEvidencePage(
+                    page_number=2,
+                    evidence_id="evidence_002",
+                    evidence_path=workspace / "evidence_2.pdf",
+                    evidence_relative_path="classes/class/scans/evidence_2.pdf",
+                    page_state="present",
+                ),
+            ),
+        )
+
+    monkeypatch.setattr(
+        review_menu,
+        "open_student_submission_for_review",
+        open_submission,
+    )
+    _menu_input(
+        monkeypatch,
+        ["2", "1", "1", "1", "1", "1", "1", "2", "", "12", "6", "", "4", "6"],
+    )
+
+    assert main(["menu"]) == 0
+
+    output = capsys.readouterr().out
+    assert calls == [2]
+    assert "Open Submission Evidence" in output
+    assert "1. Page 1 - present - evidence_001" in output
+    assert "2. Page 2 - present - evidence_002" in output
+    assert "A. Open all selected pages" in output
+
+
+def test_review_menu_multi_page_open_submission_opens_all_pages(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_two_page_manifest(workspace)
+    calls: list[int | None] = []
+
+    def open_submission(
+        _workspace_root: str | Path,
+        class_id: str,
+        assignment_id: str,
+        student_id: str,
+        *,
+        page_number: int | None = None,
+    ) -> OpenedSubmissionReview:
+        calls.append(page_number)
+        return OpenedSubmissionReview(
+            class_id=class_id,
+            assignment_id=assignment_id,
+            student_id=student_id,
+            manifest_path=workspace / "submission.json",
+            manifest_relative_path="classes/class/submissions/submission.json",
+            submission_state="unreviewed",
+            opened_pages=(
+                OpenedSubmissionEvidencePage(
+                    page_number=1,
+                    evidence_id="evidence_001",
+                    evidence_path=workspace / "evidence.pdf",
+                    evidence_relative_path="classes/class/scans/evidence.pdf",
+                    page_state="present",
+                ),
+                OpenedSubmissionEvidencePage(
+                    page_number=2,
+                    evidence_id="evidence_002",
+                    evidence_path=workspace / "evidence_2.pdf",
+                    evidence_relative_path="classes/class/scans/evidence_2.pdf",
+                    page_state="present",
+                ),
+            ),
+        )
+
+    monkeypatch.setattr(
+        review_menu,
+        "open_student_submission_for_review",
+        open_submission,
+    )
+    _menu_input(
+        monkeypatch,
+        ["2", "1", "1", "1", "1", "1", "1", "A", "", "12", "6", "", "4", "6"],
+    )
+
+    assert main(["menu"]) == 0
+
+    output = capsys.readouterr().out
+    assert calls == [None]
+    assert "Pages opened: 2" in output
 
 
 def test_review_menu_reports_missing_openable_evidence(

@@ -23,20 +23,57 @@ class SubmissionReviewOpeningError(Exception):
 
 
 @dataclass(frozen=True, slots=True)
+class SelectedSubmissionEvidencePage:
+    """Selected evidence metadata for one logical submission page."""
+
+    page_number: int
+    evidence_id: str
+    evidence_relative_path: str
+    page_state: str
+
+
+@dataclass(frozen=True, slots=True)
+class OpenedSubmissionEvidencePage:
+    """Information about one submission evidence file opened for review."""
+
+    page_number: int
+    evidence_id: str
+    evidence_path: Path
+    evidence_relative_path: str
+    page_state: str
+
+
+@dataclass(frozen=True, slots=True)
 class OpenedSubmissionReview:
-    """Information about a student submission evidence file opened for review."""
+    """Information about student submission evidence opened for review."""
 
     class_id: str
     assignment_id: str
     student_id: str
     manifest_path: Path
     manifest_relative_path: str
-    page_number: int
-    evidence_id: str
-    evidence_path: Path
-    evidence_relative_path: str
     submission_state: str
-    page_state: str
+    opened_pages: tuple[OpenedSubmissionEvidencePage, ...]
+
+    @property
+    def page_number(self) -> int:
+        return self.opened_pages[0].page_number
+
+    @property
+    def evidence_id(self) -> str:
+        return self.opened_pages[0].evidence_id
+
+    @property
+    def evidence_path(self) -> Path:
+        return self.opened_pages[0].evidence_path
+
+    @property
+    def evidence_relative_path(self) -> str:
+        return self.opened_pages[0].evidence_relative_path
+
+    @property
+    def page_state(self) -> str:
+        return self.opened_pages[0].page_state
 
 
 def open_student_submission_for_review(
@@ -44,8 +81,10 @@ def open_student_submission_for_review(
     class_id: str,
     assignment_id: str,
     student_id: str,
+    *,
+    page_number: int | None = None,
 ) -> OpenedSubmissionReview:
-    """Open the single selected routed evidence file for one submission."""
+    """Open selected routed evidence files for one submission."""
     try:
         resolved_workspace_root = Path(workspace_root).resolve(strict=False)
         manifest_path = submission_manifest_path(
@@ -73,7 +112,97 @@ def open_student_submission_for_review(
         assignment_id=assignment_id,
         student_id=student_id,
     )
-    page, selected_id = _find_selected_page(manifest)
+    selected_pages = selected_submission_evidence_pages(
+        manifest,
+        page_number=page_number,
+    )
+
+    try:
+        manifest_relative_path = manifest_path.resolve(strict=False).relative_to(
+            resolved_workspace_root
+        ).as_posix()
+    except (EvidenceOpeningError, OSError, RuntimeError, ValueError) as error:
+        raise SubmissionReviewOpeningError(
+            f"Could not resolve submission manifest path: {error}"
+        ) from error
+
+    opened_pages: list[OpenedSubmissionEvidencePage] = []
+    for selected_page in selected_pages:
+        try:
+            opened = open_workspace_evidence(
+                resolved_workspace_root,
+                selected_page.evidence_relative_path,
+            )
+        except (EvidenceOpeningError, OSError, RuntimeError, ValueError) as error:
+            raise SubmissionReviewOpeningError(
+                "Could not open selected evidence for "
+                f"page {selected_page.page_number} "
+                f"({selected_page.evidence_relative_path}): {error}"
+            ) from error
+        opened_pages.append(
+            OpenedSubmissionEvidencePage(
+                page_number=selected_page.page_number,
+                evidence_id=selected_page.evidence_id,
+                evidence_path=opened.evidence_path,
+                evidence_relative_path=opened.evidence_relative_path,
+                page_state=selected_page.page_state,
+            )
+        )
+
+    return OpenedSubmissionReview(
+        class_id=class_id,
+        assignment_id=assignment_id,
+        student_id=student_id,
+        manifest_path=manifest_path,
+        manifest_relative_path=manifest_relative_path,
+        submission_state=manifest["submission_state"],
+        opened_pages=tuple(opened_pages),
+    )
+
+
+def selected_submission_evidence_pages(
+    manifest: dict[str, Any],
+    *,
+    page_number: int | None = None,
+) -> tuple[SelectedSubmissionEvidencePage, ...]:
+    """Return selected evidence pages in ascending logical page order."""
+    pages = manifest["pages"]
+    if page_number is not None:
+        matching_page = next(
+            (page for page in pages if page["page_number"] == page_number),
+            None,
+        )
+        if matching_page is None:
+            raise SubmissionReviewOpeningError(
+                f"Submission page {page_number} does not exist."
+            )
+        selected = _selected_evidence_page(matching_page)
+        if selected is None:
+            raise SubmissionReviewOpeningError(
+                f"Submission page {page_number} has no selected evidence to open "
+                f"(page state: {matching_page['page_state']})."
+            )
+        return (selected,)
+
+    selected_pages = [
+        selected
+        for page in pages
+        if (selected := _selected_evidence_page(page)) is not None
+    ]
+    if not selected_pages:
+        raise SubmissionReviewOpeningError(
+            "Submission has no selected evidence to open. Use status listing "
+            "to inspect missing, duplicate, needs-rescan, or unselected evidence."
+        )
+    return tuple(sorted(selected_pages, key=lambda page: page.page_number))
+
+
+def _selected_evidence_page(
+    page: dict[str, Any],
+) -> SelectedSubmissionEvidencePage | None:
+    selected_id = page["selected_evidence_id"]
+    if selected_id is None:
+        return None
     evidence = next(
         (
             candidate
@@ -87,31 +216,10 @@ def open_student_submission_for_review(
             f"Selected evidence ID '{selected_id}' was not found on "
             f"page {page['page_number']}."
         )
-
-    try:
-        opened = open_workspace_evidence(
-            resolved_workspace_root,
-            evidence["routed_evidence_path"],
-        )
-        manifest_relative_path = manifest_path.resolve(strict=False).relative_to(
-            resolved_workspace_root
-        ).as_posix()
-    except (EvidenceOpeningError, OSError, RuntimeError, ValueError) as error:
-        raise SubmissionReviewOpeningError(
-            f"Could not open selected evidence: {error}"
-        ) from error
-
-    return OpenedSubmissionReview(
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
-        manifest_path=manifest_path,
-        manifest_relative_path=manifest_relative_path,
+    return SelectedSubmissionEvidencePage(
         page_number=page["page_number"],
         evidence_id=selected_id,
-        evidence_path=opened.evidence_path,
-        evidence_relative_path=opened.evidence_relative_path,
-        submission_state=manifest["submission_state"],
+        evidence_relative_path=evidence["routed_evidence_path"],
         page_state=page["page_state"],
     )
 
@@ -134,26 +242,3 @@ def _validate_manifest_identity(
             raise SubmissionReviewOpeningError(
                 f"Submission manifest {field} is {actual!r}, expected {expected!r}."
             )
-
-
-def _find_selected_page(
-    manifest: dict[str, Any],
-) -> tuple[dict[str, Any], str]:
-    selected = [
-        (page, page["selected_evidence_id"])
-        for page in manifest["pages"]
-        if page["selected_evidence_id"] is not None
-    ]
-    if not selected:
-        raise SubmissionReviewOpeningError(
-            "Submission has no selected evidence to open. Use status listing "
-            "to inspect missing, duplicate, needs-rescan, or unselected evidence."
-        )
-    if len(selected) > 1:
-        raise SubmissionReviewOpeningError(
-            "Submission has multiple selected evidence files; open-submission "
-            "currently requires exactly one selected evidence file."
-        )
-
-    page, selected_id = selected[0]
-    return page, selected_id

@@ -180,14 +180,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     open_submission_parser = subparsers.add_parser(
         "open-submission",
-        help="Open the selected evidence for one student submission.",
+        help="Open selected evidence pages for one student submission.",
         description=(
-            "Load one canonical student submission manifest and open its single "
-            "selected routed evidence file. This command is read-only and "
-            "requires exactly one selected evidence item."
+            "Open selected evidence pages for one student submission. By "
+            "default, opens all selected evidence pages in page-number order. "
+            "Use --page to open one logical response page."
         ),
     )
     _add_submission_identity_arguments(open_submission_parser)
+    open_submission_parser.add_argument(
+        "--page",
+        type=positive_integer,
+        help="Open only one logical response page number.",
+    )
     open_submission_parser.set_defaults(handler=handle_open_submission)
 
     review_state_parser = subparsers.add_parser(

@@ -31,10 +31,12 @@ def print_opened_submission_review(opened: OpenedSubmissionReview) -> None:
     print(f"Assignment: {opened.assignment_id}")
     print(f"Student: {opened.student_id}")
     print(f"Submission state: {opened.submission_state}")
-    print(f"Page: {opened.page_number}")
-    print(f"Page state: {opened.page_state}")
-    print(f"Evidence: {opened.evidence_id}")
-    print(f"Path: {opened.evidence_relative_path}")
+    print(f"Pages opened: {len(opened.opened_pages)}")
+    for page in opened.opened_pages:
+        print(
+            f"- Page {page.page_number}: {page.page_state}; "
+            f"Evidence: {page.evidence_id}; Path: {page.evidence_relative_path}"
+        )
     print(f"Manifest: {opened.manifest_relative_path}")
 
 
