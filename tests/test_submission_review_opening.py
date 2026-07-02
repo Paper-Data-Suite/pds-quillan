@@ -17,6 +17,7 @@ from quillan.submission_manifest_paths import (
     write_submission_manifest,
 )
 from quillan.submission_review_opening import (
+    OpenedSubmissionEvidencePage,
     OpenedSubmissionReview,
     SubmissionReviewOpeningError,
     open_student_submission_for_review,
@@ -51,12 +52,14 @@ def _evidence(
 def _page(
     page_number: int = 1,
     evidence_id: str = "evidence_001",
+    *,
+    path: str = EVIDENCE_PATH,
 ) -> dict[str, Any]:
     return {
         "page_number": page_number,
         "page_state": "present",
         "selected_evidence_id": evidence_id,
-        "evidence": [_evidence(evidence_id)],
+        "evidence": [_evidence(evidence_id, path=path)],
     }
 
 
@@ -127,12 +130,16 @@ def test_success_opens_selected_evidence_and_returns_context(
             f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
             f"{STUDENT_ID}/submission.json"
         ),
-        page_number=1,
-        evidence_id="evidence_001",
-        evidence_path=evidence_path,
-        evidence_relative_path=EVIDENCE_PATH,
         submission_state="unreviewed",
-        page_state="present",
+        opened_pages=(
+            OpenedSubmissionEvidencePage(
+                page_number=1,
+                evidence_id="evidence_001",
+                evidence_path=evidence_path,
+                evidence_relative_path=EVIDENCE_PATH,
+                page_state="present",
+            ),
+        ),
     )
 
 
@@ -187,18 +194,128 @@ def test_no_selected_evidence_raises(tmp_path: Path) -> None:
         )
 
 
-def test_multiple_selected_evidence_files_raise(tmp_path: Path) -> None:
+def test_multiple_selected_evidence_files_open_in_page_order(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    page_1_path = (
+        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/"
+        "response_00107_pg_001.pdf"
+    )
+    page_2_path = (
+        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/"
+        "response_00107_pg_002.pdf"
+    )
     _write_manifest(
         tmp_path,
-        _manifest(pages=[_page(), _page(2, "evidence_002")]),
+        _manifest(
+            pages=[
+                _page(2, "evidence_002", path=page_2_path),
+                _page(1, "evidence_001", path=page_1_path),
+            ]
+        ),
+    )
+    calls: list[str | Path] = []
+
+    def open_evidence(
+        _workspace_root: str | Path,
+        relative_path: str | Path,
+    ) -> OpenedEvidence:
+        calls.append(relative_path)
+        return OpenedEvidence(tmp_path / relative_path, str(relative_path))
+
+    monkeypatch.setattr(
+        quillan.submission_review_opening,
+        "open_workspace_evidence",
+        open_evidence,
     )
 
-    with pytest.raises(SubmissionReviewOpeningError, match="multiple selected"):
+    opened = open_student_submission_for_review(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+    )
+
+    assert calls == [page_1_path, page_2_path]
+    assert [page.page_number for page in opened.opened_pages] == [1, 2]
+
+
+def test_page_number_opens_only_requested_page(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    page_2_path = (
+        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/"
+        "response_00107_pg_002.pdf"
+    )
+    _write_manifest(
+        tmp_path,
+        _manifest(
+            pages=[
+                _page(1, "evidence_001"),
+                _page(2, "evidence_002", path=page_2_path),
+            ]
+        ),
+    )
+    calls: list[str | Path] = []
+
+    def open_evidence(
+        _workspace_root: str | Path,
+        relative_path: str | Path,
+    ) -> OpenedEvidence:
+        calls.append(relative_path)
+        return OpenedEvidence(tmp_path / relative_path, str(relative_path))
+
+    monkeypatch.setattr(
+        quillan.submission_review_opening,
+        "open_workspace_evidence",
+        open_evidence,
+    )
+
+    opened = open_student_submission_for_review(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        page_number=2,
+    )
+
+    assert calls == [page_2_path]
+    assert [page.page_number for page in opened.opened_pages] == [2]
+
+
+def test_missing_page_number_raises_clear_error(tmp_path: Path) -> None:
+    _write_manifest(tmp_path, _manifest())
+
+    with pytest.raises(SubmissionReviewOpeningError, match="page 2 does not exist"):
         open_student_submission_for_review(
             tmp_path,
             CLASS_ID,
             ASSIGNMENT_ID,
             STUDENT_ID,
+            page_number=2,
+        )
+
+
+def test_page_number_without_selected_evidence_raises_clear_error(
+    tmp_path: Path,
+) -> None:
+    page = _page()
+    page["selected_evidence_id"] = None
+    page["evidence"][0]["evidence_role"] = "candidate"
+    _write_manifest(tmp_path, _manifest(pages=[page]))
+
+    with pytest.raises(
+        SubmissionReviewOpeningError,
+        match="page 1 has no selected evidence",
+    ):
+        open_student_submission_for_review(
+            tmp_path,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            page_number=1,
         )
 
 
@@ -308,12 +425,23 @@ def test_cli_success_prints_teacher_context(
         student_id=STUDENT_ID,
         manifest_path=tmp_path / "submission.json",
         manifest_relative_path="classes/class/submissions/00107/submission.json",
-        page_number=1,
-        evidence_id="evidence_001",
-        evidence_path=tmp_path / "evidence.pdf",
-        evidence_relative_path="classes/class/scans/evidence.pdf",
         submission_state="unreviewed",
-        page_state="present",
+        opened_pages=(
+            OpenedSubmissionEvidencePage(
+                page_number=1,
+                evidence_id="evidence_001",
+                evidence_path=tmp_path / "evidence.pdf",
+                evidence_relative_path="classes/class/scans/evidence.pdf",
+                page_state="present",
+            ),
+            OpenedSubmissionEvidencePage(
+                page_number=2,
+                evidence_id="evidence_002",
+                evidence_path=tmp_path / "evidence_2.pdf",
+                evidence_relative_path="classes/class/scans/evidence_2.pdf",
+                page_state="present",
+            ),
+        ),
     )
     monkeypatch.setattr(
         cli_submissions, "resolve_workspace_root", lambda: tmp_path
@@ -321,7 +449,7 @@ def test_cli_success_prints_teacher_context(
     monkeypatch.setattr(
         cli_submissions,
         "open_student_submission_for_review",
-        lambda *_args: opened,
+        lambda *_args, **_kwargs: opened,
     )
 
     assert (
@@ -333,14 +461,70 @@ def test_cli_success_prints_teacher_context(
         f"Assignment: {ASSIGNMENT_ID}",
         f"Student: {STUDENT_ID}",
         "Submission state: unreviewed",
-        "Page: 1",
-        "Page state: present",
-        "Evidence: evidence_001",
+        "Pages opened: 2",
+        "- Page 1: present; Evidence: evidence_001; "
         "Path: classes/class/scans/evidence.pdf",
+        "- Page 2: present; Evidence: evidence_002; "
+        "Path: classes/class/scans/evidence_2.pdf",
         "Manifest: classes/class/submissions/00107/submission.json",
     ):
         assert expected in output
     assert str(tmp_path) not in output
+
+
+def test_cli_page_option_is_passed_to_opener(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[int | None] = []
+    opened = OpenedSubmissionReview(
+        class_id=CLASS_ID,
+        assignment_id=ASSIGNMENT_ID,
+        student_id=STUDENT_ID,
+        manifest_path=tmp_path / "submission.json",
+        manifest_relative_path="classes/class/submissions/00107/submission.json",
+        submission_state="unreviewed",
+        opened_pages=(
+            OpenedSubmissionEvidencePage(
+                page_number=2,
+                evidence_id="evidence_002",
+                evidence_path=tmp_path / "evidence_2.pdf",
+                evidence_relative_path="classes/class/scans/evidence_2.pdf",
+                page_state="present",
+            ),
+        ),
+    )
+    monkeypatch.setattr(
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
+
+    def open_submission(
+        *_args: object,
+        page_number: int | None = None,
+    ) -> OpenedSubmissionReview:
+        calls.append(page_number)
+        return opened
+
+    monkeypatch.setattr(
+        cli_submissions,
+        "open_student_submission_for_review",
+        open_submission,
+    )
+
+    assert (
+        main(
+            [
+                "open-submission",
+                CLASS_ID,
+                ASSIGNMENT_ID,
+                STUDENT_ID,
+                "--page",
+                "2",
+            ]
+        )
+        == 0
+    )
+    assert calls == [2]
 
 
 def test_cli_failure_returns_one(
@@ -352,7 +536,7 @@ def test_cli_failure_returns_one(
         cli_submissions, "resolve_workspace_root", lambda: tmp_path
     )
 
-    def fail(*_args: object) -> OpenedSubmissionReview:
+    def fail(*_args: object, **_kwargs: object) -> OpenedSubmissionReview:
         raise SubmissionReviewOpeningError("manifest is unavailable")
 
     monkeypatch.setattr(

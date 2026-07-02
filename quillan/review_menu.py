@@ -73,8 +73,17 @@ from quillan.storage import assignment_config_path
 from quillan.submission_review_opening import (
     SubmissionReviewOpeningError,
     open_student_submission_for_review,
+    selected_submission_evidence_pages,
 )
-from quillan.submission_manifest import ALLOWED_SUBMISSION_STATES
+from quillan.submission_manifest import (
+    ALLOWED_SUBMISSION_STATES,
+    SubmissionManifestError,
+    load_submission_manifest,
+)
+from quillan.submission_manifest_paths import (
+    SubmissionManifestPathError,
+    submission_manifest_path,
+)
 from quillan.submission_page_management import (
     SubmissionPageManagementError,
     exclude_submission_page,
@@ -2285,18 +2294,85 @@ def _open_submission_evidence(
     assignment_id: str,
     student_id: str,
 ) -> None:
+    page_number = _choose_submission_evidence_page(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+    )
+    if page_number is _BACK:
+        print("Open submission evidence canceled.")
+        return
+    assert page_number is None or isinstance(page_number, int)
+
     try:
         opened = open_student_submission_for_review(
             workspace_root,
             class_id,
             assignment_id,
             student_id,
+            page_number=page_number,
         )
     except SubmissionReviewOpeningError as error:
         print(f"Error: could not open student submission: {error}")
         return
 
     print_opened_submission_review(opened)
+
+
+def _choose_submission_evidence_page(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> int | None | object:
+    try:
+        manifest_path = submission_manifest_path(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+        )
+        manifest = load_submission_manifest(manifest_path)
+        pages = selected_submission_evidence_pages(manifest)
+    except (
+        OSError,
+        RuntimeError,
+        SubmissionManifestError,
+        SubmissionManifestPathError,
+        SubmissionReviewOpeningError,
+    ) as error:
+        print(f"Error: could not load selected evidence pages: {error}")
+        return _BACK
+
+    if len(pages) == 1:
+        return pages[0].page_number
+
+    _print_review_action_header(
+        "Open Submission Evidence", class_id, assignment_id, student_id
+    )
+    print("Selected evidence pages:")
+    for index, page in enumerate(pages, start=1):
+        print(
+            f"{index}. Page {page.page_number} - {page.page_state} - "
+            f"{page.evidence_id}"
+        )
+    print("A. Open all selected pages")
+    print("B. Back")
+    print()
+
+    choice = input("Select page: ").strip()
+    print()
+    if choice.lower() == "b" or choice == "":
+        return _BACK
+    if choice.lower() == "a":
+        return None
+    if choice.isdecimal():
+        index = int(choice)
+        if 1 <= index <= len(pages):
+            return pages[index - 1].page_number
+    print("Invalid selection. Please choose a listed page, A, or B.")
+    return _BACK
 
 
 def _menu_record_requirement_checks(
