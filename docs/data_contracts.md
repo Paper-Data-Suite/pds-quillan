@@ -6,6 +6,11 @@ These contracts describe the expected file formats for standards profiles,
 shared comment banks, shared tag banks, assignments, submissions, teacher
 review, requirements checks, feedback exports, and reports.
 
+Some contracts describe currently implemented runtime behavior. Others define
+target v0.8.6 standards-based contract shapes that may precede full runtime
+implementation. When a contract is a target contract, the relevant document
+states that status explicitly.
+
 Standards profiles, assignment configurations, the legacy text-oriented
 submission metadata shape, comment banks, tag banks, review records, and the
 reviewable-evidence submission manifest have implemented Python validation
@@ -32,8 +37,10 @@ Focus Standards, review-unit configuration, rating scales, student-facing
 prompts, minimum requirements, and minimum-requirement policy, see
 [`assignment_contract.md`](assignment_contract.md).
 
-For the canonical v0.7 `review.json` schema, including notes, tags, scores,
-comments, state, paths, timestamps, and mutation policy, see
+For the target v0.8.6 standards-based `review.json` schema, including minimum
+requirement checks, review units, review-unit Focus Standard observations,
+overall Focus Standard ratings, feedback choices, export metadata, paths,
+timestamps, and mutation policy, see
 [`review_record_contract.md`](review_record_contract.md).
 
 For reusable teacher-authored feedback language stored at
@@ -89,8 +96,11 @@ Quillan stores only durable pds-core references:
 
 * assignment `standards_profile_id` stores a pds-core `profile_id`;
 * target v0.8.6 assignment `focus_standard_ids` stores pds-core `standard_id` values;
+* target v0.8.6 review-unit Focus Standard observations store pds-core `standard_id` values;
+* target v0.8.6 overall Focus Standard ratings store pds-core `standard_id` values;
+* target v0.8.6 Focus Standard feedback records store pds-core `standard_id` values;
 * legacy pre-v0.8.6 assignment `focus_standards` stores pds-core `standard_id` values;
-* review tags and selected reusable comments may store optional pds-core `standard_id` provenance;
+* legacy review tags and selected reusable comments may store optional pds-core `standard_id` provenance; and
 * reusable tag templates may store optional pds-core `standard_ids` as source metadata.
 
 Quillan does not store or validate an independent standards-profile JSON shape. Legacy Quillan standards-profile files were removed before production use as a pre-1.0 breaking cleanup, with no production-data migration.
@@ -130,6 +140,11 @@ review materials. Optional `standard_ids` are pds-core durable references only;
 Quillan does not create, import, edit, retire, reactivate, or authoritatively
 validate standards through comment-bank workflows.
 
+Under the target v0.8.6 standards-based review model, reusable feedback
+language should eventually be organized around Focus Standards and actual
+teacher use. Legacy comment-bank workflows remain implementation history until
+the reusable Focus Standard comment workflow is redesigned.
+
 ## Shared Tag Bank
 
 A shared tag bank is subject-agnostic, reusable teacher-authored observation
@@ -163,6 +178,11 @@ Tag banks are Quillan-owned review materials. Optional `standard_ids` are
 pds-core durable references only; Quillan does not create, import, edit,
 retire, reactivate, or authoritatively validate standards through tag-bank
 workflows. Optional `criterion_ids` are rubric/scoring metadata only.
+
+Under the target v0.8.6 standards-based review model, generic review tags are
+superseded by review-unit Focus Standard observations. Legacy tag-bank
+workflows remain implementation history until obsolete generic review-material
+workflows are removed or replaced.
 
 ## Assignment
 
@@ -484,31 +504,64 @@ page, and retained-source provenance is stored in
 This contract does not define or implement scoring, tagging, requirements
 checking, feedback, reports, OCR, handwriting recognition, AI suggestions, AI
 scoring, AI feedback drafting, or automatic grading. Those concerns remain
-separate from the evidence manifest. Teacher-entered notes, tags, scores,
-selected comments, and their distinct `review_state` belong in the adjacent
-`review.json` defined by
-[`review_record_contract.md`](review_record_contract.md). This manifest
-contract also does not implement evidence discovery, manifest merging, file
-opening, review commands, or state updates.
+separate from the evidence manifest.
+
+Target v0.8.6 teacher-entered standards-based review data belongs in the
+adjacent `review.json` defined by
+[`review_record_contract.md`](review_record_contract.md). That target review
+record stores minimum requirement checks, review units, review-unit Focus
+Standard observations, overall Focus Standard ratings, feedback choices, export
+metadata, and private notes.
+
+Current runtime implementation may still support legacy schema version `1`
+review records containing notes, tags, criterion scores, selected comments, and
+requirement checks until the v0.8.6 implementation issues update validators and
+workflows.
+
+This manifest contract also does not implement evidence discovery, manifest
+merging, file opening, review commands, or state updates.
 
 ## Submission Review Record
 
-The canonical active v0.7 teacher-review artifact is:
+The target v0.8.6 standards-based teacher-review artifact is:
 
 ```text
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
 ```
 
-It stores teacher-entered notes, tags, criterion scores, selected comments,
-and a `review_state` that is independent of the evidence manifest's
-`submission_state`. All required fields, nested record shapes, identifier and
-reference rules, controlled vocabularies, timestamp policy,
-workspace-relative path policy, and append-versus-update behavior are defined
-in [`review_record_contract.md`](review_record_contract.md).
+The target schema version `2` review record stores teacher-entered or
+teacher-confirmed standards-based review data for one student submission. It is
+defined in [`review_record_contract.md`](review_record_contract.md).
+
+A schema version `2` review record includes:
+
+* identity fields;
+* a reference to the adjacent `submission.json`;
+* a reference to the associated `assignment.json`;
+* explicit `review_state`;
+* minimum requirement checks;
+* minimum-requirement outcome;
+* review units;
+* review-unit Focus Standard observations;
+* overall Focus Standard ratings;
+* Focus Standard feedback choices and comments;
+* export metadata; and
+* private teacher notes.
 
 The adjacent `submission.json` remains the canonical evidence manifest.
 `review.json` references that manifest and its evidence IDs without copying
 routed evidence paths.
+
+The associated `assignment.json` remains the source of truth for the
+student-facing prompt, writing type, standards profile, Focus Standards,
+review-unit labels, rating scale, basic requirements, and minimum-requirement
+policy.
+
+The old schema version `1` review shape centered on `notes`, `tags`, `scores`,
+`comments`, and `requirement_checks` is legacy development history. Those
+fields are superseded by the standards-based schema version `2` model. Current
+runtime validators and tests may still use schema version `1` until later
+implementation work updates them.
 
 ## Writing-Response Payload
 
@@ -550,12 +603,17 @@ writing area, and output location are defined in
 ## Requirements Check
 
 A requirements check records structural or compliance information about basic
-assignment conditions. Current Quillan requirement checks are teacher-entered
-booleans generated from assignment `basic_requirements`. They remain separate
-from writing-quality scoring and do not determine a score or feedback
-decision.
+assignment conditions. Quillan requirement checks are teacher-entered booleans
+generated from assignment `basic_requirements`. They remain separate from
+writing-quality ratings and do not determine a score or feedback decision.
 
-Storage location:
+Target v0.8.6 storage location:
+
+```text
+review.json.minimum_requirement_checks
+```
+
+Legacy schema version `1` storage location:
 
 ```text
 review.json.requirement_checks
@@ -574,50 +632,94 @@ Example item:
   "label": "Required element: claim",
   "expected": "claim",
   "met": true,
-  "updated_at": "2026-06-29T00:00:00+00:00",
+  "teacher_note": null,
+  "updated_at": "2026-07-02T00:00:00+00:00",
   "module_details": {}
 }
 ```
 
-The complete current shape is defined in
-[`review_record_contract.md`](review_record_contract.md#requirement-checks).
+The target v0.8.6 shape is defined in
+[`review_record_contract.md`](review_record_contract.md#minimum-requirement-checks).
 
-## Review Tags and Scores
+## Review-Unit Observations and Overall Ratings
 
-Active tag and criterion-score records are stored only in the `tags` and
-`scores` arrays of canonical `review.json`. Their current shapes and validation
-rules are defined in
-[`review_record_contract.md`](review_record_contract.md). Quillan does not
-create or mirror standalone review-artifact files for either record type.
+Target v0.8.6 review-unit Focus Standard observations and overall Focus
+Standard ratings are stored in canonical `review.json`.
+
+Target storage locations:
+
+```text
+review.json.review_units[].standard_observations
+review.json.overall_standard_ratings
+```
+
+Review-unit observations record teacher judgments about a specific review unit
+and a specific Focus Standard. Overall Focus Standard ratings record the
+teacher's overall standards-performance judgment for the whole submission.
+
+Both record types use Focus Standard IDs from the associated assignment's
+`focus_standard_ids` and rating values from the assignment's `rating_scale`.
+
+Quillan must not infer observations or ratings from student writing, OCR,
+handwriting recognition, tags, comments, or AI.
+
+The complete target shape is defined in
+[`review_record_contract.md`](review_record_contract.md).
+
+## Legacy Review Tags and Scores
+
+Legacy schema version `1` tag and criterion-score records are stored only in
+the `tags` and `scores` arrays of canonical `review.json`.
+
+Target v0.8.6 review records do not use generic tags and criterion scores as
+the central review model.
+
+Legacy `tags` are superseded by review-unit Focus Standard observations.
+
+Legacy `scores` are superseded by overall Focus Standard ratings.
+
+Current runtime validators and tests may still support legacy `tags` and
+`scores` until later v0.8.6 implementation work updates the review workflow.
 
 ## Feedback File (Derived Export)
 
-The feedback file stores student-readable teacher communication derived from a
+A feedback file stores student-readable teacher communication derived from a
 valid matching canonical `review.json`. It is not a canonical review record
 and must not replace `review.json`.
 
-Canonical export path:
+Target v0.8.6 feedback is organized around Focus Standards and generated from
+schema version `2` feedback composition data.
+
+Expected target export paths include:
 
 ```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
-The Markdown contains class, assignment, student, generation timestamp,
-teacher-entered criterion scores, and snapshotted text for comments marked
-`include_in_feedback: true`. Score and included-comment order follow
-`review.json`.
+The v0.8.6 target model treats PDF feedback as a first-class student-facing
+export. Markdown may remain available as an optional derived export.
 
-The export excludes private notes, score `teacher_note` values, structured
-tags, excluded comments, and comment source/provenance metadata. It does not
-read source comment banks, mutate canonical records or evidence, change
-`review_state`, or mark a review exported. Replacing an existing feedback file
-requires explicit overwrite approval.
+Target feedback exports may include teacher-selected overall Focus Standard
+ratings, overall rationales, selected review-unit observations, and
+student-facing feedback comments organized by Focus Standard.
+
+Feedback exports must exclude private notes and any review-unit observations,
+rationales, ratings, or comments the teacher did not choose to include in
+student-facing feedback.
+
+Export files are derived artifacts. They must not replace `review.json`.
+Replacing an existing feedback file requires explicit overwrite approval.
+
+Current runtime feedback export may still produce only Markdown from legacy
+schema version `1` criterion scores and selected comments until later v0.8.6
+implementation work updates export behavior.
 
 ## Standards Summary Report
 
-The standards summary is an implemented assignment-level derived export from
-valid matching `submission.json` and `review.json` records. It remains
-traceable to teacher-entered review artifacts and is not independent evidence.
+The standards summary is an assignment-level derived export from valid matching
+`submission.json` and `review.json` records. It remains traceable to
+teacher-entered review artifacts and is not independent evidence.
 
 Canonical path:
 
@@ -625,29 +727,29 @@ Canonical path:
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 ```
 
-Stable columns:
+Target v0.8.6 standards summaries should aggregate standards-based review data
+from schema version `2` review records, including overall Focus Standard
+ratings and, where useful, review-unit Focus Standard observations.
 
-```text
-class_id,assignment_id,standard_id,student_count,tag_student_count,comment_student_count,tag_count,positive_tag_count,developing_tag_count,negative_tag_count,neutral_tag_count,selected_comment_count,included_comment_count,excluded_comment_count,review_count,missing_review_count,invalid_review_count,missing_submission_count,invalid_submission_count,identity_mismatch_count,source
-```
+The target standards summary should support instructional questions such as:
 
-Each row represents one `standard_id` referenced by a tag or selected
-comment in a valid matching review, sorted by code. Tag counts use the four
-validated polarities. Comment counts distinguish included and excluded
-selected comments. Student counts are distinct per standard and source type.
-Assignment-level record-status counts repeat on each row; a report with no
-standards-linked artifacts contains only the header.
+* which Focus Standards students are meeting, approaching, or still developing;
+* which students need support on a specific Focus Standard;
+* which assignments provide evidence for a standard; and
+* how standards performance changes across assignments over time.
 
-The export ignores tags and comments without `standard_id`, scores, and
-notes. It does not map criteria to standards, infer mastery, calculate grades,
-inspect evidence, read comment banks, use a roster, or mutate canonical
-records.
+Target reports must not infer mastery, calculate grades, inspect evidence,
+read student writing, use AI, or mutate canonical records.
+
+Current runtime standards summary export may still aggregate legacy schema
+version `1` tags and selected comments with `standard_id` values until later
+v0.8.6 implementation work updates reporting behavior.
 
 ## Class Summary Report
 
-A class review summary is an implemented assignment-level derived export for
-review management and instructional planning. It is not a replacement for
-reading student work or consulting the underlying records.
+A class review summary is an assignment-level derived export for review
+management and instructional planning. It is not a replacement for reading
+student work or consulting the underlying records.
 
 Canonical path:
 
@@ -655,25 +757,23 @@ Canonical path:
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
 ```
 
-Stable columns:
+Target v0.8.6 class summaries should use schema version `2` review records to
+summarize review progress, requirement status, returned-without-full-review
+outcomes, overall Focus Standard ratings, feedback/export status, and record
+validity.
 
-```text
-class_id,assignment_id,student_id,row_status,review_state,submission_state,score_count,total_score,total_max_score,included_comment_count,selected_comment_count,tag_count,note_count,feedback_export_exists,submission_manifest_path,review_record_path,feedback_export_path,error
-```
+Target class summaries must not calculate percentages, grades, weighted
+scores, automatic mastery results, or rubric levels.
 
-Each immediate child directory under the assignment `submissions/` directory
-produces one row, sorted by `student_id`. `row_status` is one of `ready`,
-`missing_submission`, `invalid_submission`, `missing_review`, `invalid_review`,
-or `identity_mismatch`. Individual bad records remain visible as status rows.
-Ready rows contain counts and the arithmetic sums of teacher-entered `score`
-and `max_score` values. These totals are not percentages, grades, weighted
-scores, mastery results, or rubric levels.
+The export reads canonical assignment, submission, and review records. It does
+not read feedback contents, evidence files, retained scans, standards profiles,
+or comment banks except where a later reporting contract explicitly defines a
+safe read-only reference. It must not mutate canonical records.
 
-The export reads only expected `submission.json` and `review.json` records and
-checks whether each `exports/feedback.md` path exists. It does not read
-feedback contents, evidence files, retained scans, standards profiles, or
-comment banks, and it does not mutate canonical records. Roster-aware missing
-student reporting remains future work.
+Current runtime class summary export may still report legacy schema version `1`
+counts, criterion-score totals, comment counts, tag counts, note counts, and
+feedback Markdown existence until later v0.8.6 implementation work updates
+reporting behavior.
 
 ## Synthetic Data Policy
 
