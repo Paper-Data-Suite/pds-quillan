@@ -20,8 +20,9 @@ teacher-controlled review updates, reusable-comment selection, reusable-tag
 selection, and student, class, and standards exports are implemented through
 direct CLI commands, guided menus, and Python APIs. The writing-response payload
 contract is implemented and used by printable PDF generation. Target v0.8.6
-standards-based contracts for assignments, review records, and reusable Focus
-Standard comments may not yet have matching runtime validators or workflows.
+standards-based contracts for assignments, review records, reusable Focus
+Standard comments, and student feedback exports may not yet have matching
+runtime validators or workflows.
 
 For the expected workspace layout and file lifecycle of these records, see
 [`workspace_lifecycle.md`](workspace_lifecycle.md).
@@ -51,6 +52,13 @@ For the target v0.8.6 reusable Focus Standard comment contract stored at
 standard, writing type, rating value, purpose, active status, student-facing
 status, source provenance, usage metadata, privacy rules, and snapshot behavior,
 see [`focus_standard_comment_contract.md`](focus_standard_comment_contract.md).
+
+For the target v0.8.6 student feedback export contract, including PDF-first
+student-facing feedback, optional Markdown companion output, Focus
+Standard-organized ratings, optional review-unit observations, optional
+rationales, teacher-selected comments, minimum-requirement return feedback,
+export metadata, stale-export detection, privacy rules, and runtime-status
+boundaries, see [`feedback_export_contract.md`](feedback_export_contract.md).
 
 For legacy reusable teacher-authored feedback language stored at
 `shared/comment_banks/<bank_id>.json`, including categories, writing-type
@@ -116,6 +124,9 @@ Quillan stores only durable pds-core references:
   values;
 * target v0.8.6 reusable Focus Standard comments store pds-core `standard_id`
   values;
+* target v0.8.6 student feedback exports derive standards display from
+  assignment Focus Standards, review-record Focus Standard feedback, and
+  pds-core standards definitions when available;
 * legacy pre-v0.8.6 assignment `focus_standards` stores pds-core
   `standard_id` values;
 * legacy review tags and selected reusable comments may store optional
@@ -763,9 +774,12 @@ Current runtime validators and tests may still support legacy `tags` and
 
 ## Feedback File (Derived Export)
 
-A feedback file stores student-readable teacher communication derived from a
-valid matching canonical `review.json`. It is not a canonical review record
-and must not replace `review.json`.
+A feedback file stores student-readable teacher communication derived from
+matching canonical assignment, submission, and review records. It is not a
+canonical review record and must not replace `review.json`.
+
+The complete target v0.8.6 student feedback export contract is defined in
+[`feedback_export_contract.md`](feedback_export_contract.md).
 
 Target v0.8.6 feedback is organized around Focus Standards and generated from
 schema version `2` feedback composition data.
@@ -777,12 +791,22 @@ Expected target export paths include:
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
-The v0.8.6 target model treats PDF feedback as a first-class student-facing
-export. Markdown may remain available as an optional derived export.
+The v0.8.6 target model treats PDF feedback as the first-class student-facing
+export. Markdown may remain available as an optional plain-text companion
+artifact.
 
-Target feedback exports may include teacher-selected overall Focus Standard
-ratings, overall rationales, selected review-unit observations, and
-student-facing feedback comments organized by Focus Standard.
+Target feedback exports may include:
+
+* assignment identity;
+* student display name or student ID;
+* assignment prompt, when useful;
+* teacher-selected overall Focus Standard ratings;
+* teacher-selected overall rationales;
+* teacher-selected review-unit observations;
+* teacher-selected feedback comments;
+* minimum-requirement return feedback, when work is returned without full
+  review; and
+* export timestamps and derived-artifact metadata.
 
 Student-facing feedback comments may include teacher-written custom comments
 and comments snapshotted from reusable Focus Standard comment sets. Exports must
@@ -794,6 +818,17 @@ student-facing feedback.
 
 Export files are derived artifacts. They must not replace `review.json`.
 Replacing an existing feedback file requires explicit overwrite approval.
+
+Export metadata should be stored under target schema version `2` review records
+at:
+
+```text
+review.json.exports.feedback_pdf
+review.json.exports.feedback_markdown
+```
+
+That metadata should record the generated path, format, generation timestamp,
+and source `updated_at` timestamps used for stale-export detection.
 
 Current runtime feedback export may still produce only Markdown from legacy
 schema version `1` criterion scores and selected comments until later v0.8.6

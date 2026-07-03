@@ -1,0 +1,171 @@
+{
+"schema_version": "1",
+"module": "quillan",
+"record_type": "student_feedback_export_contract_example",
+"example_status": "synthetic_non_runtime_example",
+"primary_export_format": "pdf",
+"companion_export_format": "markdown",
+"source_records": {
+"assignment_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/assignment.json",
+"submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/submission.json",
+"review_record_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/review.json"
+},
+"export_metadata": {
+"feedback_pdf": {
+"path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/exports/feedback.pdf",
+"format": "pdf",
+"generated_at": "2026-07-02T00:00:00+00:00",
+"source_review_updated_at": "2026-07-02T00:00:00+00:00",
+"source_assignment_updated_at": "2026-07-02T00:00:00+00:00",
+"source_submission_updated_at": "2026-07-02T00:00:00+00:00",
+"module_details": {}
+},
+"feedback_markdown": {
+"path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/exports/feedback.md",
+"format": "markdown",
+"generated_at": "2026-07-02T00:00:00+00:00",
+"source_review_updated_at": "2026-07-02T00:00:00+00:00",
+"source_assignment_updated_at": "2026-07-02T00:00:00+00:00",
+"source_submission_updated_at": "2026-07-02T00:00:00+00:00",
+"module_details": {}
+}
+},
+"student_context": {
+"class_id": "english_10_simulation",
+"class_display_name": "English 10 Simulation",
+"student_id": "10001",
+"student_display_name": "Sample Student"
+},
+"assignment_context": {
+"assignment_id": "coming-of-age_literary_analysis",
+"title": "Coming-of-Age Literary Analysis",
+"writing_type": "literary_analysis",
+"student_prompt": "Using evidence from the story, explain how ordinary objects become connected to memory, grief, and power.",
+"standards_profile_id": "english10_2023_njsls_ela",
+"focus_standard_ids": [
+"njsls-ela:RL.CR.9-10.1",
+"njsls-ela:RL.CI.9-10.2",
+"njsls-ela:W.AW.9-10.1"
+],
+"review_unit": {
+"type": "paragraph",
+"singular_label": "paragraph",
+"plural_label": "paragraphs"
+},
+"rating_scale": {
+"scale_id": "standards_4_level",
+"levels": [
+{
+"value": 1,
+"label": "Developing",
+"description": "The work shows limited or emerging evidence of the standard."
+},
+{
+"value": 2,
+"label": "Approaching",
+"description": "The work shows partial evidence of the standard but is uneven, general, or incomplete."
+},
+{
+"value": 3,
+"label": "Meeting",
+"description": "The work shows clear and sufficient evidence of the standard."
+},
+{
+"value": 4,
+"label": "Exceeding",
+"description": "The work shows especially strong, precise, or sophisticated evidence of the standard."
+}
+]
+}
+},
+"review_context": {
+"review_state": "ready_for_export",
+"minimum_requirement_outcome": {
+"status": "met",
+"returned_without_full_review": false
+},
+"feedback_source": "schema_version_2_review_record",
+"uses_snapshotted_feedback_comments": true,
+"uses_live_reusable_comment_lookup": false
+},
+"student_feedback": {
+"heading": "Feedback",
+"generated_at": "2026-07-02T00:00:00+00:00",
+"assignment_prompt": "Using evidence from the story, explain how ordinary objects become connected to memory, grief, and power.",
+"focus_standard_feedback": [
+{
+"standard_id": "njsls-ela:RL.CR.9-10.1",
+"display_code": "RL.CR.9-10.1",
+"display_label": "Cite textual evidence",
+"rating": {
+"value": 3,
+"label": "Meeting"
+},
+"rationale": "Across the response, the evidence is relevant and usually connected to the interpretation, though some explanation could be more precise.",
+"review_unit_observations": [
+{
+"unit_label": "Paragraph 1",
+"text": "Your evidence is relevant and well chosen. The next revision step is to explain more directly how the quotation supports your claim."
+}
+],
+"comments": [
+{
+"text": "Your evidence is relevant and usually well chosen. To improve, make sure each quotation is followed by analysis that explains exactly how it supports your interpretation."
+}
+]
+},
+{
+"standard_id": "njsls-ela:RL.CI.9-10.2",
+"display_code": "RL.CI.9-10.2",
+"display_label": "Determine central idea or theme",
+"rating": {
+"value": 2,
+"label": "Approaching"
+},
+"rationale": "The response identifies an important idea about memory and grief, but the analysis sometimes stays general instead of developing how that idea grows across the story.",
+"review_unit_observations": [
+{
+"unit_label": "Paragraph 2",
+"text": "You name a meaningful central idea, but the explanation needs to show how the object you discuss develops that idea."
+}
+],
+"comments": [
+{
+"text": "You are moving toward a clear interpretation of the story's central idea. In revision, focus on explaining how specific details build that idea instead of only naming the idea."
+}
+]
+},
+{
+"standard_id": "njsls-ela:W.AW.9-10.1",
+"display_code": "W.AW.9-10.1",
+"display_label": "Write arguments supported by evidence",
+"rating": {
+"value": 3,
+"label": "Meeting"
+},
+"rationale": "The response has a clear claim and uses evidence to support it. The organization is understandable, though transitions could make the relationship among ideas clearer.",
+"review_unit_observations": [],
+"comments": [
+{
+"text": "Your claim gives the response a clear direction. Strengthen the argument by using transitions that show how each paragraph adds to the same overall interpretation."
+}
+]
+}
+],
+"next_steps": [
+"Before revising, choose one quotation and add two to three sentences explaining how the language of that quotation supports your claim.",
+"Then reread your transitions to make sure each paragraph clearly connects back to the central interpretation."
+]
+},
+"student_facing_exclusions": {
+"private_notes_excluded": true,
+"internal_review_ids_excluded": true,
+"reusable_comment_provenance_excluded": true,
+"routed_evidence_paths_excluded": true,
+"candidate_evidence_metadata_excluded": true,
+"unselected_observations_excluded": true,
+"unselected_comments_excluded": true
+},
+"privacy_note": "This is a synthetic example. It contains no real student names, real student IDs, real student writing, real scanned work, real grades, or personally identifiable student information.",
+"module_details": {}
+}
