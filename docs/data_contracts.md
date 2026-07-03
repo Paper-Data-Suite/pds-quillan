@@ -5,7 +5,7 @@ Quillan stores structured evidence about student writing using local files.
 These contracts describe the expected file formats for standards profiles,
 legacy shared comment banks, shared tag banks, assignments, submissions,
 teacher review, reusable Focus Standard comments, requirements checks,
-feedback exports, and reports.
+feedback exports, assignment-level reports, and reports.
 
 Some contracts describe currently implemented runtime behavior. Others define
 target v0.8.6 standards-based contract shapes that may precede full runtime
@@ -21,8 +21,8 @@ selection, and student, class, and standards exports are implemented through
 direct CLI commands, guided menus, and Python APIs. The writing-response payload
 contract is implemented and used by printable PDF generation. Target v0.8.6
 standards-based contracts for assignments, review records, reusable Focus
-Standard comments, and student feedback exports may not yet have matching
-runtime validators or workflows.
+Standard comments, student feedback exports, and assignment-level reporting may
+not yet have matching runtime validators or workflows.
 
 For the expected workspace layout and file lifecycle of these records, see
 [`workspace_lifecycle.md`](workspace_lifecycle.md).
@@ -59,6 +59,13 @@ Standard-organized ratings, optional review-unit observations, optional
 rationales, teacher-selected comments, minimum-requirement return feedback,
 export metadata, stale-export detection, privacy rules, and runtime-status
 boundaries, see [`feedback_export_contract.md`](feedback_export_contract.md).
+
+For the target v0.8.6 assignment-level reporting contract, including
+assignment-local class summaries, assignment-local Focus Standard summaries,
+assignment results manifests, report metadata, stale-report detection,
+assignment-local reporting boundaries, and future Paper Data Suite reporting
+handoff boundaries, see
+[`assignment_reporting_contract.md`](assignment_reporting_contract.md).
 
 For legacy reusable teacher-authored feedback language stored at
 `shared/comment_banks/<bank_id>.json`, including categories, writing-type
@@ -127,6 +134,10 @@ Quillan stores only durable pds-core references:
 * target v0.8.6 student feedback exports derive standards display from
   assignment Focus Standards, review-record Focus Standard feedback, and
   pds-core standards definitions when available;
+* target v0.8.6 assignment-level reports derive standards display from
+  assignment Focus Standards, review-record overall Focus Standard ratings,
+  optional review-unit Focus Standard observations, and pds-core standards
+  definitions when available;
 * legacy pre-v0.8.6 assignment `focus_standards` stores pds-core
   `standard_id` values;
 * legacy review tags and selected reusable comments may store optional
@@ -834,35 +845,62 @@ Current runtime feedback export may still produce only Markdown from legacy
 schema version `1` criterion scores and selected comments until later v0.8.6
 implementation work updates export behavior.
 
-## Standards Summary Report
+## Assignment-Level Reporting
 
-The standards summary is an assignment-level derived export from valid matching
-`submission.json` and `review.json` records. It remains traceable to
-teacher-entered review artifacts and is not independent evidence.
+Quillan assignment-level reports are teacher-facing derived exports for one
+class and one assignment. They help a teacher review assignment completion,
+review progress, requirement outcomes, Focus Standard ratings, feedback export
+status, and assignment-local warnings.
 
-Canonical path:
+The complete target v0.8.6 assignment reporting contract is defined in
+[`assignment_reporting_contract.md`](assignment_reporting_contract.md).
+
+Quillan assignment-level reports may summarize:
+
+* one Quillan class;
+* one Quillan assignment;
+* that assignment's roster, when available;
+* that assignment's submission manifests;
+* that assignment's schema version `2` review records;
+* that assignment's feedback export status;
+* that assignment's overall Focus Standard ratings; and
+* that assignment's optional review-unit Focus Standard observation summaries.
+
+Quillan assignment-level reports must not summarize:
+
+* multiple assignments;
+* multiple modules;
+* marking periods;
+* school years;
+* longitudinal growth;
+* gradebook averages;
+* percentages;
+* final grades;
+* mastery determinations;
+* cross-module evidence;
+* student portfolios; or
+* parent/admin dashboards.
+
+Those broader reporting concerns belong to a future Paper Data Suite reporting
+module.
+
+Target assignment-level report paths include:
 
 ```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/class_summary.pdf
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.pdf
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/assignment_results_manifest.json
 ```
 
-Target v0.8.6 standards summaries should aggregate standards-based review data
-from schema version `2` review records, including overall Focus Standard
-ratings and, where useful, review-unit Focus Standard observations.
+Assignment-level reports are derived artifacts. They must not replace
+`assignment.json`, `submission.json`, `review.json`, student feedback exports,
+roster records, or pds-core standards records.
 
-The target standards summary should support instructional questions such as:
-
-* which Focus Standards students are meeting, approaching, or still developing;
-* which students need support on a specific Focus Standard;
-* which assignments provide evidence for a standard; and
-* how standards performance changes across assignments over time.
-
-Target reports must not infer mastery, calculate grades, inspect evidence,
-read student writing, use AI, or mutate canonical records.
-
-Current runtime standards summary export may still aggregate legacy schema
-version `1` tags and selected comments with `standard_id` values until later
-v0.8.6 implementation work updates reporting behavior.
+Current runtime class and standards summary exports may still use legacy schema
+version `1` review data until later v0.8.6 implementation work updates
+reporting behavior.
 
 ## Class Summary Report
 
@@ -870,29 +908,151 @@ A class review summary is an assignment-level derived export for review
 management and instructional planning. It is not a replacement for reading
 student work or consulting the underlying records.
 
-Canonical path:
+Canonical target paths:
 
 ```text
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/class_summary.pdf
 ```
 
 Target v0.8.6 class summaries should use schema version `2` review records to
 summarize review progress, requirement status, returned-without-full-review
 outcomes, overall Focus Standard ratings, feedback/export status, and record
-validity.
+validity for one assignment.
 
-Target class summaries must not calculate percentages, grades, weighted
-scores, automatic mastery results, or rubric levels.
+Target class summaries may include:
+
+* one row per rostered student, when a roster is available;
+* unrostered submission warnings;
+* missing submission indicators;
+* submission state;
+* review state;
+* minimum-requirement status;
+* returned-without-full-review status;
+* feedback PDF status;
+* feedback Markdown status;
+* stale feedback indicators;
+* review validity status;
+* warning summaries; and
+* overall Focus Standard ratings for the assignment.
+
+Target class summaries must not calculate percentages, grades, weighted scores,
+automatic mastery results, rubric levels, cross-assignment summaries, or
+cross-module summaries.
 
 The export reads canonical assignment, submission, and review records. It does
-not read feedback contents, evidence files, retained scans, standards profiles,
-or reusable comment sources except where a later reporting contract explicitly
-defines a safe read-only reference. It must not mutate canonical records.
+not read student writing, feedback contents, evidence files, retained scans,
+standards profiles, or reusable comment sources except where the assignment
+reporting contract explicitly defines a safe read-only reference. It must not
+mutate canonical records.
 
 Current runtime class summary export may still report legacy schema version `1`
 counts, criterion-score totals, comment counts, tag counts, note counts, and
 feedback Markdown existence until later v0.8.6 implementation work updates
 reporting behavior.
+
+## Standards Summary Report
+
+The standards summary is an assignment-level derived export from valid matching
+`assignment.json`, `submission.json`, and `review.json` records. It remains
+traceable to teacher-entered review artifacts and is not independent evidence.
+
+Canonical target paths:
+
+```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.pdf
+```
+
+Target v0.8.6 standards summaries should aggregate standards-based review data
+from schema version `2` review records for one assignment, including overall
+Focus Standard ratings and, where useful, optional review-unit Focus Standard
+observation summaries.
+
+The target standards summary should support assignment-local instructional
+questions such as:
+
+* which Focus Standards students are meeting, approaching, or still developing
+  on this assignment;
+* which Focus Standards have the most missing ratings on this assignment;
+* which Focus Standards have many students returned without full review;
+* which Focus Standards have student feedback exported; and
+* which assignment-local review records need teacher attention.
+
+Target standards summaries must not answer broader reporting questions such as:
+
+* which assignments provide evidence for a standard across the course;
+* how a student's standards performance changes over time;
+* how Quillan evidence combines with ScoreForm evidence;
+* what grade a student should receive;
+* what mastery level a student has reached across assignments; or
+* how a class is progressing across a marking period.
+
+Those broader reports belong to a future Paper Data Suite reporting module.
+
+Target reports must not infer mastery, calculate grades, inspect evidence, read
+student writing, use AI, or mutate canonical records.
+
+Current runtime standards summary export may still aggregate legacy schema
+version `1` tags and selected comments with `standard_id` values until later
+v0.8.6 implementation work updates reporting behavior.
+
+## Assignment Results Manifest
+
+An assignment results manifest is a machine-readable, assignment-local handoff
+artifact for one Quillan assignment.
+
+Suggested target path:
+
+```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/exports/assignment_results_manifest.json
+```
+
+The complete target shape is defined in
+[`assignment_reporting_contract.md`](assignment_reporting_contract.md#assignment-results-manifest).
+
+The manifest may include:
+
+* class ID;
+* assignment ID;
+* assignment path;
+* standards profile ID;
+* Focus Standard IDs;
+* generated report paths;
+* report generation timestamps;
+* source timestamp summaries;
+* student result summaries;
+* feedback export paths and status;
+* overall Focus Standard ratings and labels;
+* returned-without-full-review status;
+* validation or warning summaries; and
+* module details.
+
+The assignment results manifest is intended to support future Paper Data Suite
+reporting ingestion without making Quillan responsible for broader reporting.
+
+The manifest must not include:
+
+* full student writing;
+* scanned work contents;
+* routed evidence contents;
+* retained-source scan contents;
+* private teacher notes;
+* full feedback text;
+* parent or guardian data;
+* accommodations;
+* health or disability information;
+* discipline information;
+* attendance information;
+* grades;
+* percentages;
+* mastery calculations;
+* cross-assignment calculations; or
+* cross-module calculations.
+
+The manifest is a derived artifact. It must not replace `assignment.json`,
+`submission.json`, `review.json`, student feedback exports, rosters, or
+pds-core standards records.
 
 ## Synthetic Data Policy
 
@@ -915,10 +1075,11 @@ Do not commit:
 * real parent contact information;
 * real scanned student work.
 
-Reusable comments must not include student-identifying details, private family
-information, accommodations, health information, disability information,
-discipline information, attendance information, or exact copied student writing
-unless the content is explicitly synthetic example material.
+Reusable comments and reporting examples must not include student-identifying
+details, private family information, accommodations, health information,
+disability information, discipline information, attendance information, or
+exact copied student writing unless the content is explicitly synthetic example
+material.
 
 ## Submission Readiness
 
