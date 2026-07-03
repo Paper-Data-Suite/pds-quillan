@@ -1,0 +1,332 @@
+{
+  "schema_version": "2",
+  "module": "quillan",
+  "record_type": "submission_review",
+  "class_id": "english_10_simulation",
+  "assignment_id": "coming-of-age_literary_analysis",
+  "student_id": "10001",
+  "submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/submission.json",
+  "assignment_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/assignment.json",
+  "review_state": "feedback_composed",
+  "minimum_requirement_checks": [
+    {
+      "requirement_check_id": "requirement_check_0001",
+      "requirement_key": "paragraphs_min",
+      "label": "Minimum paragraphs",
+      "expected": 1,
+      "met": true,
+      "teacher_note": null,
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    },
+    {
+      "requirement_check_id": "requirement_check_0002",
+      "requirement_key": "required_elements:textual_evidence",
+      "label": "Required element: textual evidence",
+      "expected": "textual evidence",
+      "met": true,
+      "teacher_note": null,
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    },
+    {
+      "requirement_check_id": "requirement_check_0003",
+      "requirement_key": "required_elements:explanation",
+      "label": "Required element: explanation",
+      "expected": "explanation",
+      "met": true,
+      "teacher_note": null,
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    }
+  ],
+  "minimum_requirement_outcome": {
+    "status": "met",
+    "returned_without_full_review": false,
+    "teacher_note": null,
+    "updated_at": "2026-07-02T00:00:00+00:00"
+  },
+  "review_units": [
+    {
+      "unit_id": "paragraph_1",
+      "sequence": 1,
+      "label": "Paragraph 1",
+      "unit_type": "paragraph",
+      "page_number": 1,
+      "evidence_id": "evidence_001",
+      "standard_observations": [
+        {
+          "observation_id": "observation_0001",
+          "standard_id": "njsls-ela:RL.CR.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph uses relevant evidence from the story and connects it to the claim.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0002",
+          "standard_id": "njsls-ela:RL.CI.9-10.2",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph begins explaining how objects carry memory and grief.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0003",
+          "standard_id": "njsls-ela:W.AW.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph supports an arguable claim with evidence and explanation.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "unit_id": "paragraph_2",
+      "sequence": 2,
+      "label": "Paragraph 2",
+      "unit_type": "paragraph",
+      "page_number": 1,
+      "evidence_id": "evidence_001",
+      "standard_observations": [
+        {
+          "observation_id": "observation_0004",
+          "standard_id": "njsls-ela:RL.CR.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 4,
+          "rationale": "The paragraph uses specific evidence about Yongjun's clothing and explains its significance.",
+          "include_in_feedback": true,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0005",
+          "standard_id": "njsls-ela:RL.CI.9-10.2",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 4,
+          "rationale": "The paragraph clearly connects the object motif to grief, family memory, and hidden truth.",
+          "include_in_feedback": true,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0006",
+          "standard_id": "njsls-ela:W.AW.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph develops the argument clearly, though some wording could be more precise.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "unit_id": "paragraph_3",
+      "sequence": 3,
+      "label": "Paragraph 3",
+      "unit_type": "paragraph",
+      "page_number": 1,
+      "evidence_id": "evidence_001",
+      "standard_observations": [
+        {
+          "observation_id": "observation_0007",
+          "standard_id": "njsls-ela:RL.CR.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph includes relevant textual evidence but would benefit from more precise quote integration.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0008",
+          "standard_id": "njsls-ela:RL.CI.9-10.2",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph explains sewing as a form of power and survival.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0009",
+          "standard_id": "njsls-ela:W.AW.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph supports the central argument and maintains logical organization.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "unit_id": "paragraph_4",
+      "sequence": 4,
+      "label": "Paragraph 4",
+      "unit_type": "paragraph",
+      "page_number": 1,
+      "evidence_id": "evidence_001",
+      "standard_observations": [
+        {
+          "observation_id": "observation_0010",
+          "standard_id": "njsls-ela:RL.CR.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The concluding paragraph returns to evidence from the story without simply repeating the earlier claim.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0011",
+          "standard_id": "njsls-ela:RL.CI.9-10.2",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 4,
+          "rationale": "The moonlight and family garments are interpreted as a strong final image of memory and love.",
+          "include_in_feedback": true,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0012",
+          "standard_id": "njsls-ela:W.AW.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph closes the argument coherently and maintains focus on the central interpretation.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    }
+  ],
+  "overall_standard_ratings": [
+    {
+      "standard_id": "njsls-ela:RL.CR.9-10.1",
+      "rating": 3,
+      "rationale": "Across the response, the evidence is relevant and usually well connected to the interpretation.",
+      "include_in_feedback": true,
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    },
+    {
+      "standard_id": "njsls-ela:RL.CI.9-10.2",
+      "rating": 4,
+      "rationale": "The response gives a strong interpretation of how objects carry memory, grief, family history, and power.",
+      "include_in_feedback": true,
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    },
+    {
+      "standard_id": "njsls-ela:W.AW.9-10.1",
+      "rating": 3,
+      "rationale": "The argument is focused and organized, with clear claims, evidence, and explanation.",
+      "include_in_feedback": true,
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    }
+  ],
+  "feedback": {
+    "include_review_unit_observations": false,
+    "include_overall_standard_ratings": true,
+    "standard_feedback": [
+      {
+        "standard_id": "njsls-ela:RL.CR.9-10.1",
+        "include_overall_rating": true,
+        "include_overall_rationale": true,
+        "included_observation_ids": ["observation_0004"],
+        "comments": [
+          {
+            "feedback_comment_id": "feedback_comment_0001",
+            "source": "custom",
+            "text": "Your evidence is relevant and usually well chosen. To improve, make sure each quotation is followed by analysis that explains exactly how it supports your interpretation.",
+            "reusable_comment_id": null,
+            "save_for_reuse": true,
+            "include_in_feedback": true,
+            "created_at": "2026-07-02T00:00:00+00:00",
+            "module_details": {}
+          }
+        ],
+        "module_details": {}
+      },
+      {
+        "standard_id": "njsls-ela:RL.CI.9-10.2",
+        "include_overall_rating": true,
+        "include_overall_rationale": true,
+        "included_observation_ids": ["observation_0005", "observation_0011"],
+        "comments": [
+          {
+            "feedback_comment_id": "feedback_comment_0002",
+            "source": "custom",
+            "text": "Your strongest work is your interpretation of how ordinary objects become carriers of memory, grief, and family history.",
+            "reusable_comment_id": null,
+            "save_for_reuse": true,
+            "include_in_feedback": true,
+            "created_at": "2026-07-02T00:00:00+00:00",
+            "module_details": {}
+          }
+        ],
+        "module_details": {}
+      },
+      {
+        "standard_id": "njsls-ela:W.AW.9-10.1",
+        "include_overall_rating": true,
+        "include_overall_rationale": true,
+        "included_observation_ids": [],
+        "comments": [
+          {
+            "feedback_comment_id": "feedback_comment_0003",
+            "source": "custom",
+            "text": "Your essay stays focused on a clear interpretation. For the next essay, keep working on making each paragraph's claim as precise as possible.",
+            "reusable_comment_id": null,
+            "save_for_reuse": true,
+            "include_in_feedback": true,
+            "created_at": "2026-07-02T00:00:00+00:00",
+            "module_details": {}
+          }
+        ],
+        "module_details": {}
+      }
+    ]
+  },
+  "exports": {
+    "feedback_pdf": null,
+    "feedback_markdown": null
+  },
+  "private_notes": [
+    {
+      "private_note_id": "private_note_0001",
+      "text": "Strong simulation response. Use as an example of the standards-based review flow.",
+      "created_at": "2026-07-02T00:00:00+00:00",
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    }
+  ],
+  "created_at": "2026-07-02T00:00:00+00:00",
+  "updated_at": "2026-07-02T00:00:00+00:00",
+  "module_details": {}
+}

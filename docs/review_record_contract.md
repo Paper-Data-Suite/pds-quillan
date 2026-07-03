@@ -2,40 +2,1354 @@
 
 ## Purpose and Boundary
 
-The Quillan submission review record stores teacher-entered evaluation data
-for one student submission. Its canonical workspace-relative path is:
+The Quillan submission review record stores teacher-entered review data for
+one student submission. Its canonical workspace-relative path is:
 
 ```text
 classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
 ```
 
 `review.json` is separate from the adjacent `submission.json` evidence
-manifest:
+manifest and the associated `assignment.json` assignment configuration:
 
 * `submission.json` answers what evidence exists, where it came from, which
   evidence is selected, and what evidence-management state it is in.
-* `review.json` answers what the teacher recorded about that evidence,
-  including notes, tags, scores, selected comments, requirement checks, and
-  review/export state.
+* `assignment.json` answers what the teacher assigned, which Focus Standards
+  are active, which review-unit labels should be used, which rating scale
+  applies, and what minimum requirements exist.
+* `review.json` answers what the teacher recorded about the selected
+  submission evidence for that assignment.
 
 Teacher review must not rewrite or duplicate the evidence manifest. In
-particular, `review.json` references evidence by `evidence_id` and optional
-page number rather than copying routed evidence paths.
+particular, `review.json` may reference evidence by `evidence_id`, page number,
+review-unit sequence, and workspace-relative paths, but it does not copy routed
+evidence files or retained-source records.
 
-This document defines submission review schema version `1` for the v0.7
-contract. Runtime loading and validation are implemented by
-`quillan.review_record`. Canonical path computation and safe writing are
-implemented by `quillan.review_record_paths`. Teacher-facing commands and
-derived exports are implemented for the v0.7 review workflows.
+This document defines the target submission review schema version `2` for the
+v0.8.6 standards-based workflow redesign.
 
-For the subject-agnostic prepared-review workflow that explains how reusable
-materials, source evidence, review artifacts, exports, targets, and snapshots
-fit together, see
-[`prepared_review_workflow.md`](prepared_review_workflow.md).
+Schema version `2` supersedes the older v0.7 review model centered on generic
+notes, tags, criterion scores, selected comments, and requirement checks. In
+the v0.8.6 model, the central review relationship is:
+
+```text
+student evidence -> review unit -> Focus Standard -> teacher judgment -> feedback/reporting
+```
+
+The redesigned review record stores:
+
+* minimum requirement checks;
+* minimum-requirement outcome;
+* review units;
+* review-unit Focus Standard observations;
+* overall Focus Standard ratings;
+* feedback composition choices organized by Focus Standard;
+* student-facing feedback comments organized by Focus Standard;
+* private teacher notes when needed; and
+* export metadata for derived student-facing feedback files.
+
+For the standards-based redesign rationale, see:
+
+* [`standards_based_review_redesign.md`](standards_based_review_redesign.md)
+* [`adr/0001-standards-based-review-model.md`](adr/0001-standards-based-review-model.md)
+* [`assignment_contract.md`](assignment_contract.md)
+
+## Status
+
+This is the target review record contract for v0.8.6.
+
+Implementation, runtime validators, review menus, exports, reports, tests, and
+migration helpers may not yet fully match this contract until later v0.8.6
+issues are completed.
+
+The older schema version `1` contract remains legacy development history. It
+is summarized later in this document, but it is not the target architecture for
+new standards-based review work.
+
+## Canonical Path
+
+The canonical active review record path remains:
+
+```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
+```
+
+The adjacent evidence manifest remains:
+
+```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
+```
+
+The associated assignment record normally remains:
+
+```text
+<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/assignment.json
+```
+
+The review record must reference the submission manifest and assignment record
+using workspace-relative paths.
+
+## Relationship to `submission.json`
+
+`submission.json` is the evidence-management record. It owns:
+
+* expected pages;
+* selected evidence;
+* candidate evidence;
+* duplicate evidence;
+* missing-page state;
+* needs-rescan state;
+* excluded evidence;
+* retained-source provenance; and
+* submission-management state.
+
+`review.json` must not duplicate routed evidence paths, retained-source paths,
+or page-candidate structures from `submission.json`.
+
+A review record may reference an evidence candidate by `evidence_id` when a
+teacher wants to connect a review unit, observation, note, or feedback choice
+to a specific evidence item.
+
+Opening evidence does not create, score, complete, or export a review record.
+
+## Relationship to `assignment.json`
+
+A schema version `2` review record depends on a schema version `2` assignment
+record.
+
+The assignment record defines:
+
+* `student_prompt`;
+* `writing_type`;
+* `standards_profile_id`;
+* `focus_standard_ids`;
+* `review_unit`;
+* `rating_scale`;
+* `basic_requirements`; and
+* `minimum_requirement_policy`.
+
+The review record uses those assignment-defined values. It should not duplicate
+the full assignment configuration unless a later snapshot policy explicitly
+requires that behavior.
+
+The review record stores `assignment_path` so that review data remains
+traceable to the assignment contract used when the review was created.
 
 ## Top-Level Structure
 
-Every version `1` review record contains:
+Every schema version `2` review record contains:
+
+```json
+{
+  "schema_version": "2",
+  "module": "quillan",
+  "record_type": "submission_review",
+  "class_id": "english_10_simulation",
+  "assignment_id": "coming-of-age_literary_analysis",
+  "student_id": "10001",
+  "submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/submission.json",
+  "assignment_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/assignment.json",
+  "review_state": "not_started",
+  "minimum_requirement_checks": [],
+  "minimum_requirement_outcome": {
+    "status": "not_checked",
+    "returned_without_full_review": false,
+    "teacher_note": null,
+    "updated_at": null
+  },
+  "review_units": [],
+  "overall_standard_ratings": [],
+  "feedback": {
+    "include_review_unit_observations": false,
+    "include_overall_standard_ratings": true,
+    "standard_feedback": []
+  },
+  "exports": {
+    "feedback_pdf": null,
+    "feedback_markdown": null
+  },
+  "private_notes": [],
+  "created_at": "2026-07-02T00:00:00+00:00",
+  "updated_at": "2026-07-02T00:00:00+00:00",
+  "module_details": {}
+}
+```
+
+Required top-level fields are:
+
+* `schema_version`;
+* `module`;
+* `record_type`;
+* `class_id`;
+* `assignment_id`;
+* `student_id`;
+* `submission_manifest_path`;
+* `assignment_path`;
+* `review_state`;
+* `minimum_requirement_checks`;
+* `minimum_requirement_outcome`;
+* `review_units`;
+* `overall_standard_ratings`;
+* `feedback`;
+* `exports`;
+* `private_notes`;
+* `created_at`;
+* `updated_at`; and
+* `module_details`.
+
+Unknown top-level fields are not part of schema version `2`. A future contract
+change must use a new schema version when it changes the meaning or required
+shape of existing data.
+
+## Identity and References
+
+`class_id`, `assignment_id`, and `student_id` use the shared `pds-core`
+identifier policy. They are case-sensitive strings, and student identifiers
+remain strings so leading zeros are preserved.
+
+The three identity fields must match:
+
+1. the values in the referenced `submission.json`;
+2. the corresponding path segments in `submission_manifest_path`;
+3. the corresponding assignment path segments in `assignment_path`; and
+4. the directory path containing this `review.json`.
+
+For a review record with identity `<class_id>`, `<assignment_id>`, and
+`<student_id>`, the canonical submission manifest reference is:
+
+```text
+classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
+```
+
+The canonical assignment reference is:
+
+```text
+classes/<class_id>/assignments/<assignment_id>/assignment.json
+```
+
+Review-local identifiers such as `requirement_check_id`, `unit_id`,
+`observation_id`, `feedback_comment_id`, and `private_note_id` are opaque,
+non-empty strings. Each identifier must be unique within its relevant scope.
+Consumers must not derive ordering, timestamps, or meaning from an identifier's
+spelling.
+
+When present:
+
+* `standard_id` must identify a Focus Standard from the assignment's
+  `focus_standard_ids`;
+* `evidence_id` must identify an evidence candidate in the referenced
+  `submission.json`;
+* `page_number` must identify the page entry containing that evidence when
+  both fields are present;
+* `rating` must use a `value` from the assignment's `rating_scale.levels`; and
+* `unit_type` should match the assignment's `review_unit.type`.
+
+## Review State
+
+Allowed schema version `2` `review_state` values are:
+
+* `not_started`;
+* `requirements_checked`;
+* `returned_without_full_review`;
+* `observations_in_progress`;
+* `observations_complete`;
+* `ratings_complete`;
+* `feedback_composed`;
+* `ready_for_export`; and
+* `exported`.
+
+State meanings:
+
+* `not_started`: no substantive teacher-review data has been entered.
+* `requirements_checked`: minimum requirements have been checked, but full
+  standards review has not begun.
+* `returned_without_full_review`: the teacher has chosen to return the work
+  without full standards review because minimum requirements were not met.
+* `observations_in_progress`: review-unit Focus Standard observations have
+  begun but are not complete.
+* `observations_complete`: review-unit Focus Standard observations are
+  complete enough for the teacher to move to overall ratings.
+* `ratings_complete`: overall Focus Standard ratings have been entered.
+* `feedback_composed`: student-facing feedback choices and comments have been
+  composed.
+* `ready_for_export`: the teacher has explicitly marked the current review
+  data ready for export.
+* `exported`: one or more student-facing feedback exports have been generated
+  from the review record.
+
+`review_state` describes teacher review work. It is distinct from
+`submission_state` in `submission.json`, which describes evidence and
+submission management. Neither state determines or automatically changes the
+other.
+
+The state is not inferred merely because an array is empty or populated.
+Writers are responsible for making explicit state changes.
+
+Opening evidence does not mark review started.
+
+Exporting feedback does not rescore work.
+
+Returning a submission without full review is a distinct review state. It must
+not be treated as a score, zero, completed standards rating, or ordinary
+completed review.
+
+## Minimum Requirement Checks
+
+`minimum_requirement_checks` records teacher-entered checks against the
+assignment's `basic_requirements`.
+
+These checks remain separate from writing-quality ratings.
+
+Quillan may prompt from configured assignment requirements such as:
+
+* `paragraphs_min`;
+* `paragraphs_max`;
+* `word_count_min`;
+* `word_count_max`; and
+* individual `required_elements`.
+
+Quillan must not:
+
+* count paragraphs automatically;
+* count words automatically;
+* parse student writing;
+* run OCR to determine whether requirements are met;
+* use AI to detect required elements; or
+* infer whether a requirement is met.
+
+The teacher records whether each requirement was met.
+
+Example:
+
+```json
+{
+  "requirement_check_id": "requirement_check_0001",
+  "requirement_key": "paragraphs_min",
+  "label": "Minimum paragraphs",
+  "expected": 1,
+  "met": true,
+  "teacher_note": null,
+  "updated_at": "2026-07-02T00:00:00+00:00",
+  "module_details": {}
+}
+```
+
+Required element example:
+
+```json
+{
+  "requirement_check_id": "requirement_check_0002",
+  "requirement_key": "required_elements:textual_evidence",
+  "label": "Required element: textual evidence",
+  "expected": "textual evidence",
+  "met": true,
+  "teacher_note": null,
+  "updated_at": "2026-07-02T00:00:00+00:00",
+  "module_details": {}
+}
+```
+
+Required fields:
+
+* `requirement_check_id`;
+* `requirement_key`;
+* `label`;
+* `expected`;
+* `met`;
+* `updated_at`; and
+* `module_details`.
+
+Optional fields:
+
+* `teacher_note`.
+
+Field rules:
+
+* `requirement_check_id` is unique within `minimum_requirement_checks`.
+* `requirement_key` is non-empty and unique within
+  `minimum_requirement_checks`.
+* `label` is a non-empty teacher-facing string.
+* `expected` is a finite number or non-empty string copied from assignment
+  configuration.
+* `met` is a boolean.
+* `teacher_note`, when present, is either `null` or a non-empty string.
+* `updated_at` is the last teacher update timestamp for that requirement
+  check.
+* `module_details` is an object.
+
+Requirement checks are mutable by `requirement_key`. Updating a check preserves
+its `requirement_check_id`, replaces the recorded boolean and optional teacher
+note, updates top-level `updated_at`, and preserves unrelated review data.
+
+## Minimum Requirement Outcome
+
+`minimum_requirement_outcome` records the teacher's decision after minimum
+requirement checks.
+
+Example:
+
+```json
+{
+  "status": "met",
+  "returned_without_full_review": false,
+  "teacher_note": null,
+  "updated_at": "2026-07-02T00:00:00+00:00"
+}
+```
+
+Required fields:
+
+* `status`;
+* `returned_without_full_review`;
+* `teacher_note`; and
+* `updated_at`.
+
+Allowed `status` values are:
+
+* `not_checked`;
+* `met`;
+* `unmet_continue_review`; and
+* `returned_without_full_review`.
+
+Field rules:
+
+* `status` must be one of the controlled values above.
+* `returned_without_full_review` is a boolean.
+* `teacher_note` is either `null` or a non-empty string.
+* `updated_at` is either `null` when `status` is `not_checked`, or a
+  timezone-aware ISO 8601 timestamp.
+
+When `status` is `returned_without_full_review`,
+`returned_without_full_review` must be `true`.
+
+When `returned_without_full_review` is `true`, the top-level `review_state`
+should be `returned_without_full_review`.
+
+Returning work without full review must not be treated as:
+
+* a zero;
+* a grade;
+* a completed standards review;
+* completed Focus Standard scoring;
+* a normal reviewed submission; or
+* an automatic judgment.
+
+It is a separate teacher-controlled outcome indicating that the submission was
+not ready for full standards-based review.
+
+## Review Units
+
+`review_units` stores the actual review units used for the student's
+submission.
+
+The assignment defines the review-unit type and teacher-facing labels. The
+review record stores the units the teacher created or confirmed for this
+student's submission.
+
+Example:
+
+```json
+{
+  "unit_id": "paragraph_1",
+  "sequence": 1,
+  "label": "Paragraph 1",
+  "unit_type": "paragraph",
+  "page_number": 1,
+  "evidence_id": "evidence_001",
+  "standard_observations": [],
+  "module_details": {}
+}
+```
+
+Required fields:
+
+* `unit_id`;
+* `sequence`;
+* `label`;
+* `unit_type`;
+* `standard_observations`; and
+* `module_details`.
+
+Optional fields:
+
+* `page_number`;
+* `evidence_id`;
+
+Field rules:
+
+* `unit_id` is unique within `review_units`.
+* `sequence` is a positive integer.
+* `label` is a non-empty teacher-facing string.
+* `unit_type` should match the assignment's `review_unit.type`.
+* `page_number`, when present, is a positive integer.
+* `evidence_id`, when present, references the submission manifest.
+* `standard_observations` is an array of review-unit Focus Standard
+  observations.
+* `module_details` is an object.
+* Review units should be ordered by `sequence`.
+
+Review units are teacher-created or teacher-confirmed. Quillan must not parse
+student writing, run OCR, or automatically infer how many review units a
+student wrote.
+
+For an assignment whose review unit is paragraphs, a teacher-facing prompt
+should use the assignment's configured plural label:
+
+```text
+How many paragraphs did the student write?
+```
+
+not:
+
+```text
+How many review units did the student write?
+```
+
+## Review-Unit Focus Standard Observations
+
+`standard_observations` is the central new record type in schema version `2`.
+
+Each observation records a teacher's judgment about one Focus Standard in one
+review unit.
+
+Example:
+
+```json
+{
+  "observation_id": "observation_0001",
+  "standard_id": "njsls-ela:RL.CR.9-10.1",
+  "applicable": true,
+  "evidence_present": true,
+  "rating": 2,
+  "rationale": "The paragraph uses evidence from the story, but the explanation is still general.",
+  "include_in_feedback": false,
+  "updated_at": "2026-07-02T00:00:00+00:00",
+  "module_details": {}
+}
+```
+
+Required fields:
+
+* `observation_id`;
+* `standard_id`;
+* `applicable`;
+* `evidence_present`;
+* `rating`;
+* `rationale`;
+* `include_in_feedback`;
+* `updated_at`; and
+* `module_details`.
+
+Field rules:
+
+* `observation_id` is unique within all observations in the review record.
+* `standard_id` must be one of the assignment's `focus_standard_ids`.
+* `applicable` is a boolean.
+* `evidence_present` is a boolean when `applicable` is `true`.
+* `evidence_present` may be `null` only when `applicable` is `false`.
+* `rating` must be a value from the assignment's `rating_scale.levels` when
+  `applicable` is `true`.
+* `rating` may be `null` only when `applicable` is `false`.
+* `rationale` is either `null` or a non-empty string.
+* `include_in_feedback` is a boolean.
+* `updated_at` is the most recent teacher update timestamp for the observation.
+* `module_details` is an object.
+
+Each review unit should have at most one observation per Focus Standard.
+
+Important distinctions:
+
+* `applicable: false` means the teacher decided the standard does not apply to
+  that review unit.
+* `evidence_present: false` means the standard applies, but the teacher did
+  not find evidence of it in that unit.
+* `evidence_present: true` does not mean the standard was met.
+* `rating` is a standards-performance judgment, not a grade.
+* `include_in_feedback` controls whether the observation may appear in
+  student-facing feedback.
+
+Observations are teacher-entered or teacher-confirmed judgments. Quillan must
+not infer observations from student writing, tags, comments, OCR, handwriting
+recognition, or AI.
+
+## Overall Focus Standard Ratings
+
+`overall_standard_ratings` stores the teacher's overall rating for each Focus
+Standard assessed by the assignment.
+
+These ratings are the primary scoring object in the v0.8.6 standards-based
+review model.
+
+Example:
+
+```json
+{
+  "standard_id": "njsls-ela:RL.CR.9-10.1",
+  "rating": 3,
+  "rationale": "Across the response, the evidence is relevant and usually connected to the interpretation, though some explanation could be more precise.",
+  "include_in_feedback": true,
+  "updated_at": "2026-07-02T00:00:00+00:00",
+  "module_details": {}
+}
+```
+
+Required fields:
+
+* `standard_id`;
+* `rating`;
+* `rationale`;
+* `include_in_feedback`;
+* `updated_at`; and
+* `module_details`.
+
+Field rules:
+
+* `standard_id` must be one of the assignment's `focus_standard_ids`.
+* Each Focus Standard may appear at most once in `overall_standard_ratings`.
+* `rating` must be a value from the assignment's `rating_scale.levels`.
+* `rationale` is either `null` or a non-empty string.
+* `include_in_feedback` is a boolean.
+* `updated_at` is the most recent teacher update timestamp for that rating.
+* `module_details` is an object.
+
+Overall Focus Standard ratings are teacher judgments. Quillan must not
+calculate them automatically from review-unit observations. The teacher may
+use the review-unit observation summary as evidence, but the overall rating is
+not an average, weighted score, percentage, grade, or mastery calculation.
+
+Old generic criterion scores are superseded by overall Focus Standard ratings.
+
+## Feedback Composition
+
+`feedback` stores teacher choices for student-facing feedback.
+
+Feedback is organized around Focus Standards.
+
+Example:
+
+```json
+{
+  "include_review_unit_observations": false,
+  "include_overall_standard_ratings": true,
+  "standard_feedback": [
+    {
+      "standard_id": "njsls-ela:RL.CR.9-10.1",
+      "include_overall_rating": true,
+      "include_overall_rationale": true,
+      "included_observation_ids": [],
+      "comments": [
+        {
+          "feedback_comment_id": "feedback_comment_0001",
+          "source": "custom",
+          "text": "Your evidence is relevant and usually well chosen. To improve, make sure each quotation is followed by analysis that explains exactly how it supports your interpretation.",
+          "reusable_comment_id": null,
+          "save_for_reuse": false,
+          "include_in_feedback": true,
+          "created_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    }
+  ]
+}
+```
+
+Required top-level `feedback` fields:
+
+* `include_review_unit_observations`;
+* `include_overall_standard_ratings`; and
+* `standard_feedback`.
+
+Field rules:
+
+* `include_review_unit_observations` is a boolean default choice.
+* `include_overall_standard_ratings` is a boolean default choice.
+* `standard_feedback` is an array of standard-specific feedback records.
+
+### Standard Feedback Records
+
+Each item in `standard_feedback` contains:
+
+* `standard_id`;
+* `include_overall_rating`;
+* `include_overall_rationale`;
+* `included_observation_ids`;
+* `comments`; and
+* `module_details`.
+
+Field rules:
+
+* `standard_id` must be one of the assignment's `focus_standard_ids`.
+* Each Focus Standard may appear at most once in `standard_feedback`.
+* `include_overall_rating` is a boolean.
+* `include_overall_rationale` is a boolean.
+* `included_observation_ids` is an array of `observation_id` values from the
+  same review record.
+* `comments` is an array of feedback comment records.
+* `module_details` is an object.
+
+### Feedback Comment Records
+
+Each feedback comment contains:
+
+* `feedback_comment_id`;
+* `source`;
+* `text`;
+* `reusable_comment_id`;
+* `save_for_reuse`;
+* `include_in_feedback`;
+* `created_at`; and
+* `module_details`.
+
+Field rules:
+
+* `feedback_comment_id` is unique within all feedback comments in the review
+  record.
+* `source` is one of `custom` or `reusable_focus_standard_comment`.
+* `text` is a non-empty string.
+* `reusable_comment_id` is `null` for custom comments and a non-empty string
+  for reusable comment selections.
+* `save_for_reuse` is a boolean.
+* `include_in_feedback` is a boolean.
+* `created_at` is a timezone-aware ISO 8601 timestamp.
+* `module_details` is an object.
+
+Feedback comments are teacher-authored or teacher-selected. Quillan must not
+generate feedback automatically.
+
+If a teacher writes a new custom comment and sets `save_for_reuse` to `true`,
+a later reusable-comment workflow may offer to save that language into a
+reusable Focus Standard comment store. The review record remains a stable
+snapshot of the feedback text used for this student.
+
+Reusable comments are not live references. Later edits to reusable comment
+sources must not silently change existing review records or exports.
+
+Teacher-only rationales and review-unit observations do not become
+student-facing unless the teacher chooses to include them.
+
+## Private Notes
+
+`private_notes` contains optional private teacher notes that are not part of
+the central standards-based scoring model.
+
+Example:
+
+```json
+{
+  "private_note_id": "private_note_0001",
+  "text": "Student has the right interpretation but needs more precise quote integration.",
+  "created_at": "2026-07-02T00:00:00+00:00",
+  "updated_at": "2026-07-02T00:00:00+00:00",
+  "module_details": {}
+}
+```
+
+Required fields:
+
+* `private_note_id`;
+* `text`;
+* `created_at`;
+* `updated_at`; and
+* `module_details`.
+
+Field rules:
+
+* `private_note_id` is unique within `private_notes`.
+* `text` is a non-empty string.
+* `created_at` and `updated_at` are timezone-aware ISO 8601 timestamps.
+* `updated_at` must not precede `created_at`.
+* `module_details` is an object.
+
+Private notes are not student-facing feedback unless a later explicit workflow
+copies their content into a feedback comment.
+
+Private notes do not score work, prove standards performance, or drive
+automatic ratings.
+
+## Export Metadata
+
+`exports` records metadata for derived student-facing feedback exports.
+
+Example:
+
+```json
+{
+  "feedback_pdf": {
+    "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/exports/feedback.pdf",
+    "generated_at": "2026-07-02T00:00:00+00:00",
+    "source_review_updated_at": "2026-07-02T00:00:00+00:00",
+    "module_details": {}
+  },
+  "feedback_markdown": null
+}
+```
+
+Required fields:
+
+* `feedback_pdf`;
+* `feedback_markdown`.
+
+Each export field is either `null` or an export metadata object.
+
+Export metadata object fields:
+
+* `path`;
+* `generated_at`;
+* `source_review_updated_at`; and
+* `module_details`.
+
+Field rules:
+
+* `path` is a workspace-relative path.
+* `generated_at` is a timezone-aware ISO 8601 timestamp.
+* `source_review_updated_at` records the top-level `updated_at` value of the
+  review record used to generate the export.
+* `module_details` is an object.
+
+The target v0.8.6 model treats PDF feedback as a first-class student-facing
+export. Markdown may remain available as an optional derived export.
+
+Export files are derived artifacts. They do not replace `review.json`.
+
+Generating an export may update `exports`, top-level `updated_at`, and
+`review_state` if the implementation defines export as a state-changing
+workflow. An export writer must validate the complete proposed `review.json`
+before writing updated export metadata.
+
+If a review record changes after export, the export may be stale. Staleness can
+be detected by comparing the export metadata's `source_review_updated_at` with
+the current top-level `updated_at`.
+
+## Timestamp Policy
+
+Every timestamp is an ISO 8601 string with an explicit timezone offset, for
+example:
+
+```text
+2026-07-02T00:00:00+00:00
+2026-07-02T13:45:30-04:00
+```
+
+Naive timestamps are invalid. Equivalent offsets are allowed; UTC is
+recommended for stable serialization.
+
+Top-level `created_at` records creation of `review.json` and never changes.
+Top-level `updated_at` changes whenever any top-level field or nested review
+artifact changes. It must not precede `created_at`.
+
+Nested records use `created_at`, `updated_at`, or both according to their
+record type. A nested update also updates top-level `updated_at`.
+
+`minimum_requirement_outcome.updated_at` may be `null` only when the outcome
+status is `not_checked`.
+
+## Workspace-Relative Path Policy
+
+Every stored path in `review.json` is interpreted from the resolved active PDS
+workspace root. Paths must use forward slashes in serialized JSON and must not
+contain:
+
+* an absolute or rooted path;
+* a Windows drive-letter path;
+* `.` or `..` path components;
+* null bytes; or
+* any value that resolves outside the workspace root.
+
+These requirements apply to:
+
+* `submission_manifest_path`;
+* `assignment_path`;
+* export metadata paths; and
+* any future workspace-relative paths stored inside `module_details`.
+
+Schema version `2` does not copy routed evidence paths or retained-source
+paths from `submission.json`.
+
+## Module Extension Policy
+
+`module_details` is an object reserved for compatible Quillan extensions.
+
+Rules:
+
+* `module_details` must be an object wherever it appears.
+* It may be empty.
+* Consumers must not require unknown keys inside `module_details`.
+* Future compatible additions may use `module_details` when they do not change
+  the core meaning of the record.
+
+A change that alters required fields, identity semantics, review-state
+meaning, observation semantics, rating semantics, or feedback/export semantics
+requires a new schema version.
+
+## Mutation and Preservation Policy
+
+Later writers must validate the complete proposed record before replacing an
+existing `review.json` and must use safe-write behavior.
+
+At the data-model level:
+
+* minimum requirement checks are mutable by `requirement_key`;
+* minimum requirement outcome is explicitly replaceable;
+* review units are explicitly replaceable only through review-unit management
+  workflows;
+* review-unit Focus Standard observations are mutable by `observation_id`;
+* overall Focus Standard ratings are mutable by `standard_id`;
+* feedback choices are explicitly replaceable through feedback-composition
+  workflows;
+* feedback comments are append-only unless a later editing workflow is defined;
+* private notes are append-only unless a later editing workflow is defined;
+* export metadata is replaceable by export workflows; and
+* every artifact change also replaces top-level `updated_at`.
+
+No command may silently discard teacher-entered records. Editing or deleting
+append-only records requires a future explicit contract and workflow.
+
+## Deprecated and Superseded Schema Version 1 Fields
+
+Schema version `1` review records centered on:
+
+```text
+notes
+tags
+scores
+comments
+requirement_checks
+review_state
+```
+
+Those fields are no longer the center of the v0.8.6 target model.
+
+### `tags`
+
+Old generic `tags` are superseded by review-unit Focus Standard observations.
+
+The useful idea inside tags was teacher observation. In the new model, that
+observation is recorded directly against:
+
+```text
+review unit + Focus Standard
+```
+
+### `scores`
+
+Old generic `scores` are superseded by overall Focus Standard ratings.
+
+The useful idea inside scores was teacher scoring judgment. In the new model,
+that judgment is attached directly to a Focus Standard and uses the
+assignment's rating scale.
+
+### `comments`
+
+Old generic `comments` are superseded by Focus Standard feedback composition.
+
+The useful idea inside comments was reusable or custom student-facing
+feedback. In the new model, feedback comments are organized under Focus
+Standards.
+
+### `notes`
+
+Old `notes` are superseded by `private_notes`.
+
+Private teacher notes remain useful, but they are not the center of the review
+model and are not student-facing unless explicitly copied into feedback.
+
+### `requirement_checks`
+
+Old `requirement_checks` are superseded by `minimum_requirement_checks`.
+
+The concept remains important. The new field name makes clear that these are
+minimum requirement checks and not writing-quality ratings.
+
+## Backward Compatibility and Migration
+
+Schema version `2` is a breaking review-record change.
+
+The old schema version `1` shape is considered legacy development/test data
+for the v0.8.6 redesign.
+
+Because Quillan is still pre-pilot and no production classroom data is
+expected to depend on the old review contract, v0.8.6 may treat this as a
+breaking cleanup with no production-data migration.
+
+Later implementation work must decide one of the following:
+
+1. reject old schema version `1` review records with clear guidance;
+2. read old records as legacy records but prevent new standards-based review
+   workflows from editing them;
+3. provide a migration helper from schema version `1` to schema version `2`;
+   or
+4. support a temporary compatibility layer while the redesign is implemented.
+
+The target architecture is schema version `2`.
+
+The old review shape should not remain the long-term active contract.
+
+## Runtime Status
+
+At the time this target contract is introduced, current runtime loading,
+validation, direct CLI commands, menu workflows, feedback export, class summary
+export, standards summary export, and tests may still reflect the old schema
+version `1` model.
+
+This document defines the target contract. It does not by itself update:
+
+* `quillan.review_record`;
+* `quillan.review_record_paths`;
+* review menus;
+* assignment review workflows;
+* feedback export code;
+* summary export code;
+* examples;
+* validators; or
+* tests.
+
+Those implementation changes belong in later v0.8.6 issues.
+
+## Complete English 10 Example
+
+The following synthetic example uses the English 10 standards-based redesign
+simulation.
+
+```json
+{
+  "schema_version": "2",
+  "module": "quillan",
+  "record_type": "submission_review",
+  "class_id": "english_10_simulation",
+  "assignment_id": "coming-of-age_literary_analysis",
+  "student_id": "10001",
+  "submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/submission.json",
+  "assignment_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/assignment.json",
+  "review_state": "feedback_composed",
+  "minimum_requirement_checks": [
+    {
+      "requirement_check_id": "requirement_check_0001",
+      "requirement_key": "paragraphs_min",
+      "label": "Minimum paragraphs",
+      "expected": 1,
+      "met": true,
+      "teacher_note": null,
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    },
+    {
+      "requirement_check_id": "requirement_check_0002",
+      "requirement_key": "required_elements:textual_evidence",
+      "label": "Required element: textual evidence",
+      "expected": "textual evidence",
+      "met": true,
+      "teacher_note": null,
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    },
+    {
+      "requirement_check_id": "requirement_check_0003",
+      "requirement_key": "required_elements:explanation",
+      "label": "Required element: explanation",
+      "expected": "explanation",
+      "met": true,
+      "teacher_note": null,
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    }
+  ],
+  "minimum_requirement_outcome": {
+    "status": "met",
+    "returned_without_full_review": false,
+    "teacher_note": null,
+    "updated_at": "2026-07-02T00:00:00+00:00"
+  },
+  "review_units": [
+    {
+      "unit_id": "paragraph_1",
+      "sequence": 1,
+      "label": "Paragraph 1",
+      "unit_type": "paragraph",
+      "page_number": 1,
+      "evidence_id": "evidence_001",
+      "standard_observations": [
+        {
+          "observation_id": "observation_0001",
+          "standard_id": "njsls-ela:RL.CR.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph uses relevant evidence from the story and connects it to the claim.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0002",
+          "standard_id": "njsls-ela:RL.CI.9-10.2",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph begins explaining how objects carry memory and grief.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0003",
+          "standard_id": "njsls-ela:W.AW.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph supports an arguable claim with evidence and explanation.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "unit_id": "paragraph_2",
+      "sequence": 2,
+      "label": "Paragraph 2",
+      "unit_type": "paragraph",
+      "page_number": 1,
+      "evidence_id": "evidence_001",
+      "standard_observations": [
+        {
+          "observation_id": "observation_0004",
+          "standard_id": "njsls-ela:RL.CR.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 4,
+          "rationale": "The paragraph uses specific evidence about Yongjun's clothing and explains its significance.",
+          "include_in_feedback": true,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0005",
+          "standard_id": "njsls-ela:RL.CI.9-10.2",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 4,
+          "rationale": "The paragraph clearly connects the object motif to grief, family memory, and hidden truth.",
+          "include_in_feedback": true,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0006",
+          "standard_id": "njsls-ela:W.AW.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph develops the argument clearly, though some wording could be more precise.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "unit_id": "paragraph_3",
+      "sequence": 3,
+      "label": "Paragraph 3",
+      "unit_type": "paragraph",
+      "page_number": 1,
+      "evidence_id": "evidence_001",
+      "standard_observations": [
+        {
+          "observation_id": "observation_0007",
+          "standard_id": "njsls-ela:RL.CR.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph includes relevant textual evidence but would benefit from more precise quote integration.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0008",
+          "standard_id": "njsls-ela:RL.CI.9-10.2",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph explains sewing as a form of power and survival.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0009",
+          "standard_id": "njsls-ela:W.AW.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph supports the central argument and maintains logical organization.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    },
+    {
+      "unit_id": "paragraph_4",
+      "sequence": 4,
+      "label": "Paragraph 4",
+      "unit_type": "paragraph",
+      "page_number": 1,
+      "evidence_id": "evidence_001",
+      "standard_observations": [
+        {
+          "observation_id": "observation_0010",
+          "standard_id": "njsls-ela:RL.CR.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The concluding paragraph returns to evidence from the story without simply repeating the earlier claim.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0011",
+          "standard_id": "njsls-ela:RL.CI.9-10.2",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 4,
+          "rationale": "The moonlight and family garments are interpreted as a strong final image of memory and love.",
+          "include_in_feedback": true,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        },
+        {
+          "observation_id": "observation_0012",
+          "standard_id": "njsls-ela:W.AW.9-10.1",
+          "applicable": true,
+          "evidence_present": true,
+          "rating": 3,
+          "rationale": "The paragraph closes the argument coherently and maintains focus on the central interpretation.",
+          "include_in_feedback": false,
+          "updated_at": "2026-07-02T00:00:00+00:00",
+          "module_details": {}
+        }
+      ],
+      "module_details": {}
+    }
+  ],
+  "overall_standard_ratings": [
+    {
+      "standard_id": "njsls-ela:RL.CR.9-10.1",
+      "rating": 3,
+      "rationale": "Across the response, the evidence is relevant and usually well connected to the interpretation.",
+      "include_in_feedback": true,
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    },
+    {
+      "standard_id": "njsls-ela:RL.CI.9-10.2",
+      "rating": 4,
+      "rationale": "The response gives a strong interpretation of how objects carry memory, grief, family history, and power.",
+      "include_in_feedback": true,
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    },
+    {
+      "standard_id": "njsls-ela:W.AW.9-10.1",
+      "rating": 3,
+      "rationale": "The argument is focused and organized, with clear claims, evidence, and explanation.",
+      "include_in_feedback": true,
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    }
+  ],
+  "feedback": {
+    "include_review_unit_observations": false,
+    "include_overall_standard_ratings": true,
+    "standard_feedback": [
+      {
+        "standard_id": "njsls-ela:RL.CR.9-10.1",
+        "include_overall_rating": true,
+        "include_overall_rationale": true,
+        "included_observation_ids": ["observation_0004"],
+        "comments": [
+          {
+            "feedback_comment_id": "feedback_comment_0001",
+            "source": "custom",
+            "text": "Your evidence is relevant and usually well chosen. To improve, make sure each quotation is followed by analysis that explains exactly how it supports your interpretation.",
+            "reusable_comment_id": null,
+            "save_for_reuse": true,
+            "include_in_feedback": true,
+            "created_at": "2026-07-02T00:00:00+00:00",
+            "module_details": {}
+          }
+        ],
+        "module_details": {}
+      },
+      {
+        "standard_id": "njsls-ela:RL.CI.9-10.2",
+        "include_overall_rating": true,
+        "include_overall_rationale": true,
+        "included_observation_ids": ["observation_0005", "observation_0011"],
+        "comments": [
+          {
+            "feedback_comment_id": "feedback_comment_0002",
+            "source": "custom",
+            "text": "Your strongest work is your interpretation of how ordinary objects become carriers of memory, grief, and family history.",
+            "reusable_comment_id": null,
+            "save_for_reuse": true,
+            "include_in_feedback": true,
+            "created_at": "2026-07-02T00:00:00+00:00",
+            "module_details": {}
+          }
+        ],
+        "module_details": {}
+      },
+      {
+        "standard_id": "njsls-ela:W.AW.9-10.1",
+        "include_overall_rating": true,
+        "include_overall_rationale": true,
+        "included_observation_ids": [],
+        "comments": [
+          {
+            "feedback_comment_id": "feedback_comment_0003",
+            "source": "custom",
+            "text": "Your essay stays focused on a clear interpretation. For the next essay, keep working on making each paragraph's claim as precise as possible.",
+            "reusable_comment_id": null,
+            "save_for_reuse": true,
+            "include_in_feedback": true,
+            "created_at": "2026-07-02T00:00:00+00:00",
+            "module_details": {}
+          }
+        ],
+        "module_details": {}
+      }
+    ]
+  },
+  "exports": {
+    "feedback_pdf": null,
+    "feedback_markdown": null
+  },
+  "private_notes": [
+    {
+      "private_note_id": "private_note_0001",
+      "text": "Strong simulation response. Use as an example of the standards-based review flow.",
+      "created_at": "2026-07-02T00:00:00+00:00",
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "module_details": {}
+    }
+  ],
+  "created_at": "2026-07-02T00:00:00+00:00",
+  "updated_at": "2026-07-02T00:00:00+00:00",
+  "module_details": {}
+}
+```
+
+## Legacy Schema Version 1 Summary
+
+Schema version `1` review records used this top-level shape:
 
 ```json
 {
@@ -58,732 +1372,70 @@ Every version `1` review record contains:
 }
 ```
 
-All fields shown above except `requirement_checks` are required, including
-arrays that are initially empty. `requirement_checks` is optional for older
-schema version `1` records; new records written by current review workflows
-include it as an empty array until the teacher records checks.
+That shape reflected the old prepared-review model. It is not the target
+v0.8.6 standards-based review model.
 
-Field requirements are:
+Schema version `1` records may remain useful as legacy examples during the
+transition, but new standards-based review work should target schema version
+`2`.
 
-* `schema_version`: the string `"1"`;
-* `module`: the string `"quillan"`;
-* `record_type`: the string `"submission_review"`;
-* `class_id`, `assignment_id`, and `student_id`: identifiers matching the
-  associated submission manifest;
-* `submission_manifest_path`: the canonical workspace-relative path to that
-  submission's `submission.json`;
-* `review_state`: one of the controlled values below;
-* `notes`, `tags`, `scores`, and `comments`: arrays of the records defined
-  below;
-* `requirement_checks`: optional array of teacher-entered assignment
-  requirement checks;
-* `created_at`: the review-record creation timestamp;
-* `updated_at`: the timestamp of the most recent change anywhere in the
-  review record; and
-* `module_details`: an object reserved for compatible Quillan extensions.
+## Derived Artifacts
 
-Unknown top-level fields are not part of schema version `1`. A future contract
-change must use a new schema version when it changes the meaning or required
-shape of existing data.
+`review.json` is the canonical active teacher-review record.
 
-## Identity and Submission Reference
-
-`class_id`, `assignment_id`, and `student_id` use the shared `pds-core`
-identifier policy. They are case-sensitive strings, and student identifiers
-remain strings so leading zeros are preserved.
-
-The three identifiers must match both:
-
-1. the values in the referenced `submission.json`; and
-2. the corresponding path segments in `submission_manifest_path`.
-
-For a review record with identity `<class_id>`, `<assignment_id>`, and
-`<student_id>`, the only valid manifest reference is:
+Student-facing feedback files are derived artifacts. In the v0.8.6 target
+model, expected derived feedback paths include:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
+classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
+classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
-Review-local identifiers such as `note_id`, `tag_id`, `score_id`, and
-`comment_record_id` are opaque, non-empty strings. Requirement checks use
-`requirement_check_id`. Each identifier must be unique within its own array.
-Consumers must not derive ordering, timestamps, or meaning from an
-identifier's spelling.
-
-When present:
-
-* `evidence_id` must identify an evidence candidate in the referenced
-  `submission.json`;
-* `page_number` must identify the page entry containing that evidence when
-  both fields are present;
-* `standard_id` should identify a pds-core standard in the assignment's
-  selected pds-core profile; and
-* `criterion_id` should identify a criterion in the assignment rubric or
-  rubric profile.
-
-These references do not copy the referenced records into `review.json`.
-
-## Review State
-
-Allowed `review_state` values are:
-
-* `not_started`: no substantive teacher-review artifacts have been entered;
-* `in_progress`: the teacher has begun entering or revising review artifacts;
-* `ready_for_export`: the teacher has explicitly marked the current review
-  data ready for feedback or report export; and
-* `exported`: feedback or reporting output has been exported from the review
-  record.
-
-`review_state` describes teacher-entered review artifacts. It is distinct from
-`submission_state` in `submission.json`, which describes evidence and
-submission management. Neither state determines or automatically changes the
-other. Later workflows must make any state change explicit.
-
-The state is not inferred merely because an array is empty or populated.
-Writers are responsible for keeping the explicit state meaningful. For
-example, an add-note command may explicitly move `not_started` to
-`in_progress`, but validation must not silently make that decision.
-
-`ready_for_export` and `exported` do not assert that a submission is complete,
-that evidence is unambiguous, or that a particular score exists. Exported
-files are derived artifacts and are not stored as paths in schema version `1`.
-
-## Notes
-
-`notes` contains private, teacher-entered freeform observations. A note is not
-student-readable feedback unless the teacher later chooses to include its
-content in an export. A note does not score or tag work by itself.
-
-Each note contains:
-
-```json
-{
-  "note_id": "note_0001",
-  "text": "The essay has a clear central claim but needs stronger evidence explanation.",
-  "created_at": "2026-06-22T00:00:00+00:00",
-  "updated_at": "2026-06-22T00:00:00+00:00",
-  "module_details": {}
-}
-```
-
-All note fields shown above are required.
-
-* `note_id` is unique within `notes`.
-* `text` is a non-empty string after trimming surrounding whitespace.
-* `created_at` records original creation and is preserved.
-* `updated_at` initially equals `created_at` and changes only if a future
-  editing workflow explicitly supports note edits.
-* `module_details` is an object.
-
-Notes are append-only for the MVP. Editing and deletion are reserved for a
-future contract or explicitly defined command; later commands must not
-silently replace existing notes.
-
-## Tags
-
-`tags` contains teacher-created or teacher-confirmed observations. A tag may
-refer to a standard, reusable tag template, reusable comment, page, evidence
-candidate, location, or the whole submission. It is not a score, proof that a
-standard was met or missed, or an instruction to calculate a score.
-
-Each tag contains:
-
-```json
-{
-  "tag_id": "tag_0001",
-  "standard_id": "njsls-ela:W.AW.11-12.1",
-  "comment_id": "evidence_needs_explanation",
-  "label": "Evidence needs more explanation",
-  "polarity": "developing",
-  "severity": 2,
-  "teacher_note": "The quotation is relevant, but the analysis does not explain how it supports the claim.",
-  "page_number": 1,
-  "evidence_id": "evidence_001",
-  "location": {
-    "type": "paragraph",
-    "value": 2
-  },
-  "created_at": "2026-06-22T00:00:00+00:00",
-  "module_details": {}
-}
-```
-
-Required tag fields are:
-
-* `tag_id`;
-* `label`;
-* `polarity`;
-* `created_at`; and
-* `module_details`.
-
-Optional tag fields are:
-
-* `source`;
-* `tag_bank_id`;
-* `tag_template_id`;
-* `criterion_id`;
-* `standard_id`;
-* `comment_id`;
-* `severity`;
-* `teacher_note`;
-* `page_number`;
-* `evidence_id`; and
-* `location`.
-
-Tag field rules are:
-
-* `tag_id` is unique within `tags`.
-* `label` is a non-empty, teacher-readable string.
-* `polarity` is one of `positive`, `developing`, `negative`, or `neutral`.
-* `severity`, when present, is a non-negative integer used for organization,
-  not a score.
-* `teacher_note`, when present, is a non-empty string.
-* `page_number`, when present, is a positive integer.
-* `source`, when present, is one of `tag_bank` or `custom`.
-* `tag_bank_id` and `tag_template_id` are required when `source` is
-  `tag_bank`. They identify the source file under
-  `shared/tag_banks/<tag_bank_id>.json` and the selected template inside that
-  bank.
-* `criterion_id`, when present, is optional rubric/scoring metadata and is not
-  validated against a rubric profile in schema version `1`.
-* `standard_id` and `comment_id`, when present, are non-empty strings.
-  `standard_id` is pds-core provenance; `comment_id` identifies reusable
-  Quillan comment-bank language when paired with `bank_id`.
-* `evidence_id`, when present, is a non-empty reference to the submission
-  manifest as described above.
-* `module_details` is an object.
-
-### Tag Locations
-
-`location`, when present, contains exactly a controlled `type` and a `value`:
-
-```json
-{
-  "type": "paragraph",
-  "value": 2
-}
-```
-
-Allowed location types are:
-
-* `whole_submission`;
-* `page`;
-* `paragraph`;
-* `sentence`;
-* `line`;
-* `section`;
-* `scene`;
-* `stanza`; and
-* `custom`.
-
-For `whole_submission`, `value` must be `null`. For `page`, `paragraph`,
-`sentence`, and `line`, a single-value `value` must be a positive integer.
-For `paragraph`, `value` may also be a non-empty list of unique positive
-integers:
-
-```json
-{
-  "type": "paragraph",
-  "value": [2, 3, 4]
-}
-```
-
-The preferred convention is to store one paragraph as an integer and multiple
-paragraphs as a list. Existing single-integer paragraph locations remain
-valid. For `section`, `scene`, `stanza`, and `custom`, `value` must be either
-a positive integer or a non-empty string. A `page` location must agree with
-`page_number` when both are present. Paragraph targets are teacher-entered
-metadata; Quillan does not parse writing, count paragraphs, run OCR, or infer
-where a tag applies.
-
-### Reusable Tag Snapshots
-
-When a teacher selects a reusable tag from a Quillan tag bank, the review
-record stores a snapshot, not a live reference:
-
-```json
-{
-  "tag_id": "tag_0001",
-  "source": "tag_bank",
-  "tag_bank_id": "general_written_response_tags",
-  "tag_template_id": "explanation_needs_more_detail",
-  "label": "Explanation needs more detail",
-  "polarity": "developing",
-  "criterion_id": "explanation",
-  "severity": 2,
-  "teacher_note": "The explanation names the idea but does not explain why it matters.",
-  "created_at": "2026-06-26T00:00:00+00:00",
-  "module_details": {}
-}
-```
-
-Later edits to the source tag bank do not rewrite prior review records.
-Optional reusable-template `standard_ids` remain pds-core durable references
-only, and optional `criterion_ids` remain rubric/scoring metadata only.
-Existing direct CLI tags may omit `source` and all tag-bank provenance fields.
-
-Tags are append-only for the MVP. Editing, deletion, deduplication, and any
-interpretation of severity are future work. Tags must never calculate or
-compel scores.
-
-## Scores
-
-`scores` is an array of criterion score records. The array form is canonical
-for schema version `1` because it supports validation and focused updates
-without replacing an unrelated score.
-
-Each score contains:
-
-```json
-{
-  "score_id": "score_0001",
-  "criterion_id": "evidence",
-  "label": "Evidence",
-  "score": 3,
-  "max_score": 4,
-  "scale": "4_point",
-  "teacher_note": "Evidence is relevant but unevenly explained.",
-  "updated_at": "2026-06-22T00:00:00+00:00",
-  "module_details": {}
-}
-```
-
-Required score fields are:
-
-* `score_id`;
-* `criterion_id`;
-* `label`;
-* `score`;
-* `max_score`;
-* `updated_at`; and
-* `module_details`.
-
-Optional score fields are:
-
-* `scale`; and
-* `teacher_note`.
-
-Score field rules are:
-
-* `score_id` is unique within `scores`.
-* `criterion_id` is non-empty and unique within `scores`. Schema version `1`
-  validates this field intrinsically; rubric-profile lookup is workflow-level
-  context, not a review-record schema requirement.
-* `label` is a non-empty, teacher-readable string.
-* `score` is a finite number greater than or equal to zero.
-* `max_score` is a finite number greater than zero.
-* `score` is less than or equal to `max_score`.
-* `scale` and `teacher_note`, when present, are non-empty strings.
-* `updated_at` records the most recent teacher update to that criterion.
-* `module_details` is an object.
-
-Scores are teacher-entered or teacher-confirmed decisions. Quillan must not
-infer a score from student writing, tags, requirements, comments, or other
-records.
-
-Scores are mutable by `criterion_id` for the MVP. The `set-score` workflow
-updates the matching criterion record and its `updated_at`, preserves its
-`score_id`, and updates top-level `updated_at`. It appends a new score only
-when the criterion is not already present. It does not replace the entire
-`scores` array or erase unrelated criteria. Omitting optional `scale` or
-`teacher_note` values removes prior values from the updated criterion so the
-record reflects the latest explicit teacher input.
-
-Review mode can also set a criterion score from a valid shared rubric resolved
-through the assignment's `rubric_id`. That workflow snapshots the selected
-criterion and level into the same score shape. It does not store a live
-reference that changes when the rubric is later edited, and rubric level
-`student_facing_feedback` does not automatically create a comment or feedback
-export entry.
-
-## Requirement Checks
-
-`requirement_checks` records teacher-entered boolean checks against the
-assignment's `basic_requirements`. Quillan prompts from configured
-`paragraphs_min`, `paragraphs_max`, `word_count_min`, `word_count_max`, and
-individual `required_elements`, but it does not count paragraphs, count words,
-parse writing, run OCR, or use AI. The teacher records whether each
-requirement is met.
-
-Example:
-
-```json
-{
-  "requirement_check_id": "requirement_check_0001",
-  "requirement_key": "paragraphs_min",
-  "label": "Minimum paragraphs",
-  "expected": 5,
-  "met": true,
-  "updated_at": "2026-06-29T00:00:00+00:00",
-  "module_details": {}
-}
-```
-
-Required elements use a key that includes the element value:
-
-```json
-{
-  "requirement_check_id": "requirement_check_0002",
-  "requirement_key": "required_elements:thesis_statement",
-  "label": "Required element: thesis_statement",
-  "expected": "thesis_statement",
-  "met": false,
-  "updated_at": "2026-06-29T00:00:00+00:00",
-  "module_details": {},
-  "teacher_note": "Missing a clear thesis statement."
-}
-```
-
-Field requirements:
-
-* `requirement_check_id` is unique within `requirement_checks`;
-* `requirement_key` is non-empty and unique within `requirement_checks`;
-* `label` is a non-empty teacher-facing label;
-* `expected` is a finite number or non-empty string copied from assignment
-  configuration;
-* `met` is a boolean;
-* `updated_at` is the last teacher update timestamp; and
-* `module_details` is an object.
-
-Requirement checks are mutable by `requirement_key`. Updating a check
-preserves its `requirement_check_id`, replaces the recorded boolean and
-optional note, updates top-level `updated_at`, and preserves notes, tags,
-scores, comments, review state semantics, and evidence references.
-
-## Comments
-
-`comments` contains teacher-selected reusable language or teacher-entered
-custom language intended for possible feedback export. Reusable source
-comments come from a shared Quillan comment bank
-defined by [`comment_bank_contract.md`](comment_bank_contract.md).
-
-Each comment contains:
-
-```json
-{
-  "comment_record_id": "comment_0001",
-  "bank_id": "argument_writing",
-  "comment_id": "evidence_needs_explanation",
-  "standard_id": "njsls-ela:W.AW.11-12.1",
-  "label": "Evidence needs more explanation",
-  "text": "The evidence is relevant, but the explanation needs to show more clearly how it supports the claim.",
-  "source": "comment_bank",
-  "include_in_feedback": true,
-  "page_number": 1,
-  "location": {
-    "type": "paragraph",
-    "value": [2, 3]
-  },
-  "created_at": "2026-06-22T00:00:00+00:00",
-  "module_details": {}
-}
-```
-
-Required comment fields are:
-
-* `comment_record_id`;
-* `label`;
-* `text`;
-* `source`;
-* `include_in_feedback`;
-* `created_at`; and
-* `module_details`.
-
-Optional comment fields are:
-
-* `bank_id`;
-* `comment_id`;
-* `standard_id`;
-* `page_number`;
-* `evidence_id`; and
-* `location`.
-
-Comment field rules are:
-
-* `comment_record_id` is unique within `comments`.
-* `bank_id`, when present, is a valid shared identifier naming the source at
-  `shared/comment_banks/<bank_id>.json`.
-* `comment_id` identifies reusable language within its source bank; it is not
-  globally unique across comment banks.
-* `standard_id`, when present, is durable pds-core provenance for the
-  associated standard.
-* `page_number`, when present, is a positive integer.
-* `evidence_id`, when present, is a non-empty reference to the submission
-  manifest as described above.
-* `location`, when present, uses the same controlled shape and paragraph
-  rules as tag locations. Comments may target a paragraph, multiple
-  paragraphs, a page, page plus paragraphs, evidence, or the whole
-  submission.
-* `label` and `text` are non-empty strings.
-* `source` is one of `comment_bank` or `custom`.
-* `include_in_feedback` is a boolean expressing the teacher's export choice.
-* `module_details` is an object.
-
-Source-specific rules are:
-
-* `comment_bank` comments require both `bank_id` and `comment_id`;
-  `bank_id + comment_id` identifies the reusable source comment.
-* `custom` comments must omit `bank_id`, `comment_id`, and `standard_id`.
-
-Comments are teacher-selected or teacher-entered; they are not generated from
-student writing or supplied as AI judgments. Comment targets are optional,
-teacher-entered context; Quillan does not parse student writing to determine
-paragraph numbers or infer which paragraph a comment applies to. Comments are
-append-only for the MVP. Editing, deletion, and toggling export inclusion are
-reserved for future explicit workflows, which must not silently erase other
-comment records.
-
-For a shared-bank selection, `source` must be `"comment_bank"`. `bank_id` is
-provenance metadata only: validation does not load or look up the bank file.
-`label` and `text` must be copied into this record rather than resolved as a
-live display reference. The selected record is a submission-specific snapshot,
-so later edits to the shared bank cannot silently alter an existing review or
-export.
-
-The direct `add-comment` workflow validates the source bank first and accepts
-only `student_facing: true` comments. It uses the bank's
-`include_in_feedback_default` unless the teacher explicitly includes or
-excludes the selected comment. A sole source `standard_id` is copied
-automatically; with multiple source standards, one is stored only when the
-teacher specifies it.
-
-## Timestamp Policy
-
-Every timestamp is an ISO 8601 string with an explicit timezone offset, for
-example:
-
-```text
-2026-06-22T00:00:00+00:00
-2026-06-22T13:45:30-04:00
-```
-
-Naive timestamps are invalid. Equivalent offsets are allowed; UTC is
-recommended for stable serialization.
-
-Top-level `created_at` records creation of `review.json` and never changes.
-Top-level `updated_at` changes whenever any top-level field or nested review
-artifact changes. It must not precede `created_at`.
-
-Append-only notes, tags, and comments preserve their original `created_at`.
-Notes also reserve `updated_at` for future explicit editing. Mutable score
-records update their own `updated_at`. A nested update also updates top-level
-`updated_at`.
-
-## Workspace-Relative Path Policy
-
-Every stored path in `review.json` is interpreted from the resolved active PDS
-workspace root. Paths must use forward slashes in serialized JSON and must
-not contain:
-
-* an absolute or rooted path;
-* a Windows drive-letter path;
-* `.` or `..` path components;
-* null bytes; or
-* any value that resolves outside the workspace root.
-
-Schema version `1` stores only `submission_manifest_path`. It does not copy
-routed evidence paths, retained-source paths, export paths, or report paths.
-Runtime validation rejects unsafe paths and requires the canonical manifest
-path matching the record's own class, assignment, and student identifiers.
-
-## Runtime API
-
-`quillan.review_record` provides:
-
-* `load_review_record(path)` for UTF-8 JSON loading and complete validation;
-* `validate_review_record(record)` for isolated schema validation; and
-* `ReviewRecordError` for review-record loading and validation failures.
-
-`quillan.review_record_paths` provides:
-
-* `review_record_dir(...)` and `review_record_path(...)` for canonical active
-  paths;
-* `write_review_record(path, record, overwrite=False)` for validated,
-  atomic, readable UTF-8 JSON writes; and
-* `ReviewRecordPathError` for path and write failures.
-
-Version `1` rejects unknown fields in the top-level and defined nested record
-shapes. Module-specific extension data belongs in each record's
-`module_details` object. The writer creates missing parent directories and
-refuses to replace an existing file unless `overwrite=True`.
-
-## Mutation and Preservation Policy
-
-Later writers must validate the complete proposed record before replacing an
-existing `review.json` and must use safe-write behavior. At the data-model
-level:
-
-* notes are append-only;
-* tags are append-only;
-* comments are append-only;
-* scores are appended or updated by unique `criterion_id`;
-* top-level metadata and `review_state` are explicitly replaceable; and
-* every artifact change also replaces top-level `updated_at`.
-
-No command may silently discard teacher-entered records. Editing or deleting
-append-only records requires a future, explicit contract and workflow.
-
-## Quick Teacher Notes
-
-The direct quick-note command is:
-
-```powershell
-quillan add-note <class_id> <assignment_id> <student_id> --text "..."
-```
-
-It appends one teacher-entered note to the canonical `review.json`. A missing
-review record is created only after the adjacent canonical `submission.json`
-loads, validates, and matches the requested identity. New records begin in
-`in_progress`; an existing `not_started` record advances to `in_progress`, while
-`in_progress`, `ready_for_export`, and `exported` are preserved.
-
-Quick notes receive sequential local IDs such as `note_0001`, trim surrounding
-whitespace from non-empty teacher text, and use one timezone-aware timestamp
-for the note's initial `created_at` and `updated_at`. The operation preserves
-existing notes, tags, scores, comments, module details, and top-level
-`created_at`, validates the complete proposed record before an atomic write,
-and does not mutate the submission manifest, routed evidence, or retained
-source scans.
-
-## Structured Teacher Tags
-
-The direct structured-tag command is:
-
-```powershell
-quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity developing
-```
-
-It appends one teacher-entered tag to `tags`, using sequential IDs such as
-`tag_0001`. Optional references to pages and evidence IDs are validated
-against the adjacent submission manifest. Optional paragraph targets may name
-one paragraph or multiple paragraphs, but they are not checked against parsed
-student writing. Optional standard references use shared `pds-core`
-`standard_id` values from the workspace standards library.
-Reusable comment references remain Quillan-owned module data; their labels and
-polarities must match the stored Quillan comment/profile values.
-
-The command follows the same creation, timestamp, state-transition, complete
-record validation, safe-write, preservation, and non-mutation policies as
-quick notes. Tags organize teacher judgment only; they do not calculate
-scores, prove mastery, analyze student writing, or generate feedback.
-
-## Teacher-Entered Criterion Scores
-
-The direct score command is:
-
-```powershell
-quillan set-score <class_id> <assignment_id> <student_id> --criterion evidence --label "Evidence" --score 3 --max-score 4
-```
-
-Optional `--scale` and `--note` values are descriptive teacher-entered
-metadata. A new criterion receives the next stable local ID such as
-`score_0001`. An existing criterion updates in place by `criterion_id`,
-preserves its `score_id`, and does not move or replace unrelated scores.
-
-The workflow requires a valid matching adjacent `submission.json`, creates a
-missing review record in `in_progress`, advances only `not_started` to
-`in_progress`, and preserves `ready_for_export` and `exported`. It preserves
-unrelated notes, tags, scores, comments, top-level metadata, and
-`created_at`; validates the complete proposed record before an atomic write;
-and never mutates submission manifests, routed evidence, or retained scans.
-
-Criterion IDs are validated only as non-empty local identifiers in the review
-record schema. The assignment's `rubric_id` may resolve to a shared rubric for
-menu selection, but unresolved rubric IDs remain structurally valid. Quillan
-does not infer criterion scores or calculate an overall, weighted, percentage,
-grade, or mastery score.
-
-## Reusable Comment Selection
-
-The direct reusable-comment command is:
-
-```powershell
-quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id>
-```
-
-It validates the shared bank at `shared/comment_banks/<bank_id>.json`, selects
-one student-facing teacher-authored comment, and appends a stable snapshot to
-`review.json.comments`. The snapshot preserves `bank_id + comment_id`
-provenance and copies the source label and text so later bank edits do not
-change an existing review. The teacher may choose a valid source standard and
-may override the bank's feedback-inclusion default.
-
-Selection requires a valid matching adjacent `submission.json`, creates a
-missing review record using the same state and preservation rules as notes and
-tags, and does not mutate the source bank, submission manifest, evidence, or
-retained scans. It does not export feedback, select comments automatically,
-analyze writing, score work, or infer mastery.
-
-Selected comments may also store optional `page_number`, `evidence_id`, and
-`location` fields using the same target model as tags. Page and evidence
-references are validated against the adjacent submission manifest when
-supplied. Paragraph numbers are teacher-entered metadata only.
-
-## Derived Artifacts and Historical Names
-
-`review.json` is the canonical active teacher-review record for notes, tags,
-criterion scores, selected comments, and teacher-entered requirement checks.
-
-Earlier design documents used separate `tags.json` and `scores.json` files.
-Those names are historical design background, not alternate active v0.7
-contracts. Implementations must not split or mirror canonical review data
-across those files.
-
-`submissions/<student_id>/exports/feedback.md`,
-`assignments/<assignment_id>/exports/class_summary.csv`, and
-`assignments/<assignment_id>/exports/standards_summary.csv` are derived export
-artifacts. They may be
-generated from teacher-controlled review records, but they do
-not replace `review.json` and are not authoritative independent evidence.
-Earlier design documents reserved `requirements.json` for structural checks.
-Current teacher-entered assignment requirement checks are stored in
-`review.json.requirement_checks`; implementations must not write a sibling
-`requirements.json` for this workflow.
-
-The Markdown feedback export requires valid matching canonical
-`submission.json` and `review.json` records and uses only snapshotted review
-content. It includes criterion scores and comments whose
-`include_in_feedback` value is `true`; it excludes notes, tags, score
-`teacher_note` values, excluded comments, and source/provenance fields. Source
-comment banks are neither required nor read.
-
-Export does not mutate the review record, update timestamps, or advance
-`review_state` to `exported`. It writes only the derived feedback file and
-refuses to replace an existing file unless overwrite is explicitly requested.
-
-The class summary export similarly reads existing canonical records without
-mutating them. It reports missing, invalid, and identity-mismatched records as
-CSV status rows and includes only simple counts and arithmetic totals from
-teacher-entered review data. It does not inspect evidence or comment banks,
-calculate grades or mastery, or perform standards or roster reporting.
-
-The standards summary export validates the same per-student canonical records
-and aggregates only tags and selected comments that contain `standard_id`.
-It reports tag polarity, comment feedback inclusion, distinct-student counts,
-and assignment-level missing/invalid counts. It excludes scores and notes and
-does not inspect evidence, read comment banks, infer
-mastery, calculate grades, use a roster, or mutate canonical records.
-
-## Synthetic Example
-
-A complete fake record with a note, two tags, one criterion score, and one
-selected comment is stored in
-[`review_record_synthetic.json`](../examples/submissions/review_record_synthetic.json).
+Assignment-level reports are also derived artifacts. They do not replace
+`review.json`.
+
+Derived exports may be regenerated from canonical assignment, submission, and
+review records. They are not independent evidence and must not silently change
+teacher-entered review data.
+
+## Synthetic Data Policy
+
+Committed examples must use synthetic data only.
+
+Do not commit:
+
+* real student names;
+* real rosters;
+* real student writing;
+* real grades;
+* real parent contact information;
+* real scanned student work;
+* real accommodation data;
+* real disciplinary or attendance information; or
+* any personally identifiable student information.
 
 ## Explicit Non-Goals
 
 This contract does not implement:
 
+* runtime loading or validation for schema version `2`;
+* review menu workflows;
+* assignment creation workflows;
+* review-unit creation workflows;
+* feedback export generation;
+* report generation;
+* migration from schema version `1`;
+* editing or deletion of append-only feedback comments or private notes;
+* automatic score calculation;
 * overall, weighted, percentage, grade, or mastery score calculation;
-* assignment-driven comment-bank activation, bank editing, or guided
-  reusable-comment management;
-* roster-aware missing-student reporting;
-* terminal-menu review workflows or review CLI commands beyond those listed;
-* editing or deletion of append-only review artifacts;
 * AI scoring, feedback, comments, suggestions, or automated grading;
 * automatic standard detection;
-* OCR, handwriting recognition, PDF text extraction, or QR extraction;
+* OCR, handwriting recognition, PDF text extraction, or automatic paragraph
+  detection;
 * evidence selection or duplicate resolution;
-* email sending, LMS integration, dashboards, or report visualization.
+* email sending;
+* LMS integration;
+* dashboards; or
+* report visualization.
 
 The record describes teacher-entered or teacher-confirmed judgment only.
