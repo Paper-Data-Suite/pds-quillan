@@ -3,8 +3,9 @@
 Quillan stores structured evidence about student writing using local files.
 
 These contracts describe the expected file formats for standards profiles,
-shared comment banks, shared tag banks, assignments, submissions, teacher
-review, requirements checks, feedback exports, and reports.
+legacy shared comment banks, shared tag banks, assignments, submissions,
+teacher review, reusable Focus Standard comments, requirements checks,
+feedback exports, and reports.
 
 Some contracts describe currently implemented runtime behavior. Others define
 target v0.8.6 standards-based contract shapes that may precede full runtime
@@ -12,13 +13,15 @@ implementation. When a contract is a target contract, the relevant document
 states that status explicitly.
 
 Standards profiles, assignment configurations, the legacy text-oriented
-submission metadata shape, comment banks, tag banks, review records, and the
-reviewable-evidence submission manifest have implemented Python validation
+submission metadata shape, legacy comment banks, tag banks, review records, and
+the reviewable-evidence submission manifest have implemented Python validation
 support. Routed-evidence discovery and manifest assembly, explicit
 teacher-controlled review updates, reusable-comment selection, reusable-tag
 selection, and student, class, and standards exports are implemented through
 direct CLI commands, guided menus, and Python APIs. The writing-response payload
-contract is implemented and used by printable PDF generation.
+contract is implemented and used by printable PDF generation. Target v0.8.6
+standards-based contracts for assignments, review records, and reusable Focus
+Standard comments may not yet have matching runtime validators or workflows.
 
 For the expected workspace layout and file lifecycle of these records, see
 [`workspace_lifecycle.md`](workspace_lifecycle.md).
@@ -43,7 +46,13 @@ overall Focus Standard ratings, feedback choices, export metadata, paths,
 timestamps, and mutation policy, see
 [`review_record_contract.md`](review_record_contract.md).
 
-For reusable teacher-authored feedback language stored at
+For the target v0.8.6 reusable Focus Standard comment contract stored at
+`shared/focus_standard_comments/<comment_set_id>.json`, including lookup by
+standard, writing type, rating value, purpose, active status, student-facing
+status, source provenance, usage metadata, privacy rules, and snapshot behavior,
+see [`focus_standard_comment_contract.md`](focus_standard_comment_contract.md).
+
+For legacy reusable teacher-authored feedback language stored at
 `shared/comment_banks/<bank_id>.json`, including categories, writing-type
 filters, standards and criterion links, and future assignment activation, see
 [`comment_bank_contract.md`](comment_bank_contract.md).
@@ -63,8 +72,8 @@ For optional synthetic starter review materials that can be previewed,
 validated, and installed into `shared/comment_banks/`, `shared/tag_banks/`, and
 `shared/rubrics/`, see [`starter_materials.md`](starter_materials.md). Starter
 installation is limited to those review-material folders and does not create
-assignments, rosters, scans, submissions, review records, exports, or pds-core
-standards.
+assignments, rosters, scans, submissions, review records, exports, reusable
+Focus Standard comment sets, or pds-core standards.
 
 For the required structure and human-readable elements of a printable
 writing-response page, see
@@ -90,34 +99,47 @@ Quillan data should be:
 
 ## Standards References
 
-Shared standards definitions, durable `standard_id` values, reusable standards profiles, and profile validation are owned by `pds-core` and stored in the workspace standards library.
+Shared standards definitions, durable `standard_id` values, reusable standards
+profiles, and profile validation are owned by `pds-core` and stored in the
+workspace standards library.
 
 Quillan stores only durable pds-core references:
 
 * assignment `standards_profile_id` stores a pds-core `profile_id`;
-* target v0.8.6 assignment `focus_standard_ids` stores pds-core `standard_id` values;
-* target v0.8.6 review-unit Focus Standard observations store pds-core `standard_id` values;
-* target v0.8.6 overall Focus Standard ratings store pds-core `standard_id` values;
-* target v0.8.6 Focus Standard feedback records store pds-core `standard_id` values;
-* legacy pre-v0.8.6 assignment `focus_standards` stores pds-core `standard_id` values;
-* legacy review tags and selected reusable comments may store optional pds-core `standard_id` provenance; and
-* reusable tag templates may store optional pds-core `standard_ids` as source metadata.
+* target v0.8.6 assignment `focus_standard_ids` stores pds-core `standard_id`
+  values;
+* target v0.8.6 review-unit Focus Standard observations store pds-core
+  `standard_id` values;
+* target v0.8.6 overall Focus Standard ratings store pds-core `standard_id`
+  values;
+* target v0.8.6 Focus Standard feedback records store pds-core `standard_id`
+  values;
+* target v0.8.6 reusable Focus Standard comments store pds-core `standard_id`
+  values;
+* legacy pre-v0.8.6 assignment `focus_standards` stores pds-core
+  `standard_id` values;
+* legacy review tags and selected reusable comments may store optional
+  pds-core `standard_id` provenance; and
+* reusable tag templates may store optional pds-core `standard_ids` as source
+  metadata.
 
-Quillan does not store or validate an independent standards-profile JSON shape. Legacy Quillan standards-profile files were removed before production use as a pre-1.0 breaking cleanup, with no production-data migration.
+Quillan does not store or validate an independent standards-profile JSON shape.
+Legacy Quillan standards-profile files were removed before production use as a
+pre-1.0 breaking cleanup, with no production-data migration.
 
 ## Shared Comment Bank
 
-A shared comment bank is subject-agnostic, reusable teacher-authored feedback
-language stored at:
+A legacy shared comment bank is subject-agnostic, reusable teacher-authored
+feedback language stored at:
 
 ```text
 shared/comment_banks/<bank_id>.json
 ```
 
-It organizes comments with writing types, categories, subcategories,
-standards and criterion references, polarity, severity defaults, search
-metadata, and student-facing controls. Banks are not student records, do not
-grade work, and do not generate feedback by themselves.
+It organizes comments with writing types, categories, subcategories, standards
+and criterion references, polarity, severity defaults, search metadata, and
+student-facing controls. Banks are not student records, do not grade work, and
+do not generate feedback by themselves.
 
 Teachers can create, view, edit, extend, and validate shared banks from Review
 Materials -> Comment Banks. The workflows write only confirmed, valid version
@@ -130,8 +152,8 @@ The implemented direct shared-bank selection copies chosen language into
 `review.json.comments` with `source: "comment_bank"`, `bank_id`, and
 `comment_id`. Because comment IDs are unique only within a bank, the pair
 preserves source provenance. The copied label and text make the student review
-a stable snapshot rather than a live reference. The complete version `1`
-shape and validation rules are defined in
+a stable snapshot rather than a live reference. The complete version `1` shape
+and validation rules are defined in
 [`comment_bank_contract.md`](comment_bank_contract.md). Runtime validation and
 direct selection are implemented; assignment activation remains future work.
 
@@ -140,10 +162,68 @@ review materials. Optional `standard_ids` are pds-core durable references only;
 Quillan does not create, import, edit, retire, reactivate, or authoritatively
 validate standards through comment-bank workflows.
 
-Under the target v0.8.6 standards-based review model, reusable feedback
-language should eventually be organized around Focus Standards and actual
-teacher use. Legacy comment-bank workflows remain implementation history until
-the reusable Focus Standard comment workflow is redesigned.
+Under the target v0.8.6 standards-based review model, legacy generic comment
+banks are superseded by reusable Focus Standard comments. Legacy comment-bank
+workflows remain implementation history until the reusable Focus Standard
+comment workflow is implemented and old generic review-material workflows are
+removed, migrated, or preserved as compatibility tooling.
+
+## Reusable Focus Standard Comments
+
+A reusable Focus Standard comment set is target v0.8.6 teacher-authored
+feedback source material stored at:
+
+```text
+shared/focus_standard_comments/<comment_set_id>.json
+```
+
+The complete target contract is defined in
+[`focus_standard_comment_contract.md`](focus_standard_comment_contract.md).
+
+Reusable Focus Standard comments are organized around pds-core `standard_id`
+values and are intended for standards-based feedback composition. They are
+designed to grow from actual teacher feedback work. A teacher may write a
+custom comment while composing feedback under a Focus Standard and optionally
+save that comment for reuse after removing student-specific details.
+
+Reusable Focus Standard comments support lookup by:
+
+* `standard_id`;
+* `writing_type`;
+* `rating_value`;
+* `active`;
+* `student_facing`;
+* optional `grade_band`;
+* optional `purpose`;
+* optional `comment_set_id`; and
+* optional usage metadata.
+
+Reusable Focus Standard comments are source material, not canonical student
+review data. When a teacher selects one for a student review, Quillan should
+copy the text into schema version `2` `review.json` as a stable snapshot under:
+
+```text
+review.json.feedback.standard_feedback[].comments[]
+```
+
+Later edits to the reusable comment source must not silently alter prior
+student review records or previously generated feedback exports.
+
+The target v0.8.6 reusable Focus Standard comment model must not:
+
+* select comments automatically;
+* generate feedback automatically;
+* score student work;
+* infer standards performance;
+* inspect student writing;
+* use OCR;
+* use AI to write comments; or
+* replace teacher judgment.
+
+At the time this target contract is introduced, runtime workflows may still
+use legacy comment banks and schema version `1` `review.json.comments`. The
+new reusable Focus Standard comment contract does not itself implement storage,
+validation, lookup, menu workflows, export behavior, tests, or migration.
 
 ## Shared Tag Bank
 
@@ -161,10 +241,10 @@ banks are not student records, grades, scores, mastery determinations,
 generated feedback, automatic judgments, or automatic suggestions.
 
 Teachers can create, view, edit, extend, and validate shared tag banks from
-Review Student Work -> Manage Review Materials -> Tag Banks. The workflows write only confirmed, valid
-version `1` bank files under `shared/tag_banks/`, never invalid partial files.
-Existing banks are not overwritten unless the teacher explicitly confirms with
-`OVERWRITE`.
+Review Student Work -> Manage Review Materials -> Tag Banks. The workflows
+write only confirmed, valid version `1` bank files under `shared/tag_banks/`,
+never invalid partial files. Existing banks are not overwritten unless the
+teacher explicitly confirms with `OVERWRITE`.
 
 Review Student Work -> Add structured tag can select a reusable tag by bank,
 category, and tag template. The selected values are copied into
@@ -704,6 +784,10 @@ Target feedback exports may include teacher-selected overall Focus Standard
 ratings, overall rationales, selected review-unit observations, and
 student-facing feedback comments organized by Focus Standard.
 
+Student-facing feedback comments may include teacher-written custom comments
+and comments snapshotted from reusable Focus Standard comment sets. Exports must
+use the copied text stored in `review.json`, not live reusable-comment lookups.
+
 Feedback exports must exclude private notes and any review-unit observations,
 rationales, ratings, or comments the teacher did not choose to include in
 student-facing feedback.
@@ -767,8 +851,8 @@ scores, automatic mastery results, or rubric levels.
 
 The export reads canonical assignment, submission, and review records. It does
 not read feedback contents, evidence files, retained scans, standards profiles,
-or comment banks except where a later reporting contract explicitly defines a
-safe read-only reference. It must not mutate canonical records.
+or reusable comment sources except where a later reporting contract explicitly
+defines a safe read-only reference. It must not mutate canonical records.
 
 Current runtime class summary export may still report legacy schema version `1`
 counts, criterion-score totals, comment counts, tag counts, note counts, and
@@ -795,6 +879,11 @@ Do not commit:
 * real grades;
 * real parent contact information;
 * real scanned student work.
+
+Reusable comments must not include student-identifying details, private family
+information, accommodations, health information, disability information,
+discipline information, attendance information, or exact copied student writing
+unless the content is explicitly synthetic example material.
 
 ## Submission Readiness
 

@@ -1,0 +1,124 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "focus_standard_comment_set",
+  "comment_set_id": "english10_literary_analysis_focus_comments",
+  "title": "English 10 Literary Analysis Focus Standard Comments",
+  "description": "Reusable teacher-authored comments for English 10 literary analysis assignments.",
+  "standards_profile_id": "english10_2023_njsls_ela",
+  "writing_types": ["literary_analysis"],
+  "grade_band": "9-10",
+  "comments": [
+    {
+      "comment_id": "evidence_relevant_explanation_general",
+      "standard_id": "njsls-ela:RL.CR.9-10.1",
+      "writing_types": ["literary_analysis"],
+      "rating_values": [2, 3],
+      "label": "Relevant evidence, explanation needs development",
+      "text": "Your evidence is relevant, but your explanation needs to make the connection to your claim clearer.",
+      "purpose": "next_step",
+      "student_facing": true,
+      "active": true,
+      "created_at": "2026-07-02T00:00:00+00:00",
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "source": {
+        "type": "teacher_saved_from_feedback",
+        "class_id": "english_10_simulation",
+        "assignment_id": "coming-of-age_literary_analysis",
+        "student_id": "10001",
+        "review_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/review.json",
+        "feedback_comment_id": "feedback_comment_0001",
+        "saved_at": "2026-07-02T00:00:00+00:00"
+      },
+      "usage": {
+        "times_used": 0,
+        "last_used_at": null
+      },
+      "module_details": {}
+    },
+    {
+      "comment_id": "interpretation_objects_memory_strength",
+      "standard_id": "njsls-ela:RL.CI.9-10.2",
+      "writing_types": ["literary_analysis"],
+      "rating_values": [3, 4],
+      "label": "Strong interpretation of object motif",
+      "text": "Your interpretation clearly explains how ordinary objects become connected to memory, grief, and family history.",
+      "purpose": "praise",
+      "student_facing": true,
+      "active": true,
+      "created_at": "2026-07-02T00:00:00+00:00",
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "source": {
+        "type": "teacher_saved_from_feedback",
+        "class_id": "english_10_simulation",
+        "assignment_id": "coming-of-age_literary_analysis",
+        "student_id": "10001",
+        "review_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/review.json",
+        "feedback_comment_id": "feedback_comment_0002",
+        "saved_at": "2026-07-02T00:00:00+00:00"
+      },
+      "usage": {
+        "times_used": 0,
+        "last_used_at": null
+      },
+      "module_details": {}
+    },
+    {
+      "comment_id": "argument_claim_precision_next_step",
+      "standard_id": "njsls-ela:W.AW.9-10.1",
+      "writing_types": ["literary_analysis"],
+      "rating_values": [2, 3],
+      "label": "Make paragraph claims more precise",
+      "text": "Your essay stays focused on a clear interpretation. For the next essay, work on making each paragraph's claim as precise as possible.",
+      "purpose": "next_step",
+      "student_facing": true,
+      "active": true,
+      "created_at": "2026-07-02T00:00:00+00:00",
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "source": {
+        "type": "teacher_saved_from_feedback",
+        "class_id": "english_10_simulation",
+        "assignment_id": "coming-of-age_literary_analysis",
+        "student_id": "10001",
+        "review_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/review.json",
+        "feedback_comment_id": "feedback_comment_0003",
+        "saved_at": "2026-07-02T00:00:00+00:00"
+      },
+      "usage": {
+        "times_used": 0,
+        "last_used_at": null
+      },
+      "module_details": {}
+    },
+    {
+      "comment_id": "evidence_quote_integration_manual",
+      "standard_id": "njsls-ela:RL.CR.9-10.1",
+      "writing_types": ["literary_analysis"],
+      "rating_values": [],
+      "label": "Improve quote integration",
+      "text": "When you use a quotation, introduce it smoothly and follow it with analysis that explains why it matters.",
+      "purpose": "revision",
+      "student_facing": true,
+      "active": true,
+      "created_at": "2026-07-02T00:00:00+00:00",
+      "updated_at": "2026-07-02T00:00:00+00:00",
+      "source": {
+        "type": "manual",
+        "class_id": null,
+        "assignment_id": null,
+        "student_id": null,
+        "review_path": null,
+        "feedback_comment_id": null,
+        "saved_at": "2026-07-02T00:00:00+00:00"
+      },
+      "usage": {
+        "times_used": 0,
+        "last_used_at": null
+      },
+      "module_details": {}
+    }
+  ],
+  "created_at": "2026-07-02T00:00:00+00:00",
+  "updated_at": "2026-07-02T00:00:00+00:00",
+  "module_details": {}
+}
