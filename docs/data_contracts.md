@@ -27,6 +27,11 @@ For the teacher-controlled relationship among evidence, review artifacts,
 scores, feedback, and reports, see
 [`teacher_review_model.md`](teacher_review_model.md).
 
+For the target v0.8.6 standards-based `assignment.json` schema, including
+Focus Standards, review-unit configuration, rating scales, student-facing
+prompts, minimum requirements, and minimum-requirement policy, see
+[`assignment_contract.md`](assignment_contract.md).
+
 For the canonical v0.7 `review.json` schema, including notes, tags, scores,
 comments, state, paths, timestamps, and mutation policy, see
 [`review_record_contract.md`](review_record_contract.md).
@@ -83,7 +88,8 @@ Shared standards definitions, durable `standard_id` values, reusable standards p
 Quillan stores only durable pds-core references:
 
 * assignment `standards_profile_id` stores a pds-core `profile_id`;
-* assignment `focus_standards` stores pds-core `standard_id` values;
+* target v0.8.6 assignment `focus_standard_ids` stores pds-core `standard_id` values;
+* legacy pre-v0.8.6 assignment `focus_standards` stores pds-core `standard_id` values;
 * review tags and selected reusable comments may store optional pds-core `standard_id` provenance;
 * reusable tag templates may store optional pds-core `standard_ids` as source metadata.
 
@@ -160,9 +166,13 @@ workflows. Optional `criterion_ids` are rubric/scoring metadata only.
 
 ## Assignment
 
-An assignment defines what the teacher asked students to write, which class or
-classes are connected, which standards are active, and what basic requirements
-apply.
+A Quillan assignment defines what the teacher asked students to write, which
+class or classes are connected, which Focus Standards are active, what review
+unit should structure teacher review, which rating scale should be used, and
+what basic requirements apply.
+
+The target v0.8.6 standards-based assignment contract is defined in
+[`assignment_contract.md`](assignment_contract.md).
 
 Suggested path:
 
@@ -170,64 +180,105 @@ Suggested path:
 <PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/assignment.json
 ```
 
-Required fields:
+The v0.8.6 assignment contract makes the assignment record the source of truth
+for standards-based review setup. It supports:
 
-* `assignment_id`
-* `title`
-* `class_ids`
-* `writing_type`
-* `standards_profile_id`
-* `tagging_mode`
-* `focus_standards`
-* `basic_requirements`
-* `rubric_id`
+* assignment identity;
+* class identity;
+* writing type;
+* student-facing prompt;
+* standards profile reference;
+* Focus Standard IDs selected from that standards profile;
+* assignment-defined review-unit type and teacher-facing labels;
+* standards rating scale;
+* basic requirements; and
+* minimum-requirement return policy.
 
-Allowed MVP tagging modes:
-
-* `focus`
-* `focus_plus_past`
-* `benchmark`
-* `custom`
-
-Example:
+A v0.8.6 assignment record should use schema version `2` and include fields such
+as:
 
 ```json
 {
-  "assignment_id": "villainy_final_essay_synthetic",
-  "title": "Villainy Final Essay",
-  "class_ids": ["english12_period3_synthetic"],
-  "writing_type": "literary argument essay",
-  "standards_profile_id": "english12_2023_njsls",
-  "tagging_mode": "focus",
-  "focus_standards": [
-    "nj_ela_2023_rl_cr_11_12_1",
-    "nj_ela_2023_w_aw_11_12_1"
+  "schema_version": "2",
+  "module": "quillan",
+  "record_type": "assignment",
+  "assignment_id": "coming-of-age_literary_analysis",
+  "title": "Coming-of-Age Literary Analysis",
+  "class_ids": ["english_10_simulation"],
+  "writing_type": "literary_analysis",
+  "student_prompt": "Using evidence from the story, explain how Nghi Vo turns ordinary objects into carriers of memory, grief, and power.",
+  "standards_profile_id": "english10_2023_njsls_ela",
+  "focus_standard_ids": [
+    "njsls-ela:RL.CR.9-10.1",
+    "njsls-ela:RL.CI.9-10.2",
+    "njsls-ela:W.AW.9-10.1"
   ],
-  "basic_requirements": {
-    "paragraphs_min": 4,
-    "paragraphs_max": 6,
-    "word_count_min": 500,
-    "required_elements": [
-      "thesis",
-      "textual evidence",
-      "comparative reasoning"
+  "review_unit": {
+    "type": "paragraph",
+    "singular_label": "paragraph",
+    "plural_label": "paragraphs"
+  },
+  "rating_scale": {
+    "scale_id": "standards_4_level",
+    "levels": [
+      {
+        "value": 1,
+        "label": "Developing",
+        "description": "The work shows limited or emerging evidence of the standard."
+      },
+      {
+        "value": 2,
+        "label": "Approaching",
+        "description": "The work shows partial evidence of the standard but is uneven, general, or incomplete."
+      },
+      {
+        "value": 3,
+        "label": "Meeting",
+        "description": "The work shows clear and sufficient evidence of the standard."
+      },
+      {
+        "value": 4,
+        "label": "Exceeding",
+        "description": "The work shows especially strong, precise, or sophisticated evidence of the standard."
+      }
     ]
   },
-  "rubric_id": "argument_essay_4pt_synthetic"
+  "basic_requirements": {
+    "paragraphs_min": 1,
+    "required_elements": [
+      "textual evidence",
+      "explanation"
+    ]
+  },
+  "minimum_requirement_policy": {
+    "allow_return_without_full_review": true
+  },
+  "created_at": "2026-07-02T00:00:00+00:00",
+  "updated_at": "2026-07-02T00:00:00+00:00",
+  "module_details": {}
 }
 ```
 
 Assignment configs store shared `pds-core` standards references. The
 `standards_profile_id` should identify a profile in the workspace standards
-library, and `focus_standards` should contain shared `standard_id` values
-rather than teacher-facing display codes. Quillan-specific comments, hotwords,
-feedback templates, review tags, and writing-review scaffolding remain
+library, and `focus_standard_ids` should contain shared `standard_id` values
+rather than teacher-facing display codes. Quillan-specific review workflows,
+feedback comments, rating scales, and writing-review scaffolding remain
 module-owned; Quillan does not maintain an independent standards universe.
 
-The `rubric_id` field may resolve to a shared Quillan rubric profile at
-`shared/rubrics/<rubric_id>.json`. Unresolved custom rubric IDs remain
-structurally valid assignment data; they simply cannot power rubric-based menu
-scoring until a matching valid shared rubric exists.
+The old pre-v0.8.6 assignment fields `tagging_mode`, `focus_standards`, and
+`rubric_id` are superseded by the standards-based assignment shape. The old
+`tagging_mode` field belongs to the tag-centered workflow. The old `rubric_id`
+field belongs to the generic rubric/scoring-profile workflow. The old
+`focus_standards` field is superseded by the clearer canonical field name
+`focus_standard_ids`.
+
+Because Quillan is still pre-pilot and no production classroom data is expected
+to depend on the old assignment contract, v0.8.6 may treat the schema version
+`2` assignment shape as a breaking cleanup with no production-data migration.
+Later implementation work must decide whether old assignment records are
+rejected with clear guidance, read as legacy records, migrated by a helper, or
+temporarily supported by compatibility code.
 
 ## Submission Manifest
 
@@ -588,9 +639,9 @@ Assignment-level record-status counts repeat on each row; a report with no
 standards-linked artifacts contains only the header.
 
 The export ignores tags and comments without `standard_id`, scores, and
-notes. It map criteria to standards, infer
-mastery, calculate grades, inspect evidence, read comment banks, use a roster,
-or mutate canonical records.
+notes. It does not map criteria to standards, infer mastery, calculate grades,
+inspect evidence, read comment banks, use a roster, or mutate canonical
+records.
 
 ## Class Summary Report
 

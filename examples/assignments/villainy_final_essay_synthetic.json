@@ -1,14 +1,47 @@
 {
+  "schema_version": "2",
+  "module": "quillan",
+  "record_type": "assignment",
   "assignment_id": "villainy_final_essay_synthetic",
   "title": "Villainy Final Essay",
   "class_ids": ["english12_period3_synthetic"],
-  "writing_type": "literary argument essay",
+  "writing_type": "literary_argument",
+  "student_prompt": "Rank the selected characters from most evil to least evil. Use evidence from the texts and films to justify your ranking and explain how each character's motives, actions, and effects reveal different forms of villainy.",
   "standards_profile_id": "english_12_njsls_synthetic",
-  "tagging_mode": "focus",
-  "focus_standards": [
+  "focus_standard_ids": [
     "njsls-ela:W.AW.11-12.1",
     "njsls-ela:W.WP.11-12.4"
   ],
+  "review_unit": {
+    "type": "paragraph",
+    "singular_label": "paragraph",
+    "plural_label": "paragraphs"
+  },
+  "rating_scale": {
+    "scale_id": "standards_4_level",
+    "levels": [
+      {
+        "value": 1,
+        "label": "Developing",
+        "description": "The work shows limited or emerging evidence of the standard."
+      },
+      {
+        "value": 2,
+        "label": "Approaching",
+        "description": "The work shows partial evidence of the standard but is uneven, general, or incomplete."
+      },
+      {
+        "value": 3,
+        "label": "Meeting",
+        "description": "The work shows clear and sufficient evidence of the standard."
+      },
+      {
+        "value": 4,
+        "label": "Exceeding",
+        "description": "The work shows especially strong, precise, or sophisticated evidence of the standard."
+      }
+    ]
+  },
   "basic_requirements": {
     "paragraphs_min": 4,
     "paragraphs_max": 6,
@@ -19,5 +52,10 @@
       "comparative reasoning"
     ]
   },
-  "rubric_id": "argument_essay_4pt_synthetic"
+  "minimum_requirement_policy": {
+    "allow_return_without_full_review": true
+  },
+  "created_at": "2026-07-02T00:00:00+00:00",
+  "updated_at": "2026-07-02T00:00:00+00:00",
+  "module_details": {}
 }
