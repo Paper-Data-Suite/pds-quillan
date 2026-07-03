@@ -1,0 +1,249 @@
+{
+  "schema_version": "1",
+  "module": "quillan",
+  "record_type": "assignment_results_manifest",
+  "class_id": "english_10_simulation",
+  "assignment_id": "coming-of-age_literary_analysis",
+  "assignment_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/assignment.json",
+  "standards_profile_id": "english10_2023_njsls_ela",
+  "focus_standard_ids": [
+    "njsls-ela:RL.CR.9-10.1",
+    "njsls-ela:RL.CI.9-10.2",
+    "njsls-ela:W.AW.9-10.1"
+  ],
+  "exports": {
+    "class_summary_csv": {
+      "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/exports/class_summary.csv",
+      "format": "csv",
+      "generated_at": "2026-07-02T00:00:00+00:00",
+      "stale": false,
+      "module_details": {}
+    },
+    "class_summary_pdf": null,
+    "standards_summary_csv": {
+      "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/exports/standards_summary.csv",
+      "format": "csv",
+      "generated_at": "2026-07-02T00:00:00+00:00",
+      "stale": false,
+      "module_details": {}
+    },
+    "standards_summary_pdf": null
+  },
+  "source_timestamps": {
+    "generated_at": "2026-07-02T00:00:00+00:00",
+    "source_assignment_updated_at": "2026-07-02T00:00:00+00:00",
+    "source_roster_updated_at": null,
+    "source_submission_records_max_updated_at": "2026-07-02T00:00:00+00:00",
+    "source_review_records_max_updated_at": "2026-07-02T00:00:00+00:00"
+  },
+  "student_results": [
+    {
+      "student_id": "10001",
+      "student_display_name": "Sample Student",
+      "roster_status": "rostered",
+      "submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/submission.json",
+      "submission_state": "reviewed",
+      "submission_valid": true,
+      "review_record_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/review.json",
+      "review_state": "ready_for_export",
+      "review_valid": true,
+      "minimum_requirement_status": "met",
+      "returned_without_full_review": false,
+      "overall_standard_ratings": [
+        {
+          "standard_id": "njsls-ela:RL.CR.9-10.1",
+          "rating": 3,
+          "rating_label": "Meeting",
+          "include_in_feedback": true
+        },
+        {
+          "standard_id": "njsls-ela:RL.CI.9-10.2",
+          "rating": 2,
+          "rating_label": "Approaching",
+          "include_in_feedback": true
+        },
+        {
+          "standard_id": "njsls-ela:W.AW.9-10.1",
+          "rating": 3,
+          "rating_label": "Meeting",
+          "include_in_feedback": true
+        }
+      ],
+      "feedback_exports": {
+        "feedback_pdf": {
+          "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/exports/feedback.pdf",
+          "status": "present",
+          "stale": false
+        },
+        "feedback_markdown": {
+          "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/exports/feedback.md",
+          "status": "present",
+          "stale": false
+        }
+      },
+      "warnings": [],
+      "module_details": {}
+    },
+    {
+      "student_id": "10002",
+      "student_display_name": "Jordan Example",
+      "roster_status": "rostered",
+      "submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10002/submission.json",
+      "submission_state": "reviewed",
+      "submission_valid": true,
+      "review_record_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10002/review.json",
+      "review_state": "returned_without_full_review",
+      "review_valid": true,
+      "minimum_requirement_status": "returned_without_full_review",
+      "returned_without_full_review": true,
+      "overall_standard_ratings": [],
+      "feedback_exports": {
+        "feedback_pdf": {
+          "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10002/exports/feedback.pdf",
+          "status": "present",
+          "stale": false
+        },
+        "feedback_markdown": {
+          "path": null,
+          "status": "missing",
+          "stale": null
+        }
+      },
+      "warnings": [
+        "returned without full standards review"
+      ],
+      "module_details": {}
+    },
+    {
+      "student_id": "10003",
+      "student_display_name": "Casey Synthetic",
+      "roster_status": "rostered",
+      "submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10003/submission.json",
+      "submission_state": "in_progress",
+      "submission_valid": true,
+      "review_record_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10003/review.json",
+      "review_state": "observations_in_progress",
+      "review_valid": true,
+      "minimum_requirement_status": "met",
+      "returned_without_full_review": false,
+      "overall_standard_ratings": [
+        {
+          "standard_id": "njsls-ela:RL.CR.9-10.1",
+          "rating": 2,
+          "rating_label": "Approaching",
+          "include_in_feedback": false
+        }
+      ],
+      "feedback_exports": {
+        "feedback_pdf": {
+          "path": null,
+          "status": "missing",
+          "stale": null
+        },
+        "feedback_markdown": {
+          "path": null,
+          "status": "missing",
+          "stale": null
+        }
+      },
+      "warnings": [
+        "review in progress",
+        "feedback export missing",
+        "missing overall rating for njsls-ela:RL.CI.9-10.2",
+        "missing overall rating for njsls-ela:W.AW.9-10.1"
+      ],
+      "module_details": {}
+    },
+    {
+      "student_id": "10004",
+      "student_display_name": "Morgan Placeholder",
+      "roster_status": "rostered",
+      "submission_manifest_path": null,
+      "submission_state": "missing",
+      "submission_valid": false,
+      "review_record_path": null,
+      "review_state": "not_started",
+      "review_valid": false,
+      "minimum_requirement_status": "not_checked",
+      "returned_without_full_review": false,
+      "overall_standard_ratings": [],
+      "feedback_exports": {
+        "feedback_pdf": {
+          "path": null,
+          "status": "missing",
+          "stale": null
+        },
+        "feedback_markdown": {
+          "path": null,
+          "status": "missing",
+          "stale": null
+        }
+      },
+      "warnings": [
+        "missing submission manifest",
+        "missing review record"
+      ],
+      "module_details": {}
+    },
+    {
+      "student_id": "19999",
+      "student_display_name": "Unrostered Example",
+      "roster_status": "unrostered_submission",
+      "submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/19999/submission.json",
+      "submission_state": "reviewed",
+      "submission_valid": true,
+      "review_record_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/19999/review.json",
+      "review_state": "feedback_composed",
+      "review_valid": true,
+      "minimum_requirement_status": "met",
+      "returned_without_full_review": false,
+      "overall_standard_ratings": [
+        {
+          "standard_id": "njsls-ela:RL.CR.9-10.1",
+          "rating": 4,
+          "rating_label": "Exceeding",
+          "include_in_feedback": true
+        },
+        {
+          "standard_id": "njsls-ela:RL.CI.9-10.2",
+          "rating": 3,
+          "rating_label": "Meeting",
+          "include_in_feedback": true
+        },
+        {
+          "standard_id": "njsls-ela:W.AW.9-10.1",
+          "rating": 3,
+          "rating_label": "Meeting",
+          "include_in_feedback": false
+        }
+      ],
+      "feedback_exports": {
+        "feedback_pdf": {
+          "path": null,
+          "status": "missing",
+          "stale": null
+        },
+        "feedback_markdown": {
+          "path": null,
+          "status": "missing",
+          "stale": null
+        }
+      },
+      "warnings": [
+        "submission found for student not in roster",
+        "feedback export missing"
+      ],
+      "module_details": {}
+    }
+  ],
+  "warnings": [
+    "one unrostered submission found",
+    "one rostered student missing submission manifest",
+    "one student returned without full standards review",
+    "some feedback exports are missing",
+    "class_summary_pdf was not generated in this synthetic example",
+    "standards_summary_pdf was not generated in this synthetic example"
+  ],
+  "privacy_note": "This is a synthetic example. It contains no real student names, real student IDs, real student writing, real scanned work, real grades, or personally identifiable student information.",
+  "module_details": {}
+}
