@@ -87,16 +87,34 @@ def test_cli_validates_assignment_config(
 ) -> None:
     assignment_path = tmp_path / "assignment.json"
     assignment_data = {
+        "schema_version": "2",
+        "module": "quillan",
+        "record_type": "assignment",
         "assignment_id": "villainy_final_essay_synthetic",
         "title": "Villainy Final Essay",
         "class_ids": ["english12_period3_synthetic"],
         "writing_type": "literary argument essay",
+        "student_prompt": "Rank villains using evidence from the texts.",
         "standards_profile_id": "english_12_njsls_synthetic",
-        "tagging_mode": "focus",
-        "focus_standards": [
+        "focus_standard_ids": [
             "njsls-ela:W.AW.11-12.1",
             "njsls-ela:W.WP.11-12.4",
         ],
+        "review_unit": {
+            "type": "paragraph",
+            "singular_label": "paragraph",
+            "plural_label": "paragraphs",
+        },
+        "rating_scale": {
+            "scale_id": "standards_2_level",
+            "levels": [
+                {
+                    "value": 1,
+                    "label": "Developing",
+                    "description": "Limited evidence.",
+                }
+            ],
+        },
         "basic_requirements": {
             "paragraphs_min": 4,
             "paragraphs_max": 6,
@@ -107,7 +125,9 @@ def test_cli_validates_assignment_config(
                 "comparative reasoning",
             ],
         },
-        "rubric_id": "argument_essay_4pt_synthetic",
+        "minimum_requirement_policy": {
+            "allow_return_without_full_review": True,
+        },
     }
     assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
 

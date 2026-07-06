@@ -59,15 +59,40 @@ def _write_roster(workspace_root: Path, class_id: str = CLASS_ID) -> Path:
 
 def _assignment(class_ids: list[str] | None = None) -> dict[str, object]:
     return {
+        "schema_version": "2",
+        "module": "quillan",
+        "record_type": "assignment",
         "assignment_id": ASSIGNMENT_ID,
         "title": "Synthetic Writing Response",
         "class_ids": class_ids or [CLASS_ID],
         "writing_type": "synthetic_response",
+        "student_prompt": "Write a synthetic response.",
         "standards_profile_id": "synthetic_ela",
-        "tagging_mode": "focus",
-        "focus_standards": ["synthetic:W.SYN.1"],
+        "focus_standard_ids": ["synthetic:W.SYN.1"],
+        "review_unit": {
+            "type": "paragraph",
+            "singular_label": "paragraph",
+            "plural_label": "paragraphs",
+        },
+        "rating_scale": {
+            "scale_id": "standards_2_level",
+            "levels": [
+                {
+                    "value": 1,
+                    "label": "Developing",
+                    "description": "Limited evidence.",
+                },
+                {
+                    "value": 2,
+                    "label": "Meeting",
+                    "description": "Clear evidence.",
+                },
+            ],
+        },
         "basic_requirements": {"paragraphs_min": 1},
-        "rubric_id": "synthetic_rubric",
+        "minimum_requirement_policy": {
+            "allow_return_without_full_review": True,
+        },
     }
 
 

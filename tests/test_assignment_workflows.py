@@ -3,17 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-import json
 from pathlib import Path
 
 from pds_core.classes import write_class_roster
 from pds_core.rosters import create_roster
-from pds_core.standards import (
-    StandardDefinition,
-    StandardsLibrary,
-    StandardsProfile,
-    write_workspace_standards_library,
-)
 import pytest
 
 import quillan.assignment_workflows as workflows
@@ -21,12 +14,6 @@ from quillan.assignments import (
     AssignmentConfigError,
     load_assignment_config,
     validate_assignment_config,
-)
-from quillan.rubric_writing import (
-    build_rubric,
-    build_rubric_criterion,
-    build_rubric_level,
-    write_rubric,
 )
 
 
@@ -40,18 +27,40 @@ def _assignment(
         title="Literary Analysis Essay",
         class_id=class_id,
         writing_type="literary_analysis",
+        student_prompt="Analyze how the author develops a central idea.",
         standards_profile_id="synthetic_ela_11_12",
-        tagging_mode="focus",
-        focus_standards=[
+        focus_standard_ids=[
             "njsls-ela:W.AW.11-12.1",
             "njsls-ela:L.KL.11-12.2",
         ],
+        review_unit={
+            "type": "paragraph",
+            "singular_label": "paragraph",
+            "plural_label": "paragraphs",
+        },
+        rating_scale={
+            "scale_id": "standards_4_level",
+            "levels": [
+                {
+                    "value": 1,
+                    "label": "Developing",
+                    "description": "Limited evidence.",
+                },
+                {
+                    "value": 2,
+                    "label": "Meeting",
+                    "description": "Clear evidence.",
+                },
+            ],
+        },
         basic_requirements={
             "paragraphs_min": 4,
             "word_count_min": 500,
             "required_elements": ["claim", "textual evidence"],
         },
-        rubric_id="synthetic_argument_v1",
+        minimum_requirement_policy={
+            "allow_return_without_full_review": True,
+        },
     )
 
 
@@ -68,70 +77,6 @@ def _write_roster(workspace_root: Path, class_id: str = "english_12_p3") -> None
         ],
     )
     write_class_roster(workspace_root, roster)
-
-
-def _write_standards_library(workspace_root: Path) -> None:
-    write_workspace_standards_library(
-        workspace_root,
-        StandardsLibrary(
-            standards=(
-                StandardDefinition(
-                    standard_id="njsls-ela:W.AW.11-12.1",
-                    code="W.AW.11-12.1",
-                    source="NJSLS",
-                    short_name="Argument Writing",
-                    description="Synthetic argument writing standard.",
-                    subject="English Language Arts",
-                    course="English 12",
-                    domain="Writing",
-                    available_modules=("quillan",),
-                ),
-                StandardDefinition(
-                    standard_id="njsls-ela:L.KL.11-12.2",
-                    code="L.KL.11-12.2",
-                    source="NJSLS",
-                    short_name="Language Knowledge",
-                    description="Synthetic language knowledge standard.",
-                    subject="English Language Arts",
-                    course="English 12",
-                    domain="Language",
-                    available_modules=("quillan",),
-                ),
-            ),
-            profiles=(
-                StandardsProfile(
-                    profile_id="synthetic_ela_11_12",
-                    standards=(
-                        "njsls-ela:W.AW.11-12.1",
-                        "njsls-ela:L.KL.11-12.2",
-                    ),
-                    subject="English Language Arts",
-                    course="English 12",
-                    source="NJSLS",
-                    title="Synthetic ELA 11-12",
-                ),
-            ),
-        ),
-    )
-
-
-def _write_rubric(workspace_root: Path) -> None:
-    level = build_rubric_level(score=3, label="Clear explanation")
-    criterion = build_rubric_criterion(
-        criterion_id="reasoning",
-        label="Reasoning / Explanation",
-        max_score=4,
-        scale="4_point",
-        levels=[level],
-    )
-    rubric = build_rubric(
-        rubric_id="general_response",
-        title="General Response Rubric",
-        description="Synthetic scoring profile.",
-        writing_types=["general"],
-        criteria=[criterion],
-    )
-    write_rubric(workspace_root, rubric)
 
 
 def _inputs(
@@ -152,46 +97,24 @@ def _inputs(
     return prompts
 
 
-def _creation_responses(
-    *,
-    selection: str = "1",
-    assignment_id: str = "",
-    paragraphs_min: str = "4",
-    overwrite: str | None = None,
-) -> list[str]:
-    responses = [
-        selection,
-        "Literary Analysis Essay",
-        assignment_id,
-        "literary_analysis",
-        "1",
-        "1, 2",
-        "",
-        paragraphs_min,
-        "",
-        "500",
-        "",
-        "claim, textual evidence",
-        "synthetic_argument_v1",
-    ]
-    if overwrite is not None:
-        responses.append(overwrite)
-    return responses
-
-
-def test_build_assignment_config_has_required_fields_and_validates() -> None:
+def test_build_assignment_config_has_required_v2_fields_and_validates() -> None:
     assignment = _assignment()
 
     assert list(assignment) == [
+        "schema_version",
+        "module",
+        "record_type",
         "assignment_id",
         "title",
         "class_ids",
         "writing_type",
+        "student_prompt",
         "standards_profile_id",
-        "tagging_mode",
-        "focus_standards",
+        "focus_standard_ids",
+        "review_unit",
+        "rating_scale",
         "basic_requirements",
-        "rubric_id",
+        "minimum_requirement_policy",
     ]
     validate_assignment_config(assignment)
 
@@ -252,196 +175,16 @@ def test_assignment_parsing_helpers() -> None:
         workflows.parse_optional_nonnegative_int("many", "paragraphs_min")
 
 
-def test_prompt_create_assignment_selects_roster_class_and_writes_config(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+def test_prompt_create_assignment_is_unavailable_pending_v2_workflow(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    _write_roster(tmp_path)
-    _write_standards_library(tmp_path)
-    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-    _inputs(monkeypatch, _creation_responses())
-
-    assert workflows.prompt_create_assignment() == 0
-    path = (
-        tmp_path
-        / "classes"
-        / "english_12_p3"
-        / "assignments"
-        / "literary_analysis_essay"
-        / "assignment.json"
-    )
-    assignment = load_assignment_config(path)
-    assert assignment["class_ids"] == ["english_12_p3"]
-    assert assignment["focus_standards"] == [
-        "njsls-ela:W.AW.11-12.1",
-        "njsls-ela:L.KL.11-12.2",
-    ]
-    assert assignment["basic_requirements"] == {
-        "paragraphs_min": 4,
-        "word_count_min": 500,
-        "required_elements": ["claim", "textual evidence"],
-    }
-    assert "Saved assignment config:" in capsys.readouterr().out
-
-
-def test_prompt_create_assignment_can_select_shared_rubric(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _write_roster(tmp_path)
-    _write_standards_library(tmp_path)
-    _write_rubric(tmp_path)
-    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-    responses = _creation_responses()
-    responses[-1] = "1"
-    _inputs(monkeypatch, responses)
-
-    assert workflows.prompt_create_assignment() == 0
-
-    assignment = load_assignment_config(
-        tmp_path
-        / "classes"
-        / "english_12_p3"
-        / "assignments"
-        / "literary_analysis_essay"
-        / "assignment.json"
-    )
-    assert assignment["rubric_id"] == "general_response"
-
-
-def test_prompt_create_assignment_accepts_exact_class_id_and_blank_options(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _write_roster(tmp_path)
-    _write_standards_library(tmp_path)
-    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-    responses = _creation_responses(
-        selection="english_12_p3",
-        assignment_id="custom_assignment",
-        paragraphs_min="",
-    )
-    responses[9] = ""
-    responses[11] = ""
-    _inputs(monkeypatch, responses)
-
-    assert workflows.prompt_create_assignment() == 0
-    assignment = load_assignment_config(
-        tmp_path
-        / "classes"
-        / "english_12_p3"
-        / "assignments"
-        / "custom_assignment"
-        / "assignment.json"
-    )
-    assert assignment["focus_standards"] == [
-        "njsls-ela:W.AW.11-12.1",
-        "njsls-ela:L.KL.11-12.2",
-    ]
-    assert assignment["basic_requirements"] == {}
-
-
-def test_prompt_create_assignment_requires_existing_roster(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-
     assert workflows.prompt_create_assignment() == 1
-    assert "No class rosters found" in capsys.readouterr().out
-    assert not (tmp_path / "classes").exists()
+    output = capsys.readouterr().out
+    assert "temporarily unavailable" in output
+    assert "schema_version '2'" in output
 
 
-def test_prompt_create_assignment_rejects_invalid_teacher_id(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    _write_roster(tmp_path)
-    _write_standards_library(tmp_path)
-    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-    _inputs(
-        monkeypatch,
-        ["1", "Synthetic Assignment", "invalid assignment id"],
-    )
-
-    assert workflows.prompt_create_assignment() == 1
-    assert "Error:" in capsys.readouterr().out
-    assert not list(tmp_path.rglob("assignment.json"))
-
-
-def test_prompt_create_assignment_explains_missing_standards_library(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    _write_roster(tmp_path)
-    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-    _inputs(
-        monkeypatch,
-        ["1", "Synthetic Assignment", "", "argument"],
-    )
-
-    assert workflows.prompt_create_assignment() == 1
-    assert "Create or import standards through pds-core first" in (
-        capsys.readouterr().out
-    )
-    assert not list(tmp_path.rglob("assignment.json"))
-
-
-def test_prompt_create_assignment_rejects_invalid_numeric_requirement(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    _write_roster(tmp_path)
-    _write_standards_library(tmp_path)
-    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-    _inputs(
-        monkeypatch,
-        _creation_responses(paragraphs_min="-1")[:8],
-    )
-
-    assert workflows.prompt_create_assignment() == 1
-    assert "paragraphs_min must be a non-negative integer" in capsys.readouterr().out
-
-
-@pytest.mark.parametrize(
-    ("confirmation", "expected_title"),
-    [
-        ("no", "Original Synthetic Assignment"),
-        ("OVERWRITE", "Literary Analysis Essay"),
-    ],
-)
-def test_prompt_create_assignment_overwrite_requires_exact_confirmation(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    confirmation: str,
-    expected_title: str,
-) -> None:
-    _write_roster(tmp_path)
-    _write_standards_library(tmp_path)
-    existing = _assignment()
-    existing["title"] = "Original Synthetic Assignment"
-    path = workflows.write_assignment_config(
-        tmp_path,
-        "english_12_p3",
-        existing,
-    )
-    original_text = path.read_text(encoding="utf-8")
-    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-    _inputs(monkeypatch, _creation_responses(overwrite=confirmation))
-
-    result = workflows.prompt_create_assignment()
-    assert result == (0 if confirmation == "OVERWRITE" else 1)
-    assert load_assignment_config(path)["title"] == expected_title
-    if confirmation != "OVERWRITE":
-        assert path.read_text(encoding="utf-8") == original_text
-
-
-def test_view_validate_assignment_prints_summary_without_rewriting(
+def test_view_validate_assignment_prints_v2_summary_without_rewriting(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -459,14 +202,16 @@ def test_view_validate_assignment_prints_summary_without_rewriting(
     assert workflows.prompt_view_validate_assignment() == 0
     output = capsys.readouterr().out
     assert "Assignment config is valid." in output
+    assert "Schema version: 2" in output
     assert "Assignment ID: literary_analysis_essay" in output
     assert "Title: Literary Analysis Essay" in output
     assert "Class IDs: english_12_p3" in output
     assert "Writing type: literary_analysis" in output
     assert "Standards profile ID: synthetic_ela_11_12" in output
-    assert "Tagging mode: focus" in output
-    assert "Focus standards (2)" in output
-    assert "Rubric ID: synthetic_argument_v1" in output
+    assert "Focus standard IDs (2)" in output
+    assert "Review unit: paragraph" in output
+    assert "Rating scale: standards_4_level (2 levels)" in output
+    assert "Rubric ID" not in output
     assert "Assignment JSON path" not in prompts
     assert path.read_bytes() == original_bytes
 
@@ -486,7 +231,7 @@ def test_view_validate_assignment_reports_error_without_traceback(
         / "assignment.json"
     )
     path.parent.mkdir(parents=True)
-    path.write_text(json.dumps({"assignment_id": "incomplete"}), encoding="utf-8")
+    path.write_text('{"assignment_id": "incomplete"}', encoding="utf-8")
     original_bytes = path.read_bytes()
     monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
     prompts = _inputs(monkeypatch, ["1"])

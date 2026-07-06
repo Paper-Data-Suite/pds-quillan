@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any, TypeVar
 
 from pds_core.classes import ClassFolder, list_class_folders
-from pds_core.identifiers import IdentifierValidationError, validate_identifier
 from pds_core.standards import StandardsReadError, StandardsValidationError
 from pds_core.standards_selection import (
     StandardSelectionItem,
@@ -21,13 +20,11 @@ from pds_core.standards_selection import (
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
 from quillan.assignments import (
-    ALLOWED_TAGGING_MODES,
     AssignmentConfigError,
     load_assignment_config,
     validate_assignment_config,
 )
 from quillan.assignment_picker import prompt_assignment_choice
-from quillan.rubric_writing import list_valid_rubrics
 from quillan.rubrics import RubricError, load_rubric, rubric_path
 from quillan.storage import assignment_config_path
 
@@ -76,23 +73,30 @@ def build_assignment_config(
     title: str,
     class_id: str,
     writing_type: str,
+    student_prompt: str,
     standards_profile_id: str,
-    tagging_mode: str,
-    focus_standards: Sequence[str],
+    focus_standard_ids: Sequence[str],
+    review_unit: Mapping[str, Any],
+    rating_scale: Mapping[str, Any],
     basic_requirements: Mapping[str, Any],
-    rubric_id: str,
+    minimum_requirement_policy: Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Build and validate an assignment config using the existing contract."""
+    """Build and validate a v2 assignment config."""
     assignment: dict[str, Any] = {
+        "schema_version": "2",
+        "module": "quillan",
+        "record_type": "assignment",
         "assignment_id": assignment_id,
         "title": title,
         "class_ids": [class_id],
         "writing_type": writing_type,
+        "student_prompt": student_prompt,
         "standards_profile_id": standards_profile_id,
-        "tagging_mode": tagging_mode,
-        "focus_standards": list(focus_standards),
+        "focus_standard_ids": list(focus_standard_ids),
+        "review_unit": dict(review_unit),
+        "rating_scale": dict(rating_scale),
         "basic_requirements": dict(basic_requirements),
-        "rubric_id": rubric_id,
+        "minimum_requirement_policy": dict(minimum_requirement_policy),
     }
     validate_assignment_config(assignment)
     return assignment
@@ -131,25 +135,27 @@ def format_assignment_summary(
 ) -> str:
     """Return a concise human-readable assignment summary."""
     class_ids = ", ".join(str(value) for value in assignment["class_ids"])
-    focus_standards = [str(value) for value in assignment["focus_standards"]]
-    focus_text = ", ".join(focus_standards) if focus_standards else "(none)"
+    focus_standard_ids = [str(value) for value in assignment["focus_standard_ids"]]
+    focus_text = ", ".join(focus_standard_ids)
+    review_unit = assignment.get("review_unit", {})
+    rating_scale = assignment.get("rating_scale", {})
     lines = [
         f"Assignment path: {Path(assignment_path)}",
+        f"Schema version: {assignment['schema_version']}",
         f"Assignment ID: {assignment['assignment_id']}",
         f"Title: {assignment['title']}",
         f"Class IDs: {class_ids}",
         f"Writing type: {assignment['writing_type']}",
+        f"Student prompt: {assignment['student_prompt']}",
         f"Standards profile ID: {assignment['standards_profile_id']}",
-        f"Tagging mode: {assignment['tagging_mode']}",
-        f"Focus standards ({len(focus_standards)}): {focus_text}",
-        f"Rubric ID: {assignment['rubric_id']}",
+        f"Focus standard IDs ({len(focus_standard_ids)}): {focus_text}",
     ]
-    if workspace_root is not None:
-        rubric = resolve_assignment_rubric(workspace_root, assignment)
-        if rubric is None:
-            lines.append("Rubric profile: not found in shared/rubrics/")
-        else:
-            lines.append(f"Rubric profile: resolved - {rubric['title']}")
+    if isinstance(review_unit, Mapping):
+        lines.append(f"Review unit: {review_unit.get('singular_label')}")
+    if isinstance(rating_scale, Mapping):
+        levels = rating_scale.get("levels")
+        if isinstance(levels, Sequence) and not isinstance(levels, (str, bytes)):
+            lines.append(f"Rating scale: {rating_scale.get('scale_id')} ({len(levels)} levels)")
     return "\n".join(lines)
 
 
@@ -222,39 +228,6 @@ def _prompt_basic_requirements() -> dict[str, Any]:
     if required_elements:
         requirements["required_elements"] = required_elements
     return requirements
-
-
-def _prompt_rubric_id(workspace_root: Path) -> str:
-    rubrics = list_valid_rubrics(workspace_root)
-    if not rubrics:
-        print("No valid shared rubrics found.")
-        print()
-        print(
-            "Legacy rubric authoring workflows are disabled during the "
-            "standards-based review redesign."
-        )
-        print("You may still enter a custom rubric_id for now.")
-        print()
-        return _required_input("Rubric ID: ", "Rubric ID")
-
-    print("Available rubrics / scoring profiles:")
-    for index, item in enumerate(rubrics, start=1):
-        assert item.rubric is not None
-        print(f"{index}. {item.rubric['title']}")
-    custom_index = len(rubrics) + 1
-    print(f"{custom_index}. Custom rubric ID")
-    print()
-    selection = input("Select rubric: ").strip()
-    if selection.isdigit():
-        selected = int(selection)
-        if 1 <= selected <= len(rubrics):
-            rubric = rubrics[selected - 1].rubric
-            assert rubric is not None
-            return str(rubric["rubric_id"])
-        if selected == custom_index:
-            return _required_input("Rubric ID: ", "Rubric ID")
-    print(f"Error: rubric selection not found: {selection}")
-    raise ValueError("Rubric selection is required.")
 
 
 def _prompt_numbered_selection(
@@ -350,80 +323,12 @@ def prompt_create_assignment() -> int:
     from quillan.menu import print_menu_header
 
     print_menu_header("Create Writing Assignment")
-    workspace_root = _workspace_root()
-    if workspace_root is None:
-        return 1
-    class_folder = _prompt_class_folder(workspace_root)
-    if class_folder is None:
-        return 1
-
-    try:
-        title = _required_input("Assignment title: ", "Assignment title")
-        suggestion = suggest_assignment_id(title)
-        print(f"Suggested assignment_id: {suggestion}")
-        assignment_id = input(
-            "Press Enter to accept, or type a different assignment_id: "
-        ).strip()
-        if not assignment_id:
-            assignment_id = suggestion
-        validate_identifier(assignment_id, "assignment_id")
-
-        writing_type = _required_input("Writing type: ", "Writing type")
-        standards_selection = _prompt_standards_selection(workspace_root)
-        if standards_selection is None:
-            return 1
-        standards_profile_id, focus_standards = standards_selection
-        tagging_mode = input(
-            "Tagging mode [focus/focus_plus_past/benchmark/custom] "
-            "(default: focus): "
-        ).strip()
-        if not tagging_mode:
-            tagging_mode = "focus"
-        if tagging_mode not in ALLOWED_TAGGING_MODES:
-            allowed = "/".join(sorted(ALLOWED_TAGGING_MODES))
-            raise ValueError(f"Tagging mode must be one of: {allowed}.")
-        basic_requirements = _prompt_basic_requirements()
-        rubric_id = _prompt_rubric_id(workspace_root)
-        assignment = build_assignment_config(
-            assignment_id=assignment_id,
-            title=title,
-            class_id=class_folder.class_id,
-            writing_type=writing_type,
-            standards_profile_id=standards_profile_id,
-            tagging_mode=tagging_mode,
-            focus_standards=focus_standards,
-            basic_requirements=basic_requirements,
-            rubric_id=rubric_id,
-        )
-    except (AssignmentConfigError, IdentifierValidationError, ValueError) as error:
-        print(f"Error: {error}")
-        return 1
-
-    path = assignment_config_path(
-        workspace_root,
-        class_folder.class_id,
-        assignment_id,
+    print(
+        "Creating v2 standards-based assignments from the interactive menu is "
+        "temporarily unavailable pending the v2 assignment creation workflow."
     )
-    overwrite = False
-    if path.exists():
-        confirmation = input("Type OVERWRITE to replace it: ").strip()
-        if confirmation != "OVERWRITE":
-            print("Canceled: existing assignment config was not changed.")
-            return 1
-        overwrite = True
-
-    try:
-        saved_path = write_assignment_config(
-            workspace_root,
-            class_folder.class_id,
-            assignment,
-            overwrite=overwrite,
-        )
-    except (AssignmentConfigError, OSError) as error:
-        print(f"Error: {error}")
-        return 1
-    print(f"Saved assignment config: {saved_path}")
-    return 0
+    print("Use a schema_version '2' assignment JSON file for now.")
+    return 1
 
 
 def _normalize_path_input(value: str) -> str:

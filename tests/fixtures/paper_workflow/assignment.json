@@ -1,13 +1,36 @@
 {
+  "schema_version": "2",
+  "module": "quillan",
+  "record_type": "assignment",
   "assignment_id": "literary_argument_synthetic",
   "title": "Literary Argument Response",
   "class_ids": ["english12_p4_synthetic"],
-  "writing_type": "literary argument essay",
+  "writing_type": "literary_argument",
+  "student_prompt": "Write a literary argument using evidence from the text.",
   "standards_profile_id": "english_12_njsls_synthetic",
-  "tagging_mode": "focus",
-  "focus_standards": [
+  "focus_standard_ids": [
     "njsls-ela:W.AW.11-12.1"
   ],
+  "review_unit": {
+    "type": "paragraph",
+    "singular_label": "paragraph",
+    "plural_label": "paragraphs"
+  },
+  "rating_scale": {
+    "scale_id": "standards_4_level",
+    "levels": [
+      {
+        "value": 1,
+        "label": "Developing",
+        "description": "The response shows limited evidence of the standard."
+      },
+      {
+        "value": 2,
+        "label": "Meeting",
+        "description": "The response shows clear evidence of the standard."
+      }
+    ]
+  },
   "basic_requirements": {
     "paragraphs_min": 3,
     "word_count_min": 300,
@@ -17,5 +40,7 @@
       "reasoning"
     ]
   },
-  "rubric_id": "argument_essay_4pt_synthetic"
+  "minimum_requirement_policy": {
+    "allow_return_without_full_review": true
+  }
 }

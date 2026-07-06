@@ -150,15 +150,35 @@ def _review(state: str = "not_started") -> dict[str, Any]:
 
 def _assignment() -> dict[str, Any]:
     return {
+        "schema_version": "2",
+        "module": "quillan",
+        "record_type": "assignment",
         "assignment_id": ASSIGNMENT_ID,
         "title": "Synthetic Essay",
         "class_ids": [CLASS_ID],
         "writing_type": "argument",
+        "student_prompt": "Write a synthetic argument.",
         "standards_profile_id": PROFILE_ID,
-        "tagging_mode": "focus",
-        "focus_standards": [STANDARD_ID],
+        "focus_standard_ids": [STANDARD_ID],
+        "review_unit": {
+            "type": "paragraph",
+            "singular_label": "paragraph",
+            "plural_label": "paragraphs",
+        },
+        "rating_scale": {
+            "scale_id": "standards_2_level",
+            "levels": [
+                {
+                    "value": 1,
+                    "label": "Developing",
+                    "description": "Limited evidence.",
+                }
+            ],
+        },
         "basic_requirements": {},
-        "rubric_id": "argument_4pt",
+        "minimum_requirement_policy": {
+            "allow_return_without_full_review": True,
+        },
     }
 
 

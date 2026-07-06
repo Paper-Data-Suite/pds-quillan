@@ -760,7 +760,7 @@ The old assignment field `focus_standards` is superseded by `focus_standard_ids`
 
 The new name makes the field’s contents explicit: it stores durable standard IDs, not full standard records, display labels, or standards-profile data.
 
-Compatibility code may temporarily read old `focus_standards` fields during migration or validation work, but `focus_standard_ids` is the v0.8.6 canonical field.
+The v2 assignment loader does not accept old `focus_standards` fields as valid active assignment data. Use `focus_standard_ids` in schema version `2` records.
 
 ## Backward Compatibility and Migration
 
