@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, TypeVar
 
 from pds_core.classes import ClassFolder, list_class_folders
+from pds_core.identifiers import IdentifierValidationError, validate_identifier
 from pds_core.standards import StandardsReadError, StandardsValidationError
 from pds_core.standards_selection import (
     StandardSelectionItem,
@@ -34,6 +35,44 @@ _NUMERIC_REQUIREMENTS = (
     "word_count_min",
     "word_count_max",
 )
+_DEFAULT_REVIEW_UNIT = {
+    "type": "paragraph",
+    "singular_label": "paragraph",
+    "plural_label": "paragraphs",
+}
+_DEFAULT_RATING_SCALE = {
+    "scale_id": "standards_4_level",
+    "levels": [
+        {
+            "value": 1,
+            "label": "Developing",
+            "description": (
+                "The work shows limited or emerging evidence of the standard."
+            ),
+        },
+        {
+            "value": 2,
+            "label": "Approaching",
+            "description": (
+                "The work shows partial evidence of the standard but is uneven, "
+                "general, or incomplete."
+            ),
+        },
+        {
+            "value": 3,
+            "label": "Meeting",
+            "description": "The work shows clear and sufficient evidence of the standard.",
+        },
+        {
+            "value": 4,
+            "label": "Exceeding",
+            "description": (
+                "The work shows especially strong, precise, or sophisticated "
+                "evidence of the standard."
+            ),
+        },
+    ],
+}
 _T = TypeVar("_T")
 
 
@@ -151,11 +190,29 @@ def format_assignment_summary(
         f"Focus standard IDs ({len(focus_standard_ids)}): {focus_text}",
     ]
     if isinstance(review_unit, Mapping):
-        lines.append(f"Review unit: {review_unit.get('singular_label')}")
+        lines.append(
+            "Review unit: "
+            f"{review_unit.get('type')} "
+            f"({review_unit.get('singular_label')}/"
+            f"{review_unit.get('plural_label')})"
+        )
     if isinstance(rating_scale, Mapping):
         levels = rating_scale.get("levels")
         if isinstance(levels, Sequence) and not isinstance(levels, (str, bytes)):
-            lines.append(f"Rating scale: {rating_scale.get('scale_id')} ({len(levels)} levels)")
+            lines.append(
+                f"Rating scale: {rating_scale.get('scale_id')} "
+                f"({len(levels)} levels)"
+            )
+            for level in levels:
+                if isinstance(level, Mapping):
+                    lines.append(
+                        "  "
+                        f"{level.get('value')}: {level.get('label')} - "
+                        f"{level.get('description')}"
+                    )
+    lines.append(f"Basic requirements: {dict(assignment['basic_requirements'])}")
+    policy = assignment["minimum_requirement_policy"]
+    lines.append(f"Minimum requirement policy: {dict(policy)}")
     return "\n".join(lines)
 
 
@@ -214,7 +271,10 @@ def _required_input(prompt: str, field_name: str) -> str:
 
 def _prompt_basic_requirements() -> dict[str, Any]:
     requirements: dict[str, Any] = {}
-    print("Basic requirements (leave blank to omit):")
+    print(
+        "Basic requirements (leave blank to omit). These are teacher-entered "
+        "requirements, not automatic analysis."
+    )
     for field_name in _NUMERIC_REQUIREMENTS:
         parsed = parse_optional_nonnegative_int(
             input(f"  {field_name}: "),
@@ -300,9 +360,10 @@ def _prompt_standards_selection(
 def _prompt_focus_standards(
     standards: Sequence[StandardSelectionItem],
 ) -> list[str] | None:
-    selection = input("Select focus standards by number, comma-separated: ").strip()
+    selection = input("Select Focus Standards by number, comma-separated: ").strip()
     if not selection:
-        return []
+        print("Error: at least one Focus Standard is required.")
+        return None
     selected_ids: list[str] = []
     seen: set[str] = set()
     for item in parse_comma_separated_values(selection):
@@ -323,12 +384,174 @@ def prompt_create_assignment() -> int:
     from quillan.menu import print_menu_header
 
     print_menu_header("Create Writing Assignment")
-    print(
-        "Creating v2 standards-based assignments from the interactive menu is "
-        "temporarily unavailable pending the v2 assignment creation workflow."
+    workspace_root = _workspace_root()
+    if workspace_root is None:
+        return 1
+    class_folder = _prompt_class_folder(workspace_root)
+    if class_folder is None:
+        return 1
+
+    try:
+        title = _required_input("Assignment title: ", "assignment title")
+        suggested_id = suggest_assignment_id(title)
+        if not suggested_id:
+            raise ValueError("assignment_id could not be suggested from title.")
+        print(f"Suggested assignment ID: {suggested_id}")
+        assignment_id = input("Assignment ID [press Enter to accept]: ").strip()
+        if not assignment_id:
+            assignment_id = suggested_id
+        validate_identifier(assignment_id, "assignment_id")
+
+        writing_type = _required_input("Writing type: ", "writing type")
+        student_prompt = _prompt_student_prompt()
+        standards_selection = _prompt_standards_selection(workspace_root)
+        if standards_selection is None:
+            return 1
+        standards_profile_id, focus_standard_ids = standards_selection
+        review_unit = _prompt_review_unit()
+        rating_scale = _prompt_rating_scale()
+        basic_requirements = _prompt_basic_requirements()
+        minimum_requirement_policy = _prompt_minimum_requirement_policy()
+
+        assignment = build_assignment_config(
+            assignment_id=assignment_id,
+            title=title,
+            class_id=class_folder.class_id,
+            writing_type=writing_type,
+            student_prompt=student_prompt,
+            standards_profile_id=standards_profile_id,
+            focus_standard_ids=focus_standard_ids,
+            review_unit=review_unit,
+            rating_scale=rating_scale,
+            basic_requirements=basic_requirements,
+            minimum_requirement_policy=minimum_requirement_policy,
+        )
+    except (AssignmentConfigError, IdentifierValidationError, ValueError) as error:
+        print(f"Error: {error}")
+        return 1
+
+    output_path = assignment_config_path(
+        workspace_root,
+        class_folder.class_id,
+        assignment_id,
     )
-    print("Use a schema_version '2' assignment JSON file for now.")
-    return 1
+    print()
+    print("Review assignment config before saving:")
+    print(format_assignment_summary(assignment, output_path, workspace_root))
+    if not _prompt_yes_no("Save this assignment? [Y/n]: ", default=True):
+        print("Canceled: assignment was not saved.")
+        return 0
+
+    overwrite = False
+    if output_path.exists():
+        print(f"Assignment config already exists: {output_path}")
+        confirmation = input("Type OVERWRITE to replace it: ").strip()
+        if confirmation != "OVERWRITE":
+            print("Canceled: existing assignment was not changed.")
+            return 1
+        overwrite = True
+
+    try:
+        saved_path = write_assignment_config(
+            workspace_root,
+            class_folder.class_id,
+            assignment,
+            overwrite=overwrite,
+        )
+    except (AssignmentConfigError, OSError, FileExistsError) as error:
+        print(f"Error: {error}")
+        return 1
+    print(f"Saved assignment: {saved_path}")
+    return 0
+
+
+def _prompt_yes_no(prompt: str, *, default: bool) -> bool:
+    response = input(prompt).strip().lower()
+    if not response:
+        return default
+    return response in {"y", "yes"}
+
+
+def _prompt_student_prompt() -> str:
+    return _required_input(
+        "Student-facing assignment prompt: ",
+        "student-facing assignment prompt",
+    )
+
+
+def _default_review_unit() -> dict[str, str]:
+    return dict(_DEFAULT_REVIEW_UNIT)
+
+
+def _prompt_review_unit() -> dict[str, str]:
+    print(
+        "Review units are the chunks of student writing the teacher may review "
+        "later."
+    )
+    if _prompt_yes_no("Use default paragraph review units? [Y/n]: ", default=True):
+        return _default_review_unit()
+    return {
+        "type": _required_input("Review-unit type: ", "review-unit type"),
+        "singular_label": _required_input(
+            "Review-unit singular label: ",
+            "review-unit singular label",
+        ),
+        "plural_label": _required_input(
+            "Review-unit plural label: ",
+            "review-unit plural label",
+        ),
+    }
+
+
+def _default_rating_scale() -> dict[str, Any]:
+    return {
+        "scale_id": _DEFAULT_RATING_SCALE["scale_id"],
+        "levels": [dict(level) for level in _DEFAULT_RATING_SCALE["levels"]],
+    }
+
+
+def _prompt_rating_scale() -> dict[str, Any]:
+    print("Rating scale for standards-based review:")
+    if _prompt_yes_no("Use default four-level standards scale? [Y/n]: ", default=True):
+        return _default_rating_scale()
+
+    scale_id = _required_input("Rating scale ID: ", "rating scale ID")
+    level_count = parse_optional_nonnegative_int(
+        input("Number of rating levels: "),
+        "number of rating levels",
+    )
+    if level_count is None or level_count <= 0:
+        raise ValueError("number of rating levels must be a positive integer.")
+
+    levels: list[dict[str, Any]] = []
+    for index in range(1, level_count + 1):
+        print(f"Rating level {index}:")
+        value = parse_optional_nonnegative_int(
+            input("  value: "),
+            "rating level value",
+        )
+        if value is None:
+            raise ValueError("rating level value is required.")
+        levels.append(
+            {
+                "value": value,
+                "label": _required_input("  label: ", "rating level label"),
+                "description": _required_input(
+                    "  description: ",
+                    "rating level description",
+                ),
+            }
+        )
+    return {"scale_id": scale_id, "levels": levels}
+
+
+def _prompt_minimum_requirement_policy() -> dict[str, bool]:
+    allow_return = _prompt_yes_no(
+        "Allow teacher to return work without full standards review if minimum "
+        "requirements are unmet? [Y/n]: ",
+        default=True,
+    )
+    return {"allow_return_without_full_review": allow_return}
 
 
 def _normalize_path_input(value: str) -> str:
