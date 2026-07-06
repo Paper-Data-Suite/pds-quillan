@@ -55,6 +55,22 @@ class UpdatedRequirementCheck:
     was_created: bool
 
 
+@dataclass(frozen=True, slots=True)
+class UpdatedMinimumRequirementOutcome:
+    """Information about a minimum-requirements outcome update."""
+
+    class_id: str
+    assignment_id: str
+    student_id: str
+    review_record_path: Path
+    review_record_relative_path: str
+    status: str
+    returned_without_full_review: bool
+    review_state: str
+    teacher_note: str | None
+    updated_at: str
+
+
 def set_requirement_check(
     workspace_root: str | Path,
     class_id: str,
@@ -219,6 +235,169 @@ def set_requirement_check(
     )
 
 
+def set_minimum_requirement_outcome(
+    workspace_root: str | Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    status: str,
+    teacher_note: str | None = None,
+    updated_at: datetime | str | None = None,
+    allow_return_without_full_review: bool | None = None,
+) -> UpdatedMinimumRequirementOutcome:
+    """Set the teacher-controlled minimum-requirements outcome."""
+    normalized_status = _normalize_outcome_status(status)
+    normalized_note = _normalize_optional_string(teacher_note, "teacher_note")
+    normalized_updated_at = _normalize_timestamp(updated_at)
+
+    if normalized_status == "returned_without_full_review":
+        if normalized_note is None:
+            raise ReviewRequirementError(
+                "teacher_note must be a non-empty string when returning work "
+                "without full review."
+            )
+        if allow_return_without_full_review is not True:
+            raise ReviewRequirementError(
+                "Assignment policy does not allow returning work without "
+                "full standards review."
+            )
+    elif allow_return_without_full_review is not None and not isinstance(
+        allow_return_without_full_review, bool
+    ):
+        raise ReviewRequirementError(
+            "allow_return_without_full_review must be a boolean when provided."
+        )
+
+    try:
+        resolved_root = Path(workspace_root).resolve(strict=False)
+        manifest_path = submission_manifest_path(
+            resolved_root,
+            class_id,
+            assignment_id,
+            student_id,
+        )
+        record_path = review_record_path(
+            resolved_root,
+            class_id,
+            assignment_id,
+            student_id,
+        )
+    except (
+        OSError,
+        RuntimeError,
+        SubmissionManifestPathError,
+        ReviewRecordPathError,
+    ) as error:
+        raise ReviewRequirementError(str(error)) from error
+
+    if not manifest_path.exists():
+        raise ReviewRequirementError(missing_submission_guidance())
+
+    try:
+        manifest = load_submission_manifest(manifest_path)
+    except (OSError, SubmissionManifestError) as error:
+        raise ReviewRequirementError(
+            f"Could not load submission manifest: {error}"
+        ) from error
+    _validate_identity(
+        manifest,
+        record_name="Submission manifest",
+        class_id=class_id,
+        assignment_id=assignment_id,
+        student_id=student_id,
+    )
+
+    if record_path.exists():
+        try:
+            review = load_review_record(record_path)
+        except (OSError, ReviewRecordError) as error:
+            raise ReviewRequirementError(
+                f"Could not load review record: {error}"
+            ) from error
+        _validate_identity(
+            review,
+            record_name="Review record",
+            class_id=class_id,
+            assignment_id=assignment_id,
+            student_id=student_id,
+        )
+        updated_review = copy.deepcopy(review)
+    else:
+        updated_review = build_empty_review_record(
+            class_id=class_id,
+            assignment_id=assignment_id,
+            student_id=student_id,
+            submission_manifest_path=_workspace_relative_path(
+                manifest_path, resolved_root, "submission manifest"
+            ),
+            assignment_path=(
+                f"classes/{class_id}/assignments/{assignment_id}/assignment.json"
+            ),
+            created_at=normalized_updated_at,
+        )
+
+    returned_without_full_review = (
+        normalized_status == "returned_without_full_review"
+    )
+    if returned_without_full_review and not any(
+        check.get("met") is False
+        for check in updated_review["minimum_requirement_checks"]
+        if isinstance(check, dict)
+    ):
+        raise ReviewRequirementError(
+            "Returning work without full review requires at least one checked "
+            "minimum requirement marked not met."
+        )
+
+    updated_review["minimum_requirement_outcome"] = {
+        "status": normalized_status,
+        "returned_without_full_review": returned_without_full_review,
+        "teacher_note": normalized_note,
+        "updated_at": normalized_updated_at,
+    }
+    updated_review["review_state"] = (
+        "returned_without_full_review"
+        if returned_without_full_review
+        else "requirements_checked"
+    )
+    updated_review["updated_at"] = normalized_updated_at
+
+    try:
+        validate_review_record(updated_review)
+        write_review_record(
+            record_path,
+            updated_review,
+            overwrite=record_path.exists(),
+        )
+        relative_path = _workspace_relative_path(
+            record_path, resolved_root, "review record"
+        )
+    except (
+        OSError,
+        RuntimeError,
+        ValueError,
+        ReviewRecordError,
+        ReviewRecordPathError,
+    ) as error:
+        raise ReviewRequirementError(
+            f"Could not write review record: {error}"
+        ) from error
+
+    return UpdatedMinimumRequirementOutcome(
+        class_id=class_id,
+        assignment_id=assignment_id,
+        student_id=student_id,
+        review_record_path=record_path,
+        review_record_relative_path=relative_path,
+        status=normalized_status,
+        returned_without_full_review=returned_without_full_review,
+        review_state=updated_review["review_state"],
+        teacher_note=normalized_note,
+        updated_at=normalized_updated_at,
+    )
+
+
 def _normalize_required_string(value: str, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ReviewRequirementError(f"{field} must be a non-empty string.")
@@ -245,6 +424,16 @@ def _normalize_expected(value: str | int | float) -> str | int | float:
     ):
         raise ReviewRequirementError(
             "expected must be a non-empty string or finite number."
+        )
+    return value
+
+
+def _normalize_outcome_status(value: str) -> str:
+    allowed = {"met", "unmet_continue_review", "returned_without_full_review"}
+    if not isinstance(value, str) or value not in allowed:
+        raise ReviewRequirementError(
+            "status must be one of: met, unmet_continue_review, "
+            "returned_without_full_review."
         )
     return value
 

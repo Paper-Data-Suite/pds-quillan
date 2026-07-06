@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from quillan.feedback_export import (
     export_student_feedback,
     feedback_export_path,
 )
+from quillan.review_record_paths import review_record_path, write_review_record
 from quillan.submission_manifest_paths import submission_manifest_path, write_submission_manifest
 from tests.test_review_scores import _write_manifest, _write_review
 from tests.test_review_tags import (
@@ -25,6 +27,45 @@ from tests.test_review_tags import (
 )
 
 TIMESTAMP = "2026-06-23T12:30:00+00:00"
+
+
+def _write_assignment(root: Path) -> None:
+    assignment_dir = root / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID
+    assignment_dir.mkdir(parents=True, exist_ok=True)
+    assignment = {
+        "schema_version": "2",
+        "module": "quillan",
+        "record_type": "assignment",
+        "assignment_id": ASSIGNMENT_ID,
+        "title": "Synthetic Essay",
+        "class_ids": [CLASS_ID],
+        "writing_type": "argument",
+        "student_prompt": "Write a synthetic argument.",
+        "standards_profile_id": "synthetic_profile",
+        "focus_standard_ids": ["synthetic:W.A"],
+        "review_unit": {
+            "type": "paragraph",
+            "singular_label": "paragraph",
+            "plural_label": "paragraphs",
+        },
+        "rating_scale": {
+            "scale_id": "standards_2_level",
+            "levels": [
+                {
+                    "value": 1,
+                    "label": "Developing",
+                    "description": "Limited evidence.",
+                }
+            ],
+        },
+        "basic_requirements": {"paragraphs_min": 5},
+        "minimum_requirement_policy": {
+            "allow_return_without_full_review": True,
+        },
+    }
+    (assignment_dir / "assignment.json").write_text(
+        json.dumps(assignment), encoding="utf-8"
+    )
 
 
 def test_exports_ordered_student_content_without_mutating_sources(
@@ -191,6 +232,106 @@ def test_empty_scores_and_comments_have_clear_messages(tmp_path: Path) -> None:
     content = result.feedback_path.read_text(encoding="utf-8")
     assert "No standards ratings recorded." in content
     assert "No feedback comments selected." in content
+
+
+def test_exports_returned_work_notice_without_standards_ratings(
+    tmp_path: Path,
+) -> None:
+    _write_assignment(tmp_path)
+    _write_manifest(tmp_path)
+    review = _review()
+    review["review_state"] = "returned_without_full_review"
+    review["minimum_requirement_checks"] = [
+        {
+            "requirement_check_id": "requirement_check_0001",
+            "requirement_key": "paragraphs_min",
+            "label": "Minimum paragraphs",
+            "expected": 5,
+            "met": False,
+            "teacher_note": "Only three paragraphs were submitted.",
+            "updated_at": TIMESTAMP,
+            "module_details": {},
+        }
+    ]
+    review["minimum_requirement_outcome"] = {
+        "status": "returned_without_full_review",
+        "returned_without_full_review": True,
+        "teacher_note": "Please revise to meet the assignment minimums.",
+        "updated_at": TIMESTAMP,
+    }
+    review["overall_standard_ratings"] = [
+        {
+            "standard_id": "synthetic:W.A",
+            "rating": 4,
+            "rationale": "Should not render.",
+            "include_in_feedback": True,
+            "updated_at": TIMESTAMP,
+            "module_details": {},
+        }
+    ]
+    _write_review(tmp_path, review)
+
+    result = export_student_feedback(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+    )
+
+    content = result.feedback_path.read_text(encoding="utf-8")
+    assert content.startswith("# Returned for Revision")
+    assert "returned without full standards review" in content
+    assert "Minimum paragraphs" in content
+    assert "Expected: 5" in content
+    assert "Only three paragraphs were submitted." in content
+    assert "Please revise to meet the assignment minimums." in content
+    assert "No full standards ratings were completed" in content
+    assert "synthetic:W.A: 4" not in content
+    assert "No standards ratings recorded." not in content
+    assert "tags" not in content
+    assert "scores" not in content
+
+
+def test_returned_work_export_requires_outcome_note_and_unmet_requirement(
+    tmp_path: Path,
+) -> None:
+    _write_assignment(tmp_path)
+    _write_manifest(tmp_path)
+    review = _review()
+    review["review_state"] = "returned_without_full_review"
+    review["minimum_requirement_checks"] = []
+    review["minimum_requirement_outcome"] = {
+        "status": "returned_without_full_review",
+        "returned_without_full_review": True,
+        "teacher_note": "Return note.",
+        "updated_at": TIMESTAMP,
+    }
+    _write_review(tmp_path, review)
+
+    with pytest.raises(FeedbackExportError, match="marked not met"):
+        export_student_feedback(
+            tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+        )
+
+    review["minimum_requirement_checks"] = [
+        {
+            "requirement_check_id": "requirement_check_0001",
+            "requirement_key": "paragraphs_min",
+            "label": "Minimum paragraphs",
+            "expected": 5,
+            "met": False,
+            "updated_at": TIMESTAMP,
+            "module_details": {},
+        }
+    ]
+    review["minimum_requirement_outcome"]["teacher_note"] = None
+    write_review_record(
+        review_record_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID),
+        review,
+        overwrite=True,
+    )
+
+    with pytest.raises(FeedbackExportError, match="teacher note"):
+        export_student_feedback(
+            tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+        )
 
 
 @pytest.mark.parametrize(

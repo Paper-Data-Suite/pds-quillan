@@ -10,7 +10,11 @@ import pytest
 
 from quillan.review_record import ReviewRecordError, build_empty_review_record, validate_review_record
 from quillan.review_record_paths import review_record_path, write_review_record
-from quillan.review_requirements import ReviewRequirementError, set_requirement_check
+from quillan.review_requirements import (
+    ReviewRequirementError,
+    set_minimum_requirement_outcome,
+    set_requirement_check,
+)
 from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
@@ -267,3 +271,187 @@ def test_missing_submission_manifest_errors_without_review_write(
         )
 
     assert not review_record_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).exists()
+
+
+def test_sets_minimum_requirement_outcome_to_met_and_preserves_data(
+    tmp_path: Path,
+) -> None:
+    _write_manifest(tmp_path)
+    review = _review("requirements_checked")
+    review["created_at"] = ORIGINAL_TIMESTAMP
+    review["updated_at"] = FIRST_TIMESTAMP
+    review["minimum_requirement_checks"] = [
+        {
+            "requirement_check_id": "requirement_check_0001",
+            "requirement_key": "paragraphs_min",
+            "label": "Minimum paragraphs",
+            "expected": 5,
+            "met": True,
+            "updated_at": FIRST_TIMESTAMP,
+            "module_details": {},
+        }
+    ]
+    review["private_notes"] = [
+        {
+            "private_note_id": "note_0001",
+            "text": "Preserve me.",
+            "created_at": FIRST_TIMESTAMP,
+            "updated_at": FIRST_TIMESTAMP,
+            "module_details": {},
+        }
+    ]
+    path = write_review_record(
+        review_record_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID),
+        review,
+    )
+
+    result = set_minimum_requirement_outcome(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        status="met",
+        teacher_note="Ready for standards review.",
+        updated_at=SECOND_TIMESTAMP,
+    )
+
+    written = json.loads(path.read_text(encoding="utf-8"))
+    assert result.status == "met"
+    assert result.returned_without_full_review is False
+    assert result.review_state == "requirements_checked"
+    assert written["schema_version"] == "2"
+    assert written["review_state"] == "requirements_checked"
+    assert written["created_at"] == ORIGINAL_TIMESTAMP
+    assert written["updated_at"] == SECOND_TIMESTAMP
+    assert written["minimum_requirement_checks"] == review["minimum_requirement_checks"]
+    assert written["private_notes"] == review["private_notes"]
+    assert written["minimum_requirement_outcome"] == {
+        "status": "met",
+        "returned_without_full_review": False,
+        "teacher_note": "Ready for standards review.",
+        "updated_at": SECOND_TIMESTAMP,
+    }
+    for legacy_field in ("notes", "tags", "scores", "comments", "requirement_checks"):
+        assert legacy_field not in written
+
+
+def test_sets_minimum_requirement_outcome_to_unmet_continue_review(
+    tmp_path: Path,
+) -> None:
+    _write_manifest(tmp_path)
+
+    result = set_minimum_requirement_outcome(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        status="unmet_continue_review",
+        updated_at=FIRST_TIMESTAMP,
+    )
+
+    written = json.loads(
+        review_record_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(
+            encoding="utf-8"
+        )
+    )
+    assert result.status == "unmet_continue_review"
+    assert written["review_state"] == "requirements_checked"
+    assert written["minimum_requirement_outcome"]["teacher_note"] is None
+
+
+def test_sets_minimum_requirement_outcome_to_returned_without_full_review(
+    tmp_path: Path,
+) -> None:
+    _write_manifest(tmp_path)
+    set_requirement_check(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        requirement_key="paragraphs_min",
+        label="Minimum paragraphs",
+        expected=5,
+        met=False,
+        teacher_note="Only three paragraphs.",
+        updated_at=FIRST_TIMESTAMP,
+    )
+
+    result = set_minimum_requirement_outcome(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        status="returned_without_full_review",
+        teacher_note="Revise to meet the paragraph minimum.",
+        updated_at=SECOND_TIMESTAMP,
+        allow_return_without_full_review=True,
+    )
+
+    written = json.loads(
+        review_record_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(
+            encoding="utf-8"
+        )
+    )
+    assert result.returned_without_full_review is True
+    assert written["review_state"] == "returned_without_full_review"
+    assert written["minimum_requirement_outcome"] == {
+        "status": "returned_without_full_review",
+        "returned_without_full_review": True,
+        "teacher_note": "Revise to meet the paragraph minimum.",
+        "updated_at": SECOND_TIMESTAMP,
+    }
+    assert len(written["minimum_requirement_checks"]) == 1
+
+
+def test_returned_without_full_review_requires_note_policy_and_unmet_check(
+    tmp_path: Path,
+) -> None:
+    _write_manifest(tmp_path)
+
+    with pytest.raises(ReviewRequirementError, match="teacher_note"):
+        set_minimum_requirement_outcome(
+            tmp_path,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            status="returned_without_full_review",
+            teacher_note=" ",
+            updated_at=FIRST_TIMESTAMP,
+            allow_return_without_full_review=True,
+        )
+
+    set_requirement_check(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        requirement_key="paragraphs_min",
+        label="Minimum paragraphs",
+        expected=5,
+        met=True,
+        updated_at=FIRST_TIMESTAMP,
+    )
+
+    with pytest.raises(ReviewRequirementError, match="does not allow"):
+        set_minimum_requirement_outcome(
+            tmp_path,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            status="returned_without_full_review",
+            teacher_note="Revise first.",
+            updated_at=SECOND_TIMESTAMP,
+            allow_return_without_full_review=False,
+        )
+
+    with pytest.raises(ReviewRequirementError, match="marked not met"):
+        set_minimum_requirement_outcome(
+            tmp_path,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            status="returned_without_full_review",
+            teacher_note="Revise first.",
+            updated_at=SECOND_TIMESTAMP,
+            allow_return_without_full_review=True,
+        )
