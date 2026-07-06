@@ -123,7 +123,7 @@ def export_standards_summary(
     overwrite: bool = False,
     created_at: datetime | str | None = None,
 ) -> ExportedStandardsSummary:
-    """Export standards-linked tag and selected-comment aggregates."""
+    """Export standards-linked schema version 2 review aggregates."""
     normalized_created_at = _normalize_timestamp(created_at)
     try:
         resolved_root = Path(workspace_root).resolve(strict=False)
@@ -249,27 +249,37 @@ def _inspect_student(
         return
 
     status_counts["review"] += 1
-    for tag in review["tags"]:
-        standard_id = tag.get("standard_id")
-        if standard_id is None:
-            continue
+    for unit in review["review_units"]:
+        for observation in unit["standard_observations"]:
+            standard_id = observation["standard_id"]
+            counts = aggregates.setdefault(standard_id, _StandardCounts())
+            counts.tag_students.add(student_id)
+            counts.tag_count += 1
+            polarity = observation.get("module_details", {}).get("legacy_polarity")
+            if polarity in {"positive", "developing", "negative", "neutral"}:
+                polarity_field = f"{polarity}_tag_count"
+                setattr(counts, polarity_field, getattr(counts, polarity_field) + 1)
+
+    for rating in review["overall_standard_ratings"]:
+        standard_id = rating["standard_id"]
         counts = aggregates.setdefault(standard_id, _StandardCounts())
         counts.tag_students.add(student_id)
-        counts.tag_count += 1
-        polarity_field = f"{tag['polarity']}_tag_count"
-        setattr(counts, polarity_field, getattr(counts, polarity_field) + 1)
 
-    for comment in review["comments"]:
-        standard_id = comment.get("standard_id")
-        if standard_id is None:
+    for standard_feedback in review["feedback"]["standard_feedback"]:
+        standard_id = standard_feedback["standard_id"]
+        comments = standard_feedback["comments"]
+        if not comments:
+            aggregates.setdefault(standard_id, _StandardCounts())
             continue
         counts = aggregates.setdefault(standard_id, _StandardCounts())
         counts.comment_students.add(student_id)
-        counts.selected_comment_count += 1
-        if comment["include_in_feedback"]:
-            counts.included_comment_count += 1
-        else:
-            counts.excluded_comment_count += 1
+        counts.selected_comment_count += len(comments)
+        counts.included_comment_count += sum(
+            comment["include_in_feedback"] for comment in comments
+        )
+        counts.excluded_comment_count += sum(
+            not comment["include_in_feedback"] for comment in comments
+        )
 
 
 def _build_row(
@@ -309,7 +319,7 @@ def _build_row(
         "missing_submission_count": str(status_counts["missing_submission"]),
         "invalid_submission_count": str(status_counts["invalid_submission"]),
         "identity_mismatch_count": str(status_counts["identity_mismatch"]),
-        "source": "review_tags_and_comments",
+        "source": "review_record_v2",
     }
 
 

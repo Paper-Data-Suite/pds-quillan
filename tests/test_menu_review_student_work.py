@@ -12,6 +12,7 @@ import pytest
 
 from quillan.cli import main
 import quillan.review_menu as review_menu
+from quillan.review_record import build_empty_review_record
 from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
@@ -216,34 +217,23 @@ def _write_two_page_manifest(root: Path) -> Path:
 
 
 def _review_record() -> dict[str, Any]:
-    return {
-        "schema_version": "1",
-        "module": "quillan",
-        "record_type": "submission_review",
-        "class_id": CLASS_ID,
-        "assignment_id": ASSIGNMENT_ID,
-        "student_id": STUDENT_ID,
-        "submission_manifest_path": (
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
-            f"{STUDENT_ID}/submission.json"
-        ),
-        "review_state": "in_progress",
-        "notes": [
-            {
-                "note_id": "note_0001",
-                "text": "Teacher observation.",
-                "created_at": TIMESTAMP,
-                "updated_at": TIMESTAMP,
-                "module_details": {},
-            }
-        ],
-        "tags": [],
-        "scores": [],
-        "comments": [],
-        "created_at": TIMESTAMP,
-        "updated_at": TIMESTAMP,
-        "module_details": {},
-    }
+    record = build_empty_review_record(
+        class_id=CLASS_ID,
+        assignment_id=ASSIGNMENT_ID,
+        student_id=STUDENT_ID,
+        created_at=TIMESTAMP,
+    )
+    record["review_state"] = "feedback_composed"
+    record["private_notes"] = [
+        {
+            "private_note_id": "note_0001",
+            "text": "Teacher observation.",
+            "created_at": TIMESTAMP,
+            "updated_at": TIMESTAMP,
+            "module_details": {},
+        }
+    ]
+    return record
 
 
 def test_main_menu_shows_and_opens_review_student_work(
@@ -334,9 +324,9 @@ def test_review_summary_includes_existing_review_record_counts(
 
     output = capsys.readouterr().out
     assert "Review record: exists" in output
-    assert "Review record state: in_progress" in output
-    assert "Notes: 1" in output
-    assert "Tags: 0" in output
+    assert "Review record state: feedback_composed" in output
+    assert "Private notes: 1" in output
+    assert "Review-unit observations: 0" in output
     assert review_path.read_bytes() == review_before
 
 
@@ -346,25 +336,46 @@ def test_review_menu_views_current_review_details_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     review = _review_record()
-    review["tags"] = [
+    review["review_units"] = [
         {
-            "tag_id": "tag_0001",
-            "label": "Clear evidence",
-            "polarity": "positive",
-            "location": {"type": "paragraph", "value": 2},
-            "created_at": TIMESTAMP,
+            "unit_id": "unit_0001",
+            "sequence": 1,
+            "label": "Paragraph 2",
+            "unit_type": "paragraph",
+            "standard_observations": [
+                {
+                    "observation_id": "observation_0001",
+                    "standard_id": "njsls-ela:W.1",
+                    "applicable": True,
+                    "evidence_present": True,
+                    "rating": 1,
+                    "rationale": "Clear evidence",
+                    "include_in_feedback": True,
+                    "updated_at": TIMESTAMP,
+                    "module_details": {},
+                }
+            ],
             "module_details": {},
         }
     ]
-    review["comments"] = [
+    review["feedback"]["standard_feedback"] = [
         {
-            "comment_record_id": "comment_record_0001",
-            "label": "Explain evidence",
-            "text": "Explain how this evidence supports the claim.",
-            "source": "custom",
-            "include_in_feedback": True,
-            "location": {"type": "paragraph", "value": [3, 4]},
-            "created_at": TIMESTAMP,
+            "standard_id": "njsls-ela:W.1",
+            "include_overall_rating": False,
+            "include_overall_rationale": False,
+            "included_observation_ids": ["observation_0001"],
+            "comments": [
+                {
+                    "feedback_comment_id": "feedback_comment_0001",
+                    "source": "custom",
+                    "text": "Explain how this evidence supports the claim.",
+                    "reusable_comment_id": None,
+                    "save_for_reuse": False,
+                    "include_in_feedback": True,
+                    "created_at": TIMESTAMP,
+                    "module_details": {},
+                }
+            ],
             "module_details": {},
         }
     ]
@@ -389,10 +400,9 @@ def test_review_menu_views_current_review_details_read_only(
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
     assert "Current Review Details" in output
-    assert "[positive] Clear evidence" in output
-    assert "Target: Paragraph 2" in output
-    assert "Explain evidence" in output
-    assert "Target: Paragraphs 3-4" in output
+    assert "Paragraph 2 (paragraph)" in output
+    assert "njsls-ela:W.1: applicable; rating 1" in output
+    assert "Explain how this evidence supports the claim." in output
     assert review_path.read_bytes() == review_before
 
 
@@ -626,8 +636,8 @@ def test_review_menu_adds_teacher_note_to_review_record(
     )
     assert review_path.exists()
     review = json.loads(review_path.read_text(encoding="utf-8"))
-    assert review["notes"][0]["text"] == "This is a test note."
-    assert review["review_state"] == "in_progress"
+    assert review["private_notes"][0]["text"] == "This is a test note."
+    assert review["review_state"] == "not_started"
 
 
 def test_review_menu_updates_submission_review_state(

@@ -14,6 +14,7 @@ from quillan.feedback_export import (
     export_student_feedback,
     feedback_export_path,
 )
+from quillan.submission_manifest_paths import submission_manifest_path, write_submission_manifest
 from tests.test_review_scores import _write_manifest, _write_review
 from tests.test_review_tags import (
     ASSIGNMENT_ID,
@@ -31,52 +32,75 @@ def test_exports_ordered_student_content_without_mutating_sources(
 ) -> None:
     manifest_path = _write_manifest(tmp_path)
     review = _review("ready_for_export")
-    review["notes"][0]["text"] = "PRIVATE TEACHER NOTE"
-    review["tags"][0]["label"] = "PRIVATE STRUCTURED TAG"
-    review["scores"][0]["teacher_note"] = "PRIVATE SCORE NOTE"
-    review["scores"][0]["scale"] = "4 point"
-    review["scores"].append(
+    review["private_notes"].append(
         {
-            "score_id": "score_0002",
-            "criterion_id": "organization",
-            "label": "Organization",
-            "score": 3.5,
-            "max_score": 4,
+            "private_note_id": "note_0001",
+            "text": "PRIVATE TEACHER NOTE",
+            "created_at": review["created_at"],
             "updated_at": review["updated_at"],
-            "module_details": {"private": "score metadata"},
+            "module_details": {},
         }
     )
-    review["comments"][0].update(
-        {
-            "text": "First student comment.\nWith a second line.",
-            "source": "comment_bank",
-            "bank_id": "private_bank",
-            "comment_id": "private_comment_id",
-            "standard_id": "PRIVATE.STANDARD",
-            "module_details": {"private": "comment metadata"},
-        }
-    )
-    review["comments"].extend(
+    review["overall_standard_ratings"].extend(
         [
             {
-                "comment_record_id": "comment_0002",
-                "label": "Excluded",
-                "text": "EXCLUDED COMMENT",
-                "source": "custom",
-                "include_in_feedback": False,
-                "created_at": review["created_at"],
-                "module_details": {},
+                "standard_id": "synthetic:W.A",
+                "rating": 3,
+                "rationale": "Uses evidence.",
+                "include_in_feedback": True,
+                "updated_at": review["updated_at"],
+                "module_details": {"private": "rating metadata"},
             },
             {
-                "comment_record_id": "comment_0003",
-                "label": "Second",
-                "text": "Second student comment.",
-                "source": "custom",
+                "standard_id": "synthetic:W.B",
+                "rating": 4,
+                "rationale": None,
                 "include_in_feedback": True,
-                "created_at": review["created_at"],
+                "updated_at": review["updated_at"],
                 "module_details": {},
             },
         ]
+    )
+    review["feedback"]["standard_feedback"].append(
+        {
+            "standard_id": "synthetic:W.A",
+            "include_overall_rating": True,
+            "include_overall_rationale": True,
+            "included_observation_ids": [],
+            "comments": [
+                {
+                    "feedback_comment_id": "feedback_comment_0001",
+                    "source": "reusable_focus_standard_comment",
+                    "text": "First student comment.\nWith a second line.",
+                    "reusable_comment_id": "private_comment_id",
+                    "save_for_reuse": False,
+                    "include_in_feedback": True,
+                    "created_at": review["created_at"],
+                    "module_details": {"private": "comment metadata"},
+                },
+                {
+                    "feedback_comment_id": "feedback_comment_0002",
+                    "source": "custom",
+                    "text": "EXCLUDED COMMENT",
+                    "reusable_comment_id": None,
+                    "save_for_reuse": False,
+                    "include_in_feedback": False,
+                    "created_at": review["created_at"],
+                    "module_details": {},
+                },
+                {
+                    "feedback_comment_id": "feedback_comment_0003",
+                    "source": "custom",
+                    "text": "Second student comment.",
+                    "reusable_comment_id": None,
+                    "save_for_reuse": False,
+                    "include_in_feedback": True,
+                    "created_at": review["created_at"],
+                    "module_details": {},
+                },
+            ],
+            "module_details": {},
+        }
     )
     review_path = _write_review(tmp_path, review)
     evidence_path = (
@@ -137,22 +161,18 @@ def test_exports_ordered_student_content_without_mutating_sources(
     assert f"Assignment: {ASSIGNMENT_ID}" in content
     assert f"Student: {STUDENT_ID}" in content
     assert f"Generated: {TIMESTAMP}" in content
-    assert content.index("- Evidence: 3 / 4 (4 point)") < content.index(
-        "- Organization: 3.5 / 4"
+    assert content.index("- synthetic:W.A: 3 - Uses evidence.") < content.index(
+        "- synthetic:W.B: 4"
     )
     assert content.index(
         "- First student comment. With a second line."
     ) < content.index("- Second student comment.")
     for private_text in (
         "PRIVATE TEACHER NOTE",
-        "PRIVATE STRUCTURED TAG",
-        "PRIVATE SCORE NOTE",
         "EXCLUDED COMMENT",
-        "private_bank",
         "private_comment_id",
-        "PRIVATE.STANDARD",
         "comment metadata",
-        "score metadata",
+        "rating metadata",
     ):
         assert private_text not in content
     for path, original in originals.items():
@@ -162,8 +182,6 @@ def test_exports_ordered_student_content_without_mutating_sources(
 def test_empty_scores_and_comments_have_clear_messages(tmp_path: Path) -> None:
     _write_manifest(tmp_path)
     review = _review()
-    review["scores"] = []
-    review["comments"][0]["include_in_feedback"] = False
     _write_review(tmp_path, review)
 
     result = export_student_feedback(
@@ -171,7 +189,7 @@ def test_empty_scores_and_comments_have_clear_messages(tmp_path: Path) -> None:
     )
 
     content = result.feedback_path.read_text(encoding="utf-8")
-    assert "No scores recorded." in content
+    assert "No standards ratings recorded." in content
     assert "No feedback comments selected." in content
 
 
@@ -231,7 +249,14 @@ def test_identity_mismatch_is_rejected(
             f"{review['assignment_id']}/submissions/{review['student_id']}/"
             "submission.json"
         )
-    _write_manifest(tmp_path, manifest)
+        review["assignment_path"] = (
+            f"classes/{review['class_id']}/assignments/{review['assignment_id']}/"
+            "assignment.json"
+        )
+    write_submission_manifest(
+        submission_manifest_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID),
+        manifest,
+    )
     if record_kind == "review":
         _write_review(tmp_path, review)
     with pytest.raises(FeedbackExportError, match=field):
@@ -307,11 +332,25 @@ def test_aware_datetime_is_normalized(tmp_path: Path) -> None:
 def test_source_comment_bank_is_not_read(tmp_path: Path) -> None:
     _write_manifest(tmp_path)
     review = _review()
-    review["comments"][0].update(
+    review["feedback"]["standard_feedback"].append(
         {
-            "source": "comment_bank",
-            "bank_id": "missing_bank",
-            "comment_id": "missing_comment",
+            "standard_id": "synthetic:W.A",
+            "include_overall_rating": False,
+            "include_overall_rationale": False,
+            "included_observation_ids": [],
+            "comments": [
+                {
+                    "feedback_comment_id": "feedback_comment_0001",
+                    "source": "reusable_focus_standard_comment",
+                    "text": "Existing selected language.",
+                    "reusable_comment_id": "missing_comment",
+                    "save_for_reuse": False,
+                    "include_in_feedback": True,
+                    "created_at": review["created_at"],
+                    "module_details": {},
+                }
+            ],
+            "module_details": {},
         }
     )
     _write_review(tmp_path, review)

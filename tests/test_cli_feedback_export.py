@@ -20,14 +20,44 @@ def test_cli_exports_feedback_and_prints_summary(
 ) -> None:
     _write_manifest(tmp_path)
     review = _review()
-    review["comments"].append(
+    review["overall_standard_ratings"].append(
         {
-            "comment_record_id": "comment_0002",
-            "label": "Private",
-            "text": "Excluded comment.",
-            "source": "custom",
-            "include_in_feedback": False,
-            "created_at": review["created_at"],
+            "standard_id": "synthetic:W.A",
+            "rating": 3,
+            "rationale": "Uses evidence.",
+            "include_in_feedback": True,
+            "updated_at": review["updated_at"],
+            "module_details": {},
+        }
+    )
+    review["feedback"]["standard_feedback"].append(
+        {
+            "standard_id": "synthetic:W.A",
+            "include_overall_rating": True,
+            "include_overall_rationale": True,
+            "included_observation_ids": [],
+            "comments": [
+                {
+                    "feedback_comment_id": "feedback_comment_0001",
+                    "source": "custom",
+                    "text": "Existing selected language.",
+                    "reusable_comment_id": None,
+                    "save_for_reuse": False,
+                    "include_in_feedback": True,
+                    "created_at": review["created_at"],
+                    "module_details": {},
+                },
+                {
+                    "feedback_comment_id": "feedback_comment_0002",
+                    "source": "custom",
+                    "text": "Excluded comment.",
+                    "reusable_comment_id": None,
+                    "save_for_reuse": False,
+                    "include_in_feedback": False,
+                    "created_at": review["created_at"],
+                    "module_details": {},
+                },
+            ],
             "module_details": {},
         }
     )
@@ -57,7 +87,7 @@ def test_cli_exports_feedback_and_prints_summary(
     ).read_text(encoding="utf-8")
     assert "Existing selected language." in content
     assert "Excluded comment." not in content
-    assert "- Evidence: 3 / 4" in content
+    assert "- synthetic:W.A: 3 - Uses evidence." in content
     assert review_path.read_bytes() == review_before
 
 

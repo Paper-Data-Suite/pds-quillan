@@ -235,25 +235,32 @@ def _build_student_row(
     if mismatch is not None:
         return _failed_row(row, "identity_mismatch", mismatch)
 
-    scores = review["scores"]
-    comments = review["comments"]
+    ratings = review["overall_standard_ratings"]
+    comments = [
+        comment
+        for standard_feedback in review["feedback"]["standard_feedback"]
+        for comment in standard_feedback["comments"]
+    ]
+    observations = [
+        observation
+        for unit in review["review_units"]
+        for observation in unit["standard_observations"]
+    ]
     row.update(
         {
             "row_status": "ready",
             "review_state": str(review["review_state"]),
-            "score_count": str(len(scores)),
+            "score_count": str(len(ratings)),
             "total_score": _format_number(
-                sum(score["score"] for score in scores)
+                sum(rating["rating"] for rating in ratings)
             ),
-            "total_max_score": _format_number(
-                sum(score["max_score"] for score in scores)
-            ),
+            "total_max_score": "",
             "included_comment_count": str(
                 sum(comment["include_in_feedback"] for comment in comments)
             ),
             "selected_comment_count": str(len(comments)),
-            "tag_count": str(len(review["tags"])),
-            "note_count": str(len(review["notes"])),
+            "tag_count": str(len(observations)),
+            "note_count": str(len(review["private_notes"])),
         }
     )
     return row

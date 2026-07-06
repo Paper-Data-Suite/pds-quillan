@@ -82,25 +82,85 @@ def test_exports_sorted_ready_rows_with_stable_schema_and_totals(
     first_manifest, first_review_path, first_review = _write_records(
         tmp_path, "00100"
     )
-    first_review["scores"].append(
+    first_review["overall_standard_ratings"].extend(
+        [
+            {
+                "standard_id": "synthetic:W.A",
+                "rating": 3,
+                "rationale": "Clear evidence.",
+                "include_in_feedback": True,
+                "updated_at": first_review["updated_at"],
+                "module_details": {},
+            },
+            {
+                "standard_id": "synthetic:W.B",
+                "rating": 3,
+                "rationale": None,
+                "include_in_feedback": False,
+                "updated_at": first_review["updated_at"],
+                "module_details": {},
+            },
+        ]
+    )
+    first_review["review_units"].append(
         {
-            "score_id": "score_0002",
-            "criterion_id": "organization",
-            "label": "Organization",
-            "score": 3.5,
-            "max_score": 5,
-            "updated_at": first_review["updated_at"],
+            "unit_id": "unit_0001",
+            "sequence": 1,
+            "label": "Paragraph 1",
+            "unit_type": "paragraph",
+            "standard_observations": [
+                {
+                    "observation_id": "observation_0001",
+                    "standard_id": "synthetic:W.A",
+                    "applicable": True,
+                    "evidence_present": True,
+                    "rating": 3,
+                    "rationale": "Relevant evidence.",
+                    "include_in_feedback": True,
+                    "updated_at": first_review["updated_at"],
+                    "module_details": {},
+                }
+            ],
             "module_details": {},
         }
     )
-    first_review["comments"].append(
+    first_review["feedback"]["standard_feedback"].append(
         {
-            "comment_record_id": "comment_0002",
-            "label": "Excluded",
-            "text": "Not for feedback.",
-            "source": "custom",
-            "include_in_feedback": False,
+            "standard_id": "synthetic:W.A",
+            "include_overall_rating": True,
+            "include_overall_rationale": True,
+            "included_observation_ids": ["observation_0001"],
+            "comments": [
+                {
+                    "feedback_comment_id": "feedback_comment_0001",
+                    "source": "custom",
+                    "text": "Good evidence.",
+                    "reusable_comment_id": None,
+                    "save_for_reuse": False,
+                    "include_in_feedback": True,
+                    "created_at": first_review["created_at"],
+                    "module_details": {},
+                },
+                {
+                    "feedback_comment_id": "feedback_comment_0002",
+                    "source": "custom",
+                    "text": "Not for feedback.",
+                    "reusable_comment_id": None,
+                    "save_for_reuse": False,
+                    "include_in_feedback": False,
+                    "created_at": first_review["created_at"],
+                    "module_details": {},
+                },
+            ],
+            "module_details": {},
+        }
+    )
+    first_review["private_notes"].append(
+        {
+            "private_note_id": "note_0001",
+            "text": "Private note.",
             "created_at": first_review["created_at"],
+            "updated_at": first_review["updated_at"],
             "module_details": {},
         }
     )
@@ -157,8 +217,8 @@ def test_exports_sorted_ready_rows_with_stable_schema_and_totals(
     assert first["review_state"] == "ready_for_export"
     assert first["submission_state"] == "unreviewed"
     assert first["score_count"] == "2"
-    assert first["total_score"] == "6.5"
-    assert first["total_max_score"] == "9"
+    assert first["total_score"] == "6"
+    assert first["total_max_score"] == ""
     assert first["included_comment_count"] == "1"
     assert first["selected_comment_count"] == "2"
     assert first["tag_count"] == "1"

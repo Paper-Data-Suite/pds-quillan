@@ -12,6 +12,7 @@ import pytest
 
 from quillan.cli import main
 import quillan.review_menu as review_menu
+from quillan.review_record import build_empty_review_record
 from quillan.review_record_paths import review_record_path, write_review_record
 from quillan.submission_manifest_paths import (
     submission_manifest_path,
@@ -200,65 +201,77 @@ def _write_manifest(root: Path) -> Path:
 
 
 def _review_record() -> dict[str, Any]:
-    return {
-        "schema_version": "1",
-        "module": "quillan",
-        "record_type": "submission_review",
-        "class_id": CLASS_ID,
-        "assignment_id": ASSIGNMENT_ID,
-        "student_id": STUDENT_ID,
-        "submission_manifest_path": (
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
-            f"{STUDENT_ID}/submission.json"
-        ),
-        "review_state": "in_progress",
-        "notes": [],
-        "tags": [
+    record = build_empty_review_record(
+        class_id=CLASS_ID,
+        assignment_id=ASSIGNMENT_ID,
+        student_id=STUDENT_ID,
+        created_at=TIMESTAMP,
+    )
+    record["review_state"] = "ready_for_export"
+    record["review_units"] = [
+        {
+            "unit_id": "unit_0001",
+            "sequence": 1,
+            "label": "Paragraph 1",
+            "unit_type": "paragraph",
+            "standard_observations": [
+                {
+                    "observation_id": "observation_0001",
+                    "standard_id": "njsls-ela:W.1",
+                    "applicable": True,
+                    "evidence_present": True,
+                    "rating": 3,
+                    "rationale": "Good claim.",
+                    "include_in_feedback": True,
+                    "updated_at": TIMESTAMP,
+                    "module_details": {"legacy_polarity": "positive"},
+                }
+            ],
+            "module_details": {},
+        }
+    ]
+    record["overall_standard_ratings"] = [
+        {
+            "standard_id": "njsls-ela:W.1",
+            "rating": 3,
+            "rationale": "Good work.",
+            "include_in_feedback": True,
+            "updated_at": TIMESTAMP,
+            "module_details": {},
+        }
+    ]
+    record["feedback"]["standard_feedback"] = [
+        {
+            "standard_id": "njsls-ela:W.1",
+            "include_overall_rating": True,
+            "include_overall_rationale": True,
+            "included_observation_ids": ["observation_0001"],
+            "comments": [
             {
-                "tag_id": "tag_0001",
-                "label": "claim",
-                "polarity": "positive",
-                "standard_id": "njsls-ela:W.1",
-                "created_at": TIMESTAMP,
-                "module_details": {},
-            }
-        ],
-        "scores": [
-            {
-                "score_id": "score_0001",
-                "criterion_id": "evidence",
-                "label": "Evidence",
-                "score": 3,
-                "max_score": 4,
-                "scale": "4 point",
-                "updated_at": TIMESTAMP,
-                "module_details": {},
-            }
-        ],
-        "comments": [
-            {
-                "comment_record_id": "comment_record_0001",
-                "label": "Feedback",
-                "text": "Good work.",
+                "feedback_comment_id": "feedback_comment_0001",
                 "source": "custom",
+                "text": "Good work.",
+                "reusable_comment_id": None,
+                "save_for_reuse": False,
                 "include_in_feedback": True,
                 "created_at": TIMESTAMP,
                 "module_details": {},
             },
             {
-                "comment_record_id": "comment_record_0002",
-                "label": "Private note",
-                "text": "This should not appear in student feedback.",
+                "feedback_comment_id": "feedback_comment_0002",
                 "source": "custom",
+                "text": "This should not appear in student feedback.",
+                "reusable_comment_id": None,
+                "save_for_reuse": False,
                 "include_in_feedback": False,
                 "created_at": TIMESTAMP,
                 "module_details": {},
             },
-        ],
-        "created_at": TIMESTAMP,
-        "updated_at": TIMESTAMP,
-        "module_details": {},
-    }
+            ],
+            "module_details": {},
+        }
+    ]
+    return record
 
 
 def _write_review_record(root: Path, review: dict[str, Any]) -> Path:
@@ -356,7 +369,7 @@ def test_menu_export_student_feedback_creates_feedback_file(
     assert feedback_path.is_file()
 
     feedback_text = feedback_path.read_text(encoding="utf-8")
-    assert "- Evidence: 3 / 4 (4 point)" in feedback_text
+    assert "- njsls-ela:W.1: 3 - Good work." in feedback_text
     assert "- Good work." in feedback_text
     assert "This should not appear in student feedback." not in feedback_text
     assert manifest_path.read_bytes() == manifest_before

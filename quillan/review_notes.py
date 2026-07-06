@@ -11,6 +11,7 @@ from typing import Any
 
 from quillan.review_record import (
     ReviewRecordError,
+    build_empty_review_record,
     load_review_record,
     validate_review_record,
 )
@@ -117,35 +118,25 @@ def add_review_note(
             student_id=student_id,
         )
         updated_review = copy.deepcopy(review)
-        if updated_review["review_state"] == "not_started":
-            updated_review["review_state"] = "in_progress"
     else:
         manifest_relative_path = _workspace_relative_path(
             manifest_path, resolved_workspace_root, "submission manifest"
         )
-        updated_review = {
-            "schema_version": "1",
-            "module": "quillan",
-            "record_type": "submission_review",
-            "class_id": class_id,
-            "assignment_id": assignment_id,
-            "student_id": student_id,
-            "submission_manifest_path": manifest_relative_path,
-            "review_state": "in_progress",
-            "notes": [],
-            "tags": [],
-            "scores": [],
-            "comments": [],
-            "requirement_checks": [],
-            "created_at": normalized_created_at,
-            "updated_at": normalized_created_at,
-            "module_details": {},
-        }
+        updated_review = build_empty_review_record(
+            class_id=class_id,
+            assignment_id=assignment_id,
+            student_id=student_id,
+            submission_manifest_path=manifest_relative_path,
+            assignment_path=(
+                f"classes/{class_id}/assignments/{assignment_id}/assignment.json"
+            ),
+            created_at=normalized_created_at,
+        )
 
-    note_id = _next_note_id(updated_review["notes"])
-    updated_review["notes"].append(
+    note_id = _next_note_id(updated_review["private_notes"])
+    updated_review["private_notes"].append(
         {
-            "note_id": note_id,
+            "private_note_id": note_id,
             "text": normalized_text,
             "created_at": normalized_created_at,
             "updated_at": normalized_created_at,
@@ -237,7 +228,7 @@ def _validate_identity(
 
 
 def _next_note_id(notes: list[dict[str, Any]]) -> str:
-    existing_ids = {note["note_id"] for note in notes}
+    existing_ids = {note["private_note_id"] for note in notes}
     highest = max(
         (
             int(match.group(1))

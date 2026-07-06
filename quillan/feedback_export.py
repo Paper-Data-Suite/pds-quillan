@@ -122,17 +122,14 @@ def export_student_feedback(
         student_id=student_id,
     )
 
-    included_comments = [
-        comment
-        for comment in review["comments"]
-        if comment["include_in_feedback"]
-    ]
+    included_comments = _included_feedback_comments(review)
+    ratings = review["overall_standard_ratings"]
     markdown = _render_markdown(
         class_id=class_id,
         assignment_id=assignment_id,
         student_id=student_id,
         created_at=normalized_created_at,
-        scores=review["scores"],
+        ratings=ratings,
         comments=included_comments,
     )
     overwrote_existing = output_path.exists()
@@ -156,7 +153,7 @@ def export_student_feedback(
             output_path, resolved_workspace_root, "feedback"
         ),
         included_comment_count=len(included_comments),
-        score_count=len(review["scores"]),
+        score_count=len(ratings),
         created_at=normalized_created_at,
         overwrote_existing=overwrote_existing,
     )
@@ -168,7 +165,7 @@ def _render_markdown(
     assignment_id: str,
     student_id: str,
     created_at: str,
-    scores: list[dict[str, Any]],
+    ratings: list[dict[str, Any]],
     comments: list[dict[str, Any]],
 ) -> str:
     lines = [
@@ -179,21 +176,20 @@ def _render_markdown(
         f"Student: {_plain_text(student_id)}",
         f"Generated: {_plain_text(created_at)}",
         "",
-        "## Scores",
+        "## Standards Ratings",
         "",
     ]
-    if scores:
-        for score in scores:
+    if ratings:
+        for rating in ratings:
             rendered = (
-                f"- {_plain_text(score['label'])}: "
-                f"{_format_number(score['score'])} / "
-                f"{_format_number(score['max_score'])}"
+                f"- {_plain_text(rating['standard_id'])}: "
+                f"{_format_number(rating['rating'])}"
             )
-            if "scale" in score:
-                rendered += f" ({_plain_text(score['scale'])})"
+            if rating.get("rationale"):
+                rendered += f" - {_plain_text(rating['rationale'])}"
             lines.append(rendered)
     else:
-        lines.append("No scores recorded.")
+        lines.append("No standards ratings recorded.")
 
     lines.extend(["", "## Feedback Comments", ""])
     if comments:
@@ -202,6 +198,17 @@ def _render_markdown(
         lines.append("No feedback comments selected.")
     lines.append("")
     return "\n".join(lines)
+
+
+def _included_feedback_comments(review: dict[str, Any]) -> list[dict[str, Any]]:
+    included: list[dict[str, Any]] = []
+    for standard_feedback in review["feedback"]["standard_feedback"]:
+        included.extend(
+            comment
+            for comment in standard_feedback["comments"]
+            if comment["include_in_feedback"]
+        )
+    return included
 
 
 def _write_feedback(path: Path, content: str, *, overwrite: bool) -> None:

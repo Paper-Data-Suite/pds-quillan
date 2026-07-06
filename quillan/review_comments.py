@@ -83,6 +83,10 @@ def add_review_comment(
     created_at: datetime | str | None = None,
 ) -> AddedReviewComment:
     """Append one snapshotted shared-bank comment to a review record."""
+    raise ReviewCommentError(
+        "Legacy review comment writes are not supported by schema version 2; "
+        "use Focus Standard feedback comments instead."
+    )
     normalized_bank_id = _normalize_identifier(bank_id, "bank_id")
     normalized_comment_id = _normalize_identifier(comment_id, "comment_id")
     normalized_standard = _normalize_optional_string(standard_id, "standard_id")

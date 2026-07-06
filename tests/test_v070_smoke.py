@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
 from pds_core.standards import (
     StandardDefinition,
     StandardsLibrary,
@@ -19,11 +20,11 @@ from quillan.assignment_submission_assembly import (
 )
 from quillan.class_summary_export import export_class_review_summary
 from quillan.feedback_export import export_student_feedback
-from quillan.review_comments import add_review_comment
+from quillan.review_comments import ReviewCommentError, add_review_comment
 from quillan.review_notes import add_review_note
 from quillan.review_record import load_review_record
-from quillan.review_scores import set_review_score
-from quillan.review_tags import add_review_tag
+from quillan.review_scores import ReviewScoreError, set_review_score
+from quillan.review_tags import ReviewTagError, add_review_tag
 from quillan.standards_summary_export import export_standards_summary
 from quillan.storage import assignment_config_path
 from quillan.submission_manifest import (
@@ -213,78 +214,55 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
     )
     review_path = added_note.review_record_path
     review = load_review_record(review_path)
-    assert review["review_state"] == "in_progress"
-    assert [note["text"] for note in review["notes"]] == [
+    assert review["review_state"] == "not_started"
+    assert [note["text"] for note in review["private_notes"]] == [
         "Private synthetic teacher note."
     ]
     assert submission_path.read_bytes() == submission_before_review
+    review_before_legacy_helpers = review_path.read_bytes()
 
-    add_review_tag(
-        tmp_path,
-        CLASS_ID,
-        ASSIGNMENT_ID,
-        STUDENT_ID,
-        label="Synthetic evidence needs development",
-        polarity="developing",
-        standard_id=STANDARD_ID,
-        page_number=1,
-        evidence_id=page["selected_evidence_id"],
-        created_at=TAG_AT,
-    )
+    with pytest.raises(ReviewTagError, match="schema version 2"):
+        add_review_tag(
+            tmp_path,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            label="Synthetic evidence needs development",
+            polarity="developing",
+            standard_id=STANDARD_ID,
+            page_number=1,
+            evidence_id=page["selected_evidence_id"],
+            created_at=TAG_AT,
+        )
+    with pytest.raises(ReviewCommentError, match="schema version 2"):
+        add_review_comment(
+            tmp_path,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            bank_id=BANK_ID,
+            comment_id=COMMENT_ID,
+            created_at=COMMENT_AT,
+        )
+    with pytest.raises(ReviewScoreError, match="schema version 2"):
+        set_review_score(
+            tmp_path,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            criterion_id="evidence",
+            label="Use of Evidence",
+            score=3,
+            max_score=4,
+            teacher_note="Private synthetic score note.",
+            updated_at=SCORE_AT,
+        )
+    assert review_path.read_bytes() == review_before_legacy_helpers
     review = load_review_record(review_path)
-    assert review["tags"] == [
-        {
-            "tag_id": "tag_0001",
-            "label": "Synthetic evidence needs development",
-            "polarity": "developing",
-            "created_at": TAG_AT,
-            "module_details": {},
-            "standard_id": STANDARD_ID,
-            "page_number": 1,
-            "evidence_id": page["selected_evidence_id"],
-        }
-    ]
-    assert review["scores"] == []
-    assert review["comments"] == []
-
-    selected_comment = add_review_comment(
-        tmp_path,
-        CLASS_ID,
-        ASSIGNMENT_ID,
-        STUDENT_ID,
-        bank_id=BANK_ID,
-        comment_id=COMMENT_ID,
-        created_at=COMMENT_AT,
-    )
-    assert selected_comment.include_in_feedback is True
-    review = load_review_record(review_path)
-    comment = review["comments"][0]
-    assert comment["source"] == "comment_bank"
-    assert comment["bank_id"] == BANK_ID
-    assert comment["comment_id"] == COMMENT_ID
-    assert comment["label"] == "Explain the evidence"
-    assert comment["text"] == comment_text
-    assert comment["standard_id"] == STANDARD_ID
-    assert comment["include_in_feedback"] is True
-    assert comment_bank_path.read_bytes() == bank_before_review
-
-    set_review_score(
-        tmp_path,
-        CLASS_ID,
-        ASSIGNMENT_ID,
-        STUDENT_ID,
-        criterion_id="evidence",
-        label="Use of Evidence",
-        score=3,
-        max_score=4,
-        teacher_note="Private synthetic score note.",
-        updated_at=SCORE_AT,
-    )
-    review = load_review_record(review_path)
-    score = review["scores"][0]
-    assert score["criterion_id"] == "evidence"
-    assert score["score"] == 3
-    assert score["max_score"] == 4
+    assert "notes" not in review
+    assert "tags" not in review
+    assert "comments" not in review
+    assert "scores" not in review
     forbidden_score_fields = {
         "overall_score",
         "percentage",
@@ -294,7 +272,6 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
         "ai_feedback",
     }
     assert forbidden_score_fields.isdisjoint(review)
-    assert forbidden_score_fields.isdisjoint(score)
     assert submission_path.read_bytes() == submission_before_review
     assert evidence_path.read_bytes() == evidence_before_review
     assert comment_bank_path.read_bytes() == bank_before_review
@@ -317,12 +294,11 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
         submission_path.parent / "exports" / "feedback.md"
     )
     feedback_text = feedback.feedback_path.read_text(encoding="utf-8")
-    assert comment_text in feedback_text
-    assert "- Use of Evidence: 3 / 4" in feedback_text
+    assert "No standards ratings recorded." in feedback_text
+    assert "No feedback comments selected." in feedback_text
     for private_value in (
         "Private synthetic teacher note.",
-        "Synthetic evidence needs development",
-        "Private synthetic score note.",
+        comment_text,
         BANK_ID,
         COMMENT_ID,
         STANDARD_ID,
@@ -343,10 +319,10 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
     class_row = class_rows[0]
     assert class_row["student_id"] == STUDENT_ID
     assert class_row["row_status"] == "ready"
-    assert class_row["score_count"] == "1"
-    assert class_row["selected_comment_count"] == "1"
-    assert class_row["included_comment_count"] == "1"
-    assert class_row["tag_count"] == "1"
+    assert class_row["score_count"] == "0"
+    assert class_row["selected_comment_count"] == "0"
+    assert class_row["included_comment_count"] == "0"
+    assert class_row["tag_count"] == "0"
     assert class_row["note_count"] == "1"
     assert class_row["feedback_export_exists"] == "true"
     for path, original in canonical_before_exports.items():
@@ -359,19 +335,6 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
         created_at=EXPORTED_AT,
     )
     standards_rows = _read_csv_rows(standards_summary.summary_path)
-    assert len(standards_rows) == 1
-    standards_row = standards_rows[0]
-    assert standards_row["standard_id"] == STANDARD_ID
-    assert standards_row["tag_count"] == "1"
-    assert standards_row["developing_tag_count"] == "1"
-    assert standards_row["positive_tag_count"] == "0"
-    assert standards_row["negative_tag_count"] == "0"
-    assert standards_row["neutral_tag_count"] == "0"
-    assert standards_row["selected_comment_count"] == "1"
-    assert standards_row["included_comment_count"] == "1"
-    assert standards_row["excluded_comment_count"] == "0"
-    assert not {"score_count", "total_score", "total_max_score"} & set(
-        standards_row
-    )
+    assert standards_rows == []
     for path, original in canonical_before_exports.items():
         assert path.read_bytes() == original

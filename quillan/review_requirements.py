@@ -12,6 +12,7 @@ from typing import Any
 
 from quillan.review_record import (
     ReviewRecordError,
+    build_empty_review_record,
     load_review_record,
     validate_review_record,
 )
@@ -132,32 +133,24 @@ def set_requirement_check(
             student_id=student_id,
         )
         updated_review = copy.deepcopy(review)
-        updated_review.setdefault("requirement_checks", [])
         if updated_review["review_state"] == "not_started":
-            updated_review["review_state"] = "in_progress"
+            updated_review["review_state"] = "requirements_checked"
     else:
-        updated_review = {
-            "schema_version": "1",
-            "module": "quillan",
-            "record_type": "submission_review",
-            "class_id": class_id,
-            "assignment_id": assignment_id,
-            "student_id": student_id,
-            "submission_manifest_path": _workspace_relative_path(
+        updated_review = build_empty_review_record(
+            class_id=class_id,
+            assignment_id=assignment_id,
+            student_id=student_id,
+            submission_manifest_path=_workspace_relative_path(
                 manifest_path, resolved_root, "submission manifest"
             ),
-            "review_state": "in_progress",
-            "notes": [],
-            "tags": [],
-            "scores": [],
-            "comments": [],
-            "requirement_checks": [],
-            "created_at": normalized_updated_at,
-            "updated_at": normalized_updated_at,
-            "module_details": {},
-        }
+            assignment_path=(
+                f"classes/{class_id}/assignments/{assignment_id}/assignment.json"
+            ),
+            created_at=normalized_updated_at,
+        )
+        updated_review["review_state"] = "requirements_checked"
 
-    checks = updated_review["requirement_checks"]
+    checks = updated_review["minimum_requirement_checks"]
     existing_check = next(
         (
             candidate

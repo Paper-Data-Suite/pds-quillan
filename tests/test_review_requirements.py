@@ -1,4 +1,4 @@
-"""Tests for teacher-entered assignment requirement checks."""
+"""Tests for teacher-entered v2 minimum requirement checks."""
 
 from __future__ import annotations
 
@@ -8,12 +8,9 @@ from typing import Any
 
 import pytest
 
-from quillan.review_record import ReviewRecordError, validate_review_record
+from quillan.review_record import ReviewRecordError, build_empty_review_record, validate_review_record
 from quillan.review_record_paths import review_record_path, write_review_record
-from quillan.review_requirements import (
-    ReviewRequirementError,
-    set_requirement_check,
-)
+from quillan.review_requirements import ReviewRequirementError, set_requirement_check
 from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
@@ -66,44 +63,15 @@ def _manifest() -> dict[str, Any]:
 
 
 def _review(state: str = "not_started") -> dict[str, Any]:
-    return {
-        "schema_version": "1",
-        "module": "quillan",
-        "record_type": "submission_review",
-        "class_id": CLASS_ID,
-        "assignment_id": ASSIGNMENT_ID,
-        "student_id": STUDENT_ID,
-        "submission_manifest_path": (
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
-            f"{STUDENT_ID}/submission.json"
-        ),
-        "review_state": state,
-        "notes": [
-            {
-                "note_id": "note_0001",
-                "text": "Existing note.",
-                "created_at": ORIGINAL_TIMESTAMP,
-                "updated_at": ORIGINAL_TIMESTAMP,
-                "module_details": {"preserve": True},
-            }
-        ],
-        "tags": [],
-        "scores": [
-            {
-                "score_id": "score_0001",
-                "criterion_id": "evidence",
-                "label": "Evidence",
-                "score": 3,
-                "max_score": 4,
-                "updated_at": ORIGINAL_TIMESTAMP,
-                "module_details": {"preserve": True},
-            }
-        ],
-        "comments": [],
-        "created_at": ORIGINAL_TIMESTAMP,
-        "updated_at": ORIGINAL_TIMESTAMP,
-        "module_details": {"preserve": True},
-    }
+    record = build_empty_review_record(
+        class_id=CLASS_ID,
+        assignment_id=ASSIGNMENT_ID,
+        student_id=STUDENT_ID,
+        created_at=ORIGINAL_TIMESTAMP,
+    )
+    record["review_state"] = state
+    record["module_details"] = {"preserve": True}
+    return record
 
 
 def _write_manifest(workspace: Path) -> Path:
@@ -113,7 +81,9 @@ def _write_manifest(workspace: Path) -> Path:
     )
 
 
-def test_creates_review_record_with_requirement_check(tmp_path: Path) -> None:
+def test_creates_v2_review_record_with_minimum_requirement_check(
+    tmp_path: Path,
+) -> None:
     manifest_path = _write_manifest(tmp_path)
     manifest_before = manifest_path.read_bytes()
 
@@ -130,14 +100,16 @@ def test_creates_review_record_with_requirement_check(tmp_path: Path) -> None:
     )
 
     review = json.loads(
-        review_record_path(
-            tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-        ).read_text(encoding="utf-8")
+        review_record_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(
+            encoding="utf-8"
+        )
     )
     assert result.requirement_check_id == "requirement_check_0001"
     assert result.was_created is True
-    assert review["review_state"] == "in_progress"
-    assert review["requirement_checks"] == [
+    assert review["schema_version"] == "2"
+    assert review["review_state"] == "requirements_checked"
+    assert "requirement_checks" not in review
+    assert review["minimum_requirement_checks"] == [
         {
             "requirement_check_id": "requirement_check_0001",
             "requirement_key": "paragraphs_min",
@@ -156,7 +128,7 @@ def test_updates_existing_check_by_key_and_preserves_other_data(
 ) -> None:
     _write_manifest(tmp_path)
     review = _review("ready_for_export")
-    review["requirement_checks"] = [
+    review["minimum_requirement_checks"] = [
         {
             "requirement_check_id": "requirement_check_0001",
             "requirement_key": "required_elements:thesis_statement",
@@ -189,10 +161,8 @@ def test_updates_existing_check_by_key_and_preserves_other_data(
     assert result.requirement_check_id == "requirement_check_0001"
     assert result.was_created is False
     assert written["review_state"] == "ready_for_export"
-    assert written["notes"] == review["notes"]
-    assert written["scores"] == review["scores"]
     assert written["module_details"] == review["module_details"]
-    assert written["requirement_checks"] == [
+    assert written["minimum_requirement_checks"] == [
         {
             "requirement_check_id": "requirement_check_0001",
             "requirement_key": "required_elements:thesis_statement",
@@ -210,9 +180,9 @@ def test_existing_review_without_requirement_checks_remains_valid() -> None:
     validate_review_record(_review())
 
 
-def test_requirement_check_validation_accepts_new_shape() -> None:
+def test_requirement_check_validation_accepts_v2_shape() -> None:
     review = _review()
-    review["requirement_checks"] = [
+    review["minimum_requirement_checks"] = [
         {
             "requirement_check_id": "requirement_check_0001",
             "requirement_key": "word_count_max",
@@ -262,9 +232,9 @@ def test_rejects_blank_requirement_key(tmp_path: Path) -> None:
         )
 
 
-def test_validation_rejects_invalid_requirement_checks() -> None:
+def test_validation_rejects_invalid_minimum_requirement_checks() -> None:
     review = _review()
-    review["requirement_checks"] = [
+    review["minimum_requirement_checks"] = [
         {
             "requirement_check_id": "requirement_check_0001",
             "requirement_key": "paragraphs_min",
@@ -296,6 +266,4 @@ def test_missing_submission_manifest_errors_without_review_write(
             updated_at=FIRST_TIMESTAMP,
         )
 
-    assert not review_record_path(
-        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    ).exists()
+    assert not review_record_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).exists()

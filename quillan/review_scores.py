@@ -74,6 +74,10 @@ def set_review_score(
     updated_at: datetime | str | None = None,
 ) -> UpdatedReviewScore:
     """Set or update one teacher-entered criterion score."""
+    raise ReviewScoreError(
+        "Legacy review score writes are not supported by schema version 2; "
+        "use overall Focus Standard ratings instead."
+    )
     normalized_criterion_id = _normalize_required_string(
         criterion_id, "criterion_id"
     )
