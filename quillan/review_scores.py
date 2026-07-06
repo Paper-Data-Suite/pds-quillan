@@ -1,4 +1,8 @@
-"""Teacher-entered criterion scores for submission review records."""
+"""Teacher-entered criterion scores for submission review records.
+
+Legacy v1 criterion-score writes are retained only for compatibility and tests.
+They are not exposed through active v0.8.6 menu or CLI routes.
+"""
 
 from __future__ import annotations
 

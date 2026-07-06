@@ -14,8 +14,13 @@ development. It records:
 The CLI includes a developer-oriented, scriptable command layer and a
 teacher-facing terminal menu. The menu now covers assignment management, roster
 management, printable response pages, QR-aware scan intake, review navigation,
-guided review-entry actions, guided export actions, Manage Review Materials guidance,
-workspace settings, help, and exit.
+retained review-entry actions, guided export actions, workspace settings, help,
+and exit.
+
+As of the v0.8.6 standards-based review redesign gate, legacy generic
+review-material workflows are no longer active CLI or menu workflows. The old
+`add-tag`, `add-comment`, and `set-score` commands are intentionally removed
+from argparse and must not write v1 tag, comment, or score review data.
 
 This contract describes implemented behavior separately from future design. A
 command or workflow documented elsewhere as planned is not part of the current
@@ -60,9 +65,6 @@ quillan open-evidence <workspace-relative-evidence-path>
 quillan open-submission <class_id> <assignment_id> <student_id>
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
-quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity <polarity> [--standard-id <standard_id>]
-quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id> [--standard-id <standard_id>]
-quillan set-score <class_id> <assignment_id> <student_id> --criterion <criterion_id> --label "..." --score <number> --max-score <number>
 quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
 quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
@@ -350,17 +352,15 @@ run OCR, score, tag, generate feedback, or perform AI work.
 
 #### Review Student Work
 
-Review Student Work provides guided scan intake, review-material management,
-class, assignment, and student/submission navigation plus review-entry and
-export actions.
+Review Student Work provides guided scan intake, class, assignment, and
+student/submission navigation plus retained review-entry and export actions.
 
 The first Review Student Work menu provides:
 
 ```text
 1. Assignment Review Actions
 2. Scan Intake / Route Paper Responses
-3. Manage Review Materials
-4. Back
+3. Back
 ```
 
 The workflow lists available classes from the active workspace, lists
@@ -389,25 +389,22 @@ assignment, student, submission/evidence status, review state, and existing
 paths are reserved for detail/output actions.
 
 Assignment-level student selection clears the prior assignment-status summary
-before showing the student list. Nested review selections such as reusable
-tags, reusable comments, and rubric scoring also clear between levels so each
-screen stands on its own. `B. Back` returns to the immediate previous
+before showing the student list. Nested review selections clear between levels
+so each screen stands on its own. `B. Back` returns to the immediate previous
 selection screen.
 
 The selected-student review menu provides:
 
 ```text
 1. Open submission evidence
-2. Record minimum requirement checks
-3. Manage submission pages
-4. Add teacher note
-5. Add structured tag
-6. Select reusable comment
-7. Set criterion score
-8. Update submission review state
-9. Export student feedback
-10. Refresh summary
-11. Back
+2. View current review details
+3. Record minimum requirement checks
+4. Manage submission pages
+5. Add teacher note
+6. Update submission review state
+7. Export student feedback
+8. Refresh summary
+9. Back
 ```
 
 Opening submission evidence delegates to the same existing safe selected
@@ -427,43 +424,19 @@ the teacher-entered boolean in `review.json.requirement_checks`; it does not
 count words or paragraphs, parse writing, run OCR, use AI, infer a result, or
 change rubric scores.
 
-Guided review-entry actions reuse the same underlying review services as the
-direct commands:
+Retained guided review-entry actions reuse the same underlying review services
+as the direct commands:
 
 ```powershell
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
-quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity <polarity>
-quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id>
-quillan set-score <class_id> <assignment_id> <student_id> --criterion <criterion_id> --label "..." --score <number> --max-score <number>
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 ```
 
-`Add structured tag` opens an Add Tag chooser. Teachers can select a reusable
-tag from `shared/tag_banks/<tag_bank_id>.json` by bank, category, and tag
-template, or choose Custom tag for a one-off/manual observation. Reusable tag
-screens show bank titles, category labels, tag labels, optional
-severity/polarity, and durable IDs as secondary detail. Custom tag polarity is
-selected from enumerated choices, and optional details are grouped behind an
-explicit prompt. Reusable tag selections snapshot template values into
-`review.json.tags` with
-`source: "tag_bank"`, `tag_bank_id`, and `tag_template_id`; custom tags and the
-direct `add-tag` command remain compatible.
-
-`Select reusable comment` is selection-first: the teacher chooses a comment
-bank, category, and student-facing comment, sees a feedback preview, then
-confirms the write or changes the include-in-feedback setting. Comment labels
-are primary; bank and comment IDs are displayed as secondary durable details.
-Missing comment banks point teachers to Review Student Work ->
-Manage Review Materials -> Comment Banks.
-
-`Set criterion score` opens a score chooser. Teachers can score from a valid
-shared rubric resolved through `assignment.rubric_id`, or choose Custom
-criterion score when the rubric is missing or does not contain the needed
-criterion. Rubric scoring shows rubric metadata, criteria, levels, and a
-confirmation screen before writing. Custom scoring is label-first and suggests
-a `criterion_id`; the direct `set-score` command remains manual and
-compatible. Rubric level feedback metadata is informational only and is not
-converted into comments.
+The legacy `Add structured tag`, `Select reusable comment`, and
+`Set criterion score` actions have been removed from the active selected-student
+review menu. The matching direct CLI write commands `add-tag`, `add-comment`,
+and `set-score` are also removed from argparse and cannot write v1 review tags,
+comments, or scores.
 
 When reusable comments or tags include pds-core `standard_id` references,
 review-time menus may resolve readable metadata through pds-core read-only
@@ -500,123 +473,12 @@ The Review Student Work menu does not automatically assemble submissions,
 route scans, run OCR, parse evidence contents, score work automatically, infer
 mastery, generate AI feedback, or perform AI work.
 
-#### Manage Review Materials
+#### Removed Legacy Review Materials
 
-Manage Review Materials is reached through Review Student Work and provides a
-preparation area for reusable teacher-authored review aids:
-
-```text
-1. Comment Banks
-2. Tag Banks
-3. Rubrics / Scoring Profiles
-4. Starter Materials
-5. Back
-```
-
-The menu is subject-agnostic and is intended for teachers reviewing written
-student work such as essays, constructed responses, lab reports, journals,
-reflections, research papers, mathematical explanations, technical writing, and
-other local writing tasks.
-
-Comment Banks opens a submenu:
-
-```text
-1. Create comment bank
-2. View comment banks
-3. Edit comment bank
-4. Add category
-5. Add comment
-6. Validate comment bank
-7. Back
-```
-
-Comment-bank authoring writes confirmed, valid version `1` banks only under
-`shared/comment_banks/<bank_id>.json`. New banks are immediately available to
-Review Student Work -> Select reusable comment because they use the same
-schema, loading logic, and validation as review-time selection.
-
-Comment banks are teacher-authored reusable feedback language. They do not
-grade work, imply mastery, generate automatic feedback, or mutate student
-records by themselves. Review selection snapshots the chosen label and text
-into `review.json.comments`; later bank edits do not silently rewrite previous
-review records.
-
-Tag Banks opens a submenu:
-
-```text
-1. Create tag bank
-2. View tag banks
-3. Edit tag bank
-4. Add category
-5. Add reusable tag
-6. Validate tag bank
-7. Back
-```
-
-Tag-bank authoring writes confirmed, valid version `1` banks only under
-`shared/tag_banks/<tag_bank_id>.json`. It builds complete banks in memory,
-validates before writing, refuses accidental overwrites unless the teacher types
-exactly `OVERWRITE`, and does not write invalid partial files.
-
-Tag banks are teacher-authored reusable observations for quick tagging. They do
-not grade work, imply mastery, generate automatic feedback, or mutate student
-records by themselves.
-
-Review-material authoring prompts use teacher-facing labels while preserving
-the JSON contracts. The UI calls `writing_types` "writing assignment types,"
-explains comma-separated values and underscores for multi-word values, suggests
-stored IDs from labels, and distinguishes labels from system IDs such as
-`bank_id`, `tag_bank_id`, `rubric_id`, `category_id`, `comment_id`,
-`tag_template_id`, and `criterion_id`. Optional tag details are explained as
-description, writing assignment type limits, linked standards, linked rubric
-criteria, priority/severity, private note question, and display order.
-`student_facing_default` is not prompted for until it has visible runtime
-behavior.
-
-Rubrics / Scoring Profiles opens a submenu for teacher-authored reusable
-scoring profiles. It writes confirmed, valid version `1` rubrics only under
-`shared/rubrics/<rubric_id>.json`; assignment creation and review-time rubric
-scoring can immediately resolve valid shared rubrics.
-
-Starter Materials opens a submenu:
-
-```text
-1. Preview starter materials
-2. Validate starter materials
-3. Install all starter materials
-4. Install selected starter materials
-5. Back
-```
-
-Starter materials are optional synthetic examples for onboarding and local
-testing. The workflow validates source JSON files with the same comment-bank,
-tag-bank, and rubric validators used at runtime. Installation copies validated
-JSON files only into `shared/comment_banks/`, `shared/tag_banks/`, and
-`shared/rubrics/`. Existing files are skipped by default, and bulk overwrite
-requires the exact confirmation text `OVERWRITE`.
-
-Selected Student Review presents the assembled student's review workspace as:
-
-```text
-1. Open submission evidence
-2. View current review details
-3. Record minimum requirement checks
-4. Manage submission pages
-5. Add teacher note
-6. Add structured tag
-7. Select reusable comment
-8. Set criterion score
-9. Update submission review state
-10. Export student feedback
-11. Refresh summary
-12. Back
-```
-
-View current review details is terminal-only and read-only. It displays the
-current `review.json` contents for the selected student, including requirement
-checks, notes, tags, comments, scores, comment feedback-inclusion settings,
-and tag/comment targets. It does not generate an export file and does not
-modify `review.json`, `submission.json`, or evidence files.
+The active Review Student Work menu no longer exposes generic Comment Bank,
+Tag Bank, Rubric / Scoring Profile, or Starter Material management workflows.
+The direct legacy menu shell reports that those workflows are disabled while
+the standards-based review redesign is underway.
 
 Selected Student Review includes Manage Submission Pages. Teachers can exclude
 a page from active review, restore an excluded page, or mark a page as needing
@@ -625,19 +487,6 @@ rescan after confirmation. These actions update only the selected student's
 routed files, and do not modify review notes, tags, comments, scores, feedback
 exports, rosters, assignments, review materials, pds-core standards, or
 pds-core routes.
-
-Starter installation does not create assignments, rosters, scans, submissions,
-review records, exports, pds-core standards, pds-core standards profiles, or
-pds-core route helpers.
-
-Review materials are Quillan-owned teaching and review aids. They may later
-reference durable pds-core `profile_id` and `standard_id` values. Optional
-comment-bank and tag-bank `standard_ids` are pds-core references only; optional
-tag-bank `criterion_ids` are rubric/scoring metadata only. Quillan does not
-create, import, edit, retire, reactivate, or authoritatively validate standards.
-The menu does not duplicate or replace pds-core ownership of standards,
-workspace resolution, shared class routes, roster routes, scan routes, or route
-helpers.
 
 #### Workspace Settings
 
@@ -911,98 +760,17 @@ exists, validates, and matches the requested identity.
 
 It preserves the manifest, evidence, and unrelated review content.
 
-## Structured Review Tags
+## Removed Legacy Review Writes
 
-```powershell
-quillan add-tag <class_id> <assignment_id> <student_id> --label "..." --polarity developing
-```
+The legacy direct review-write commands `add-tag`, `add-comment`, and
+`set-score` are no longer part of the active CLI surface. They were removed as
+part of the v0.8.6 standards-based review redesign gate and must not write v1
+`review.json.tags`, `review.json.comments`, or `review.json.scores` data.
 
-This direct command appends one teacher-entered tag to the canonical
-`review.json`, creating that record only when the adjacent `submission.json`
-exists, validates, and matches the requested identity.
-
-Optional flags are:
-
-```text
---standard-id
---comment-id
---severity
---note
---page
---evidence-id
---location-type
---location-value
-```
-
-Handled workspace, record, and tag-validation failures return `1`.
-
-Success returns `0` and reports the class, assignment, student, tag ID,
-polarity, review state, and workspace-relative review-record path.
-
-The command never mutates the submission manifest, routed evidence, or
-retained source scans, and it does not score, analyze, or generate feedback.
-
-The guided Selected Student Review tag flow uses teacher-facing target prompts
-instead of raw JSON. Teachers may choose whole submission, specific
-paragraph(s), a specific page, page plus paragraph(s), skip location, or Back.
-Paragraph input accepts values such as `2`, `2-4`, `2,4,6`, and `2, 4-6`.
-Targets are teacher-entered metadata; Quillan does not parse writing, run OCR,
-use AI, count paragraphs, or infer where a tag belongs.
-
-## Reusable Comment Selection
-
-```powershell
-quillan add-comment <class_id> <assignment_id> <student_id> --bank <bank_id> --comment-id <comment_id>
-```
-
-This direct command validates a shared comment bank and appends one
-teacher-selected student-facing comment to canonical `review.json`.
-
-In the guided Selected Student Review reusable-comment flow, the teacher is
-also prompted for the same optional target choices used by tags. The
-confirmation screen shows the selected comment text, target, and
-include-in-feedback setting before writing. Comment targets are stored in
-`review.json.comments` as optional `page_number`, `evidence_id`, and
-`location` fields.
-
-Optional flags are:
-
-```text
---standard-id
---include-in-feedback
---exclude-from-feedback
-```
-
-The command copies label and text and preserves `bank_id + comment_id`
-provenance, so later bank edits do not change the review.
-
-It does not export feedback or mutate the source bank, manifest, or evidence.
-
-## Criterion Scores
-
-```powershell
-quillan set-score <class_id> <assignment_id> <student_id> --criterion <criterion_id> --label "..." --score <number> --max-score <number>
-```
-
-This direct command sets or updates one explicitly teacher-entered criterion
-score in canonical `review.json`.
-
-Optional flags are `--scale` and `--note`.
-
-The command creates a missing review record only when the adjacent
-`submission.json` validates and matches the requested identity.
-
-Success returns `0` and reports the class, assignment, student, criterion,
-score and maximum, score ID, created-or-updated action, review state, and
-workspace-relative review-record path.
-
-Handled workspace, score, and record failures return `1`.
-
-Updating by `criterion_id` preserves the existing score ID and unrelated
-review sections.
-
-The command does not validate criteria against a rubric profile, calculate an
-overall score, infer scores, or mutate the submission manifest or evidence.
+The matching selected-student menu actions for structured tags, reusable
+comments, and criterion scores are also removed. Replacement Focus Standard
+observation, rating, feedback, and reporting workflows are intentionally out of
+scope for this removal gate.
 
 ## Student Feedback Export
 

@@ -1,4 +1,4 @@
-"""Tests for the teacher-facing Review Materials menu shell."""
+"""Tests for removed legacy Review Materials menu surfaces."""
 
 from __future__ import annotations
 
@@ -56,122 +56,41 @@ def test_main_menu_excludes_review_materials_and_exits_cleanly(
     assert "Goodbye." in output
 
 
-def test_main_menu_invalid_selection_uses_new_range(
+def test_review_student_work_menu_excludes_review_materials(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["bad", "", "6"])
+    _menu_input(monkeypatch, ["2", "3", "6"])
 
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
-    assert "Invalid selection. Please enter a number from 1 to 6." in output
+    assert "Review Student Work" in output
+    assert "1. Assignment Review Actions" in output
+    assert "2. Scan Intake / Route Paper Responses" in output
+    assert "3. Back" in output
+    assert "Manage Review Materials" not in output
+    assert "Comment Banks" not in output
+    assert "Tag Banks" not in output
+    assert "Rubrics / Scoring Profiles" not in output
 
 
-def test_review_materials_menu_navigation_returns_to_main_menu(
+def test_direct_review_materials_menu_is_disabled(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["2", "3", "5", "4", "6"])
+    _menu_input(monkeypatch, ["x", "", "1"])
 
-    assert main(["menu"]) == 0
+    assert launch_review_materials_menu() == 0
 
     output = capsys.readouterr().out
     assert "Review Materials" in output
-    assert (
-        "Reusable review materials help teachers prepare comments, tags, "
-        "and scoring tools before reviewing student work."
-    ) in output
-    assert "1. Comment Banks" in output
-    assert "2. Tag Banks" in output
-    assert "3. Rubrics / Scoring Profiles" in output
-    assert "4. Starter Materials" in output
-    assert "5. Back" in output
-    assert "Goodbye." in output
-
-
-@pytest.mark.parametrize(
-    ("choice", "header", "path_text"),
-    [
-        ("2", "Tag Banks", "shared/tag_banks/"),
-    ],
-)
-def test_review_materials_informational_screens_return_safely(
-    choice: str,
-    header: str,
-    path_text: str,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _menu_input(monkeypatch, [choice, "", "5"])
-
-    assert launch_review_materials_menu() == 0
-
-    output = capsys.readouterr().out
-    assert header in output
-    assert "Add reusable tag" in output
-    assert "Implemented in #166" not in output
-    assert "Opening this screen" not in output
-    if path_text:
-        assert path_text not in output
-
-
-def test_review_materials_starter_materials_opens_real_submenu(
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _menu_input(monkeypatch, ["4", "5", "5"])
-
-    assert launch_review_materials_menu() == 0
-
-    output = capsys.readouterr().out
-    assert "Starter Materials" in output
-    assert "1. Preview starter materials" in output
-    assert "2. Validate starter materials" in output
-    assert "3. Install all starter materials" in output
-    assert "4. Install selected starter materials" in output
-
-
-def test_review_materials_rubrics_opens_submenu(
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _menu_input(monkeypatch, ["3", "7", "5"])
-
-    assert launch_review_materials_menu() == 0
-
-    output = capsys.readouterr().out
-    assert "Rubrics / Scoring Profiles" in output
-    assert "1. Create rubric / scoring profile" in output
-    assert "6. Validate rubric / scoring profile" in output
-    assert "7. Back" in output
-
-
-def test_review_materials_comment_banks_opens_submenu(
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _menu_input(monkeypatch, ["1", "7", "5"])
-
-    assert launch_review_materials_menu() == 0
-
-    output = capsys.readouterr().out
-    assert "Comment banks store reusable teacher-authored feedback comments." in output
-    assert "1. Create comment bank" in output
-    assert "6. Validate comment bank" in output
-    assert "7. Back" in output
-
-
-def test_review_materials_invalid_selection_is_helpful(
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _menu_input(monkeypatch, ["x", "", "5"])
-
-    assert launch_review_materials_menu() == 0
-
-    output = capsys.readouterr().out
-    assert "Invalid selection. Please enter a number from 1 to 5." in output
+    assert "Legacy generic comment-bank, tag-bank, and rubric workflows" in output
+    assert "1. Back" in output
+    assert "Comment Banks" not in output
+    assert "Tag Banks" not in output
+    assert "Starter Materials" not in output
+    assert "Invalid selection. Please enter 1 to go back." in output
 
 
 def test_review_materials_menu_has_no_workspace_side_effects(
@@ -188,12 +107,9 @@ def test_review_materials_menu_has_no_workspace_side_effects(
         (folder / "existing.txt").write_text("keep", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     before = _file_tree(tmp_path)
-    _menu_input(
-        monkeypatch,
-        ["2", "3", "1", "7", "2", "", "3", "", "4", "", "5", "4", "6"],
-    )
+    _menu_input(monkeypatch, ["1"])
 
-    assert main(["menu"]) == 0
+    assert launch_review_materials_menu() == 0
 
     capsys.readouterr()
     assert _file_tree(tmp_path) == before

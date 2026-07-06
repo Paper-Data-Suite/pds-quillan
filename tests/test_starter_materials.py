@@ -59,7 +59,8 @@ def _menu_input(monkeypatch: pytest.MonkeyPatch, responses: list[str]) -> None:
 
 
 def _patch_workspace(monkeypatch: pytest.MonkeyPatch, root: Path) -> None:
-    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: root)
+    if hasattr(workflows, "resolve_workspace_root"):
+        monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: root)
 
 
 def _file_tree(root: Path) -> tuple[tuple[str, str, bytes | None], ...]:
@@ -316,13 +317,9 @@ def test_install_skips_existing_by_default_and_exact_overwrite_replaces(
 
     assert workflows.prompt_install_selected_starter_materials() == 1
     assert target.read_bytes() == before
-    assert "Overwrite canceled" in capsys.readouterr().out
-
-    _menu_input(monkeypatch, ["1", "2", "OVERWRITE"])
-
-    assert workflows.prompt_install_selected_starter_materials() == 0
-    assert target.read_bytes() != before
-    assert load_comment_bank(target)["bank_id"] == material.material_id
+    assert "Legacy generic starter review materials are disabled" in (
+        capsys.readouterr().out
+    )
 
 
 def test_install_summary_counts_existing_files(tmp_path: Path) -> None:
@@ -337,22 +334,21 @@ def test_install_summary_counts_existing_files(tmp_path: Path) -> None:
     assert summary.overwrite_files == 1
 
 
-def test_install_selected_one_of_each_type(
+def test_install_selected_workflow_is_disabled_without_writes(
     tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _patch_workspace(monkeypatch, tmp_path)
-    materials = discover_starter_materials()
-    comment_count = sum(1 for material in materials if material.kind == "comment_bank")
-    tag_count = sum(1 for material in materials if material.kind == "tag_bank")
-    selections = f"1,{comment_count + 1},{comment_count + tag_count + 1}"
-    _menu_input(monkeypatch, [selections, "1"])
+    before = _file_tree(tmp_path)
+    _menu_input(monkeypatch, ["1,18,35", "1"])
 
-    assert workflows.prompt_install_selected_starter_materials() == 0
+    assert workflows.prompt_install_selected_starter_materials() == 1
 
-    assert len(list((tmp_path / "shared" / "comment_banks").glob("*.json"))) == 1
-    assert len(list((tmp_path / "shared" / "tag_banks").glob("*.json"))) == 1
-    assert len(list((tmp_path / "shared" / "rubrics").glob("*.json"))) == 1
+    assert _file_tree(tmp_path) == before
+    assert "Legacy generic starter review materials are disabled" in (
+        capsys.readouterr().out
+    )
 
 
 def test_invalid_selected_install_is_rejected_without_writes(
@@ -367,7 +363,9 @@ def test_invalid_selected_install_is_rejected_without_writes(
     assert workflows.prompt_install_selected_starter_materials() == 1
 
     assert _file_tree(tmp_path) == before
-    assert "Invalid selection" in capsys.readouterr().out
+    assert "Legacy generic starter review materials are disabled" in (
+        capsys.readouterr().out
+    )
 
 
 def test_cancel_paths_create_no_files(
@@ -393,16 +391,15 @@ def test_preview_and_validate_workflows_report_material_groups(
 ) -> None:
     _patch_workspace(monkeypatch, tmp_path)
 
-    assert workflows.prompt_preview_starter_materials() == 0
-    assert workflows.prompt_validate_starter_materials() == 0
+    assert workflows.prompt_preview_starter_materials() == 1
+    assert workflows.prompt_validate_starter_materials() == 1
 
     output = capsys.readouterr().out
-    assert "Comment Banks" in output
-    assert "Tag Banks" in output
-    assert "Rubrics / Scoring Profiles" in output
-    assert "OK general_written_response.json" in output
-    assert "OK general_written_response_tags.json" in output
-    assert "OK general_constructed_response.json" in output
+    assert "Legacy generic starter review materials are disabled" in output
+    assert "Comment Banks" not in output
+    assert "Tag Banks" not in output
+    assert "Rubrics / Scoring Profiles" not in output
+    assert "OK general_written_response.json" not in output
 
 
 def test_starter_materials_submenu_preview_and_back(
@@ -411,13 +408,16 @@ def test_starter_materials_submenu_preview_and_back(
     tmp_path: Path,
 ) -> None:
     _patch_workspace(monkeypatch, tmp_path)
-    _menu_input(monkeypatch, ["1", "", "5"])
+    _menu_input(monkeypatch, ["x", "", "1"])
 
     assert workflows.launch_starter_materials_menu() == 0
 
     output = capsys.readouterr().out
-    assert "Preview starter materials" in output
-    assert "General Written Response Comments" in output
+    assert "Starter Materials" in output
+    assert "Legacy starter comment-bank, tag-bank, and rubric installers" in output
+    assert "1. Back" in output
+    assert "Preview starter materials" not in output
+    assert "General Written Response Comments" not in output
 
 
 def test_installed_materials_are_discoverable_by_review_helpers(

@@ -1,4 +1,8 @@
-"""Teacher-entered structured tags for submission review records."""
+"""Teacher-entered structured tags for submission review records.
+
+Legacy v1 review-tag writes are retained only for compatibility and tests.
+They are not exposed through active v0.8.6 menu or CLI routes.
+"""
 
 from __future__ import annotations
 

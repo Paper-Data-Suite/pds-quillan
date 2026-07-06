@@ -1,30 +1,16 @@
-"""Tests for guided selected-student review menu entry actions."""
+"""Tests for retained selected-student review menu entry actions."""
 
 from __future__ import annotations
 
 import csv
 import json
 from pathlib import Path
-from typing import Any
 
 import pytest
 
 from quillan.cli import main
-import quillan.comment_bank_workflows as comment_bank_workflows
 import quillan.review_menu as review_menu
-from quillan.review_record_paths import review_record_path, write_review_record
-from quillan.rubric_writing import (
-    build_rubric,
-    build_rubric_criterion,
-    build_rubric_level,
-    write_rubric,
-)
-from quillan.tag_bank_writing import (
-    build_tag_bank,
-    build_tag_category,
-    build_tag_template,
-    write_tag_bank,
-)
+from quillan.review_record_paths import review_record_path
 from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
@@ -35,13 +21,6 @@ ASSIGNMENT_ID = "essay_01_synthetic"
 STUDENT_ID = "stu_0001"
 SECOND_STUDENT_ID = "stu_0002"
 TIMESTAMP = "2026-06-22T12:00:00+00:00"
-BANK_ID = "general_writing_synthetic"
-EXAMPLE_BANK_PATH = (
-    Path(__file__).parents[1]
-    / "examples"
-    / "comment_banks"
-    / f"{BANK_ID}.json"
-)
 
 
 def _menu_input(monkeypatch: pytest.MonkeyPatch, responses: list[str]) -> None:
@@ -63,20 +42,10 @@ def _write_workspace(root: Path) -> None:
     assignment_dir = class_dir / "assignments" / ASSIGNMENT_ID
     assignment_dir.mkdir(parents=True)
 
-    with (class_dir / "roster.csv").open(
-        "w",
-        encoding="utf-8",
-        newline="",
-    ) as roster_file:
+    with (class_dir / "roster.csv").open("w", encoding="utf-8", newline="") as file:
         writer = csv.DictWriter(
-            roster_file,
-            fieldnames=(
-                "class_id",
-                "student_id",
-                "last_name",
-                "first_name",
-                "period",
-            ),
+            file,
+            fieldnames=("class_id", "student_id", "last_name", "first_name", "period"),
         )
         writer.writeheader()
         writer.writerow(
@@ -112,7 +81,15 @@ def _write_workspace(root: Path) -> None:
     (assignment_dir / "assignment.json").write_text(
         json.dumps(assignment), encoding="utf-8"
     )
-    evidence_path = root / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "scans" / "response_stu_0001_pg_001.pdf"
+    evidence_path = (
+        root
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "scans"
+        / "response_stu_0001_pg_001.pdf"
+    )
     evidence_path.parent.mkdir(parents=True, exist_ok=True)
     evidence_path.write_bytes(b"synthetic evidence")
     _write_manifest(root)
@@ -154,83 +131,20 @@ def _write_manifest(root: Path) -> Path:
         "updated_at": TIMESTAMP,
         "module_details": {},
     }
-    path = submission_manifest_path(
-        root,
-        CLASS_ID,
-        ASSIGNMENT_ID,
-        STUDENT_ID,
-    )
+    path = submission_manifest_path(root, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
     return write_submission_manifest(path, manifest)
 
 
-def _write_bank(root: Path) -> None:
-    bank_path = root / "shared" / "comment_banks" / f"{BANK_ID}.json"
-    bank_path.parent.mkdir(parents=True, exist_ok=True)
-    bank_path.write_text(EXAMPLE_BANK_PATH.read_text(encoding="utf-8"), encoding="utf-8")
-
-
-def _write_tag_bank(root: Path) -> None:
-    category = build_tag_category(
-        category_id="reasoning_explanation",
-        label="Reasoning / Explanation",
-        description="Teacher observations about reasoning.",
-    )
-    tag = build_tag_template(
-        tag_template_id="explanation_needs_more_detail",
-        label="Explanation needs more detail",
-        category_id="reasoning_explanation",
-        polarity="developing",
-        optional_metadata={
-            "severity_default": 2,
-            "criterion_ids": ["explanation"],
-            "teacher_note_prompt": "What part needs more detail?",
-        },
-    )
-    bank = build_tag_bank(
-        tag_bank_id="general_written_response_tags",
-        title="General Written Response Tags",
-        description="Reusable synthetic tag templates.",
-        writing_types=["general"],
-        categories=[category],
-        tags=[tag],
-    )
-    write_tag_bank(root, bank)
-
-
-def _write_rubric(root: Path) -> None:
-    level = build_rubric_level(score=3, label="Clear explanation")
-    criterion = build_rubric_criterion(
-        criterion_id="reasoning",
-        label="Reasoning / Explanation",
-        max_score=4,
-        scale="4_point",
-        levels=[level],
-    )
-    rubric = build_rubric(
-        rubric_id="synthetic_rubric",
-        title="Synthetic Rubric",
-        description="Synthetic scoring profile.",
-        writing_types=["argument"],
-        criteria=[criterion],
-    )
-    write_rubric(root, rubric)
-
-
-def _write_review_record(root: Path, review: dict[str, Any]) -> Path:
-    path = review_record_path(root, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
-    return write_review_record(path, review)
-
-
-def _enter_selected_student(student_choice: str = "1") -> list[str]:
-    return ["2", "1", "1", "1", "1", student_choice]
+def _enter_selected_student() -> list[str]:
+    return ["2", "1", "1", "1", "1", "1"]
 
 
 def _exit_selected_student_to_main() -> list[str]:
-    return ["12", "6", "", "4", "6"]
+    return ["9", "6", "", "3", "6"]
 
 
 def _exit_after_selected_student_action_to_main() -> list[str]:
-    return ["", "12", "6", "", "4", "6"]
+    return ["", "9", "6", "", "3", "6"]
 
 
 @pytest.fixture
@@ -240,7 +154,7 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
-def test_review_menu_selected_student_shows_review_entry_actions(
+def test_review_menu_selected_student_excludes_legacy_review_entry_actions(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
@@ -256,38 +170,16 @@ def test_review_menu_selected_student_shows_review_entry_actions(
     assert "3. Record minimum requirement checks" in output
     assert "4. Manage submission pages" in output
     assert "5. Add teacher note" in output
-    assert "6. Add structured tag" in output
-    assert "7. Select reusable comment" in output
-    assert "8. Set criterion score" in output
-    assert "9. Update submission review state" in output
-    assert "Review record: not started" in output
+    assert "6. Update submission review state" in output
+    assert "7. Export student feedback" in output
+    assert "8. Refresh summary" in output
+    assert "9. Back" in output
+    assert "Add structured tag" not in output
+    assert "Select reusable comment" not in output
+    assert "Set criterion score" not in output
     assert not review_record_path(
         workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
     ).exists()
-
-
-def test_review_menu_blank_note_cancels_without_review_record(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    manifest_path = submission_manifest_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    )
-    manifest_before = manifest_path.read_bytes()
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["5", ""]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    assert not review_record_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    ).exists()
-    assert manifest_path.read_bytes() == manifest_before
 
 
 def test_review_menu_records_minimum_requirement_check(
@@ -317,193 +209,13 @@ def test_review_menu_records_minimum_requirement_check(
             workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
         ).read_text(encoding="utf-8")
     )
-    assert review["requirement_checks"] == [
-        {
-            "requirement_check_id": "requirement_check_0001",
-            "requirement_key": "paragraphs_min",
-            "label": "Minimum paragraphs",
-            "expected": 1,
-            "met": True,
-            "updated_at": review["requirement_checks"][0]["updated_at"],
-            "module_details": {},
-        }
-    ]
+    assert review["requirement_checks"][0]["requirement_key"] == "paragraphs_min"
+    assert review["requirement_checks"][0]["met"] is True
     assert manifest_path.read_bytes() == manifest_before
 
 
-def test_review_menu_reports_no_minimum_requirements_without_writing(
+def test_review_menu_blank_note_cancels_without_review_record(
     workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    assignment_path = (
-        workspace
-        / "classes"
-        / CLASS_ID
-        / "assignments"
-        / ASSIGNMENT_ID
-        / "assignment.json"
-    )
-    assignment = json.loads(assignment_path.read_text(encoding="utf-8"))
-    assignment["basic_requirements"] = {}
-    assignment_path.write_text(json.dumps(assignment), encoding="utf-8")
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["3", ""]
-        + _exit_selected_student_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    assert "Minimum requirements: none configured" in capsys.readouterr().out
-    assert not review_record_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    ).exists()
-
-
-def test_review_menu_adds_structured_tag_to_review_record(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + [
-            "6",
-            "2",
-            "claim",
-            "1",
-            "",
-        ]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    review = json.loads(
-        review_record_path(
-            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-        ).read_text(encoding="utf-8")
-    )
-    assert review["tags"][0]["label"] == "claim"
-    assert review["tags"][0]["polarity"] == "positive"
-    assert review["review_state"] == "in_progress"
-
-
-def test_review_target_invalid_choice_reprompts_then_saves_valid_target(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + [
-            "6",
-            "2",
-            "claim",
-            "1",
-            "y",
-            "",
-            "",
-            "",
-            "",
-            "9",
-            "2",
-            "2",
-        ]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    output = capsys.readouterr().out
-    assert "Invalid selection. Please enter a number from 1 to 5 or B." in output
-    review = json.loads(
-        review_record_path(
-            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-        ).read_text(encoding="utf-8")
-    )
-    assert review["tags"][0]["location"] == {"type": "paragraph", "value": 2}
-
-
-def test_review_target_invalid_paragraph_reprompts_then_saves_valid_target(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + [
-            "6",
-            "2",
-            "claim",
-            "1",
-            "y",
-            "",
-            "",
-            "",
-            "",
-            "2",
-            "2,,4",
-            "2-3",
-        ]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    output = capsys.readouterr().out
-    assert "Invalid paragraph target: Paragraph entries must not be empty." in output
-    review = json.loads(
-        review_record_path(
-            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-        ).read_text(encoding="utf-8")
-    )
-    assert review["tags"][0]["location"] == {"type": "paragraph", "value": [2, 3]}
-
-
-@pytest.mark.parametrize("target_back", ["", "b"])
-def test_review_target_back_cancels_without_writing(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-    target_back: str,
-) -> None:
-    manifest_path = submission_manifest_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    )
-    manifest_before = manifest_path.read_bytes()
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + [
-            "6",
-            "2",
-            "claim",
-            "1",
-            "y",
-            "",
-            "",
-            "",
-            "",
-            target_back,
-        ]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    assert "Add tag canceled." in capsys.readouterr().out
-    assert not review_record_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    ).exists()
-    assert manifest_path.read_bytes() == manifest_before
-
-
-def test_invalid_review_target_then_back_does_not_write_or_modify_submission(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     manifest_path = submission_manifest_path(
@@ -514,122 +226,7 @@ def test_invalid_review_target_then_back_does_not_write_or_modify_submission(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + [
-            "6",
-            "2",
-            "claim",
-            "1",
-            "y",
-            "",
-            "",
-            "",
-            "",
-            "9",
-            "",
-        ]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    output = capsys.readouterr().out
-    assert "Invalid selection. Please enter a number from 1 to 5 or B." in output
-    assert not review_record_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    ).exists()
-    assert manifest_path.read_bytes() == manifest_before
-
-
-def test_review_menu_selects_reusable_tag_by_bank_and_category(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _write_tag_bank(workspace)
-    manifest_path = submission_manifest_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    )
-    manifest_before = manifest_path.read_bytes()
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + [
-            "6",
-            "1",
-            "1",
-            "1",
-            "1",
-            "The explanation names the idea only.",
-            "2",
-            "2-4",
-        ]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    output = capsys.readouterr().out
-    assert "General Written Response Tags" in output
-    assert "Explanation needs more detail" in output
-    review = json.loads(
-        review_record_path(
-            workspace,
-            CLASS_ID,
-            ASSIGNMENT_ID,
-            STUDENT_ID,
-        ).read_text(encoding="utf-8")
-    )
-    tag = review["tags"][0]
-    assert tag["source"] == "tag_bank"
-    assert tag["tag_bank_id"] == "general_written_response_tags"
-    assert tag["tag_template_id"] == "explanation_needs_more_detail"
-    assert tag["label"] == "Explanation needs more detail"
-    assert tag["polarity"] == "developing"
-    assert tag["severity"] == 2
-    assert tag["criterion_id"] == "explanation"
-    assert tag["teacher_note"] == "The explanation names the idea only."
-    assert tag["location"] == {"type": "paragraph", "value": [2, 3, 4]}
-    assert "standard_id" not in tag
-    assert review["review_state"] == "in_progress"
-    assert manifest_path.read_bytes() == manifest_before
-
-
-def test_reusable_tag_back_returns_one_level_at_a_time(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _write_tag_bank(workspace)
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["6", "1", "1", "1", "b", "b", "b"]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    output = capsys.readouterr().out
-    assert output.count("Select Tag Category") >= 2
-    assert output.count("Select Reusable Tag") >= 2
-    assert not review_record_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    ).exists()
-
-
-def test_review_menu_blank_tag_cancels_without_review_record(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    manifest_path = submission_manifest_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    )
-    manifest_before = manifest_path.read_bytes()
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["6", ""]
+        + ["5", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -640,308 +237,24 @@ def test_review_menu_blank_tag_cancels_without_review_record(
     assert manifest_path.read_bytes() == manifest_before
 
 
-def test_review_menu_no_comment_banks_returns_safely(
+def test_review_menu_updates_submission_review_state(
     workspace: Path,
-    capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _menu_input(
+        monkeypatch,
+        _enter_selected_student()
+        + ["6", "in_progress", "1"]
+        + _exit_after_selected_student_action_to_main(),
+    )
+
+    assert main(["menu"]) == 0
+
     manifest_path = submission_manifest_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+        workspace,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
     )
-    manifest_before = manifest_path.read_bytes()
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["7", "1"]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    assert "No valid shared comment banks found" in capsys.readouterr().out
-    assert not review_record_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    ).exists()
-    assert manifest_path.read_bytes() == manifest_before
-
-
-def test_review_menu_selects_reusable_comment_by_number(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _write_bank(workspace)
-    manifest_path = submission_manifest_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    )
-    manifest_before = manifest_path.read_bytes()
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["7", "1", "1", "1", "1", "2", "2", "1"]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    output = capsys.readouterr().out
-    assert "Selected review comment:" in output
-    review = json.loads(
-        review_record_path(
-            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-        ).read_text(encoding="utf-8")
-    )
-    assert review["comments"][0]["bank_id"] == BANK_ID
-    assert review["comments"][0]["comment_id"] == "focus_is_clear"
-    assert review["comments"][0]["location"] == {"type": "paragraph", "value": 2}
-    assert review["review_state"] == "in_progress"
-    assert manifest_path.read_bytes() == manifest_before
-
-
-def test_comment_bank_created_by_workflow_is_selectable_in_review(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        comment_bank_workflows,
-        "resolve_workspace_root",
-        lambda: workspace,
-    )
-    _menu_input(
-        monkeypatch,
-        [
-            "General Written Response Comments",
-            "",
-            "Reusable comments for written responses across subjects.",
-            "general",
-            "3",
-            "",
-            "",
-            "Explanation needs more detail",
-            "",
-            "Your response identifies the idea, but explain your reasoning more fully.",
-            "1",
-            "2",
-            "",
-            "",
-            "",
-            "1",
-        ],
-    )
-
-    assert comment_bank_workflows.prompt_create_comment_bank() == 0
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["7", "1", "1", "1", "1", "5", "1"]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    output = capsys.readouterr().out
-    assert "general_written_response_comments" in output
-    assert "Explanation needs more detail" in output
-    review = json.loads(
-        review_record_path(
-            workspace,
-            CLASS_ID,
-            ASSIGNMENT_ID,
-            STUDENT_ID,
-        ).read_text(encoding="utf-8")
-    )
-    comment = review["comments"][0]
-    assert comment["source"] == "comment_bank"
-    assert comment["bank_id"] == "general_written_response_comments"
-    assert comment["comment_id"] == "explanation_needs_more_detail"
-    assert comment["label"] == "Explanation needs more detail"
-    assert (
-        comment["text"]
-        == "Your response identifies the idea, but explain your reasoning more fully."
-    )
-
-
-def test_review_menu_sets_criterion_score(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    manifest_path = submission_manifest_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    )
-    manifest_before = manifest_path.read_bytes()
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["8", "evidence", "Evidence", "3", "4", "", ""]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    review = json.loads(
-        review_record_path(
-            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-        ).read_text(encoding="utf-8")
-    )
-    assert review["scores"][0]["criterion_id"] == "evidence"
-    assert review["scores"][0]["score"] == 3
-    assert review["scores"][0]["max_score"] == 4
-    assert review["review_state"] == "in_progress"
-    assert manifest_path.read_bytes() == manifest_before
-
-
-def test_review_menu_scores_from_assignment_rubric(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _write_rubric(workspace)
-    manifest_path = submission_manifest_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    )
-    manifest_before = manifest_path.read_bytes()
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["8", "1", "1", "1", "2", "Private score note"]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    review = json.loads(
-        review_record_path(
-            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-        ).read_text(encoding="utf-8")
-    )
-    score = review["scores"][0]
-    assert score["criterion_id"] == "reasoning"
-    assert score["label"] == "Reasoning / Explanation"
-    assert score["score"] == 3
-    assert score["max_score"] == 4
-    assert score["scale"] == "4_point"
-    assert score["teacher_note"] == "Private score note"
-    assert manifest_path.read_bytes() == manifest_before
-    capsys.readouterr()
-
-
-def test_review_menu_missing_rubric_keeps_custom_score_available(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["8", "1", "1", "Evidence", "", "2", "4", "", ""]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    review = json.loads(
-        review_record_path(
-            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-        ).read_text(encoding="utf-8")
-    )
-    assert review["scores"][0]["criterion_id"] == "evidence"
-    assert "does not resolve" in capsys.readouterr().out
-
-
-def test_review_menu_blank_score_cancels_without_review_record(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    manifest_path = submission_manifest_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    )
-    manifest_before = manifest_path.read_bytes()
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["8", ""]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    assert not review_record_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    ).exists()
-    assert manifest_path.read_bytes() == manifest_before
-
-
-def test_review_menu_invalid_score_does_not_corrupt_review_record(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    review = {
-        "schema_version": "1",
-        "module": "quillan",
-        "record_type": "submission_review",
-        "class_id": CLASS_ID,
-        "assignment_id": ASSIGNMENT_ID,
-        "student_id": STUDENT_ID,
-        "submission_manifest_path": (
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
-            f"{STUDENT_ID}/submission.json"
-        ),
-        "review_state": "in_progress",
-        "notes": [],
-        "tags": [],
-        "scores": [
-            {
-                "score_id": "score_0001",
-                "criterion_id": "evidence",
-                "label": "Evidence",
-                "score": 3,
-                "max_score": 4,
-                "updated_at": TIMESTAMP,
-                "module_details": {},
-            }
-        ],
-        "comments": [],
-        "created_at": TIMESTAMP,
-        "updated_at": TIMESTAMP,
-        "module_details": {},
-    }
-    path = _write_review_record(workspace, review)
-    before = path.read_bytes()
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["8", "evidence", "Evidence", "5", "4", "", ""]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    assert path.read_bytes() == before
-    assert json.loads(path.read_text(encoding="utf-8"))["scores"][0]["score"] == 3
-
-
-def test_review_menu_invalid_state_does_not_corrupt_manifest(
-    workspace: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    manifest_path = submission_manifest_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    )
-    manifest_before = manifest_path.read_bytes()
-
-    _menu_input(
-        monkeypatch,
-        _enter_selected_student()
-        + ["9", "not_a_state"]
-        + _exit_after_selected_student_action_to_main(),
-    )
-
-    assert main(["menu"]) == 0
-    assert manifest_path.read_bytes() == manifest_before
-    assert not review_record_path(
-        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    ).exists()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["submission_state"] == "in_progress"

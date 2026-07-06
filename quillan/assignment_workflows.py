@@ -230,8 +230,8 @@ def _prompt_rubric_id(workspace_root: Path) -> str:
         print("No valid shared rubrics found.")
         print()
         print(
-            "Create one from Review Student Work -> Manage Review Materials "
-            "-> Rubrics / Scoring Profiles."
+            "Legacy rubric authoring workflows are disabled during the "
+            "standards-based review redesign."
         )
         print("You may still enter a custom rubric_id for now.")
         print()

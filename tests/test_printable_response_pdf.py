@@ -40,10 +40,18 @@ def _load_students() -> list[dict[str, str]]:
     return cast(list[dict[str, str]], students)
 
 
-def _write_roster_assignment(tmp_path: Path) -> Path:
+def _write_roster_assignment(
+    tmp_path: Path,
+    *,
+    class_ids: list[str] | None = None,
+) -> Path:
     assignment = json.loads(ASSIGNMENT_PATH.read_text(encoding="utf-8"))
     assert isinstance(assignment, dict)
-    assignment["class_ids"] = ["english12_p3"]
+    assignment["class_ids"] = class_ids or ["english12_p3"]
+    assignment.setdefault("tagging_mode", "focus")
+    assignment.setdefault("focus_standards", [])
+    assignment.setdefault("basic_requirements", {})
+    assignment.setdefault("rubric_id", "synthetic_rubric")
     assignment_path = tmp_path / "assignment.json"
     assignment_path.write_text(json.dumps(assignment), encoding="utf-8")
     return assignment_path
@@ -162,7 +170,9 @@ def test_printable_response_generation_rejects_roster_assignment_class_mismatch(
     with pytest.raises(ValueError, match="english12_p3.*class_ids"):
         generate_printable_responses_for_roster(
             tmp_path,
-            assignment_path=ASSIGNMENT_PATH,
+            assignment_path=_write_roster_assignment(
+                tmp_path, class_ids=["english12_p4"]
+            ),
             roster_path=ROSTER_PATH,
         )
 

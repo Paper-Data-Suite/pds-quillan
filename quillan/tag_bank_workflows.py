@@ -1,4 +1,7 @@
-"""Teacher-facing tag-bank creation and editing workflows."""
+"""Legacy teacher-facing tag-bank creation and editing workflows.
+
+Retained temporarily for compatibility; not exposed through active v0.8.6 menus.
+"""
 
 from __future__ import annotations
 

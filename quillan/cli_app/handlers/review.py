@@ -1,4 +1,8 @@
-"""Review-record command handlers."""
+"""Review-record command handlers.
+
+Legacy v1 tag/comment/score handlers are retained for import compatibility only.
+They are no longer registered by the CLI parser.
+"""
 
 from __future__ import annotations
 

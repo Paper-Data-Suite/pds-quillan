@@ -1,4 +1,8 @@
-"""Selection of reusable shared-bank comments into submission reviews."""
+"""Selection of reusable shared-bank comments into submission reviews.
+
+Legacy v1 comment-bank review writes are retained only for compatibility and tests.
+They are not exposed through active v0.8.6 menu or CLI routes.
+"""
 
 from __future__ import annotations
 
