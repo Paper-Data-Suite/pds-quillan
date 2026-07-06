@@ -187,7 +187,7 @@ def test_review_menu_selected_student_excludes_legacy_review_entry_actions(
     assert "Selected Student Review" in output
     assert "1. Open submission evidence" in output
     assert "2. View current review details" in output
-    assert "3. Record minimum requirement checks" in output
+    assert "3. Review minimum requirements" in output
     assert "4. Manage submission pages" in output
     assert "5. Add teacher note" in output
     assert "6. Update submission review state" in output
@@ -215,13 +215,14 @@ def test_review_menu_records_minimum_requirement_check(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["3", "1", "1", "", "", "b"]
+        + ["3", "1", "1", "1", "", "4"]
         + _exit_selected_student_to_main(),
     )
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
     assert "Requirement Checks" in output
+    assert "Review Minimum Requirements" in output
     assert "Minimum paragraphs: not checked" in output
     assert "Recorded requirement check:" in output
     review = json.loads(
@@ -232,6 +233,54 @@ def test_review_menu_records_minimum_requirement_check(
     assert review["minimum_requirement_checks"][0]["requirement_key"] == "paragraphs_min"
     assert review["minimum_requirement_checks"][0]["met"] is True
     assert manifest_path.read_bytes() == manifest_before
+
+
+def test_review_menu_returns_without_full_review_when_policy_allows(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(
+        monkeypatch,
+        _enter_selected_student()
+        + [
+            "3",
+            "1",
+            "1",
+            "2",
+            "Too short.",
+            "2",
+            "2",
+            "Add the required paragraph before resubmitting.",
+            "",
+            "4",
+        ]
+        + _exit_selected_student_to_main(),
+    )
+
+    assert main(["menu"]) == 0
+
+    output = capsys.readouterr().out
+    assert "Return without full standards review" in output
+    assert "Finalized minimum-requirements outcome:" in output
+    review = json.loads(
+        review_record_path(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+        ).read_text(encoding="utf-8")
+    )
+    assert review["review_state"] == "returned_without_full_review"
+    assert review["minimum_requirement_outcome"]["status"] == (
+        "returned_without_full_review"
+    )
+    assert review["minimum_requirement_outcome"]["returned_without_full_review"] is True
+    assert review["minimum_requirement_outcome"]["teacher_note"] == (
+        "Add the required paragraph before resubmitting."
+    )
+    assert "notes" not in review
+    assert "tags" not in review
+    assert "scores" not in review
+    assert "comments" not in review
+    assert "requirement_checks" not in review
 
 
 def test_review_menu_blank_note_cancels_without_review_record(

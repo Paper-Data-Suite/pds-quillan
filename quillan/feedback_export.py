@@ -10,8 +10,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from quillan.assignments import AssignmentConfigError, load_assignment_config
 from quillan.review_record import ReviewRecordError, load_review_record
 from quillan.review_record_paths import ReviewRecordPathError, review_record_path
+from quillan.storage import assignment_config_path
 from quillan.submission_manifest import (
     SubmissionManifestError,
     load_submission_manifest,
@@ -122,16 +124,34 @@ def export_student_feedback(
         student_id=student_id,
     )
 
-    included_comments = _included_feedback_comments(review)
-    ratings = review["overall_standard_ratings"]
-    markdown = _render_markdown(
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
-        created_at=normalized_created_at,
-        ratings=ratings,
-        comments=included_comments,
-    )
+    if review["review_state"] == "returned_without_full_review":
+        unmet_requirements = _validated_returned_work_requirements(
+            resolved_workspace_root,
+            class_id,
+            assignment_id,
+            review,
+        )
+        included_comments: list[dict[str, Any]] = []
+        ratings: list[dict[str, Any]] = []
+        markdown = _render_returned_work_markdown(
+            class_id=class_id,
+            assignment_id=assignment_id,
+            student_id=student_id,
+            created_at=normalized_created_at,
+            outcome=review["minimum_requirement_outcome"],
+            unmet_requirements=unmet_requirements,
+        )
+    else:
+        included_comments = _included_feedback_comments(review)
+        ratings = review["overall_standard_ratings"]
+        markdown = _render_markdown(
+            class_id=class_id,
+            assignment_id=assignment_id,
+            student_id=student_id,
+            created_at=normalized_created_at,
+            ratings=ratings,
+            comments=included_comments,
+        )
     overwrote_existing = output_path.exists()
     if overwrote_existing and not overwrite:
         raise FeedbackExportError(
@@ -200,6 +220,50 @@ def _render_markdown(
     return "\n".join(lines)
 
 
+def _render_returned_work_markdown(
+    *,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    created_at: str,
+    outcome: dict[str, Any],
+    unmet_requirements: list[dict[str, Any]],
+) -> str:
+    lines = [
+        "# Returned for Revision",
+        "",
+        f"Class: {_plain_text(class_id)}",
+        f"Assignment: {_plain_text(assignment_id)}",
+        f"Student: {_plain_text(student_id)}",
+        f"Generated: {_plain_text(created_at)}",
+        "",
+        (
+            "This submission was returned without full standards review because "
+            "minimum requirements were not met."
+        ),
+        "",
+        "## Minimum Requirements Not Met",
+        "",
+    ]
+    for requirement in unmet_requirements:
+        lines.append(f"- {_plain_text(requirement['label'])}")
+        lines.append(f"  Expected: {_plain_text(requirement['expected'])}")
+        if note := _non_empty(requirement.get("teacher_note")):
+            lines.append(f"  Teacher note: {_plain_text(note)}")
+    lines.extend(
+        [
+            "",
+            "## Return Note",
+            "",
+            _plain_text(outcome["teacher_note"]),
+            "",
+            "No full standards ratings were completed for this submission.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def _included_feedback_comments(review: dict[str, Any]) -> list[dict[str, Any]]:
     included: list[dict[str, Any]] = []
     for standard_feedback in review["feedback"]["standard_feedback"]:
@@ -209,6 +273,66 @@ def _included_feedback_comments(review: dict[str, Any]) -> list[dict[str, Any]]:
             if comment["include_in_feedback"]
         )
     return included
+
+
+def _validated_returned_work_requirements(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    review: dict[str, Any],
+) -> list[dict[str, Any]]:
+    outcome = review["minimum_requirement_outcome"]
+    if outcome["returned_without_full_review"] is not True:
+        raise FeedbackExportError(
+            "Returned-work export requires "
+            "minimum_requirement_outcome.returned_without_full_review to be true."
+        )
+    if not _non_empty(outcome.get("teacher_note")):
+        raise FeedbackExportError(
+            "Returned-work export requires a non-empty outcome teacher note."
+        )
+
+    try:
+        assignment = load_assignment_config(
+            assignment_config_path(workspace_root, class_id, assignment_id)
+        )
+    except (AssignmentConfigError, OSError) as error:
+        raise FeedbackExportError(
+            f"Could not load assignment config: {error}"
+        ) from error
+    configured_keys = _configured_requirement_keys(assignment)
+    unmet_requirements = [
+        check
+        for check in review["minimum_requirement_checks"]
+        if check["requirement_key"] in configured_keys and check["met"] is False
+    ]
+    if not unmet_requirements:
+        raise FeedbackExportError(
+            "Returned-work export requires at least one checked configured "
+            "minimum requirement marked not met."
+        )
+    return unmet_requirements
+
+
+def _configured_requirement_keys(assignment: dict[str, Any]) -> set[str]:
+    basic_requirements = assignment.get("basic_requirements")
+    if not isinstance(basic_requirements, dict):
+        return set()
+    keys: set[str] = set()
+    for key in (
+        "paragraphs_min",
+        "paragraphs_max",
+        "word_count_min",
+        "word_count_max",
+    ):
+        if key in basic_requirements:
+            keys.add(key)
+    required_elements = basic_requirements.get("required_elements")
+    if isinstance(required_elements, list):
+        for element in required_elements:
+            if isinstance(element, str) and element.strip():
+                keys.add(f"required_elements:{element.strip()}")
+    return keys
 
 
 def _write_feedback(path: Path, content: str, *, overwrite: bool) -> None:
@@ -309,6 +433,10 @@ def _validate_identity(
 
 def _plain_text(value: object) -> str:
     return re.sub(r"\s+", " ", str(value)).strip()
+
+
+def _non_empty(value: Any) -> str | None:
+    return value.strip() if isinstance(value, str) and value.strip() else None
 
 
 def _format_number(value: int | float) -> str:

@@ -64,6 +64,7 @@ from quillan.review_targets import (
 )
 from quillan.review_requirements import (
     ReviewRequirementError,
+    set_minimum_requirement_outcome,
     set_requirement_check,
 )
 from quillan.review_scores import ReviewScoreError, set_review_score
@@ -412,7 +413,7 @@ def _launch_selected_student_review(
             continue
         print("1. Open submission evidence")
         print("2. View current review details")
-        print("3. Record minimum requirement checks")
+        print("3. Review minimum requirements")
         print("4. Manage submission pages")
         print("5. Add teacher note")
         print("6. Update submission review state")
@@ -443,7 +444,7 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "3":
-            _menu_record_requirement_checks(
+            _menu_review_minimum_requirements(
                 workspace_root,
                 class_id,
                 assignment_id,
@@ -2019,6 +2020,10 @@ def _format_yes_no(value: bool) -> str:
     return "yes" if value else "no"
 
 
+def _non_empty(value: Any) -> str | None:
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
 def _suggest_identifier(label: str) -> str:
     normalized = "".join(
         character.lower() if character.isalnum() else "_"
@@ -2210,6 +2215,7 @@ def _print_review_record_summary(
         class_id,
         assignment_id,
         _current_requirement_checks(workspace_root, class_id, assignment_id, student_id),
+        record["minimum_requirement_outcome"],
     )
 
 
@@ -2248,6 +2254,7 @@ def _print_requirement_check_summary(
     class_id: str,
     assignment_id: str,
     checks: dict[str, dict[str, Any]],
+    outcome: dict[str, Any] | None = None,
 ) -> None:
     assignment = _load_assignment_for_summary(workspace_root, class_id, assignment_id)
     requirements = (
@@ -2270,6 +2277,18 @@ def _print_requirement_check_summary(
         f"{len(relevant_checks)}/{len(requirements)} complete; "
         f"{unmet_count} unmet"
     )
+    if outcome is not None:
+        print(f"Minimum-requirements outcome: {outcome['status']}")
+        print(
+            "Returned without full standards review: "
+            f"{_format_yes_no(outcome['returned_without_full_review'])}"
+        )
+        if outcome["returned_without_full_review"]:
+            print(
+                "Minimum-requirements outcome: returned without full standards review"
+            )
+        elif _non_empty(outcome.get("teacher_note")):
+            print("Minimum-requirements outcome note: present")
 
 
 def _load_assignment_for_summary(
@@ -2372,7 +2391,7 @@ def _choose_submission_evidence_page(
     return _BACK
 
 
-def _menu_record_requirement_checks(
+def _menu_review_minimum_requirements(
     workspace_root: Path,
     class_id: str,
     assignment_id: str,
@@ -2380,7 +2399,7 @@ def _menu_record_requirement_checks(
 ) -> None:
     while True:
         _print_review_action_header(
-            "Requirement Checks", class_id, assignment_id, student_id
+            "Review Minimum Requirements", class_id, assignment_id, student_id
         )
         assignment = _load_assignment_for_review(
             workspace_root, class_id, assignment_id
@@ -2390,7 +2409,7 @@ def _menu_record_requirement_checks(
             return
         requirements = _requirement_items_from_assignment(assignment)
         if not requirements:
-            print("Minimum requirements: none configured")
+            print("Minimum requirements: none configured.")
             print()
             print("No review record was changed.")
             input("Press Enter to continue...")
@@ -2399,35 +2418,194 @@ def _menu_record_requirement_checks(
         existing = _current_requirement_checks(
             workspace_root, class_id, assignment_id, student_id
         )
-        print("Requirement Checks")
+        outcome = _current_minimum_requirement_outcome(
+            workspace_root, class_id, assignment_id, student_id
+        )
+        summary = _minimum_requirement_summary(requirements, existing)
+        print("Minimum Requirements")
         print()
-        for index, requirement in enumerate(requirements, start=1):
-            print(
-                f"{index}. {requirement['label']}: "
-                f"{_requirement_status(existing.get(requirement['key']))}"
-            )
-        print("B. Back")
+        _print_minimum_requirement_statuses(requirements, existing)
         print()
-        selection = input("Select requirement: ").strip()
-        if selection == "" or selection.casefold() == "b":
+        _print_minimum_requirement_summary(summary, outcome)
+        print()
+        print("1. Record/update requirement check")
+        print("2. Finalize minimum-requirements outcome")
+        print("3. Export returned-work feedback")
+        print("4. Back")
+        print()
+        selection = input("Select an option: ").strip()
+        if selection in {"", "4"} or selection.casefold() == "b":
             return
-        if not selection.isdigit() or not (1 <= int(selection) <= len(requirements)):
-            print("Invalid requirement selection. Please choose a listed item or Back.")
+        if selection == "1":
+            _menu_record_requirement_checks(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+                requirements,
+                existing,
+            )
+        elif selection == "2":
+            _menu_finalize_minimum_requirement_outcome(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+                assignment,
+                requirements,
+                existing,
+            )
             input("Press Enter to continue...")
-            continue
+        elif selection == "3":
+            _menu_export_student_feedback(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+            input("Press Enter to continue...")
+        else:
+            print("Invalid selection. Please enter a number from 1 to 4.")
+            input("Press Enter to continue...")
 
-        requirement = requirements[int(selection) - 1]
-        result = _prompt_and_set_requirement_check(
+
+def _menu_record_requirement_checks(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    requirements: list[dict[str, Any]],
+    existing: dict[str, dict[str, Any]],
+) -> None:
+    _print_review_action_header(
+        "Record Requirement Check", class_id, assignment_id, student_id
+    )
+    print("Requirement Checks")
+    print()
+    for index, requirement in enumerate(requirements, start=1):
+        print(
+            f"{index}. {requirement['label']}: "
+            f"{_requirement_status(existing.get(requirement['key']))}"
+        )
+    print("B. Back")
+    print()
+    selection = input("Select requirement: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        return
+    if not selection.isdigit() or not (1 <= int(selection) <= len(requirements)):
+        print("Invalid requirement selection. Please choose a listed item or Back.")
+        return
+
+    requirement = requirements[int(selection) - 1]
+    _prompt_and_set_requirement_check(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        requirement,
+        existing.get(requirement["key"]),
+    )
+
+
+def _menu_finalize_minimum_requirement_outcome(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    assignment: dict[str, Any],
+    requirements: list[dict[str, Any]],
+    existing: dict[str, dict[str, Any]],
+) -> None:
+    _print_review_action_header(
+        "Finalize Minimum Requirements", class_id, assignment_id, student_id
+    )
+    _print_minimum_requirement_statuses(requirements, existing)
+    print()
+    summary = _minimum_requirement_summary(requirements, existing)
+    _print_minimum_requirement_summary(
+        summary,
+        _current_minimum_requirement_outcome(
+            workspace_root, class_id, assignment_id, student_id
+        ),
+    )
+    print()
+    if summary["unchecked"]:
+        print(
+            "Some configured requirements have not been checked. Missing checks "
+            "will not be treated as unmet."
+        )
+        print()
+    allow_return = _allow_return_without_full_review(assignment)
+    options: list[tuple[str, str]] = []
+    if summary["checked"] == len(requirements) and summary["unmet"] == 0:
+        options.append(("met", "Mark minimum requirements as met"))
+    if summary["unmet"] > 0:
+        options.append(
+            (
+                "unmet_continue_review",
+                "Continue full standards review despite unmet requirements",
+            )
+        )
+        if allow_return:
+            options.append(
+                (
+                    "returned_without_full_review",
+                    "Return without full standards review",
+                )
+            )
+        else:
+            print(
+                "Assignment policy does not allow returning work without full "
+                "standards review."
+            )
+            print()
+    if not options:
+        print("No final outcome is available yet. Record requirement checks first.")
+        return
+
+    for index, (_status, label) in enumerate(options, start=1):
+        print(f"{index}. {label}")
+    print("B. Back")
+    print()
+    selection = input("Select outcome: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        print("Minimum-requirements outcome was not changed.")
+        return
+    if not selection.isdigit() or not (1 <= int(selection) <= len(options)):
+        print("Invalid outcome selection. Please choose a listed item or Back.")
+        return
+
+    status = options[int(selection) - 1][0]
+    teacher_note = None
+    if status == "returned_without_full_review":
+        teacher_note = input("Return note for student: ").strip()
+    else:
+        teacher_note = input(
+            "Outcome note (leave blank if not applicable): "
+        ).strip() or None
+    try:
+        updated = set_minimum_requirement_outcome(
             workspace_root,
             class_id,
             assignment_id,
             student_id,
-            requirement,
-            existing.get(requirement["key"]),
+            status=status,
+            teacher_note=teacher_note,
+            allow_return_without_full_review=allow_return,
         )
-        if result is _BACK:
-            continue
-        input("Press Enter to continue...")
+    except (ReviewRequirementError, OSError) as error:
+        print(f"Error: could not finalize minimum requirements: {error}")
+        return
+
+    print()
+    print("Finalized minimum-requirements outcome:")
+    print(f"Status: {updated.status}")
+    print(
+        "Returned without full standards review: "
+        f"{_format_yes_no(updated.returned_without_full_review)}"
+    )
+    print(f"Review state: {updated.review_state}")
+    print(f"Review record: {updated.review_record_relative_path}")
 
 
 def _prompt_and_set_requirement_check(
@@ -2576,6 +2754,93 @@ def _current_requirement_checks(
         for check in checks
         if isinstance(check, dict) and isinstance(check.get("requirement_key"), str)
     }
+
+
+def _current_minimum_requirement_outcome(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> dict[str, Any] | None:
+    path = review_record_path(workspace_root, class_id, assignment_id, student_id)
+    if not path.exists():
+        return None
+    try:
+        record = load_review_record(path)
+    except (OSError, ReviewRecordError):
+        return None
+    outcome = record.get("minimum_requirement_outcome")
+    return outcome if isinstance(outcome, dict) else None
+
+
+def _minimum_requirement_summary(
+    requirements: list[dict[str, Any]],
+    checks: dict[str, dict[str, Any]],
+) -> dict[str, int]:
+    requirement_keys = {str(requirement["key"]) for requirement in requirements}
+    relevant_checks = [
+        check
+        for key, check in checks.items()
+        if key in requirement_keys and isinstance(check, dict)
+    ]
+    checked = len(relevant_checks)
+    unmet = sum(1 for check in relevant_checks if check.get("met") is False)
+    return {
+        "total": len(requirements),
+        "checked": checked,
+        "unchecked": len(requirements) - checked,
+        "met": sum(1 for check in relevant_checks if check.get("met") is True),
+        "unmet": unmet,
+    }
+
+
+def _print_minimum_requirement_statuses(
+    requirements: list[dict[str, Any]],
+    checks: dict[str, dict[str, Any]],
+) -> None:
+    for index, requirement in enumerate(requirements, start=1):
+        print(
+            f"{index}. {requirement['label']}: "
+            f"{_requirement_status(checks.get(requirement['key']))}"
+        )
+
+
+def _print_minimum_requirement_summary(
+    summary: dict[str, int],
+    outcome: dict[str, Any] | None,
+) -> None:
+    print(
+        "Summary: "
+        f"{summary['checked']}/{summary['total']} checked; "
+        f"{summary['unchecked']} unchecked; "
+        f"{summary['met']} met; "
+        f"{summary['unmet']} unmet"
+    )
+    if outcome is None:
+        print("Outcome status: not_checked")
+        print("Returned without full standards review: no")
+        return
+    print(f"Outcome status: {outcome.get('status', 'not_checked')}")
+    returned = outcome.get("returned_without_full_review") is True
+    print(
+        "Returned without full standards review: "
+        f"{_format_yes_no(returned)}"
+    )
+    if returned:
+        print(
+            "Minimum-requirements outcome: returned without full standards review"
+        )
+    if note := _non_empty(outcome.get("teacher_note")):
+        print(f"Outcome teacher note: {note}")
+    else:
+        print("Outcome teacher note: none")
+
+
+def _allow_return_without_full_review(assignment: dict[str, Any]) -> bool:
+    policy = assignment.get("minimum_requirement_policy")
+    if not isinstance(policy, dict):
+        return False
+    return policy.get("allow_return_without_full_review") is True
 
 
 def _requirement_status(check: dict[str, Any] | None) -> str:

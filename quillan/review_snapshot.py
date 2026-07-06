@@ -64,6 +64,30 @@ def _identity_error(
 def _append_requirement_checks(lines: list[str], record: dict[str, Any]) -> None:
     lines.append("Minimum Requirement Checks")
     checks = _record_list(record, "minimum_requirement_checks")
+    unmet_count = sum(1 for check in checks if check.get("met") is False)
+    outcome = record.get("minimum_requirement_outcome")
+    outcome_status = "not_checked"
+    returned = False
+    outcome_note = None
+    if isinstance(outcome, dict):
+        outcome_status = str(outcome.get("status", "not_checked"))
+        returned = outcome.get("returned_without_full_review") is True
+        outcome_note = _non_empty(outcome.get("teacher_note"))
+    lines.append(f"Check completion count: {len(checks)}")
+    lines.append(f"Unmet count: {unmet_count}")
+    lines.append(f"Outcome status: {outcome_status}")
+    lines.append(
+        "Returned without full standards review: "
+        f"{'yes' if returned else 'no'}"
+    )
+    if returned:
+        lines.append(
+            "Minimum-requirements outcome: returned without full standards review"
+        )
+    if outcome_note:
+        lines.append(f"Outcome teacher note: {outcome_note}")
+    else:
+        lines.append("Outcome teacher note: none")
     if not checks:
         lines.append("No minimum requirement checks recorded.")
         lines.append("")
