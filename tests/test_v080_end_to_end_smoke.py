@@ -267,61 +267,10 @@ def test_v080_scan_review_export_end_to_end_smoke(
         ]
     ) == 0
 
-    assert main(
-        [
-            "add-tag",
-            CLASS_ID,
-            ASSIGNMENT_ID,
-            STUDENT_ID,
-            "--label",
-            "claim",
-            "--polarity",
-            "positive",
-            "--standard-id",
-            STANDARD_ID,
-            "--note",
-            "Claim is clear and defensible.",
-            "--page",
-            "1",
-            "--evidence-id",
-            selected_evidence_id,
-        ]
-    ) == 0
-
-    assert main(
-        [
-            "add-comment",
-            CLASS_ID,
-            ASSIGNMENT_ID,
-            STUDENT_ID,
-            "--bank",
-            BANK_ID,
-            "--comment-id",
-            COMMENT_ID,
-            "--include-in-feedback",
-        ]
-    ) == 0
-
-    assert main(
-        [
-            "set-score",
-            CLASS_ID,
-            ASSIGNMENT_ID,
-            STUDENT_ID,
-            "--criterion",
-            "evidence",
-            "--label",
-            "Evidence",
-            "--score",
-            "3",
-            "--max-score",
-            "4",
-            "--scale",
-            "4 point",
-            "--note",
-            "Uses relevant quoted evidence.",
-        ]
-    ) == 0
+    for removed_command in ("add-tag", "add-comment", "set-score"):
+        with pytest.raises(SystemExit) as error:
+            main([removed_command, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID])
+        assert error.value.code != 0
 
     assert main(
         [
@@ -344,16 +293,9 @@ def test_v080_scan_review_export_end_to_end_smoke(
     review = json.loads(review_path.read_text(encoding="utf-8"))
     assert review["review_state"] == "in_progress"
     assert review["notes"][0]["text"] == "Teacher observation: the claim is clear."
-    assert review["tags"][0]["standard_id"] == STANDARD_ID
-    assert review["tags"][0]["label"] == "claim"
-    assert review["tags"][0]["evidence_id"] == selected_evidence_id
-    assert review["comments"][0]["source"] == "comment_bank"
-    assert review["comments"][0]["bank_id"] == BANK_ID
-    assert review["comments"][0]["comment_id"] == COMMENT_ID
-    assert review["comments"][0]["include_in_feedback"] is True
-    assert review["scores"][0]["criterion_id"] == "evidence"
-    assert review["scores"][0]["score"] == 3
-    assert review["scores"][0]["max_score"] == 4
+    assert review["tags"] == []
+    assert review["comments"] == []
+    assert review["scores"] == []
 
     updated_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert updated_manifest["submission_state"] == "reviewed"
@@ -404,21 +346,16 @@ def test_v080_scan_review_export_end_to_end_smoke(
     assert standards_summary_path.is_file()
 
     feedback_text = feedback_path.read_text(encoding="utf-8")
-    selected_comment_text = str(review["comments"][0]["text"])
     assert f"Assignment: {ASSIGNMENT_ID}" in feedback_text
-    assert "Evidence: 3 / 4" in feedback_text
-    assert selected_comment_text in feedback_text
+    assert "Teacher Notes" not in feedback_text
 
     class_summary_text = class_summary_path.read_text(encoding="utf-8")
     assert STUDENT_ID in class_summary_text
     assert "in_progress" in class_summary_text
 
     standards_summary_text = standards_summary_path.read_text(encoding="utf-8")
-    assert STANDARD_ID in standards_summary_text
     assert "student_count" in standards_summary_text
-    assert "tag_student_count" in standards_summary_text
-    assert "positive_tag_count" in standards_summary_text
-    assert "review_tags_and_comments" in standards_summary_text
+    assert STANDARD_ID not in standards_summary_text
 
     output = capsys.readouterr().out
     assert "Routed Quillan response page." in output

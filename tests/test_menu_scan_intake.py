@@ -170,7 +170,7 @@ def test_review_student_work_exposes_scan_intake_option(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["2", "4", "6"])
+    _menu_input(monkeypatch, ["2", "3", "6"])
 
     assert main(["menu"]) == 0
 
@@ -182,7 +182,7 @@ def test_menu_scan_intake_empty_input_cancels(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["2", "2", "  ", "", "4", "6"])
+    _menu_input(monkeypatch, ["2", "2", "  ", "", "3", "6"])
 
     assert main(["menu"]) == 0
 
@@ -198,7 +198,7 @@ def test_menu_scan_intake_invalid_path_does_not_create_review_metadata(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     missing_source = workspace / "missing-scan.pdf"
-    _menu_input(monkeypatch, ["2", "2", str(missing_source), "", "b", "4", "6"])
+    _menu_input(monkeypatch, ["2", "2", str(missing_source), "", "b", "3", "6"])
 
     assert main(["menu"]) == 0
 
@@ -216,7 +216,7 @@ def test_menu_scan_intake_with_quoted_qr_image_routes_and_prints_next_step(
     source = tmp_path / "synthetic response.png"
     _write_qr_image(source, _valid_payload())
     original_bytes = source.read_bytes()
-    _menu_input(monkeypatch, ["2", "2", f'  "{source}"  ', "", "b", "4", "6"])
+    _menu_input(monkeypatch, ["2", "2", f'  "{source}"  ', "", "b", "3", "6"])
 
     assert main(["menu"]) == 0
 
@@ -250,7 +250,7 @@ def test_menu_scan_intake_pdf_uses_existing_qr_page_intake(
             _make_qr_image(_valid_payload(student_id=SECOND_STUDENT_ID, page=2)),
         ),
     )
-    _menu_input(monkeypatch, ["2", "2", str(source), "", "b", "4", "6"])
+    _menu_input(monkeypatch, ["2", "2", str(source), "", "b", "3", "6"])
 
     assert main(["menu"]) == 0
 
@@ -281,7 +281,7 @@ def test_menu_scan_intake_mixed_pdf_prints_review_warning(
             _blank_image(),
         ),
     )
-    _menu_input(monkeypatch, ["2", "2", str(source), "", "b", "4", "6"])
+    _menu_input(monkeypatch, ["2", "2", str(source), "", "b", "3", "6"])
 
     assert main(["menu"]) == 0
 
@@ -307,7 +307,7 @@ def test_menu_scan_intake_folder_processes_supported_files_and_skips_unsupported
     folder.mkdir()
     _write_qr_image(folder / "response.png", _valid_payload())
     (folder / "notes.txt").write_text("ignore me", encoding="utf-8")
-    _menu_input(monkeypatch, ["2", "2", str(folder), "", "b", "4", "6"])
+    _menu_input(monkeypatch, ["2", "2", str(folder), "", "b", "3", "6"])
 
     assert main(["menu"]) == 0
 

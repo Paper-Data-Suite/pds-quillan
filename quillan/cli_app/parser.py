@@ -5,13 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from quillan.cli_app.arguments import (
-    location_value,
-    non_negative_integer,
-    non_negative_number,
-    positive_integer,
-    positive_number,
-)
+from quillan.cli_app.arguments import positive_integer
 from quillan.cli_app.handlers.exports import (
     handle_export_class_summary,
     handle_export_feedback,
@@ -19,10 +13,7 @@ from quillan.cli_app.handlers.exports import (
 )
 from quillan.cli_app.handlers.decoding import handle_decode_scan
 from quillan.cli_app.handlers.review import (
-    handle_add_comment,
     handle_add_note,
-    handle_add_tag,
-    handle_set_score,
 )
 from quillan.cli_app.handlers.routing import handle_route_scan
 from quillan.cli_app.handlers.submissions import (
@@ -228,142 +219,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Non-empty teacher note text.",
     )
     add_note_parser.set_defaults(handler=handle_add_note)
-
-    add_tag_parser = subparsers.add_parser(
-        "add-tag",
-        help="Add a structured teacher tag to one student review record.",
-        description=(
-            "Append one teacher-entered structured tag to the canonical "
-            "review.json for a student submission. Creates review.json when "
-            "the adjacent submission.json exists and validates."
-        ),
-    )
-    _add_submission_identity_arguments(add_tag_parser)
-    add_tag_parser.add_argument(
-        "--label", required=True, help="Teacher tag label."
-    )
-    add_tag_parser.add_argument(
-        "--polarity",
-        required=True,
-        help="Tag polarity: positive, developing, negative, or neutral.",
-    )
-    add_tag_parser.add_argument(
-        "--standard-id",
-        help="Optional durable pds-core standard_id.",
-    )
-    add_tag_parser.add_argument(
-        "--comment-id",
-        help="Optional reusable comment ID associated with --standard-id.",
-    )
-    add_tag_parser.add_argument(
-        "--severity",
-        type=non_negative_integer,
-        help="Optional non-negative organizational severity.",
-    )
-    add_tag_parser.add_argument(
-        "--note", help="Optional teacher note for the tag."
-    )
-    add_tag_parser.add_argument(
-        "--page",
-        type=positive_integer,
-        help="Optional submission page number.",
-    )
-    add_tag_parser.add_argument(
-        "--evidence-id",
-        help="Optional evidence ID from submission.json.",
-    )
-    add_tag_parser.add_argument(
-        "--location-type",
-        help="Optional controlled location type.",
-    )
-    add_tag_parser.add_argument(
-        "--location-value",
-        type=location_value,
-        help="Optional positive integer or non-empty location value.",
-    )
-    add_tag_parser.set_defaults(handler=handle_add_tag)
-
-    add_comment_parser = subparsers.add_parser(
-        "add-comment",
-        help="Select one reusable comment-bank comment for a student review record.",
-        description=(
-            "Append one teacher-selected reusable comment from a shared comment "
-            "bank to the canonical review.json for a student submission. The "
-            "selected comment snapshots label and text so later bank edits do "
-            "not alter existing reviews."
-        ),
-    )
-    _add_submission_identity_arguments(add_comment_parser)
-    add_comment_parser.add_argument(
-        "--bank", required=True, help="Shared comment-bank identifier."
-    )
-    add_comment_parser.add_argument(
-        "--comment-id",
-        required=True,
-        help="Reusable source comment identifier.",
-    )
-    add_comment_parser.add_argument(
-        "--standard-id", help="Optional durable standard_id from the source comment."
-    )
-    feedback_group = add_comment_parser.add_mutually_exclusive_group()
-    feedback_group.add_argument(
-        "--include-in-feedback",
-        dest="include_in_feedback",
-        action="store_const",
-        const=True,
-        default=None,
-        help="Include the selected comment in future feedback.",
-    )
-    feedback_group.add_argument(
-        "--exclude-from-feedback",
-        dest="include_in_feedback",
-        action="store_const",
-        const=False,
-        help="Exclude the selected comment from future feedback.",
-    )
-    add_comment_parser.set_defaults(handler=handle_add_comment)
-
-    set_score_parser = subparsers.add_parser(
-        "set-score",
-        help="Set one teacher-entered criterion score in a student review record.",
-        description=(
-            "Set or update one teacher-entered criterion score in the canonical "
-            "review.json for a student submission. Creates review.json when "
-            "the adjacent submission.json exists and validates."
-        ),
-    )
-    _add_submission_identity_arguments(set_score_parser)
-    set_score_parser.add_argument(
-        "--criterion",
-        required=True,
-        help="Non-empty criterion identifier.",
-    )
-    set_score_parser.add_argument(
-        "--label",
-        required=True,
-        help="Teacher-readable criterion label.",
-    )
-    set_score_parser.add_argument(
-        "--score",
-        required=True,
-        type=non_negative_number,
-        help="Finite criterion score greater than or equal to zero.",
-    )
-    set_score_parser.add_argument(
-        "--max-score",
-        required=True,
-        type=positive_number,
-        help="Finite maximum criterion score greater than zero.",
-    )
-    set_score_parser.add_argument(
-        "--scale",
-        help="Optional descriptive score scale.",
-    )
-    set_score_parser.add_argument(
-        "--note",
-        help="Optional teacher note for this criterion score.",
-    )
-    set_score_parser.set_defaults(handler=handle_set_score)
 
     export_feedback_parser = subparsers.add_parser(
         "export-feedback",

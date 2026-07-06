@@ -26,15 +26,12 @@ from quillan.class_summary_export import (
     export_class_review_summary,
 )
 from quillan.cli_app.output import (
-    print_added_review_comment,
     print_added_review_note,
-    print_added_review_tag,
     print_assignment_submission_status,
     print_exported_class_summary,
     print_exported_feedback,
     print_exported_standards_summary,
     print_opened_submission_review,
-    print_updated_review_score,
     print_updated_submission_review_state,
 )
 from quillan.feedback_export import (
@@ -46,12 +43,8 @@ from quillan.standards_summary_export import (
     StandardsSummaryExportError,
     export_standards_summary,
 )
-from quillan.comment_banks import CommentBankError, load_comment_bank
-from quillan.tag_bank_writing import list_valid_tag_banks
-from quillan.review_comments import ReviewCommentError, add_review_comment
 from quillan.review_notes import ReviewNoteError, add_review_note
 from quillan.review_record import (
-    ALLOWED_TAG_POLARITIES,
     ReviewRecordError,
     load_review_record,
 )
@@ -66,9 +59,6 @@ from quillan.review_requirements import (
     ReviewRequirementError,
     set_requirement_check,
 )
-from quillan.review_scores import ReviewScoreError, set_review_score
-from quillan.rubrics import RubricError, load_rubric, rubric_path
-from quillan.review_tags import ReviewTagError, add_review_tag
 from quillan.storage import assignment_config_path
 from quillan.submission_review_opening import (
     SubmissionReviewOpeningError,
@@ -113,13 +103,12 @@ def launch_review_student_work_menu() -> int:
             print_menu_header("Review Student Work")
             print("1. Assignment Review Actions")
             print("2. Scan Intake / Route Paper Responses")
-            print("3. Manage Review Materials")
-            print("4. Back")
+            print("3. Back")
             print()
             choice = input("Select an option: ").strip()
             print()
 
-            if choice in {"", "4"}:
+            if choice in {"", "3"}:
                 return 0
             if choice == "1":
                 clear_screen()
@@ -130,12 +119,8 @@ def launch_review_student_work_menu() -> int:
                 from quillan.menu import launch_scan_intake_workflow
 
                 launch_scan_intake_workflow()
-            elif choice == "3":
-                from quillan.review_materials_menu import launch_review_materials_menu
-
-                launch_review_materials_menu()
             else:
-                print("Invalid selection. Please enter a number from 1 to 4.")
+                print("Invalid selection. Please enter a number from 1 to 3.")
                 print()
                 pause_for_user()
     except KeyboardInterrupt:
@@ -420,19 +405,16 @@ def _launch_selected_student_review(
         print("3. Record minimum requirement checks")
         print("4. Manage submission pages")
         print("5. Add teacher note")
-        print("6. Add structured tag")
-        print("7. Select reusable comment")
-        print("8. Set criterion score")
-        print("9. Update submission review state")
-        print("10. Export student feedback")
-        print("11. Refresh summary")
-        print("12. Back")
+        print("6. Update submission review state")
+        print("7. Export student feedback")
+        print("8. Refresh summary")
+        print("9. Back")
         print()
 
         choice = input("Select an option: ").strip()
         print()
 
-        if choice in {"", "12"}:
+        if choice in {"", "9"}:
             return 0
         if choice == "1":
             _open_submission_evidence(
@@ -474,30 +456,6 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "6":
-            _menu_add_review_tag(
-                workspace_root,
-                class_id,
-                assignment_id,
-                student_id,
-            )
-            input("Press Enter to continue...")
-        elif choice == "7":
-            _menu_add_review_comment(
-                workspace_root,
-                class_id,
-                assignment_id,
-                student_id,
-            )
-            input("Press Enter to continue...")
-        elif choice == "8":
-            _menu_set_review_score(
-                workspace_root,
-                class_id,
-                assignment_id,
-                student_id,
-            )
-            input("Press Enter to continue...")
-        elif choice == "9":
             _menu_update_submission_review_state(
                 workspace_root,
                 class_id,
@@ -505,7 +463,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "10":
+        elif choice == "7":
             _menu_export_student_feedback(
                 workspace_root,
                 class_id,
@@ -513,10 +471,10 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "11":
+        elif choice == "8":
             continue
         else:
-            print("Invalid selection. Please enter a number from 1 to 12.")
+            print("Invalid selection. Please enter a number from 1 to 9.")
             input("Press Enter to continue...")
 
 
@@ -626,6 +584,12 @@ def _menu_add_review_tag(
     student_id: str,
 ) -> None:
     _print_review_action_header("Add Tag", class_id, assignment_id, student_id)
+    print(
+        "Legacy structured tag workflows are disabled for the "
+        "standards-based review redesign."
+    )
+    print("No review data was changed.")
+    return
     print("Tags are short teacher observations used for organization and summaries.")
     print("Choose a reusable tag, or create a one-time custom tag.")
     print()
@@ -654,9 +618,7 @@ def _menu_add_review_tag(
         )
         return
 
-    # Compatibility with the prior direct menu prompt sequence: if a caller
-    # supplies a tag label immediately after choosing Add structured tag, treat
-    # that first response as the custom label.
+    # Legacy compatibility for the prior direct menu prompt sequence.
     _menu_add_custom_review_tag(
         workspace_root,
         class_id,
@@ -802,11 +764,7 @@ def _menu_add_reusable_review_tag(
         )
         print("No valid shared tag banks found.")
         print()
-        print("Create one from:")
-        print(
-            "Review Student Work -> Manage Review Materials -> "
-            "Tag Banks -> Create tag bank"
-        )
+        print("Legacy tag-bank authoring workflows are disabled.")
         print()
         print("1. Custom tag")
         print("2. Back")
@@ -1268,11 +1226,7 @@ def _prompt_comment_from_bank(
     if not comments:
         print("This bank has no student-facing comments.")
         print()
-        print("Add one from:")
-        print(
-            "Review Student Work -> Manage Review Materials -> "
-            "Comment Banks -> Add comment"
-        )
+        print("Legacy comment-bank authoring workflows are disabled.")
         print()
         print("1. Choose another bank")
         print("2. Back")
@@ -1427,6 +1381,12 @@ def _menu_add_review_comment(
     _print_review_action_header(
         "Select Reusable Comment", class_id, assignment_id, student_id
     )
+    print(
+        "Legacy reusable comment selection is disabled for the "
+        "standards-based review redesign."
+    )
+    print("No review data was changed.")
+    return
     print("Reusable comments are teacher-authored feedback language prepared before review.")
     print("Choose a comment bank, then a category, then a comment.")
     print()
@@ -1448,11 +1408,7 @@ def _menu_add_review_comment(
         )
         print("No valid shared comment banks found.")
         print()
-        print("Create one from:")
-        print(
-            "Review Student Work -> Manage Review Materials -> "
-            "Comment Banks -> Create comment bank"
-        )
+        print("Legacy comment-bank authoring workflows are disabled.")
         return
 
     while True:
@@ -1612,6 +1568,12 @@ def _menu_set_review_score(
     student_id: str,
 ) -> None:
     _print_review_action_header("Set Score", class_id, assignment_id, student_id)
+    print(
+        "Legacy criterion score workflows are disabled for the "
+        "standards-based review redesign."
+    )
+    print("No review data was changed.")
+    return
     print("Use the assignment rubric, or enter a custom criterion.")
     print()
     print("1. Score from rubric")
@@ -1639,9 +1601,7 @@ def _menu_set_review_score(
         )
         return
 
-    # Compatibility with the prior direct menu prompt sequence: if a caller
-    # supplies a criterion ID immediately after choosing Set criterion score,
-    # treat that first response as the custom criterion ID.
+    # Legacy compatibility for the prior direct menu prompt sequence.
     _menu_set_custom_review_score(
         workspace_root,
         class_id,
@@ -1754,11 +1714,7 @@ def _menu_missing_rubric(
     print()
     print(f"Rubric ID: {rubric_id}")
     print()
-    print(
-        "Create or fix the rubric from Review Student Work -> "
-        "Manage Review Materials -> "
-        "Rubrics / Scoring Profiles."
-    )
+    print("Legacy rubric authoring workflows are disabled.")
     print()
     print("1. Custom criterion score")
     print("2. Back")
