@@ -8,7 +8,7 @@ import pytest
 
 from quillan.cli import main
 from quillan.review_record_paths import review_record_path
-from tests.test_review_comments import BANK_ID, _write_bank
+from tests.test_review_comments import BANK_ID
 from tests.test_review_scores import _write_manifest
 from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID
 
@@ -28,7 +28,6 @@ def test_cli_add_comment_is_removed_and_cannot_write_review_data(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write_manifest(tmp_path)
-    _write_bank(tmp_path)
 
     with pytest.raises(SystemExit) as error:
         main(

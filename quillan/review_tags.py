@@ -88,6 +88,10 @@ def add_review_tag(
     created_at: datetime | str | None = None,
 ) -> AddedReviewTag:
     """Append one teacher-entered structured tag to a review record."""
+    raise ReviewTagError(
+        "Legacy review tag writes are not supported by schema version 2; "
+        "use review-unit standard observations instead."
+    )
     normalized_label = _normalize_required_string(label, "label")
     normalized_polarity = _normalize_polarity(polarity)
     normalized_standard = _normalize_optional_string(standard_id, "standard_id")

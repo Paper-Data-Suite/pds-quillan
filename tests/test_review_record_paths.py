@@ -8,7 +8,11 @@ from typing import Any
 
 import pytest
 
-from quillan.review_record import ReviewRecordError, load_review_record
+from quillan.review_record import (
+    ReviewRecordError,
+    build_empty_review_record,
+    load_review_record,
+)
 from quillan.review_record_paths import (
     ReviewRecordPathError,
     review_record_dir,
@@ -22,26 +26,14 @@ STUDENT_ID = "00107"
 
 
 def _record() -> dict[str, Any]:
-    return {
-        "schema_version": "1",
-        "module": "quillan",
-        "record_type": "submission_review",
-        "class_id": CLASS_ID,
-        "assignment_id": ASSIGNMENT_ID,
-        "student_id": STUDENT_ID,
-        "submission_manifest_path": (
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
-            f"{STUDENT_ID}/submission.json"
-        ),
-        "review_state": "not_started",
-        "notes": [],
-        "tags": [],
-        "scores": [],
-        "comments": [],
-        "created_at": "2026-06-22T00:00:00+00:00",
-        "updated_at": "2026-06-22T00:00:00+00:00",
-        "module_details": {"teacher_note": "Café"},
-    }
+    record = build_empty_review_record(
+        class_id=CLASS_ID,
+        assignment_id=ASSIGNMENT_ID,
+        student_id=STUDENT_ID,
+        created_at="2026-06-22T00:00:00+00:00",
+    )
+    record["module_details"] = {"teacher_note": "Cafe"}
+    return record
 
 
 def test_review_record_paths_use_canonical_quillan_layout(tmp_path: Path) -> None:
@@ -55,12 +47,8 @@ def test_review_record_paths_use_canonical_quillan_layout(tmp_path: Path) -> Non
         / STUDENT_ID
     )
 
-    result_dir = review_record_dir(
-        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    )
-    result_path = review_record_path(
-        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
-    )
+    result_dir = review_record_dir(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    result_path = review_record_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
 
     assert result_dir == expected_dir
     assert result_path == expected_dir / "review.json"
@@ -101,7 +89,7 @@ def test_valid_record_is_written_readably_and_reloads(tmp_path: Path) -> None:
     assert path.parent.is_dir()
     assert raw.endswith(b"\n")
     assert b'\n  "schema_version"' in raw
-    assert "Café" in raw.decode("utf-8")
+    assert "Cafe" in raw.decode("utf-8")
     assert load_review_record(path) == record
 
 
@@ -133,7 +121,7 @@ def test_existing_record_is_replaced_only_when_overwrite_enabled(
     path = tmp_path / "review.json"
     path.write_text("original\n", encoding="utf-8")
     record = _record()
-    record["review_state"] = "in_progress"
+    record["review_state"] = "requirements_checked"
 
     result = write_review_record(path, record, overwrite=True)
 

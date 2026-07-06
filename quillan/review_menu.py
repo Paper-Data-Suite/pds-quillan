@@ -26,14 +26,18 @@ from quillan.class_summary_export import (
     export_class_review_summary,
 )
 from quillan.cli_app.output import (
+    print_added_review_comment,
     print_added_review_note,
+    print_added_review_tag,
     print_assignment_submission_status,
     print_exported_class_summary,
     print_exported_feedback,
     print_exported_standards_summary,
     print_opened_submission_review,
+    print_updated_review_score,
     print_updated_submission_review_state,
 )
+from quillan.comment_banks import CommentBankError, load_comment_bank
 from quillan.feedback_export import (
     FeedbackExportError,
     export_student_feedback,
@@ -43,8 +47,11 @@ from quillan.standards_summary_export import (
     StandardsSummaryExportError,
     export_standards_summary,
 )
+from quillan.tag_bank_writing import list_valid_tag_banks
 from quillan.review_notes import ReviewNoteError, add_review_note
+from quillan.review_comments import ReviewCommentError, add_review_comment
 from quillan.review_record import (
+    ALLOWED_TAG_POLARITIES,
     ReviewRecordError,
     load_review_record,
 )
@@ -59,6 +66,9 @@ from quillan.review_requirements import (
     ReviewRequirementError,
     set_requirement_check,
 )
+from quillan.review_scores import ReviewScoreError, set_review_score
+from quillan.review_tags import ReviewTagError, add_review_tag
+from quillan.rubrics import RubricError, load_rubric, rubric_path
 from quillan.storage import assignment_config_path
 from quillan.submission_review_opening import (
     SubmissionReviewOpeningError,
@@ -2052,22 +2062,28 @@ def _review_record_counts(
 ) -> dict[str, int]:
     path = review_record_path(workspace_root, class_id, assignment_id, student_id)
     if not path.exists():
-        return {"notes": 0, "tags": 0, "included_comments": 0, "scores": 0}
+        return {"notes": 0, "observations": 0, "included_comments": 0, "ratings": 0}
     try:
         record = load_review_record(path)
     except (OSError, ReviewRecordError):
-        return {"notes": 0, "tags": 0, "included_comments": 0, "scores": 0}
-    comments = record.get("comments")
-    included_comments = (
-        sum(1 for comment in comments if comment.get("include_in_feedback"))
-        if isinstance(comments, list)
-        else 0
-    )
+        return {"notes": 0, "observations": 0, "included_comments": 0, "ratings": 0}
+    feedback = record.get("feedback", {})
+    standard_feedback = feedback.get("standard_feedback") if isinstance(feedback, dict) else []
+    included_comments = 0
+    if isinstance(standard_feedback, list):
+        for item in standard_feedback:
+            comments = item.get("comments") if isinstance(item, dict) else None
+            if isinstance(comments, list):
+                included_comments += sum(
+                    1
+                    for comment in comments
+                    if isinstance(comment, dict) and comment.get("include_in_feedback")
+                )
     return {
-        "notes": _count_record_items(record, "notes"),
-        "tags": _count_record_items(record, "tags"),
+        "notes": _count_record_items(record, "private_notes"),
+        "observations": _count_review_unit_observations(record),
         "included_comments": included_comments,
-        "scores": _count_record_items(record, "scores"),
+        "ratings": _count_record_items(record, "overall_standard_ratings"),
     }
 
 
@@ -2185,10 +2201,10 @@ def _print_review_record_summary(
 
     print("Review record: exists")
     print(f"Review record state: {record['review_state']}")
-    print(f"Notes: {_count_record_items(record, 'notes')}")
-    print(f"Tags: {_count_record_items(record, 'tags')}")
-    print(f"Comments: {_count_record_items(record, 'comments')}")
-    print(f"Scores: {_count_record_items(record, 'scores')}")
+    print(f"Private notes: {_count_record_items(record, 'private_notes')}")
+    print(f"Review-unit observations: {_count_review_unit_observations(record)}")
+    print(f"Feedback comments: {_count_feedback_comments(record)}")
+    print(f"Overall ratings: {_count_record_items(record, 'overall_standard_ratings')}")
     _print_requirement_check_summary(
         workspace_root,
         class_id,
@@ -2200,6 +2216,31 @@ def _print_review_record_summary(
 def _count_record_items(record: dict[str, Any], field: str) -> int:
     value = record.get(field)
     return len(value) if isinstance(value, list) else 0
+
+
+def _count_review_unit_observations(record: dict[str, Any]) -> int:
+    units = record.get("review_units")
+    if not isinstance(units, list):
+        return 0
+    total = 0
+    for unit in units:
+        observations = unit.get("standard_observations") if isinstance(unit, dict) else None
+        if isinstance(observations, list):
+            total += len(observations)
+    return total
+
+
+def _count_feedback_comments(record: dict[str, Any]) -> int:
+    feedback = record.get("feedback")
+    standard_feedback = feedback.get("standard_feedback") if isinstance(feedback, dict) else None
+    if not isinstance(standard_feedback, list):
+        return 0
+    total = 0
+    for item in standard_feedback:
+        comments = item.get("comments") if isinstance(item, dict) else None
+        if isinstance(comments, list):
+            total += len(comments)
+    return total
 
 
 def _print_requirement_check_summary(
@@ -2527,7 +2568,7 @@ def _current_requirement_checks(
         record = load_review_record(path)
     except (OSError, ReviewRecordError):
         return {}
-    checks = record.get("requirement_checks")
+    checks = record.get("minimum_requirement_checks")
     if not isinstance(checks, list):
         return {}
     return {
@@ -2821,10 +2862,10 @@ def _menu_export_student_feedback(
     print()
     counts = _review_record_counts(workspace_root, class_id, assignment_id, student_id)
     print("Review contents:")
-    print(f"Notes: {counts['notes']}")
-    print(f"Tags: {counts['tags']}")
+    print(f"Private notes: {counts['notes']}")
+    print(f"Review-unit observations: {counts['observations']}")
     print(f"Comments included in feedback: {counts['included_comments']}")
-    print(f"Scores: {counts['scores']}")
+    print(f"Overall ratings: {counts['ratings']}")
     print()
     print("1. Export feedback")
     print("2. Back")

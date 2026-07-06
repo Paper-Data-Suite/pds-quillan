@@ -229,8 +229,8 @@ def test_review_menu_records_minimum_requirement_check(
             workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
         ).read_text(encoding="utf-8")
     )
-    assert review["requirement_checks"][0]["requirement_key"] == "paragraphs_min"
-    assert review["requirement_checks"][0]["met"] is True
+    assert review["minimum_requirement_checks"][0]["requirement_key"] == "paragraphs_min"
+    assert review["minimum_requirement_checks"][0]["met"] is True
     assert manifest_path.read_bytes() == manifest_before
 
 

@@ -308,11 +308,12 @@ def test_v080_scan_review_export_end_to_end_smoke(
     assert review_path.is_file()
 
     review = json.loads(review_path.read_text(encoding="utf-8"))
-    assert review["review_state"] == "in_progress"
-    assert review["notes"][0]["text"] == "Teacher observation: the claim is clear."
-    assert review["tags"] == []
-    assert review["comments"] == []
-    assert review["scores"] == []
+    assert review["review_state"] == "not_started"
+    assert review["private_notes"][0]["text"] == "Teacher observation: the claim is clear."
+    assert "notes" not in review
+    assert "tags" not in review
+    assert "comments" not in review
+    assert "scores" not in review
 
     updated_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert updated_manifest["submission_state"] == "reviewed"
@@ -365,10 +366,11 @@ def test_v080_scan_review_export_end_to_end_smoke(
     feedback_text = feedback_path.read_text(encoding="utf-8")
     assert f"Assignment: {ASSIGNMENT_ID}" in feedback_text
     assert "Teacher Notes" not in feedback_text
+    assert "No standards ratings recorded." in feedback_text
 
     class_summary_text = class_summary_path.read_text(encoding="utf-8")
     assert STUDENT_ID in class_summary_text
-    assert "in_progress" in class_summary_text
+    assert "not_started" in class_summary_text
 
     standards_summary_text = standards_summary_path.read_text(encoding="utf-8")
     assert "student_count" in standards_summary_text

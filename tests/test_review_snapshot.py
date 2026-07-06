@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 
+from quillan.review_record import build_empty_review_record
 from quillan.review_record_paths import review_record_path, write_review_record
 from quillan.review_snapshot import current_review_details_text
 from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID
@@ -14,80 +14,87 @@ TIMESTAMP = "2026-06-22T12:00:00+00:00"
 
 
 def _review() -> dict[str, Any]:
-    return {
-        "schema_version": "1",
-        "module": "quillan",
-        "record_type": "submission_review",
-        "class_id": CLASS_ID,
-        "assignment_id": ASSIGNMENT_ID,
-        "student_id": STUDENT_ID,
-        "submission_manifest_path": (
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
-            f"{STUDENT_ID}/submission.json"
-        ),
-        "review_state": "in_progress",
-        "notes": [
-            {
-                "note_id": "note_0001",
-                "text": "Needs conference about missing counterargument.",
-                "created_at": TIMESTAMP,
-                "updated_at": TIMESTAMP,
-                "module_details": {},
-            }
-        ],
-        "tags": [
-            {
-                "tag_id": "tag_0001",
-                "label": "Evidence needs more explanation",
-                "polarity": "developing",
-                "source": "custom",
-                "page_number": 1,
-                "location": {"type": "paragraph", "value": [3, 4]},
-                "created_at": TIMESTAMP,
-                "module_details": {},
-            }
-        ],
-        "scores": [
-            {
-                "score_id": "score_0001",
-                "criterion_id": "evidence",
-                "label": "Evidence",
-                "score": 3,
-                "max_score": 4,
-                "teacher_note": "Relevant evidence, uneven explanation.",
-                "updated_at": TIMESTAMP,
-                "module_details": {},
-            }
-        ],
-        "comments": [
-            {
-                "comment_record_id": "comment_record_0001",
-                "source": "comment_bank",
-                "bank_id": "argument_writing",
-                "comment_id": "evidence_needs_explanation",
-                "label": "Evidence needs more explanation",
-                "text": "The evidence is relevant, but explain the connection.",
-                "include_in_feedback": True,
-                "location": {"type": "paragraph", "value": 2},
-                "created_at": TIMESTAMP,
-                "module_details": {},
-            }
-        ],
-        "requirement_checks": [
-            {
-                "requirement_check_id": "requirement_check_0001",
-                "requirement_key": "paragraphs_min",
-                "label": "Minimum paragraphs",
-                "expected": 4,
-                "met": False,
-                "updated_at": TIMESTAMP,
-                "module_details": {},
-            }
-        ],
-        "created_at": TIMESTAMP,
-        "updated_at": TIMESTAMP,
-        "module_details": {},
-    }
+    record = build_empty_review_record(
+        class_id=CLASS_ID,
+        assignment_id=ASSIGNMENT_ID,
+        student_id=STUDENT_ID,
+        created_at=TIMESTAMP,
+    )
+    record["review_state"] = "feedback_composed"
+    record["minimum_requirement_checks"] = [
+        {
+            "requirement_check_id": "requirement_check_0001",
+            "requirement_key": "paragraphs_min",
+            "label": "Minimum paragraphs",
+            "expected": 4,
+            "met": False,
+            "updated_at": TIMESTAMP,
+            "module_details": {},
+        }
+    ]
+    record["review_units"] = [
+        {
+            "unit_id": "unit_0001",
+            "sequence": 1,
+            "label": "Paragraph 2",
+            "unit_type": "paragraph",
+            "standard_observations": [
+                {
+                    "observation_id": "observation_0001",
+                    "standard_id": "synthetic:W.A",
+                    "applicable": True,
+                    "evidence_present": True,
+                    "rating": 3,
+                    "rationale": "Relevant evidence, uneven explanation.",
+                    "include_in_feedback": True,
+                    "updated_at": TIMESTAMP,
+                    "module_details": {},
+                }
+            ],
+            "module_details": {},
+        }
+    ]
+    record["overall_standard_ratings"] = [
+        {
+            "standard_id": "synthetic:W.A",
+            "rating": 3,
+            "rationale": "Relevant evidence, uneven explanation.",
+            "include_in_feedback": True,
+            "updated_at": TIMESTAMP,
+            "module_details": {},
+        }
+    ]
+    record["feedback"]["standard_feedback"] = [
+        {
+            "standard_id": "synthetic:W.A",
+            "include_overall_rating": True,
+            "include_overall_rationale": True,
+            "included_observation_ids": ["observation_0001"],
+            "comments": [
+                {
+                    "feedback_comment_id": "feedback_comment_0001",
+                    "source": "custom",
+                    "text": "The evidence is relevant, but explain the connection.",
+                    "reusable_comment_id": None,
+                    "save_for_reuse": False,
+                    "include_in_feedback": True,
+                    "created_at": TIMESTAMP,
+                    "module_details": {},
+                }
+            ],
+            "module_details": {},
+        }
+    ]
+    record["private_notes"] = [
+        {
+            "private_note_id": "note_0001",
+            "text": "Needs conference about missing counterargument.",
+            "created_at": TIMESTAMP,
+            "updated_at": TIMESTAMP,
+            "module_details": {},
+        }
+    ]
+    return record
 
 
 def test_current_review_details_handles_missing_record(tmp_path: Path) -> None:
@@ -107,31 +114,35 @@ def test_current_review_details_formats_saved_artifacts(tmp_path: Path) -> None:
 
     text = current_review_details_text(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
 
-    assert text.startswith("Review record: exists\nReview state: in_progress")
+    assert text.startswith("Review record: exists\nReview state: feedback_composed")
     assert "Quillan" not in text
     assert "Current Review Details" not in text
     assert "Review record: exists" in text
     assert "Minimum paragraphs: not met" in text
-    assert "[developing] Evidence needs more explanation" in text
-    assert "Target: Page 1, paragraphs 3-4" in text
-    assert "Target: Paragraph 2" in text
+    assert "Paragraph 2 (paragraph)" in text
+    assert "synthetic:W.A: applicable; rating 3" in text
     assert "Include in feedback: yes" in text
-    assert "Evidence: 3 / 4" in text
+    assert "synthetic:W.A: 3" in text
     assert "Needs conference about missing counterargument." in text
     assert path.read_bytes() == before
 
 
 def test_current_review_details_formats_empty_sections(tmp_path: Path) -> None:
     review = _review()
-    for field in ("notes", "tags", "scores", "comments", "requirement_checks"):
+    for field in (
+        "private_notes",
+        "review_units",
+        "overall_standard_ratings",
+        "minimum_requirement_checks",
+    ):
         review[field] = []
+    review["feedback"]["standard_feedback"] = []
     path = review_record_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
     write_review_record(path, review)
 
     text = current_review_details_text(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
 
-    assert "No tags recorded." in text
-    assert "No comments recorded." in text
-    assert "No scores recorded." in text
-    assert "No notes recorded." in text
-    assert json.loads(path.read_text(encoding="utf-8")) == review
+    assert "No review units recorded." in text
+    assert "No overall standard ratings recorded." in text
+    assert "No feedback composed." in text
+    assert "No private notes recorded." in text

@@ -7,8 +7,6 @@ from typing import Any
 
 from quillan.review_record import ReviewRecordError, load_review_record
 from quillan.review_record_paths import review_record_path
-from quillan.review_targets import format_review_target
-
 
 def current_review_details_text(
     workspace_root: str | Path,
@@ -40,10 +38,10 @@ def current_review_details_text(
     lines.append(f"Review state: {record['review_state']}")
     lines.append("")
     _append_requirement_checks(lines, record)
-    _append_tags(lines, record)
-    _append_comments(lines, record)
-    _append_scores(lines, record)
-    _append_notes(lines, record)
+    _append_review_units(lines, record)
+    _append_overall_ratings(lines, record)
+    _append_feedback(lines, record)
+    _append_private_notes(lines, record)
     return "\n".join(lines).rstrip()
 
 
@@ -64,10 +62,10 @@ def _identity_error(
 
 
 def _append_requirement_checks(lines: list[str], record: dict[str, Any]) -> None:
-    lines.append("Requirement Checks")
-    checks = _record_list(record, "requirement_checks")
+    lines.append("Minimum Requirement Checks")
+    checks = _record_list(record, "minimum_requirement_checks")
     if not checks:
-        lines.append("No requirement checks recorded.")
+        lines.append("No minimum requirement checks recorded.")
         lines.append("")
         return
     for check in checks:
@@ -78,61 +76,69 @@ def _append_requirement_checks(lines: list[str], record: dict[str, Any]) -> None
     lines.append("")
 
 
-def _append_tags(lines: list[str], record: dict[str, Any]) -> None:
-    lines.append("Tags")
-    tags = _record_list(record, "tags")
-    if not tags:
-        lines.append("No tags recorded.")
+def _append_review_units(lines: list[str], record: dict[str, Any]) -> None:
+    lines.append("Review Units")
+    units = _record_list(record, "review_units")
+    if not units:
+        lines.append("No review units recorded.")
         lines.append("")
         return
-    for index, tag in enumerate(tags, start=1):
-        lines.append(f"{index}. [{tag['polarity']}] {tag['label']}")
-        lines.append(f"   Target: {format_review_target(tag)}")
-        lines.append(f"   Source: {_format_tag_source(tag)}")
-        if note := _non_empty(tag.get("teacher_note")):
-            lines.append(f"   Note: {note}")
+    for unit in units:
+        lines.append(f"{unit['sequence']}. {unit['label']} ({unit['unit_type']})")
+        for observation in _record_list(unit, "standard_observations"):
+            status = "applicable" if observation["applicable"] else "not applicable"
+            lines.append(
+                f"   - {observation['standard_id']}: {status}; "
+                f"rating {_format_nullable(observation['rating'])}"
+            )
+            if rationale := _non_empty(observation.get("rationale")):
+                lines.append(f"     Rationale: {rationale}")
         lines.append("")
 
 
-def _append_comments(lines: list[str], record: dict[str, Any]) -> None:
-    lines.append("Comments")
-    comments = _record_list(record, "comments")
-    if not comments:
-        lines.append("No comments recorded.")
-        lines.append("")
-        return
-    for index, comment in enumerate(comments, start=1):
-        lines.append(f"{index}. {comment['label']}")
-        lines.append(f"   Target: {format_review_target(comment)}")
-        include = "yes" if comment["include_in_feedback"] else "no"
-        lines.append(f"   Include in feedback: {include}")
-        lines.append(f"   Feedback: {comment['text']}")
-        if source := _format_comment_source(comment):
-            lines.append(f"   Source: {source}")
-        lines.append("")
-
-
-def _append_scores(lines: list[str], record: dict[str, Any]) -> None:
-    lines.append("Scores")
-    scores = _record_list(record, "scores")
-    if not scores:
-        lines.append("No scores recorded.")
+def _append_overall_ratings(lines: list[str], record: dict[str, Any]) -> None:
+    lines.append("Overall Standard Ratings")
+    ratings = _record_list(record, "overall_standard_ratings")
+    if not ratings:
+        lines.append("No overall standard ratings recorded.")
         lines.append("")
         return
-    for index, score in enumerate(scores, start=1):
+    for rating in ratings:
+        include = "yes" if rating["include_in_feedback"] else "no"
         lines.append(
-            f"{index}. {score['label']}: {score['score']:g} / {score['max_score']:g}"
+            f"- {rating['standard_id']}: {rating['rating']} "
+            f"(include in feedback: {include})"
         )
-        if note := _non_empty(score.get("teacher_note")):
-            lines.append(f"   Note: {note}")
+        if rationale := _non_empty(rating.get("rationale")):
+            lines.append(f"  Rationale: {rationale}")
     lines.append("")
 
 
-def _append_notes(lines: list[str], record: dict[str, Any]) -> None:
-    lines.append("Notes")
-    notes = _record_list(record, "notes")
+def _append_feedback(lines: list[str], record: dict[str, Any]) -> None:
+    lines.append("Feedback")
+    standard_feedback = _record_list(record["feedback"], "standard_feedback")
+    if not standard_feedback:
+        lines.append("No feedback composed.")
+        lines.append("")
+        return
+    for item in standard_feedback:
+        lines.append(f"- {item['standard_id']}")
+        comments = _record_list(item, "comments")
+        if not comments:
+            lines.append("  No comments recorded.")
+            continue
+        for comment in comments:
+            include = "yes" if comment["include_in_feedback"] else "no"
+            lines.append(f"  - Include in feedback: {include}")
+            lines.append(f"    Feedback: {comment['text']}")
+    lines.append("")
+
+
+def _append_private_notes(lines: list[str], record: dict[str, Any]) -> None:
+    lines.append("Private Notes")
+    notes = _record_list(record, "private_notes")
     if not notes:
-        lines.append("No notes recorded.")
+        lines.append("No private notes recorded.")
         return
     for index, note in enumerate(notes, start=1):
         lines.append(f"{index}. {note['text']}")
@@ -143,21 +149,9 @@ def _record_list(record: dict[str, Any], field: str) -> list[dict[str, Any]]:
     return [item for item in value if isinstance(item, dict)] if isinstance(value, list) else []
 
 
-def _format_tag_source(tag: dict[str, Any]) -> str:
-    if tag.get("source") == "tag_bank":
-        return f"{tag.get('tag_bank_id')} / {tag.get('tag_template_id')}"
-    if tag.get("source") == "custom":
-        return "custom"
-    return "not specified"
-
-
-def _format_comment_source(comment: dict[str, Any]) -> str:
-    if comment.get("source") == "comment_bank":
-        return f"{comment.get('bank_id')} / {comment.get('comment_id')}"
-    if comment.get("source") == "custom":
-        return "custom"
-    return ""
-
-
 def _non_empty(value: Any) -> str | None:
     return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def _format_nullable(value: Any) -> str:
+    return "not recorded" if value is None else str(value)

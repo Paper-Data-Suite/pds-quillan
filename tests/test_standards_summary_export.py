@@ -69,8 +69,67 @@ def _write_review(
     comments: list[dict[str, Any]],
 ) -> tuple[Path, Path]:
     manifest, review = _records(student_id)
-    review["tags"] = tags
-    review["comments"] = comments
+    observations = []
+    observation_ids_by_standard: dict[str, list[str]] = {}
+    for index, tag in enumerate(tags, start=1):
+        standard_id = tag.get("standard_id")
+        if standard_id is None:
+            continue
+        observation_id = f"observation_{index:04d}"
+        observations.append(
+            {
+                "observation_id": observation_id,
+                "standard_id": standard_id,
+                "applicable": True,
+                "evidence_present": True,
+                "rating": 1,
+                "rationale": tag["label"],
+                "include_in_feedback": True,
+                "updated_at": TIMESTAMP,
+                "module_details": {"legacy_polarity": tag["polarity"]},
+            }
+        )
+        observation_ids_by_standard.setdefault(standard_id, []).append(observation_id)
+    if observations:
+        review["review_units"] = [
+            {
+                "unit_id": f"unit_{index:04d}",
+                "sequence": index,
+                "label": f"Whole submission {index}",
+                "unit_type": "whole_submission",
+                "standard_observations": [observation],
+                "module_details": {},
+            }
+            for index, observation in enumerate(observations, start=1)
+        ]
+    comments_by_standard: dict[str, list[dict[str, Any]]] = {}
+    for index, comment in enumerate(comments, start=1):
+        standard_id = comment.get("standard_id")
+        if standard_id is None:
+            continue
+        comments_by_standard.setdefault(standard_id, []).append(
+            {
+                "feedback_comment_id": f"feedback_comment_{index:04d}",
+                "source": "custom",
+                "text": comment["text"],
+                "reusable_comment_id": None,
+                "save_for_reuse": False,
+                "include_in_feedback": comment["include_in_feedback"],
+                "created_at": TIMESTAMP,
+                "module_details": {},
+            }
+        )
+    review["feedback"]["standard_feedback"] = [
+        {
+            "standard_id": standard_id,
+            "include_overall_rating": False,
+            "include_overall_rationale": False,
+            "included_observation_ids": observation_ids_by_standard.get(standard_id, []),
+            "comments": standard_comments,
+            "module_details": {},
+        }
+        for standard_id, standard_comments in sorted(comments_by_standard.items())
+    ]
     student_dir = _student_dir(workspace, student_id)
     return (
         _write_json(student_dir / "submission.json", manifest),
@@ -168,7 +227,7 @@ def test_aggregates_standards_in_sorted_stable_rows_without_mutation(
     assert first["included_comment_count"] == "2"
     assert first["excluded_comment_count"] == "1"
     assert first["review_count"] == "2"
-    assert first["source"] == "review_tags_and_comments"
+    assert first["source"] == "review_record_v2"
     assert rows[1]["student_count"] == "2"
     assert rows[1]["tag_student_count"] == "1"
     assert rows[1]["comment_student_count"] == "1"
