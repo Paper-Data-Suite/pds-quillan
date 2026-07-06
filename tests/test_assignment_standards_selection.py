@@ -19,19 +19,39 @@ def _valid_assignment_config() -> dict[str, object]:
         "title": "Villainy Final Essay",
         "class_ids": ["english12_period3_synthetic"],
         "writing_type": "literary argument essay",
+        "student_prompt": "Use evidence to support a literary argument.",
         "standards_profile_id": "english12_2023_njsls",
-        "tagging_mode": "focus",
-        "focus_standards": [
+        "focus_standard_ids": [
             "nj_ela_2023_rl_cr_11_12_1",
             "nj_ela_2023_w_aw_11_12_1",
         ],
+        "review_unit": {
+            "type": "paragraph",
+            "singular_label": "paragraph",
+            "plural_label": "paragraphs",
+        },
+        "rating_scale": {
+            "scale_id": "standards_4_level",
+            "levels": [
+                {
+                    "value": 1,
+                    "label": "Developing",
+                    "description": "Limited evidence.",
+                }
+            ],
+        },
         "basic_requirements": {
             "paragraphs_min": 4,
             "paragraphs_max": 6,
             "word_count_min": 500,
             "required_elements": ["thesis", "textual evidence"],
         },
-        "rubric_id": "argument_essay_4pt_synthetic",
+        "minimum_requirement_policy": {
+            "allow_return_without_full_review": True,
+        },
+        "schema_version": "2",
+        "module": "quillan",
+        "record_type": "assignment",
     }
 
 
@@ -88,7 +108,7 @@ def test_assignment_standards_selection_accepts_valid_profile_and_focus() -> Non
 def test_assignment_standards_selection_returns_normalized_focus_ids() -> None:
     assignment = _valid_assignment_config()
     assignment["standards_profile_id"] = " english12_2023_njsls "
-    assignment["focus_standards"] = [" nj_ela_2023_rl_cr_11_12_1 "]
+    assignment["focus_standard_ids"] = [" nj_ela_2023_rl_cr_11_12_1 "]
 
     assert validate_assignment_standards_selection(
         assignment,
@@ -117,29 +137,29 @@ def test_assignment_standards_selection_rejects_unknown_profile_id() -> None:
 
 def test_assignment_standards_selection_rejects_unknown_focus_standard() -> None:
     assignment = _valid_assignment_config()
-    assignment["focus_standards"] = ["nj_ela_2023_missing"]
+    assignment["focus_standard_ids"] = ["nj_ela_2023_missing"]
 
     with pytest.raises(
         AssignmentConfigError,
-        match="focus_standards.*nj_ela_2023_missing",
+        match="focus_standard_ids.*nj_ela_2023_missing",
     ):
         validate_assignment_standards_selection(assignment, _standards_library())
 
 
 def test_assignment_standards_selection_rejects_standard_outside_profile() -> None:
     assignment = _valid_assignment_config()
-    assignment["focus_standards"] = ["nj_ela_2023_l_vi_11_12_4"]
+    assignment["focus_standard_ids"] = ["nj_ela_2023_l_vi_11_12_4"]
 
     with pytest.raises(
         AssignmentConfigError,
-        match="focus_standards.*nj_ela_2023_l_vi_11_12_4",
+        match="focus_standard_ids.*nj_ela_2023_l_vi_11_12_4",
     ):
         validate_assignment_standards_selection(assignment, _standards_library())
 
 
-def test_assignment_standards_selection_rejects_duplicate_focus_standards() -> None:
+def test_assignment_standards_selection_rejects_duplicate_focus_standard_ids() -> None:
     assignment = _valid_assignment_config()
-    assignment["focus_standards"] = [
+    assignment["focus_standard_ids"] = [
         "nj_ela_2023_rl_cr_11_12_1",
         " nj_ela_2023_rl_cr_11_12_1 ",
     ]
@@ -148,14 +168,12 @@ def test_assignment_standards_selection_rejects_duplicate_focus_standards() -> N
         validate_assignment_standards_selection(assignment, _standards_library())
 
 
-def test_assignment_standards_selection_accepts_empty_focus_standards() -> None:
+def test_assignment_standards_selection_rejects_empty_focus_standard_ids() -> None:
     assignment = _valid_assignment_config()
-    assignment["focus_standards"] = []
+    assignment["focus_standard_ids"] = []
 
-    assert validate_assignment_standards_selection(
-        assignment,
-        _standards_library(),
-    ) == ()
+    with pytest.raises(AssignmentConfigError, match="focus_standard_ids"):
+        validate_assignment_standards_selection(assignment, _standards_library())
 
 
 def test_structural_assignment_validation_accepts_valid_config_without_library() -> None:
@@ -164,7 +182,7 @@ def test_structural_assignment_validation_accepts_valid_config_without_library()
 
 def test_structural_assignment_validation_rejects_malformed_config_without_library() -> None:
     assignment = _valid_assignment_config()
-    assignment["focus_standards"] = "nj_ela_2023_rl_cr_11_12_1"
+    assignment["focus_standard_ids"] = "nj_ela_2023_rl_cr_11_12_1"
 
-    with pytest.raises(AssignmentConfigError, match="focus_standards.*list"):
+    with pytest.raises(AssignmentConfigError, match="focus_standard_ids.*list"):
         validate_assignment_config(assignment)

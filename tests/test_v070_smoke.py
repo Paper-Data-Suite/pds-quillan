@@ -66,15 +66,35 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
     _write_json(
         assignment_path,
         {
+            "schema_version": "2",
+            "module": "quillan",
+            "record_type": "assignment",
             "assignment_id": ASSIGNMENT_ID,
             "title": "Synthetic Villainy Essay",
             "class_ids": [CLASS_ID],
             "writing_type": "literary_analysis",
+            "student_prompt": "Analyze how the text develops villainy.",
             "standards_profile_id": PROFILE_ID,
-            "tagging_mode": "focus",
-            "focus_standards": [STANDARD_ID],
+            "focus_standard_ids": [STANDARD_ID],
+            "review_unit": {
+                "type": "paragraph",
+                "singular_label": "paragraph",
+                "plural_label": "paragraphs",
+            },
+            "rating_scale": {
+                "scale_id": "standards_2_level",
+                "levels": [
+                    {
+                        "value": 1,
+                        "label": "Developing",
+                        "description": "Limited evidence.",
+                    }
+                ],
+            },
             "basic_requirements": {},
-            "rubric_id": "synthetic_rubric",
+            "minimum_requirement_policy": {
+                "allow_return_without_full_review": True,
+            },
         },
     )
     write_workspace_standards_library(

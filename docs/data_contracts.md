@@ -398,6 +398,8 @@ field belongs to the generic rubric/scoring-profile workflow. The old
 Because Quillan is still pre-pilot and no production classroom data is expected
 to depend on the old assignment contract, v0.8.6 may treat the schema version
 `2` assignment shape as a breaking cleanup with no production-data migration.
+Runtime assignment loading and discovery reject old assignment records as
+legacy configs rather than listing them as valid active assignments.
 Later implementation work must decide whether old assignment records are
 rejected with clear guidance, read as legacy records, migrated by a helper, or
 temporarily supported by compatibility code.

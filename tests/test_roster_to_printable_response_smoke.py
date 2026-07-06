@@ -26,19 +26,39 @@ def test_roster_to_printable_response_workflow(
     assignment_path.write_text(
         json.dumps(
             {
+                "schema_version": "2",
+                "module": "quillan",
+                "record_type": "assignment",
                 "assignment_id": assignment_id,
                 "title": "Synthetic Literary Argument",
                 "class_ids": [class_id],
                 "writing_type": "literary argument essay",
+                "student_prompt": "Write a literary argument using evidence.",
                 "standards_profile_id": "english_12_smoke",
-                "tagging_mode": "focus",
-                "focus_standards": ["W.AW.11-12.1"],
+                "focus_standard_ids": ["W.AW.11-12.1"],
+                "review_unit": {
+                    "type": "paragraph",
+                    "singular_label": "paragraph",
+                    "plural_label": "paragraphs",
+                },
+                "rating_scale": {
+                    "scale_id": "standards_2_level",
+                    "levels": [
+                        {
+                            "value": 1,
+                            "label": "Developing",
+                            "description": "Limited evidence.",
+                        }
+                    ],
+                },
                 "basic_requirements": {
                     "paragraphs_min": 3,
                     "word_count_min": 300,
                     "required_elements": ["claim", "evidence", "reasoning"],
                 },
-                "rubric_id": "argument_essay_smoke",
+                "minimum_requirement_policy": {
+                    "allow_return_without_full_review": True,
+                },
             }
         ),
         encoding="utf-8",

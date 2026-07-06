@@ -117,11 +117,28 @@ def _write_assignment(root: Path) -> Path:
         title="Synthetic Argument Essay",
         class_id=CLASS_ID,
         writing_type="argument",
+        student_prompt="Write an argument using claims, reasoning, and evidence.",
         standards_profile_id="synthetic_profile",
-        tagging_mode="focus",
-        focus_standards=[STANDARD_ID],
+        focus_standard_ids=[STANDARD_ID],
+        review_unit={
+            "type": "paragraph",
+            "singular_label": "paragraph",
+            "plural_label": "paragraphs",
+        },
+        rating_scale={
+            "scale_id": "standards_2_level",
+            "levels": [
+                {
+                    "value": 1,
+                    "label": "Developing",
+                    "description": "Limited evidence.",
+                }
+            ],
+        },
         basic_requirements={"paragraphs_min": 1},
-        rubric_id="synthetic_rubric",
+        minimum_requirement_policy={
+            "allow_return_without_full_review": True,
+        },
     )
     return write_assignment_config(root, CLASS_ID, assignment)
 

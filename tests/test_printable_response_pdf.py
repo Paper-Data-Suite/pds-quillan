@@ -48,10 +48,6 @@ def _write_roster_assignment(
     assignment = json.loads(ASSIGNMENT_PATH.read_text(encoding="utf-8"))
     assert isinstance(assignment, dict)
     assignment["class_ids"] = class_ids or ["english12_p3"]
-    assignment.setdefault("tagging_mode", "focus")
-    assignment.setdefault("focus_standards", [])
-    assignment.setdefault("basic_requirements", {})
-    assignment.setdefault("rubric_id", "synthetic_rubric")
     assignment_path = tmp_path / "assignment.json"
     assignment_path.write_text(json.dumps(assignment), encoding="utf-8")
     return assignment_path
