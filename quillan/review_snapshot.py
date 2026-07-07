@@ -125,7 +125,7 @@ def _append_review_units(lines: list[str], record: dict[str, Any]) -> None:
 
 
 def _append_overall_ratings(lines: list[str], record: dict[str, Any]) -> None:
-    lines.append("Overall Standard Ratings")
+    lines.append("Overall Focus Standard Ratings")
     ratings = _record_list(record, "overall_standard_ratings")
     if not ratings:
         lines.append("No overall standard ratings recorded.")

@@ -33,8 +33,10 @@ from quillan.cli_app.output import (
     print_exported_class_summary,
     print_exported_feedback,
     print_exported_standards_summary,
+    print_completed_overall_standard_ratings,
     print_completed_review_unit_observations,
     print_opened_submission_review,
+    print_updated_overall_standard_rating,
     print_updated_review_unit_observation,
     print_updated_review_units,
     print_updated_review_score,
@@ -57,6 +59,13 @@ from quillan.review_observations import (
     mark_observations_complete,
     set_review_unit_observation,
     set_review_units,
+)
+from quillan.review_ratings import (
+    FocusStandardObservationSummary,
+    ReviewRatingError,
+    mark_overall_ratings_complete,
+    set_overall_standard_rating,
+    summarize_focus_standard_observations,
 )
 from quillan.review_comments import ReviewCommentError, add_review_comment
 from quillan.review_record import (
@@ -424,18 +433,19 @@ def _launch_selected_student_review(
         print("2. View current review details")
         print("3. Review minimum requirements")
         print("4. Review units and Focus Standard observations")
-        print("5. Manage submission pages")
-        print("6. Add teacher note")
-        print("7. Update submission review state")
-        print("8. Export student feedback")
-        print("9. Refresh summary")
-        print("10. Back")
+        print("5. Overall Focus Standard ratings")
+        print("6. Manage submission pages")
+        print("7. Add teacher note")
+        print("8. Update submission review state")
+        print("9. Export student feedback")
+        print("10. Refresh summary")
+        print("11. Back")
         print()
 
         choice = input("Select an option: ").strip()
         print()
 
-        if choice in {"", "10"}:
+        if choice in {"", "11"}:
             return 0
         if choice == "1":
             _open_submission_evidence(
@@ -468,6 +478,13 @@ def _launch_selected_student_review(
                 student_id,
             )
         elif choice == "5":
+            _menu_overall_focus_standard_ratings(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+        elif choice == "6":
             _menu_manage_submission_pages(
                 workspace_root,
                 class_id,
@@ -475,7 +492,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "6":
+        elif choice == "7":
             _menu_add_review_note(
                 workspace_root,
                 class_id,
@@ -483,7 +500,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "7":
+        elif choice == "8":
             _menu_update_submission_review_state(
                 workspace_root,
                 class_id,
@@ -491,7 +508,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "8":
+        elif choice == "9":
             _menu_export_student_feedback(
                 workspace_root,
                 class_id,
@@ -499,10 +516,10 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "9":
+        elif choice == "10":
             continue
         else:
-            print("Invalid selection. Please enter a number from 1 to 10.")
+            print("Invalid selection. Please enter a number from 1 to 11.")
             input("Press Enter to continue...")
 
 
@@ -2708,6 +2725,307 @@ def _menu_mark_observations_complete(
             f"{completed.missing_focus_standard_pairs}"
         )
     print_completed_review_unit_observations(completed)
+
+
+def _menu_overall_focus_standard_ratings(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    while True:
+        _print_review_action_header(
+            "Overall Focus Standard Ratings",
+            class_id,
+            assignment_id,
+            student_id,
+        )
+        assignment = _load_assignment_for_review(
+            workspace_root, class_id, assignment_id
+        )
+        if assignment is None:
+            input("Press Enter to continue...")
+            return
+        record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
+        _print_overall_rating_status(assignment, record)
+        _print_overall_rating_warnings(record)
+        print()
+        print("1. View Focus Standard observation summary")
+        print("2. Record/update overall Focus Standard rating")
+        print("3. Mark overall ratings complete")
+        print("4. Back")
+        print()
+        choice = input("Select an option: ").strip()
+        print()
+        if choice in {"", "4"}:
+            return
+        if choice == "1":
+            _menu_view_focus_standard_observation_summary(
+                workspace_root, class_id, assignment_id, student_id
+            )
+            input("Press Enter to continue...")
+        elif choice == "2":
+            _menu_record_overall_focus_standard_rating(
+                workspace_root, class_id, assignment_id, student_id, assignment
+            )
+            input("Press Enter to continue...")
+        elif choice == "3":
+            _menu_mark_overall_ratings_complete(
+                workspace_root, class_id, assignment_id, student_id, assignment
+            )
+            input("Press Enter to continue...")
+        else:
+            print("Invalid selection. Please enter a number from 1 to 4.")
+            input("Press Enter to continue...")
+
+
+def _print_overall_rating_status(
+    assignment: dict[str, Any],
+    record: dict[str, Any] | None,
+) -> None:
+    focus_standard_ids = assignment["focus_standard_ids"]
+    ratings = record.get("overall_standard_ratings", []) if record is not None else []
+    rated = {
+        rating.get("standard_id")
+        for rating in ratings
+        if isinstance(rating, dict) and rating.get("standard_id") in focus_standard_ids
+    }
+    print(f"Focus Standards configured: {len(focus_standard_ids)}")
+    print(f"Ratings recorded: {len(rated)}")
+    print(f"Missing ratings: {max(len(focus_standard_ids) - len(rated), 0)}")
+    print(f"Current review state: {record['review_state'] if record else 'not_started'}")
+
+
+def _print_overall_rating_warnings(record: dict[str, Any] | None) -> None:
+    if record is None:
+        print("Warning: no review record exists yet.")
+        return
+    if record["review_state"] == "returned_without_full_review":
+        print(
+            "This submission was returned without full standards review. "
+            "Change the minimum-requirements outcome before continuing with ratings."
+        )
+        return
+    if not record.get("review_units"):
+        print("Warning: no review units defined.")
+        return
+    observation_count = _count_review_unit_observations(record)
+    if observation_count == 0:
+        print("Warning: no observations recorded.")
+    if record["review_state"] != "observations_complete":
+        print("Warning: observations are not marked complete.")
+
+
+def _menu_view_focus_standard_observation_summary(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    try:
+        summaries = summarize_focus_standard_observations(
+            workspace_root, class_id, assignment_id, student_id
+        )
+    except ReviewRatingError as error:
+        print(f"Error: could not summarize observations: {error}")
+        return
+    for summary in summaries:
+        _print_focus_standard_observation_summary(summary)
+        print()
+
+
+def _menu_record_overall_focus_standard_rating(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    assignment: dict[str, Any],
+) -> None:
+    record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
+    if record is not None and record["review_state"] == "returned_without_full_review":
+        _print_overall_rating_warnings(record)
+        return
+    standard_id = _prompt_focus_standard_with_rating_status(
+        workspace_root,
+        assignment["focus_standard_ids"],
+        record,
+    )
+    if standard_id is None:
+        print("Overall rating entry canceled.")
+        return
+    try:
+        summaries = summarize_focus_standard_observations(
+            workspace_root, class_id, assignment_id, student_id
+        )
+    except ReviewRatingError as error:
+        print(f"Error: could not summarize observations: {error}")
+        return
+    summary = next(item for item in summaries if item.standard_id == standard_id)
+    _print_focus_standard_observation_summary(summary)
+    if summary.observation_count == 0:
+        print("Warning: selected Focus Standard has no observations.")
+    print()
+    _print_rating_scale(assignment)
+    rating = _prompt_rating_value(assignment)
+    if rating is None:
+        print("Overall rating entry canceled.")
+        return
+    rationale = input("Rationale (optional): ").strip() or None
+    include_in_feedback = _prompt_yes_no_default_yes("Include rating/rationale in feedback?")
+    print()
+    print("Save this overall Focus Standard rating?")
+    print(f"Standard: {standard_id}")
+    print(f"Rating: {rating}")
+    print(f"Rationale: {rationale if rationale else 'none'}")
+    print(f"Include in feedback: {_format_yes_no(include_in_feedback)}")
+    print()
+    print("1. Save rating")
+    print("2. Back")
+    print()
+    if input("Select an option: ").strip() != "1":
+        print("Overall rating entry canceled.")
+        return
+    try:
+        updated = set_overall_standard_rating(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            standard_id=standard_id,
+            rating=rating,
+            rationale=rationale,
+            include_in_feedback=include_in_feedback,
+        )
+    except ReviewRatingError as error:
+        print(f"Error: could not update overall rating: {error}")
+        return
+    print_updated_overall_standard_rating(updated)
+
+
+def _menu_mark_overall_ratings_complete(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    assignment: dict[str, Any],
+) -> None:
+    record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
+    if record is not None and record["review_state"] == "returned_without_full_review":
+        _print_overall_rating_warnings(record)
+        return
+    focus_standard_ids = assignment["focus_standard_ids"]
+    ratings = record.get("overall_standard_ratings", []) if record is not None else []
+    rated = {
+        rating.get("standard_id")
+        for rating in ratings
+        if isinstance(rating, dict) and rating.get("standard_id") in focus_standard_ids
+    }
+    missing = max(len(focus_standard_ids) - len(rated), 0)
+    print(f"Focus Standards: {len(focus_standard_ids)}")
+    print(f"Ratings recorded: {len(rated)}")
+    print(f"Missing ratings: {missing}")
+    if missing:
+        print("Warning: some Focus Standards do not have overall ratings.")
+    print()
+    print("1. Mark overall ratings complete")
+    print("2. Back")
+    print()
+    if input("Select an option: ").strip() != "1":
+        print("Overall ratings were not changed.")
+        return
+    try:
+        completed = mark_overall_ratings_complete(
+            workspace_root, class_id, assignment_id, student_id
+        )
+    except ReviewRatingError as error:
+        print(f"Error: could not mark overall ratings complete: {error}")
+        return
+    print_completed_overall_standard_ratings(completed)
+
+
+def _prompt_focus_standard_with_rating_status(
+    workspace_root: Path,
+    focus_standard_ids: list[str],
+    record: dict[str, Any] | None,
+) -> str | None:
+    ratings = record.get("overall_standard_ratings", []) if record is not None else []
+    ratings_by_standard = {
+        rating.get("standard_id"): rating
+        for rating in ratings
+        if isinstance(rating, dict)
+    }
+    print("Focus Standards:")
+    for index, standard_id in enumerate(focus_standard_ids, start=1):
+        current = ratings_by_standard.get(standard_id)
+        suffix = "not rated"
+        if current is not None:
+            suffix = f"current rating: {current['rating']}"
+        print(
+            f"{index}. {_format_standard_display(workspace_root, standard_id)} "
+            f"({suffix})"
+        )
+    print("B. Back")
+    print()
+    selection = input("Select Focus Standard: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        return None
+    if selection.isdigit() and 1 <= int(selection) <= len(focus_standard_ids):
+        return focus_standard_ids[int(selection) - 1]
+    if selection in focus_standard_ids:
+        return selection
+    print("Invalid Focus Standard selection.")
+    return None
+
+
+def _print_focus_standard_observation_summary(
+    summary: FocusStandardObservationSummary,
+) -> None:
+    current = "not recorded"
+    if summary.current_rating is not None:
+        current = str(summary.current_rating)
+    print(f"Focus Standard: {summary.standard_id}")
+    print(f"Current overall rating: {current}")
+    if summary.current_include_in_feedback is not None:
+        print(
+            "Current include in feedback: "
+            f"{_format_yes_no(summary.current_include_in_feedback)}"
+        )
+    if summary.current_rationale:
+        print(f"Current rationale: {summary.current_rationale}")
+    print(f"Review units: {summary.total_review_units}")
+    print(f"Observations recorded: {summary.observation_count}")
+    print(f"Applicable: {summary.applicable_count}")
+    print(f"Not applicable: {summary.not_applicable_count}")
+    print(f"Evidence present: {summary.evidence_present_count}")
+    print(f"Evidence missing: {summary.evidence_missing_count}")
+    print(f"Included for feedback: {summary.included_for_feedback_count}")
+    print("Notes:")
+    notes = [detail for detail in summary.details if detail.rationale]
+    if not notes:
+        print("- none")
+        return
+    for detail in notes:
+        print(f"- {detail.unit_label}: {detail.rationale}")
+
+
+def _print_rating_scale(assignment: dict[str, Any]) -> None:
+    print(f"Rating scale: {assignment['rating_scale']['scale_id']}")
+    for level in assignment["rating_scale"]["levels"]:
+        print(f"- {level['value']}: {level['label']} - {level['description']}")
+
+
+def _prompt_rating_value(assignment: dict[str, Any]) -> int | None:
+    valid_values = {
+        level["value"] for level in assignment["rating_scale"]["levels"]
+    }
+    response = input("Enter rating value: ").strip()
+    if not response:
+        return None
+    try:
+        value = int(response)
+    except ValueError:
+        return None
+    return value if value in valid_values else None
 
 
 def _menu_review_minimum_requirements(

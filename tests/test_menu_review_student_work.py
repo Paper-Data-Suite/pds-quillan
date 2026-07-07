@@ -273,7 +273,7 @@ def test_review_workflow_selects_context_and_shows_read_only_summary(
         for path in workspace.rglob("*")
         if path.is_file()
     )
-    _menu_input(monkeypatch, ["2", "1", "1", "1", "1", "1", "10", "6", "", "3", "6"])
+    _menu_input(monkeypatch, ["2", "1", "1", "1", "1", "1", "11", "6", "", "3", "6"])
 
     assert main(["menu"]) == 0
 
@@ -318,7 +318,7 @@ def test_review_summary_includes_existing_review_record_counts(
     review_before = review_path.read_bytes()
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "10", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "11", "6", "", "3", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -351,7 +351,7 @@ def test_review_menu_defines_review_units(
             "1",
             "",
             "4",
-            "10",
+            "11",
             "6",
             "",
             "3",
@@ -408,7 +408,7 @@ def test_review_menu_records_applicable_focus_standard_observation(
             "1",
             "",
             "4",
-            "10",
+            "11",
             "6",
             "",
             "3",
@@ -471,7 +471,7 @@ def test_review_menu_marks_observations_complete(
             "1",
             "",
             "4",
-            "10",
+            "11",
             "6",
             "",
             "3",
@@ -485,6 +485,93 @@ def test_review_menu_marks_observations_complete(
     review = json.loads(review_path.read_text(encoding="utf-8"))
     assert review["review_state"] == "observations_complete"
     assert review["overall_standard_ratings"] == []
+
+
+def test_review_menu_records_and_completes_overall_focus_standard_rating(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    review = _review_record()
+    review["review_state"] = "observations_complete"
+    review["review_units"] = [
+        {
+            "unit_id": "paragraph_1",
+            "sequence": 1,
+            "label": "Paragraph 1",
+            "unit_type": "paragraph",
+            "standard_observations": [
+                {
+                    "observation_id": "observation_0001",
+                    "standard_id": "njsls-ela:W.1",
+                    "applicable": True,
+                    "evidence_present": True,
+                    "rating": None,
+                    "rationale": "Clear evidence",
+                    "include_in_feedback": True,
+                    "updated_at": TIMESTAMP,
+                    "module_details": {},
+                }
+            ],
+            "module_details": {},
+        }
+    ]
+    review_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+
+    _menu_input(
+        monkeypatch,
+        [
+            "2",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "5",
+            "2",
+            "1",
+            "1",
+            "Good work.",
+            "",
+            "1",
+            "",
+            "3",
+            "1",
+            "",
+            "4",
+            "11",
+            "6",
+            "",
+            "3",
+            "6",
+        ],
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Overall Focus Standard Ratings" in output
+    assert "Rating scale: standards_2_level" in output
+    assert "Updated overall Focus Standard rating:" in output
+    assert "Marked overall Focus Standard ratings complete:" in output
+    assert "recommended" not in output.lower()
+    review = json.loads(review_path.read_text(encoding="utf-8"))
+    assert review["review_state"] == "ratings_complete"
+    assert review["overall_standard_ratings"] == [
+        {
+            "standard_id": "njsls-ela:W.1",
+            "rating": 1,
+            "rationale": "Good work.",
+            "include_in_feedback": True,
+            "updated_at": review["overall_standard_ratings"][0]["updated_at"],
+            "module_details": {},
+        }
+    ]
+    assert review["feedback"]["standard_feedback"] == _review_record()["feedback"][
+        "standard_feedback"
+    ]
+    for legacy_field in ("scores", "tags", "comments", "notes"):
+        assert legacy_field not in review
 
 
 def test_review_menu_blocks_observations_for_returned_without_full_review(
@@ -524,7 +611,7 @@ def test_review_menu_blocks_observations_for_returned_without_full_review(
             "1",
             "",
             "4",
-            "10",
+            "11",
             "6",
             "",
             "3",
@@ -602,7 +689,7 @@ def test_review_menu_views_current_review_details_read_only(
 
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "2", "", "10", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "2", "", "11", "6", "", "3", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -660,7 +747,7 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
     )
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "", "10", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "1", "", "11", "6", "", "3", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -716,7 +803,7 @@ def test_review_menu_multi_page_open_submission_selects_one_page(
     )
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "2", "", "10", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "1", "2", "", "11", "6", "", "3", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -778,7 +865,7 @@ def test_review_menu_multi_page_open_submission_opens_all_pages(
     )
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "A", "", "10", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "1", "A", "", "11", "6", "", "3", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -823,10 +910,10 @@ def test_review_menu_adds_teacher_note_to_review_record(
             "1",
             "1",
             "1",
-            "6",
+            "7",
             "This is a test note.",
             "",
-            "10",
+            "11",
             "6",
             "",
             "3",
@@ -866,11 +953,11 @@ def test_review_menu_updates_submission_review_state(
             "1",
             "1",
             "1",
-            "7",
+            "8",
             "in_progress",
             "1",
             "",
-            "10",
+            "11",
             "6",
             "",
             "3",
@@ -918,12 +1005,12 @@ def test_review_menu_excludes_submission_page_without_touching_review_record(
             "1",
             "1",
             "1",
-            "5",
+            "6",
             "1",
             "1",
             "1",
             "",
-            "10",
+            "11",
             "6",
             "",
             "3",

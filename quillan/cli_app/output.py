@@ -19,6 +19,10 @@ from quillan.review_observations import (
     UpdatedReviewUnitObservation,
     UpdatedReviewUnits,
 )
+from quillan.review_ratings import (
+    CompletedOverallStandardRatings,
+    UpdatedOverallStandardRating,
+)
 from quillan.review_scores import UpdatedReviewScore
 from quillan.review_tags import AddedReviewTag
 from quillan.route_planning import RouteFailure
@@ -156,6 +160,37 @@ def print_completed_review_unit_observations(
     print(f"Units: {completed.unit_count}")
     print(f"Observations: {completed.observation_count}")
     print(f"Unobserved unit-standard pairs: {completed.missing_focus_standard_pairs}")
+    print(f"Review state: {completed.review_state}")
+    print(f"Review record: {completed.review_record_relative_path}")
+
+
+def print_updated_overall_standard_rating(
+    updated: UpdatedOverallStandardRating,
+) -> None:
+    """Print a concise teacher-facing overall Focus Standard rating summary."""
+    print("Updated overall Focus Standard rating:")
+    print(f"Class: {updated.class_id}")
+    print(f"Assignment: {updated.assignment_id}")
+    print(f"Student: {updated.student_id}")
+    print(f"Standard: {updated.standard_id}")
+    print(f"Rating: {updated.rating} - {updated.rating_label}")
+    print(f"Include in feedback: {format_bool(updated.include_in_feedback)}")
+    print(f"Action: {'created' if updated.was_created else 'updated'}")
+    print(f"Review state: {updated.review_state}")
+    print(f"Review record: {updated.review_record_relative_path}")
+
+
+def print_completed_overall_standard_ratings(
+    completed: CompletedOverallStandardRatings,
+) -> None:
+    """Print a concise teacher-facing overall-ratings completion summary."""
+    print("Marked overall Focus Standard ratings complete:")
+    print(f"Class: {completed.class_id}")
+    print(f"Assignment: {completed.assignment_id}")
+    print(f"Student: {completed.student_id}")
+    print(f"Focus Standards: {completed.focus_standard_count}")
+    print(f"Ratings recorded: {completed.rating_count}")
+    print(f"Missing ratings: {completed.missing_rating_count}")
     print(f"Review state: {completed.review_state}")
     print(f"Review record: {completed.review_record_relative_path}")
 

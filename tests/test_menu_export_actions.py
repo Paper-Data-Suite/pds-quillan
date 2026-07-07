@@ -57,11 +57,11 @@ def _enter_selected_student(student_choice: str = "1") -> list[str]:
 
 
 def _exit_selected_student_to_main() -> list[str]:
-    return ["10"] + _exit_assignment_review_actions_to_main()
+    return ["11"] + _exit_assignment_review_actions_to_main()
 
 
 def _exit_after_selected_student_action_to_main() -> list[str]:
-    return ["", "10"] + _exit_assignment_review_actions_to_main()
+    return ["", "11"] + _exit_assignment_review_actions_to_main()
 
 
 def _write_workspace(root: Path) -> None:
@@ -318,7 +318,7 @@ def test_selected_student_review_menu_includes_feedback_export(
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
     assert "Selected Student Review" in output
-    assert "8. Export student feedback" in output
+    assert "9. Export student feedback" in output
 
 
 def test_menu_export_student_feedback_creates_feedback_file(
@@ -358,7 +358,7 @@ def test_menu_export_student_feedback_creates_feedback_file(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["8", "1"]
+        + ["9", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -460,7 +460,7 @@ def test_menu_export_feedback_invalid_overwrite_cancels_without_writing(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["8", "2"]
+        + ["9", "2"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -491,7 +491,7 @@ def test_menu_export_feedback_reports_missing_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["8", "1"]
+        + ["9", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -525,7 +525,7 @@ def test_menu_export_feedback_requires_overwrite_when_existing(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["8", "1", "1"]
+        + ["9", "1", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -559,7 +559,7 @@ def test_menu_export_feedback_overwrites_existing_export(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["8", "1", "2"]
+        + ["9", "1", "2"]
         + _exit_after_selected_student_action_to_main(),
     )
 
