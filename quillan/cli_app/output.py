@@ -11,7 +11,7 @@ from quillan.assignment_submission_assembly import (
 )
 from quillan.class_summary_export import ExportedClassSummary
 from quillan.evidence_filing import EvidenceFilingError, RoutedEvidenceFile
-from quillan.feedback_export import ExportedFeedback
+from quillan.feedback_export import ExportedFeedback, ExportedFeedbackPdf
 from quillan.focus_standard_comments import SavedReusableFocusStandardComment
 from quillan.review_comments import AddedReviewComment
 from quillan.review_feedback import (
@@ -292,6 +292,22 @@ def print_exported_feedback(exported: ExportedFeedback) -> None:
     print(f"Scores: {exported.score_count}")
     print(f"Overwrote existing: {format_bool(exported.overwrote_existing)}")
     print(f"Feedback file: {exported.feedback_relative_path}")
+
+
+def print_exported_feedback_pdf(exported: ExportedFeedbackPdf) -> None:
+    """Print a concise student-feedback PDF export summary."""
+    print("Exported student feedback PDF:")
+    print(f"Class: {exported.class_id}")
+    print(f"Assignment: {exported.assignment_id}")
+    print(f"Student: {exported.student_id}")
+    print(f"Student name: {exported.student_display_name}")
+    print(f"Focus Standard ratings: {exported.included_standard_rating_count}")
+    print(f"Included comments: {exported.included_comment_count}")
+    print(f"Included observations: {exported.included_observation_count}")
+    print(f"Overwrote existing: {format_bool(exported.overwrote_existing)}")
+    print(f"PDF file: {exported.feedback_pdf_relative_path}")
+    if exported.feedback_markdown_relative_path is not None:
+        print(f"Markdown file: {exported.feedback_markdown_relative_path}")
 
 
 def print_exported_class_summary(exported: ExportedClassSummary) -> None:

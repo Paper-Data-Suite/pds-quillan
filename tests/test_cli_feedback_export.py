@@ -8,7 +8,7 @@ import pytest
 
 from quillan.cli import main
 import quillan.cli_app.handlers.exports as cli_exports
-from quillan.feedback_export import feedback_export_path
+from quillan.feedback_export import feedback_export_path, feedback_pdf_export_path
 from tests.test_review_scores import _write_manifest, _write_review
 from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID, _review
 
@@ -102,6 +102,35 @@ def test_cli_missing_review_returns_one(
         ["export-feedback", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]
     ) == 1
     assert "Review record does not exist" in capsys.readouterr().out
+
+
+def test_cli_exports_pdf_feedback_and_prints_pdf_summary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_manifest(tmp_path)
+    _write_review(tmp_path, _review("feedback_composed"))
+    monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
+
+    assert main(
+        [
+            "export-feedback",
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            "--format",
+            "pdf",
+        ]
+    ) == 0
+
+    output = capsys.readouterr().out
+    assert "Exported student feedback PDF:" in output
+    assert "Focus Standard ratings:" in output
+    assert "PDF file:" in output
+    assert feedback_pdf_export_path(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    ).is_file()
 
 
 def test_cli_overwrite_flag_controls_replacement(
