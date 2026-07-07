@@ -25,7 +25,7 @@ particular, `review.json` may reference evidence by `evidence_id`, page number,
 review-unit sequence, and workspace-relative paths, but it does not copy routed
 evidence files or retained-source records.
 
-This document defines the target submission review schema version `2` for the
+This document defines the active submission review schema version `2` for the
 v0.8.6 standards-based workflow redesign.
 
 Schema version `2` supersedes the older v0.7 review model centered on generic
@@ -56,14 +56,13 @@ For the standards-based redesign rationale, see:
 
 ## Status
 
-This is the target review record contract for v0.8.6.
-
-Implementation, runtime validators, review menus, exports, reports, tests, and
-migration helpers may not yet fully match this contract until later v0.8.6
-issues are completed.
+This is the active review record contract for v0.8.6. Runtime validators,
+review menus, exports, reports, and tests now use schema version `2` review
+records. Future migration helpers may still be added if legacy classroom data
+ever needs conversion.
 
 The older schema version `1` contract remains legacy development history. It
-is summarized later in this document, but it is not the target architecture for
+is summarized later in this document, but it is not the active architecture for
 new standards-based review work.
 
 ## Canonical Path
@@ -808,7 +807,7 @@ Field rules:
   review record used to generate the export.
 * `module_details` is an object.
 
-The target v0.8.6 model treats PDF feedback as a first-class student-facing
+The active v0.8.6 model treats PDF feedback as a first-class student-facing
 export. Markdown may remain available as an optional derived export.
 
 Export files are derived artifacts. They do not replace `review.json`.

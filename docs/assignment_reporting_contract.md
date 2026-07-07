@@ -2,7 +2,7 @@
 
 ## Purpose and Boundary
 
-This document defines Quillan's target v0.8.6 assignment-level reporting contract.
+This document defines Quillan's v0.8.6 assignment-level reporting contract.
 
 Quillan should provide enough reporting to stand alone for a single writing assignment. It should not become the broader Paper Data Suite reporting engine.
 
@@ -37,11 +37,13 @@ Those broader questions belong to a future Paper Data Suite reporting module.
 
 ## Status
 
-This is the target assignment-level reporting contract for the v0.8.6 standards-based workflow redesign.
-
-Implementation, runtime validators, CLI commands, menu workflows, PDF generation, CSV generation, manifest generation, tests, and migration helpers may not yet match this contract until later v0.8.6 implementation issues are completed.
-
-At the time this contract is introduced, the current runtime may still generate legacy class and standards summaries from schema version `1` review records using generic tags, criterion scores, and selected comments. That legacy behavior is implementation history. It is not the target architecture for new standards-based review work.
+This is the active assignment-level reporting contract for the v0.8.6
+standards-based workflow redesign. Runtime exports support assignment-local
+class summary CSVs and Focus Standard summary CSVs from schema version `2`
+review records. Some optional future formats, such as PDFs or assignment
+results manifests, may remain contract guidance, but the active reporting
+workflow is no longer the legacy schema version `1` tag/comment/score summary
+path.
 
 ## Design Context
 
@@ -1290,9 +1292,9 @@ Quillan should not implement those broader reports.
 
 Quillan's responsibility ends at assignment-local summaries and assignment-local handoff metadata.
 
-## Relationship to Current Runtime
+## Relationship to Legacy Runtime
 
-Current runtime exports may still produce:
+Legacy runtime exports produced:
 
 ```text
 classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
@@ -1307,9 +1309,10 @@ review.json.scores
 review.json.comments
 ```
 
-That behavior is legacy implementation history.
+That behavior is legacy implementation history and is not the active v0.8.6
+reporting path.
 
-The target v0.8.6 reporting model should use:
+The active v0.8.6 reporting model uses:
 
 ```text
 assignment.json.focus_standard_ids
@@ -1321,8 +1324,6 @@ review.json.overall_standard_ratings
 review.json.review_units[].standard_observations, where useful
 review.json.exports
 ```
-
-This contract does not require immediate runtime changes.
 
 ## Synthetic Example Policy
 

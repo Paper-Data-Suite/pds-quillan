@@ -11,10 +11,16 @@ common high school ELA writing tasks and 2023 NJSLS-ELA references. They are
 not official state curriculum, not district grading policy, and not automatic
 evaluation.
 
-Quillan is not an ELA-only grader. These files are one optional installable
-starter pack for ELA classrooms; Quillan's comment-bank, tag-bank, rubric,
-assignment, submission, and review-record structures remain subject-agnostic.
-For the general prepared-review model, see
+Status: these files are legacy/inactive v1 review-material examples for
+comment-bank, tag-bank, and rubric compatibility work. They are not the active
+v0.8.6 standards-based review workflow, which uses assignment Focus Standards,
+review units, overall Focus Standard ratings, Focus Standard feedback
+composition, and reusable Focus Standard comments.
+
+Quillan is not an ELA-only grader. These files are one optional historical
+starter pack for ELA classrooms; Quillan's active assignment, submission, and
+review-record structures remain subject-agnostic. For the active
+standards-based review model, see
 [`prepared_review_workflow.md`](prepared_review_workflow.md).
 
 ## What Is Included

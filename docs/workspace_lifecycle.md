@@ -66,25 +66,23 @@ The expected current and reserved layout is:
               requirements.json
               review.json
               exports/
+                feedback.pdf
                 feedback.md
           exports/
-            standards_summary.csv
             class_summary.csv
+            standards_summary.csv
           debug/
 ```
 
-Reusable prepared-review materials live outside individual assignments:
+Reusable Focus Standard comments live outside individual assignments:
 
 ```text
-<PDS workspace root>/shared/comment_banks/<bank_id>.json
-<PDS workspace root>/shared/tag_banks/<tag_bank_id>.json
-<PDS workspace root>/shared/rubrics/<rubric_id>.json
+<PDS workspace root>/shared/focus_standard_comments/<comment_set_id>.json
 ```
 
-Starter-material installation is bounded to those shared review-material
-folders. It does not create assignments, rosters, scans, submissions, review
-records, exports, pds-core standards files, pds-core standards profiles, or
-pds-core route helpers.
+Legacy `shared/comment_banks/`, `shared/tag_banks/`, and `shared/rubrics/`
+folders may remain as historical or compatibility material, but they are not
+the active v0.8.6 standards-based review workflow.
 
 The active scan paths, assignment directory, `assignment.json`,
 `submissions/`, and each student's submission directory follow shared PDS
@@ -109,9 +107,11 @@ feedback exports, or historical evidence.
 
 ### `assignment.json`
 
-The teacher-created assignment configuration. It defines the task, writing
-type, connected class IDs, standards profile reference, focus standards,
-basic requirements, tagging mode, and rubric reference.
+The teacher-created assignment configuration. Active schema version `2`
+assignments define the task, writing type, connected class IDs, student
+prompt, standards profile reference, Focus Standard IDs, review-unit
+configuration, rating scale, basic requirements, and minimum-requirement
+policy.
 
 Quillan's Assignment Management menu can create this file from prompts after
 the teacher selects a class with an existing canonical roster. It uses the
@@ -124,8 +124,8 @@ existing assignment validation contract and the shared assignment route:
 The menu can also load, validate, and summarize an explicit assignment JSON
 path without rewriting it. Existing configs require exact `OVERWRITE`
 confirmation before replacement. This workflow does not edit or delete
-assignments and does not perform scoring, feedback, tagging execution,
-requirements checking, reporting, scan routing, OCR, AI, or printable packet
+assignments and does not perform scoring, feedback, reporting, scan routing,
+OCR, AI, or printable packet
 generation.
 
 ### `templates/`
@@ -164,8 +164,8 @@ canonical retained source location. The direct `route-scan` workflow files a
 selected source here only when the caller supplies an already-decoded
 canonical PDS1 payload. The validation, naming, collision, provenance, and
 failure-review behavior is defined in
-[`scan_routing_design.md`](scan_routing_design.md). Quillan does not inspect
-raw scans for QR codes, split PDFs, batch-ingest folders, or perform OCR.
+[`scan_routing_design.md`](scan_routing_design.md). Quillan does not perform
+OCR or evaluate writing from scan contents.
 
 ### `submissions/<student_id>/submission.json`
 
@@ -173,8 +173,8 @@ The Quillan version `1` submission manifest for one student's routed
 evidence for one assignment. It identifies the class, assignment, and student;
 represents expected, missing, duplicate, replacement, damaged, or excluded
 pages; preserves retained-source provenance; and records teacher-controlled
-submission-management state without containing notes, scores, tags, selected
-comments, or feedback exports.
+submission-management state without containing private notes, Focus Standard
+ratings, feedback composition, or feedback exports.
 
 Loading, validation, canonical path computation, safe writing, and
 new-manifest assembly from caller-provided evidence metadata are implemented
@@ -187,45 +187,47 @@ metadata-only teacher-controlled state update.
 ### `submissions/<student_id>/submission.txt`
 
 The student-produced writing evidence in plain text. It remains separate from
-requirements results, review tags, scores, feedback, and reports so the source
-evidence is not rewritten as teacher judgment is added.
+requirements results, Focus Standard ratings, feedback, and reports so the
+source evidence is not rewritten as teacher judgment is added.
 
 ### `submissions/<student_id>/requirements.json`
 
-A reserved future requirements-check location for basic teacher-defined
-assignment requirements. The implemented workflow stores current
-teacher-entered requirement checks in `review.json.requirement_checks`, not in
-a sibling `requirements.json`. Requirement checks are teacher-review support
-artifacts, not scores.
+A reserved historical requirements-check location. The active v0.8.6 workflow
+stores teacher-entered minimum-requirement data in
+`review.json.minimum_requirement_checks` and
+`review.json.minimum_requirement_outcome`, not in a sibling `requirements.json`.
+Requirement checks are teacher-review support artifacts, not scores.
 
 ### `submissions/<student_id>/review.json`
 
-The canonical active v0.7 teacher-review record for one submission. It stores
-teacher-entered notes, tags, criterion scores, selected reusable or custom
-comments, and an explicit `review_state`. It references the adjacent
-`submission.json` and evidence IDs without copying routed evidence paths.
+The canonical active schema version `2` teacher-review record for one
+submission. It stores minimum-requirement checks and outcome, review units,
+review-unit Focus Standard observations, overall Focus Standard ratings, Focus
+Standard feedback composition, private notes, export metadata, and an explicit
+`review_state`. It references the adjacent `submission.json` and evidence IDs
+without copying routed evidence paths.
 
 `review_state` is independent of `submission_state`; neither state
 automatically determines the other. The complete record contract is defined
 in [`review_record_contract.md`](review_record_contract.md). Loading, writing,
-direct review commands, guided teacher-facing menu review, and derived exports
-are implemented by the runtime.
+guided teacher-facing menu review, and derived exports are implemented by the
+runtime.
 
-Earlier separate `tags.json` and `scores.json` designs are historical and are
-not alternate active v0.7 paths.
+Earlier separate `tags.json`, `scores.json`, and schema version `1` review
+designs are historical and are not alternate active v0.8.6 paths.
 
-### `submissions/<student_id>/exports/feedback.md`
+### `submissions/<student_id>/exports/feedback.pdf` and `feedback.md`
 
-The implemented student-readable Markdown export derived from a valid matching
-`submission.json` and `review.json`. It remains traceable to `review.json` and
-must not be treated as an independent review record or a replacement for
-teacher judgment. Existing output is protected unless overwrite is explicitly
-requested.
+Student-readable feedback exports derived from valid matching `assignment.json`,
+`submission.json`, and schema version `2` `review.json`. They remain traceable
+to `review.json` and must not be treated as independent review records or a
+replacement for teacher judgment. Existing output is protected unless
+overwrite is explicitly requested.
 
 ### `exports/`
 
 The assignment-local location for derived teacher-facing reports. Implemented
-report names are `standards_summary.csv` and `class_summary.csv`. Reports
+report names are `class_summary.csv` and `standards_summary.csv`. Reports
 summarize records; they do not replace the underlying source evidence or
 teacher-review artifacts.
 
@@ -264,7 +266,7 @@ identify routed artifacts and their retained-source provenance:
 workflows that use it. The manifest is part of the evidentiary record because
 it establishes identity, provenance, page state, and teacher-controlled
 submission-management state. It does not contain the teacher's notes, score,
-tags, selected comments, or feedback export.
+Focus Standard ratings, feedback composition, or feedback export.
 
 ### Teacher-Review Artifacts
 
@@ -275,17 +277,19 @@ through teacher review:
 
 These records support efficient review while preserving the teacher as the
 source of evaluative judgment. They should remain connected to, but separate
-from, the source evidence. `review.json` is the canonical active v0.7
-container for notes, tags, criterion scores, selected comments, and
-teacher-entered requirement checks.
+from, the source evidence. `review.json` is the canonical active schema version
+`2` container for minimum requirements, review units, Focus Standard
+observations, overall ratings, feedback composition, private notes, and export
+metadata.
 
 ### Derived Exports and Reports
 
 Derived outputs are generated from teacher-reviewed records:
 
+* `submissions/<student_id>/exports/feedback.pdf`
 * `submissions/<student_id>/exports/feedback.md`
-* `exports/standards_summary.csv`
 * `exports/class_summary.csv`
+* `exports/standards_summary.csv`
 
 Exports and reports should be reproducible from the applicable reviewed
 records and should not become the sole copy of submission evidence or teacher
@@ -311,8 +315,8 @@ document defines where those records belong in the shared PDS workspace and
 how they relate to one another over time.
 
 [`teacher_review_model.md`](teacher_review_model.md) defines what source
-evidence, teacher-review artifacts, scores, feedback, and derived reports mean
-within Quillan's teacher-controlled review process.
+evidence, teacher-review artifacts, Focus Standard ratings, feedback, and
+derived reports mean within Quillan's teacher-controlled review process.
 
 [`printable_response_template.md`](printable_response_template.md) defines the
 required structure, identity fields, PDS1 payload use, writing area, and
@@ -321,11 +325,11 @@ writing-response pages.
 
 [`scan_routing_design.md`](scan_routing_design.md) defines how decoded response
 payloads are validated and how Quillan routed evidence fits the shared
-`pds-core` active scan contract. The direct `route-scan` command implements the
-caller-supplied decoded-payload slice. Canonical retained sources belong in
-`scans/source/YYYY-MM-DD/`, canonical failure records belong in
-`scans/review/`, and assignment-level `scans/` contains routed evidence. QR
-recognition, PDF splitting, batch raw-scan intake, and OCR remain future work.
+`pds-core` active scan contract. The direct `route-scan` command supports
+caller-supplied decoded payloads and QR-aware image, PDF, or non-recursive
+folder intake. Canonical retained sources belong in `scans/source/YYYY-MM-DD/`,
+canonical failure records belong in `scans/review/`, and assignment-level
+`scans/` contains routed evidence. OCR remains outside Quillan's scope.
 
 ## Scan Intake and Submission Assembly
 

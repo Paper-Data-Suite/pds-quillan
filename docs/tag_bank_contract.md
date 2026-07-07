@@ -1,5 +1,9 @@
 # Quillan Tag Bank Contract
 
+Status: legacy/inactive compatibility documentation. Generic tag banks are not
+the active v0.8.6 observation workflow. Active observations are review-unit
+Focus Standard observations stored in schema version `2` `review.json`.
+
 A tag bank is reusable, teacher-authored source data for selecting short
 structured review observations during student-work review.
 
