@@ -14,6 +14,11 @@ from quillan.evidence_filing import EvidenceFilingError, RoutedEvidenceFile
 from quillan.feedback_export import ExportedFeedback
 from quillan.review_comments import AddedReviewComment
 from quillan.review_notes import AddedReviewNote
+from quillan.review_observations import (
+    CompletedReviewUnitObservations,
+    UpdatedReviewUnitObservation,
+    UpdatedReviewUnits,
+)
 from quillan.review_scores import UpdatedReviewScore
 from quillan.review_tags import AddedReviewTag
 from quillan.route_planning import RouteFailure
@@ -105,6 +110,54 @@ def print_updated_review_score(updated: UpdatedReviewScore) -> None:
     print(f"Action: {'created' if updated.was_created else 'updated'}")
     print(f"Review state: {updated.review_state}")
     print(f"Review record: {updated.review_record_relative_path}")
+
+
+def print_updated_review_units(updated: UpdatedReviewUnits) -> None:
+    """Print a concise teacher-facing review-unit summary."""
+    print("Updated review units:")
+    print(f"Class: {updated.class_id}")
+    print(f"Assignment: {updated.assignment_id}")
+    print(f"Student: {updated.student_id}")
+    print(f"Units: {updated.unit_count}")
+    print(f"Review state: {updated.review_state}")
+    print(f"Review record: {updated.review_record_relative_path}")
+
+
+def print_updated_review_unit_observation(
+    updated: UpdatedReviewUnitObservation,
+) -> None:
+    """Print a concise teacher-facing observation summary."""
+    print("Updated Focus Standard observation:")
+    print(f"Class: {updated.class_id}")
+    print(f"Assignment: {updated.assignment_id}")
+    print(f"Student: {updated.student_id}")
+    print(f"Unit: {updated.unit_label} ({updated.unit_id})")
+    print(f"Standard: {updated.standard_id}")
+    print(f"Observation: {updated.observation_id}")
+    print(f"Applicable: {format_bool(updated.applicable)}")
+    evidence = "not applicable"
+    if updated.evidence_present is not None:
+        evidence = format_bool(updated.evidence_present)
+    print(f"Evidence present: {evidence}")
+    print(f"Include in feedback: {format_bool(updated.include_in_feedback)}")
+    print(f"Action: {'created' if updated.was_created else 'updated'}")
+    print(f"Review state: {updated.review_state}")
+    print(f"Review record: {updated.review_record_relative_path}")
+
+
+def print_completed_review_unit_observations(
+    completed: CompletedReviewUnitObservations,
+) -> None:
+    """Print a concise teacher-facing observation-completion summary."""
+    print("Marked review-unit observations complete:")
+    print(f"Class: {completed.class_id}")
+    print(f"Assignment: {completed.assignment_id}")
+    print(f"Student: {completed.student_id}")
+    print(f"Units: {completed.unit_count}")
+    print(f"Observations: {completed.observation_count}")
+    print(f"Unobserved unit-standard pairs: {completed.missing_focus_standard_pairs}")
+    print(f"Review state: {completed.review_state}")
+    print(f"Review record: {completed.review_record_relative_path}")
 
 
 def print_exported_feedback(exported: ExportedFeedback) -> None:

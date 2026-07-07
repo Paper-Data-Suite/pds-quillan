@@ -111,10 +111,14 @@ def _append_review_units(lines: list[str], record: dict[str, Any]) -> None:
         lines.append(f"{unit['sequence']}. {unit['label']} ({unit['unit_type']})")
         for observation in _record_list(unit, "standard_observations"):
             status = "applicable" if observation["applicable"] else "not applicable"
+            evidence = _format_evidence_present(observation["evidence_present"])
+            include = "yes" if observation["include_in_feedback"] else "no"
             lines.append(
                 f"   - {observation['standard_id']}: {status}; "
-                f"rating {_format_nullable(observation['rating'])}"
+                f"evidence present: {evidence}; include in feedback: {include}"
             )
+            if observation["rating"] is not None:
+                lines.append(f"     Rating: {observation['rating']}")
             if rationale := _non_empty(observation.get("rationale")):
                 lines.append(f"     Rationale: {rationale}")
         lines.append("")
@@ -177,5 +181,7 @@ def _non_empty(value: Any) -> str | None:
     return value.strip() if isinstance(value, str) and value.strip() else None
 
 
-def _format_nullable(value: Any) -> str:
-    return "not recorded" if value is None else str(value)
+def _format_evidence_present(value: Any) -> str:
+    if value is None:
+        return "not applicable"
+    return "yes" if value is True else "no"

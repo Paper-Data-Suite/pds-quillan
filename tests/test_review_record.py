@@ -206,6 +206,62 @@ def test_populated_v2_record_validates() -> None:
     validate_review_record(_populated_record())
 
 
+def test_applicable_standard_observation_allows_null_rating() -> None:
+    record = _populated_record()
+    record["review_units"][0]["standard_observations"][0]["rating"] = None
+
+    validate_review_record(record)
+
+
+def test_applicable_standard_observation_allows_integer_rating() -> None:
+    record = _populated_record()
+    record["review_units"][0]["standard_observations"][0]["rating"] = 2
+
+    validate_review_record(record)
+
+
+def test_not_applicable_standard_observation_requires_null_evidence_and_rating() -> None:
+    record = _populated_record()
+    record["review_units"][0]["standard_observations"][1]["evidence_present"] = False
+    _assert_invalid(record, "evidence_present")
+
+    record = _populated_record()
+    record["review_units"][0]["standard_observations"][1]["rating"] = 1
+    _assert_invalid(record, "rating")
+
+
+def test_duplicate_observation_ids_are_rejected() -> None:
+    record = _populated_record()
+    record["review_units"].append(
+        {
+            "unit_id": "paragraph_2",
+            "sequence": 2,
+            "label": "Paragraph 2",
+            "unit_type": "paragraph",
+            "standard_observations": [
+                {
+                    **record["review_units"][0]["standard_observations"][0],
+                    "standard_id": "njsls-ela:W.IW.11-12.2",
+                }
+            ],
+            "module_details": {},
+        }
+    )
+
+    _assert_invalid(record, "Duplicate observation_id")
+
+
+def test_duplicate_standard_observations_within_unit_are_rejected() -> None:
+    record = _populated_record()
+    duplicate = {
+        **record["review_units"][0]["standard_observations"][0],
+        "observation_id": "observation_0003",
+    }
+    record["review_units"][0]["standard_observations"].append(duplicate)
+
+    _assert_invalid(record, "Duplicate standard_id")
+
+
 def test_valid_json_file_loads_successfully(tmp_path: Path) -> None:
     record = _populated_record()
     path = tmp_path / "review.json"
@@ -328,7 +384,7 @@ def test_updated_at_before_created_at_is_rejected() -> None:
         (("review_units", 0, "standard_observations"), {}, "standard_observations"),
         (("review_units", 0, "standard_observations", 0, "applicable"), "yes", "applicable"),
         (("review_units", 0, "standard_observations", 0, "evidence_present"), None, "evidence_present"),
-        (("review_units", 0, "standard_observations", 0, "rating"), None, "rating"),
+        (("review_units", 0, "standard_observations", 0, "rating"), 1.5, "rating"),
         (("review_units", 0, "standard_observations", 0, "rationale"), " ", "rationale"),
         (("review_units", 0, "standard_observations", 0, "include_in_feedback"), 1, "include_in_feedback"),
         (("overall_standard_ratings",), {}, "overall_standard_ratings"),

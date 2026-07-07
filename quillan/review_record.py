@@ -453,7 +453,8 @@ def _validate_standard_observations(
         applicable = _validate_boolean(item["applicable"], f"{item_context}.applicable")
         if applicable:
             _validate_boolean(item["evidence_present"], f"{item_context}.evidence_present")
-            _validate_integer(item["rating"], f"{item_context}.rating")
+            if item["rating"] is not None:
+                _validate_integer(item["rating"], f"{item_context}.rating")
         else:
             if item["evidence_present"] is not None:
                 raise ReviewRecordError(

@@ -13,6 +13,7 @@ import pytest
 from quillan.cli import main
 import quillan.review_menu as review_menu
 from quillan.review_record import build_empty_review_record
+from quillan.review_record_paths import review_record_path
 from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
@@ -272,7 +273,7 @@ def test_review_workflow_selects_context_and_shows_read_only_summary(
         for path in workspace.rglob("*")
         if path.is_file()
     )
-    _menu_input(monkeypatch, ["2", "1", "1", "1", "1", "1", "9", "6", "", "3", "6"])
+    _menu_input(monkeypatch, ["2", "1", "1", "1", "1", "1", "10", "6", "", "3", "6"])
 
     assert main(["menu"]) == 0
 
@@ -317,7 +318,7 @@ def test_review_summary_includes_existing_review_record_counts(
     review_before = review_path.read_bytes()
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "9", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "10", "6", "", "3", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -328,6 +329,213 @@ def test_review_summary_includes_existing_review_record_counts(
     assert "Private notes: 1" in output
     assert "Review-unit observations: 0" in output
     assert review_path.read_bytes() == review_before
+
+
+def test_review_menu_defines_review_units(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(
+        monkeypatch,
+        [
+            "2",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "4",
+            "1",
+            "2",
+            "1",
+            "",
+            "4",
+            "10",
+            "6",
+            "",
+            "3",
+            "6",
+        ],
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Review Units and Focus Standard Observations" in output
+    assert "Updated review units:" in output
+    review = json.loads(
+        review_record_path(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+        ).read_text(encoding="utf-8")
+    )
+    assert [unit["unit_id"] for unit in review["review_units"]] == [
+        "paragraph_1",
+        "paragraph_2",
+    ]
+    assert [unit["label"] for unit in review["review_units"]] == [
+        "Paragraph 1",
+        "Paragraph 2",
+    ]
+    assert review["review_state"] == "observations_in_progress"
+
+
+def test_review_menu_records_applicable_focus_standard_observation(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(
+        monkeypatch,
+        [
+            "2",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "4",
+            "1",
+            "1",
+            "1",
+            "",
+            "2",
+            "1",
+            "1",
+            "1",
+            "",
+            "",
+            "Clear evidence.",
+            "1",
+            "",
+            "4",
+            "10",
+            "6",
+            "",
+            "3",
+            "6",
+        ],
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Updated Focus Standard observation:" in output
+    assert "Action: created" in output
+    assert "Rating:" not in output
+    review = json.loads(
+        review_record_path(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+        ).read_text(encoding="utf-8")
+    )
+    observation = review["review_units"][0]["standard_observations"][0]
+    assert observation["standard_id"] == "njsls-ela:W.1"
+    assert observation["applicable"] is True
+    assert observation["evidence_present"] is True
+    assert observation["rating"] is None
+    assert observation["rationale"] == "Clear evidence."
+    assert observation["include_in_feedback"] is True
+    assert review["overall_standard_ratings"] == []
+    assert review["feedback"]["standard_feedback"] == []
+
+
+def test_review_menu_marks_observations_complete(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    review = _review_record()
+    review["review_state"] = "observations_in_progress"
+    review["review_units"] = [
+        {
+            "unit_id": "paragraph_1",
+            "sequence": 1,
+            "label": "Paragraph 1",
+            "unit_type": "paragraph",
+            "standard_observations": [],
+            "module_details": {},
+        }
+    ]
+    review_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+
+    _menu_input(
+        monkeypatch,
+        [
+            "2",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "4",
+            "3",
+            "1",
+            "",
+            "4",
+            "10",
+            "6",
+            "",
+            "3",
+            "6",
+        ],
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Marked review-unit observations complete:" in output
+    review = json.loads(review_path.read_text(encoding="utf-8"))
+    assert review["review_state"] == "observations_complete"
+    assert review["overall_standard_ratings"] == []
+
+
+def test_review_menu_blocks_observations_for_returned_without_full_review(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    review = build_empty_review_record(
+        class_id=CLASS_ID,
+        assignment_id=ASSIGNMENT_ID,
+        student_id=STUDENT_ID,
+        created_at=TIMESTAMP,
+    )
+    review["review_state"] = "returned_without_full_review"
+    review["minimum_requirement_outcome"] = {
+        "status": "returned_without_full_review",
+        "returned_without_full_review": True,
+        "teacher_note": "Missing required work.",
+        "updated_at": TIMESTAMP,
+    }
+    review_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+    before = review_path.read_bytes()
+
+    _menu_input(
+        monkeypatch,
+        [
+            "2",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "4",
+            "1",
+            "1",
+            "1",
+            "",
+            "4",
+            "10",
+            "6",
+            "",
+            "3",
+            "6",
+        ],
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "returned without full standards review" in output
+    assert review_path.read_bytes() == before
 
 
 def test_review_menu_views_current_review_details_read_only(
@@ -394,14 +602,18 @@ def test_review_menu_views_current_review_details_read_only(
 
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "2", "", "9", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "2", "", "10", "6", "", "3", "6"],
     )
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
     assert "Current Review Details" in output
     assert "Paragraph 2 (paragraph)" in output
-    assert "njsls-ela:W.1: applicable; rating 1" in output
+    assert (
+        "njsls-ela:W.1: applicable; evidence present: yes; "
+        "include in feedback: yes"
+    ) in output
+    assert "Rating: 1" in output
     assert "Explain how this evidence supports the claim." in output
     assert review_path.read_bytes() == review_before
 
@@ -448,7 +660,7 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
     )
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "", "9", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "1", "", "10", "6", "", "3", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -504,7 +716,7 @@ def test_review_menu_multi_page_open_submission_selects_one_page(
     )
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "2", "", "9", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "1", "2", "", "10", "6", "", "3", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -566,7 +778,7 @@ def test_review_menu_multi_page_open_submission_opens_all_pages(
     )
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "A", "", "9", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "1", "A", "", "10", "6", "", "3", "6"],
     )
 
     assert main(["menu"]) == 0
@@ -611,10 +823,10 @@ def test_review_menu_adds_teacher_note_to_review_record(
             "1",
             "1",
             "1",
-            "5",
+            "6",
             "This is a test note.",
             "",
-            "9",
+            "10",
             "6",
             "",
             "3",
@@ -654,11 +866,11 @@ def test_review_menu_updates_submission_review_state(
             "1",
             "1",
             "1",
-            "6",
+            "7",
             "in_progress",
             "1",
             "",
-            "9",
+            "10",
             "6",
             "",
             "3",
@@ -706,12 +918,12 @@ def test_review_menu_excludes_submission_page_without_touching_review_record(
             "1",
             "1",
             "1",
-            "4",
+            "5",
             "1",
             "1",
             "1",
             "",
-            "9",
+            "10",
             "6",
             "",
             "3",
