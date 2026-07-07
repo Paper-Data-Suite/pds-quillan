@@ -143,7 +143,8 @@ def export_student_feedback(
         )
     else:
         included_comments = _included_feedback_comments(review)
-        ratings = review["overall_standard_ratings"]
+        ratings = _included_standard_ratings(review)
+        observations = _included_review_unit_observations(review)
         markdown = _render_markdown(
             class_id=class_id,
             assignment_id=assignment_id,
@@ -151,6 +152,7 @@ def export_student_feedback(
             created_at=normalized_created_at,
             ratings=ratings,
             comments=included_comments,
+            observations=observations,
         )
     overwrote_existing = output_path.exists()
     if overwrote_existing and not overwrite:
@@ -187,6 +189,7 @@ def _render_markdown(
     created_at: str,
     ratings: list[dict[str, Any]],
     comments: list[dict[str, Any]],
+    observations: list[dict[str, Any]],
 ) -> str:
     lines = [
         "# Feedback",
@@ -216,6 +219,17 @@ def _render_markdown(
         lines.extend(f"- {_plain_text(comment['text'])}" for comment in comments)
     else:
         lines.append("No feedback comments selected.")
+    lines.extend(["", "## Review Unit Observations", ""])
+    if observations:
+        for observation in observations:
+            rendered = f"- {_plain_text(observation['standard_id'])}"
+            if observation.get("unit_label"):
+                rendered += f" ({_plain_text(observation['unit_label'])})"
+            if observation.get("rationale"):
+                rendered += f": {_plain_text(observation['rationale'])}"
+            lines.append(rendered)
+    else:
+        lines.append("No review-unit observations selected.")
     lines.append("")
     return "\n".join(lines)
 
@@ -272,6 +286,51 @@ def _included_feedback_comments(review: dict[str, Any]) -> list[dict[str, Any]]:
             for comment in standard_feedback["comments"]
             if comment["include_in_feedback"]
         )
+    return included
+
+
+def _included_standard_ratings(review: dict[str, Any]) -> list[dict[str, Any]]:
+    if not review["feedback"]["include_overall_standard_ratings"]:
+        return []
+    feedback_by_standard = {
+        item["standard_id"]: item for item in review["feedback"]["standard_feedback"]
+    }
+    included: list[dict[str, Any]] = []
+    for rating in review["overall_standard_ratings"]:
+        standard_feedback = feedback_by_standard.get(rating["standard_id"])
+        if standard_feedback is None:
+            if not rating["include_in_feedback"]:
+                continue
+            included.append(rating)
+            continue
+        if not standard_feedback["include_overall_rating"]:
+            continue
+        rendered = dict(rating)
+        if not standard_feedback["include_overall_rationale"]:
+            rendered["rationale"] = None
+        included.append(rendered)
+    return included
+
+
+def _included_review_unit_observations(review: dict[str, Any]) -> list[dict[str, Any]]:
+    if not review["feedback"]["include_review_unit_observations"]:
+        return []
+    selected_by_standard: dict[str, set[str]] = {}
+    for standard_feedback in review["feedback"]["standard_feedback"]:
+        selected_by_standard[standard_feedback["standard_id"]] = set(
+            standard_feedback["included_observation_ids"]
+        )
+    included: list[dict[str, Any]] = []
+    for unit in review["review_units"]:
+        for observation in unit["standard_observations"]:
+            if observation["observation_id"] not in selected_by_standard.get(
+                observation["standard_id"], set()
+            ):
+                continue
+            item = dict(observation)
+            item["unit_id"] = unit["unit_id"]
+            item["unit_label"] = unit["label"]
+            included.append(item)
     return included
 
 

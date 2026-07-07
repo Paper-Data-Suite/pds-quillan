@@ -501,3 +501,88 @@ def test_source_comment_bank_is_not_read(tmp_path: Path) -> None:
     assert "Existing selected language." in result.feedback_path.read_text(
         encoding="utf-8"
     )
+
+
+def test_export_respects_composed_feedback_options_and_selected_observations(
+    tmp_path: Path,
+) -> None:
+    _write_manifest(tmp_path)
+    review = _review()
+    review["overall_standard_ratings"] = [
+        {
+            "standard_id": "synthetic:W.A",
+            "rating": 3,
+            "rationale": "Hidden rationale.",
+            "include_in_feedback": True,
+            "updated_at": review["updated_at"],
+            "module_details": {},
+        }
+    ]
+    review["review_units"] = [
+        {
+            "unit_id": "paragraph_1",
+            "sequence": 1,
+            "label": "Paragraph 1",
+            "unit_type": "paragraph",
+            "standard_observations": [
+                {
+                    "observation_id": "observation_0001",
+                    "standard_id": "synthetic:W.A",
+                    "applicable": True,
+                    "evidence_present": True,
+                    "rating": None,
+                    "rationale": "Selected observation.",
+                    "include_in_feedback": True,
+                    "updated_at": review["updated_at"],
+                    "module_details": {},
+                }
+            ],
+            "module_details": {},
+        }
+    ]
+    review["feedback"]["include_review_unit_observations"] = True
+    review["feedback"]["standard_feedback"] = [
+        {
+            "standard_id": "synthetic:W.A",
+            "include_overall_rating": True,
+            "include_overall_rationale": False,
+            "included_observation_ids": ["observation_0001"],
+            "comments": [
+                {
+                    "feedback_comment_id": "feedback_comment_0001",
+                    "source": "reusable_focus_standard_comment",
+                    "text": "Reusable snapshot text.",
+                    "reusable_comment_id": "claim_next_step",
+                    "save_for_reuse": False,
+                    "include_in_feedback": True,
+                    "created_at": review["created_at"],
+                    "module_details": {
+                        "comment_set_id": "synthetic_argument_focus_comments"
+                    },
+                },
+                {
+                    "feedback_comment_id": "feedback_comment_0002",
+                    "source": "custom",
+                    "text": "Excluded custom text.",
+                    "reusable_comment_id": None,
+                    "save_for_reuse": False,
+                    "include_in_feedback": False,
+                    "created_at": review["created_at"],
+                    "module_details": {},
+                },
+            ],
+            "module_details": {},
+        }
+    ]
+    _write_review(tmp_path, review)
+
+    result = export_student_feedback(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+    )
+    text = result.feedback_path.read_text(encoding="utf-8")
+
+    assert "- synthetic:W.A: 3" in text
+    assert "Hidden rationale." not in text
+    assert "Reusable snapshot text." in text
+    assert "Excluded custom text." not in text
+    assert "Selected observation." in text

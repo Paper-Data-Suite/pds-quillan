@@ -73,13 +73,15 @@ def _review() -> dict[str, Any]:
             "comments": [
                 {
                     "feedback_comment_id": "feedback_comment_0001",
-                    "source": "custom",
+                    "source": "reusable_focus_standard_comment",
                     "text": "The evidence is relevant, but explain the connection.",
-                    "reusable_comment_id": None,
+                    "reusable_comment_id": "evidence_next_step",
                     "save_for_reuse": False,
                     "include_in_feedback": True,
                     "created_at": TIMESTAMP,
-                    "module_details": {},
+                    "module_details": {
+                        "comment_set_id": "synthetic_argument_focus_comments"
+                    },
                 }
             ],
             "module_details": {},
@@ -125,6 +127,12 @@ def test_current_review_details_formats_saved_artifacts(tmp_path: Path) -> None:
         "include in feedback: yes"
     ) in text
     assert "rating not recorded" not in text
+    assert "Include overall rating: yes" in text
+    assert "Include overall rationale: yes" in text
+    assert "Included observations: 1" in text
+    assert "Comments: 1" in text
+    assert "Included comments: 1" in text
+    assert "Source: reusable Focus Standard comment" in text
     assert "Include in feedback: yes" in text
     assert "synthetic:W.A: 3" in text
     assert "Needs conference about missing counterargument." in text

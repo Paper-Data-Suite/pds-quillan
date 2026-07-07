@@ -12,7 +12,14 @@ from quillan.assignment_submission_assembly import (
 from quillan.class_summary_export import ExportedClassSummary
 from quillan.evidence_filing import EvidenceFilingError, RoutedEvidenceFile
 from quillan.feedback_export import ExportedFeedback
+from quillan.focus_standard_comments import SavedReusableFocusStandardComment
 from quillan.review_comments import AddedReviewComment
+from quillan.review_feedback import (
+    AddedFeedbackComment,
+    CompletedFeedbackComposition,
+    SelectedReusableFeedbackComment,
+    UpdatedStandardFeedbackOptions,
+)
 from quillan.review_notes import AddedReviewNote
 from quillan.review_observations import (
     CompletedReviewUnitObservations,
@@ -193,6 +200,86 @@ def print_completed_overall_standard_ratings(
     print(f"Missing ratings: {completed.missing_rating_count}")
     print(f"Review state: {completed.review_state}")
     print(f"Review record: {completed.review_record_relative_path}")
+
+
+def print_updated_standard_feedback_options(
+    updated: UpdatedStandardFeedbackOptions,
+) -> None:
+    """Print a concise Focus Standard feedback options summary."""
+    print("Updated Focus Standard feedback options:")
+    print(f"Class: {updated.class_id}")
+    print(f"Assignment: {updated.assignment_id}")
+    print(f"Student: {updated.student_id}")
+    print(f"Standard: {updated.standard_id}")
+    print(f"Include overall rating: {format_bool(updated.include_overall_rating)}")
+    print(
+        "Include overall rationale: "
+        f"{format_bool(updated.include_overall_rationale)}"
+    )
+    print(f"Included observations: {updated.included_observation_count}")
+    print(f"Action: {'created' if updated.was_created else 'updated'}")
+    print(f"Review state: {updated.review_state}")
+    print(f"Review record: {updated.review_record_relative_path}")
+
+
+def print_added_feedback_comment(added: AddedFeedbackComment) -> None:
+    """Print a concise custom Focus Standard feedback comment summary."""
+    print("Added Focus Standard feedback comment:")
+    print(f"Class: {added.class_id}")
+    print(f"Assignment: {added.assignment_id}")
+    print(f"Student: {added.student_id}")
+    print(f"Standard: {added.standard_id}")
+    print(f"Feedback comment: {added.feedback_comment_id}")
+    print(f"Include in feedback: {format_bool(added.include_in_feedback)}")
+    print(f"Saved for reuse: {format_bool(added.save_for_reuse)}")
+    print(f"Review state: {added.review_state}")
+    print(f"Review record: {added.review_record_relative_path}")
+    if added.saved_reusable_comment is not None:
+        print_saved_reusable_focus_standard_comment(added.saved_reusable_comment)
+
+
+def print_selected_reusable_feedback_comment(
+    selected: SelectedReusableFeedbackComment,
+) -> None:
+    """Print a concise reusable Focus Standard comment selection summary."""
+    print("Selected reusable Focus Standard comment:")
+    print(f"Class: {selected.class_id}")
+    print(f"Assignment: {selected.assignment_id}")
+    print(f"Student: {selected.student_id}")
+    print(f"Standard: {selected.standard_id}")
+    print(f"Comment set: {selected.comment_set_id}")
+    print(f"Reusable comment: {selected.reusable_comment_id}")
+    print(f"Feedback comment: {selected.feedback_comment_id}")
+    print(f"Include in feedback: {format_bool(selected.include_in_feedback)}")
+    print(f"Review state: {selected.review_state}")
+    print(f"Review record: {selected.review_record_relative_path}")
+
+
+def print_completed_feedback_composition(
+    completed: CompletedFeedbackComposition,
+) -> None:
+    """Print a concise feedback-composed summary."""
+    print("Marked Focus Standard feedback composed:")
+    print(f"Class: {completed.class_id}")
+    print(f"Assignment: {completed.assignment_id}")
+    print(f"Student: {completed.student_id}")
+    print(f"Focus Standards: {completed.focus_standard_count}")
+    print(f"Standards with feedback: {completed.standard_feedback_count}")
+    print(f"Missing feedback records: {completed.missing_standard_feedback_count}")
+    print(f"Included comments: {completed.included_comment_count}")
+    print(f"Review state: {completed.review_state}")
+    print(f"Review record: {completed.review_record_relative_path}")
+
+
+def print_saved_reusable_focus_standard_comment(
+    saved: SavedReusableFocusStandardComment,
+) -> None:
+    """Print a concise saved reusable Focus Standard comment summary."""
+    print("Saved reusable Focus Standard comment:")
+    print(f"Comment set: {saved.comment_set_id}")
+    print(f"Reusable comment: {saved.comment_id}")
+    print(f"Standard: {saved.standard_id}")
+    print(f"Purpose: {saved.purpose}")
 
 
 def print_exported_feedback(exported: ExportedFeedback) -> None:
