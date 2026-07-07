@@ -1,4 +1,4 @@
-"""Student-facing Markdown export from canonical Quillan review records."""
+"""Student-facing feedback exports from canonical Quillan review records."""
 
 from __future__ import annotations
 
@@ -10,9 +10,31 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from pds_core.classes import load_class_roster
+from pds_core.rosters import RosterError, student_display_name
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import (
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
+
 from quillan.assignments import AssignmentConfigError, load_assignment_config
-from quillan.review_record import ReviewRecordError, load_review_record
-from quillan.review_record_paths import ReviewRecordPathError, review_record_path
+from quillan.review_record import (
+    ReviewRecordError,
+    load_review_record,
+    validate_review_record,
+)
+from quillan.review_record_paths import (
+    ReviewRecordPathError,
+    review_record_path,
+    write_review_record,
+)
 from quillan.storage import assignment_config_path
 from quillan.submission_manifest import (
     SubmissionManifestError,
@@ -47,6 +69,43 @@ class ExportedFeedback:
     overwrote_existing: bool
 
 
+@dataclass(frozen=True, slots=True)
+class ExportedFeedbackPdf:
+    """Information about one generated student-facing PDF feedback artifact."""
+
+    class_id: str
+    assignment_id: str
+    student_id: str
+    student_display_name: str
+    assignment_title: str
+    review_record_path: Path
+    review_record_relative_path: str
+    feedback_pdf_path: Path
+    feedback_pdf_relative_path: str
+    feedback_markdown_path: Path | None
+    feedback_markdown_relative_path: str | None
+    included_standard_rating_count: int
+    included_comment_count: int
+    included_observation_count: int
+    created_at: str
+    overwrote_existing: bool
+
+
+@dataclass(frozen=True, slots=True)
+class _StudentFeedback:
+    class_id: str
+    assignment_id: str
+    student_id: str
+    student_display_name: str
+    assignment_title: str
+    class_display: str
+    created_at: str
+    ratings: list[dict[str, Any]]
+    comments: list[dict[str, Any]]
+    observations: list[dict[str, Any]]
+    returned_work: dict[str, Any] | None
+
+
 def feedback_export_path(
     workspace_root: str | Path,
     class_id: str,
@@ -61,6 +120,20 @@ def feedback_export_path(
     )
 
 
+def feedback_pdf_export_path(
+    workspace_root: str | Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> Path:
+    """Return the canonical student-facing PDF feedback export path."""
+    return (
+        submission_dir(workspace_root, class_id, assignment_id, student_id)
+        / "exports"
+        / "feedback.pdf"
+    )
+
+
 def export_student_feedback(
     workspace_root: str | Path,
     class_id: str,
@@ -72,6 +145,128 @@ def export_student_feedback(
 ) -> ExportedFeedback:
     """Generate student-facing Markdown from one canonical review record."""
     normalized_created_at = _normalize_timestamp(created_at)
+    context = _load_export_context(
+        workspace_root, class_id, assignment_id, student_id, normalized_created_at
+    )
+    output_path = feedback_export_path(
+        context["workspace_root"], class_id, assignment_id, student_id
+    )
+    feedback = _assemble_student_feedback(context)
+    markdown = _render_feedback_markdown(feedback)
+    included_comments = feedback.comments
+    ratings = feedback.ratings
+    overwrote_existing = output_path.exists()
+    if overwrote_existing and not overwrite:
+        raise FeedbackExportError(
+            f"Feedback export already exists: {output_path}. "
+            "Use --overwrite to replace it."
+        )
+
+    _write_feedback(output_path, markdown, overwrite=overwrite)
+    return ExportedFeedback(
+        class_id=class_id,
+        assignment_id=assignment_id,
+        student_id=student_id,
+        review_record_path=context["record_path"],
+        review_record_relative_path=_workspace_relative_path(
+            context["record_path"], context["workspace_root"], "review record"
+        ),
+        feedback_path=output_path,
+        feedback_relative_path=_workspace_relative_path(
+            output_path, context["workspace_root"], "feedback"
+        ),
+        included_comment_count=len(included_comments),
+        score_count=len(ratings),
+        created_at=normalized_created_at,
+        overwrote_existing=overwrote_existing,
+    )
+
+
+def export_student_feedback_pdf(
+    workspace_root: str | Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    overwrite: bool = False,
+    created_at: datetime | str | None = None,
+    include_markdown_companion: bool = False,
+) -> ExportedFeedbackPdf:
+    """Generate student-facing PDF feedback from one canonical review record."""
+    normalized_created_at = _normalize_timestamp(created_at)
+    context = _load_export_context(
+        workspace_root, class_id, assignment_id, student_id, normalized_created_at
+    )
+    pdf_path = feedback_pdf_export_path(
+        context["workspace_root"], class_id, assignment_id, student_id
+    )
+    markdown_path = (
+        feedback_export_path(context["workspace_root"], class_id, assignment_id, student_id)
+        if include_markdown_companion
+        else None
+    )
+    existing_paths = [
+        path for path in (pdf_path, markdown_path) if path is not None and path.exists()
+    ]
+    overwrote_existing = bool(existing_paths)
+    if existing_paths and not overwrite:
+        joined = ", ".join(str(path) for path in existing_paths)
+        raise FeedbackExportError(
+            f"Feedback export already exists: {joined}. "
+            "Use --overwrite to replace it."
+        )
+
+    feedback = _assemble_student_feedback(context)
+    _write_feedback_pdf(pdf_path, feedback, overwrite=overwrite)
+    if markdown_path is not None:
+        _write_feedback(
+            markdown_path,
+            _render_feedback_markdown(feedback),
+            overwrite=overwrite,
+        )
+    _update_export_metadata(
+        context,
+        created_at=normalized_created_at,
+        feedback_pdf_path=pdf_path,
+        feedback_markdown_path=markdown_path,
+    )
+
+    markdown_relative_path = (
+        _workspace_relative_path(markdown_path, context["workspace_root"], "feedback")
+        if markdown_path is not None
+        else None
+    )
+    return ExportedFeedbackPdf(
+        class_id=class_id,
+        assignment_id=assignment_id,
+        student_id=student_id,
+        student_display_name=feedback.student_display_name,
+        assignment_title=feedback.assignment_title,
+        review_record_path=context["record_path"],
+        review_record_relative_path=_workspace_relative_path(
+            context["record_path"], context["workspace_root"], "review record"
+        ),
+        feedback_pdf_path=pdf_path,
+        feedback_pdf_relative_path=_workspace_relative_path(
+            pdf_path, context["workspace_root"], "feedback PDF"
+        ),
+        feedback_markdown_path=markdown_path,
+        feedback_markdown_relative_path=markdown_relative_path,
+        included_standard_rating_count=len(feedback.ratings),
+        included_comment_count=len(feedback.comments),
+        included_observation_count=len(feedback.observations),
+        created_at=normalized_created_at,
+        overwrote_existing=overwrote_existing,
+    )
+
+
+def _load_export_context(
+    workspace_root: str | Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    created_at: str,
+) -> dict[str, Any]:
     try:
         resolved_workspace_root = Path(workspace_root).resolve(strict=False)
         manifest_path = submission_manifest_path(
@@ -80,8 +275,8 @@ def export_student_feedback(
         record_path = review_record_path(
             resolved_workspace_root, class_id, assignment_id, student_id
         )
-        output_path = feedback_export_path(
-            resolved_workspace_root, class_id, assignment_id, student_id
+        assignment_path = assignment_config_path(
+            resolved_workspace_root, class_id, assignment_id
         )
     except (
         OSError,
@@ -123,61 +318,93 @@ def export_student_feedback(
         assignment_id=assignment_id,
         student_id=student_id,
     )
+    try:
+        assignment = load_assignment_config(assignment_path)
+    except (AssignmentConfigError, OSError):
+        assignment = None
+    if assignment is not None:
+        if assignment["assignment_id"] != assignment_id:
+            raise FeedbackExportError(
+                "Assignment config assignment_id is "
+                f"{assignment['assignment_id']!r}, expected {assignment_id!r}."
+            )
+        if class_id not in assignment["class_ids"]:
+            raise FeedbackExportError(
+                f"Assignment config class_ids does not include {class_id!r}."
+            )
+    return {
+        "workspace_root": resolved_workspace_root,
+        "manifest_path": manifest_path,
+        "record_path": record_path,
+        "manifest": manifest,
+        "review": review,
+        "assignment": assignment,
+        "created_at": created_at,
+        "class_id": class_id,
+        "assignment_id": assignment_id,
+        "student_id": student_id,
+    }
 
+
+def _assemble_student_feedback(context: dict[str, Any]) -> _StudentFeedback:
+    review = context["review"]
+    assignment = context["assignment"]
+    class_id = context["class_id"]
+    assignment_id = context["assignment_id"]
+    student_id = context["student_id"]
     if review["review_state"] == "returned_without_full_review":
         unmet_requirements = _validated_returned_work_requirements(
-            resolved_workspace_root,
+            context["workspace_root"],
             class_id,
             assignment_id,
             review,
+            assignment=assignment,
         )
-        included_comments: list[dict[str, Any]] = []
+        returned_work = {
+            "outcome": review["minimum_requirement_outcome"],
+            "unmet_requirements": unmet_requirements,
+        }
         ratings: list[dict[str, Any]] = []
-        markdown = _render_returned_work_markdown(
-            class_id=class_id,
-            assignment_id=assignment_id,
-            student_id=student_id,
-            created_at=normalized_created_at,
-            outcome=review["minimum_requirement_outcome"],
-            unmet_requirements=unmet_requirements,
-        )
+        comments: list[dict[str, Any]] = []
+        observations: list[dict[str, Any]] = []
     else:
-        included_comments = _included_feedback_comments(review)
         ratings = _included_standard_ratings(review)
+        comments = _included_feedback_comments(review)
         observations = _included_review_unit_observations(review)
-        markdown = _render_markdown(
-            class_id=class_id,
-            assignment_id=assignment_id,
-            student_id=student_id,
-            created_at=normalized_created_at,
-            ratings=ratings,
-            comments=included_comments,
-            observations=observations,
-        )
-    overwrote_existing = output_path.exists()
-    if overwrote_existing and not overwrite:
-        raise FeedbackExportError(
-            f"Feedback export already exists: {output_path}. "
-            "Use --overwrite to replace it."
-        )
-
-    _write_feedback(output_path, markdown, overwrite=overwrite)
-    return ExportedFeedback(
+        returned_work = None
+    return _StudentFeedback(
         class_id=class_id,
         assignment_id=assignment_id,
         student_id=student_id,
-        review_record_path=record_path,
-        review_record_relative_path=_workspace_relative_path(
-            record_path, resolved_workspace_root, "review record"
-        ),
-        feedback_path=output_path,
-        feedback_relative_path=_workspace_relative_path(
-            output_path, resolved_workspace_root, "feedback"
-        ),
-        included_comment_count=len(included_comments),
-        score_count=len(ratings),
-        created_at=normalized_created_at,
-        overwrote_existing=overwrote_existing,
+        student_display_name=_student_name(context["workspace_root"], class_id, student_id),
+        assignment_title=_assignment_title(assignment, assignment_id),
+        class_display=class_id,
+        created_at=context["created_at"],
+        ratings=_with_rating_labels(ratings, assignment),
+        comments=comments,
+        observations=observations,
+        returned_work=returned_work,
+    )
+
+
+def _render_feedback_markdown(feedback: _StudentFeedback) -> str:
+    if feedback.returned_work is not None:
+        return _render_returned_work_markdown(
+            class_id=feedback.class_id,
+            assignment_id=feedback.assignment_id,
+            student_id=feedback.student_id,
+            created_at=feedback.created_at,
+            outcome=feedback.returned_work["outcome"],
+            unmet_requirements=feedback.returned_work["unmet_requirements"],
+        )
+    return _render_markdown(
+        class_id=feedback.class_id,
+        assignment_id=feedback.assignment_id,
+        student_id=feedback.student_id,
+        created_at=feedback.created_at,
+        ratings=feedback.ratings,
+        comments=feedback.comments,
+        observations=feedback.observations,
     )
 
 
@@ -281,11 +508,11 @@ def _render_returned_work_markdown(
 def _included_feedback_comments(review: dict[str, Any]) -> list[dict[str, Any]]:
     included: list[dict[str, Any]] = []
     for standard_feedback in review["feedback"]["standard_feedback"]:
-        included.extend(
-            comment
-            for comment in standard_feedback["comments"]
-            if comment["include_in_feedback"]
-        )
+        for comment in standard_feedback["comments"]:
+            if comment["include_in_feedback"]:
+                rendered = dict(comment)
+                rendered["standard_id"] = standard_feedback["standard_id"]
+                included.append(rendered)
     return included
 
 
@@ -339,6 +566,8 @@ def _validated_returned_work_requirements(
     class_id: str,
     assignment_id: str,
     review: dict[str, Any],
+    *,
+    assignment: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     outcome = review["minimum_requirement_outcome"]
     if outcome["returned_without_full_review"] is not True:
@@ -351,14 +580,15 @@ def _validated_returned_work_requirements(
             "Returned-work export requires a non-empty outcome teacher note."
         )
 
-    try:
-        assignment = load_assignment_config(
-            assignment_config_path(workspace_root, class_id, assignment_id)
-        )
-    except (AssignmentConfigError, OSError) as error:
-        raise FeedbackExportError(
-            f"Could not load assignment config: {error}"
-        ) from error
+    if assignment is None:
+        try:
+            assignment = load_assignment_config(
+                assignment_config_path(workspace_root, class_id, assignment_id)
+            )
+        except (AssignmentConfigError, OSError) as error:
+            raise FeedbackExportError(
+                f"Could not load assignment config: {error}"
+            ) from error
     configured_keys = _configured_requirement_keys(assignment)
     unmet_requirements = [
         check
@@ -371,6 +601,332 @@ def _validated_returned_work_requirements(
             "minimum requirement marked not met."
         )
     return unmet_requirements
+
+
+def _write_feedback_pdf(path: Path, feedback: _StudentFeedback, *, overwrite: bool) -> None:
+    parent = path.parent
+    try:
+        parent.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise FeedbackExportError(
+            f"Could not create feedback export directory {parent}: {error}"
+        ) from error
+    if not parent.is_dir():
+        raise FeedbackExportError(
+            f"Feedback export parent is not a directory: {parent}"
+        )
+
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb",
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            dir=parent,
+            delete=False,
+        ) as temporary_file:
+            temporary_path = Path(temporary_file.name)
+        _render_pdf_to_path(temporary_path, feedback)
+        if overwrite:
+            os.replace(temporary_path, path)
+        else:
+            os.link(temporary_path, path)
+            temporary_path.unlink()
+        temporary_path = None
+    except FileExistsError as error:
+        raise FeedbackExportError(
+            f"Feedback export already exists: {path}. "
+            "Use --overwrite to replace it."
+        ) from error
+    except OSError as error:
+        raise FeedbackExportError(
+            f"Could not write feedback export {path}: {error}"
+        ) from error
+    finally:
+        if temporary_path is not None:
+            try:
+                temporary_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
+def _render_pdf_to_path(path: Path, feedback: _StudentFeedback) -> None:
+    styles = getSampleStyleSheet()
+    styles.add(
+        ParagraphStyle(
+            name="FeedbackTitle",
+            parent=styles["Title"],
+            fontName="Helvetica-Bold",
+            fontSize=18,
+            leading=22,
+            spaceAfter=12,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="FeedbackSection",
+            parent=styles["Heading2"],
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            leading=15,
+            spaceBefore=12,
+            spaceAfter=6,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="FeedbackBody",
+            parent=styles["BodyText"],
+            fontName="Helvetica",
+            fontSize=9.5,
+            leading=13,
+            spaceAfter=5,
+        )
+    )
+    story: list[Any] = []
+    title = "Returned for Revision" if feedback.returned_work else "Student Feedback"
+    story.append(Paragraph(title, styles["FeedbackTitle"]))
+    story.append(_metadata_table(feedback, styles["FeedbackBody"]))
+    story.append(Spacer(1, 0.08 * inch))
+    if feedback.returned_work is not None:
+        _append_returned_work_pdf(story, styles, feedback)
+    else:
+        _append_standard_feedback_pdf(story, styles, feedback)
+    story.append(Spacer(1, 0.12 * inch))
+    story.append(
+        Paragraph(
+            "Quillan student feedback export",
+            styles["FeedbackBody"],
+        )
+    )
+
+    document = SimpleDocTemplate(
+        str(path),
+        pagesize=letter,
+        rightMargin=0.65 * inch,
+        leftMargin=0.65 * inch,
+        topMargin=0.6 * inch,
+        bottomMargin=0.6 * inch,
+        title=title,
+    )
+    document.build(story, onFirstPage=_draw_pdf_footer, onLaterPages=_draw_pdf_footer)
+
+
+def _metadata_table(feedback: _StudentFeedback, style: ParagraphStyle) -> Table:
+    data = [
+        ("Student", feedback.student_display_name),
+        ("Student ID", feedback.student_id),
+        ("Class", feedback.class_display),
+        ("Assignment", feedback.assignment_title),
+        ("Assignment ID", feedback.assignment_id),
+        ("Generated", feedback.created_at),
+    ]
+    table = Table(
+        [
+            [
+                Paragraph(f"<b>{_escape_pdf_text(label)}:</b>", style),
+                Paragraph(_escape_pdf_text(value), style),
+            ]
+            for label, value in data
+        ],
+        colWidths=(1.15 * inch, 5.0 * inch),
+        hAlign="LEFT",
+    )
+    table.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ("TOPPADDING", (0, 0), (-1, -1), 1),
+                ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#333333")),
+            ]
+        )
+    )
+    return table
+
+
+def _append_standard_feedback_pdf(
+    story: list[Any], styles: dict[str, ParagraphStyle], feedback: _StudentFeedback
+) -> None:
+    story.append(Paragraph("Focus Standard Ratings", styles["FeedbackSection"]))
+    if feedback.ratings:
+        for rating in feedback.ratings:
+            value = _format_number(rating["rating"])
+            label = rating.get("rating_label")
+            label_suffix = f" ({_plain_text(label)})" if label else ""
+            story.append(
+                Paragraph(
+                    "<b>"
+                    f"{_escape_pdf_text(rating['standard_id'])}</b>: "
+                    f"{_escape_pdf_text(value + label_suffix)}",
+                    styles["FeedbackBody"],
+                )
+            )
+            if rating.get("rationale"):
+                story.append(
+                    Paragraph(
+                        f"Rationale: {_escape_pdf_text(rating['rationale'])}",
+                        styles["FeedbackBody"],
+                    )
+                )
+    else:
+        story.append(Paragraph("No Focus Standard ratings selected.", styles["FeedbackBody"]))
+
+    story.append(Paragraph("Feedback Comments", styles["FeedbackSection"]))
+    if feedback.comments:
+        for comment in feedback.comments:
+            prefix = f"{comment.get('standard_id')}: " if comment.get("standard_id") else ""
+            story.append(
+                Paragraph(
+                    f"{_escape_pdf_text(prefix)}{_escape_pdf_text(comment['text'])}",
+                    styles["FeedbackBody"],
+                )
+            )
+    else:
+        story.append(Paragraph("No feedback comments selected.", styles["FeedbackBody"]))
+
+    if feedback.observations:
+        story.append(Paragraph("Review Unit Observations", styles["FeedbackSection"]))
+        for observation in feedback.observations:
+            evidence = observation.get("evidence_present")
+            evidence_text = ""
+            if evidence is True:
+                evidence_text = " Evidence present: yes."
+            elif evidence is False:
+                evidence_text = " Evidence present: no."
+            unit = observation.get("unit_label") or "Review unit"
+            text = (
+                f"{unit} - {observation['standard_id']}."
+                f"{evidence_text}"
+            )
+            if observation.get("rationale"):
+                text += f" {_plain_text(observation['rationale'])}"
+            story.append(Paragraph(_escape_pdf_text(text), styles["FeedbackBody"]))
+
+
+def _append_returned_work_pdf(
+    story: list[Any], styles: dict[str, ParagraphStyle], feedback: _StudentFeedback
+) -> None:
+    assert feedback.returned_work is not None
+    story.append(
+        Paragraph(
+            "This submission was returned without full standards review because "
+            "minimum requirements were not met.",
+            styles["FeedbackBody"],
+        )
+    )
+    story.append(Paragraph("Minimum Requirements Not Met", styles["FeedbackSection"]))
+    for requirement in feedback.returned_work["unmet_requirements"]:
+        story.append(
+            Paragraph(
+                f"<b>{_escape_pdf_text(requirement['label'])}</b>",
+                styles["FeedbackBody"],
+            )
+        )
+        story.append(
+            Paragraph(
+                f"Expected: {_escape_pdf_text(requirement['expected'])}",
+                styles["FeedbackBody"],
+            )
+        )
+        if note := _non_empty(requirement.get("teacher_note")):
+            story.append(
+                Paragraph(f"Teacher note: {_escape_pdf_text(note)}", styles["FeedbackBody"])
+            )
+    story.append(Paragraph("Return Note", styles["FeedbackSection"]))
+    story.append(
+        Paragraph(
+            _escape_pdf_text(feedback.returned_work["outcome"]["teacher_note"]),
+            styles["FeedbackBody"],
+        )
+    )
+    story.append(
+        Paragraph(
+            "No full Focus Standard ratings were completed for this submission.",
+            styles["FeedbackBody"],
+        )
+    )
+
+
+def _draw_pdf_footer(canvas: Any, document: Any) -> None:
+    canvas.saveState()
+    canvas.setFont("Helvetica", 8)
+    canvas.setFillColor(colors.HexColor("#555555"))
+    canvas.drawString(0.65 * inch, 0.35 * inch, "Quillan student feedback export")
+    canvas.drawRightString(
+        letter[0] - 0.65 * inch,
+        0.35 * inch,
+        f"Page {document.page}",
+    )
+    canvas.restoreState()
+
+
+def _update_export_metadata(
+    context: dict[str, Any],
+    *,
+    created_at: str,
+    feedback_pdf_path: Path,
+    feedback_markdown_path: Path | None,
+) -> None:
+    review = dict(context["review"])
+    review["exports"] = dict(review["exports"])
+    review["exports"]["feedback_pdf"] = {
+        "path": _workspace_relative_path(
+            feedback_pdf_path, context["workspace_root"], "feedback PDF"
+        ),
+        "generated_at": created_at,
+        "source_review_updated_at": context["review"]["updated_at"],
+        "module_details": {},
+    }
+    if feedback_markdown_path is not None:
+        review["exports"]["feedback_markdown"] = {
+            "path": _workspace_relative_path(
+                feedback_markdown_path, context["workspace_root"], "feedback Markdown"
+            ),
+            "generated_at": created_at,
+            "source_review_updated_at": context["review"]["updated_at"],
+            "module_details": {},
+        }
+    try:
+        validate_review_record(review)
+        write_review_record(context["record_path"], review, overwrite=True)
+    except (ReviewRecordError, ReviewRecordPathError, OSError, ValueError) as error:
+        raise FeedbackExportError(f"Could not update review export metadata: {error}") from error
+
+
+def _student_name(workspace_root: Path, class_id: str, student_id: str) -> str:
+    try:
+        roster = load_class_roster(workspace_root, class_id)
+    except (RosterError, OSError):
+        return student_id
+    for student in roster.students:
+        if student.student_id == student_id:
+            return student_display_name(student)
+    return student_id
+
+
+def _assignment_title(assignment: dict[str, Any] | None, assignment_id: str) -> str:
+    if assignment is None:
+        return assignment_id
+    return _plain_text(assignment["title"])
+
+
+def _with_rating_labels(
+    ratings: list[dict[str, Any]], assignment: dict[str, Any] | None
+) -> list[dict[str, Any]]:
+    if assignment is None:
+        return ratings
+    labels = {
+        level["value"]: level["label"]
+        for level in assignment["rating_scale"]["levels"]
+    }
+    rendered: list[dict[str, Any]] = []
+    for rating in ratings:
+        item = dict(rating)
+        if item["rating"] in labels:
+            item["rating_label"] = labels[item["rating"]]
+        rendered.append(item)
+    return rendered
 
 
 def _configured_requirement_keys(assignment: dict[str, Any]) -> set[str]:
@@ -492,6 +1048,15 @@ def _validate_identity(
 
 def _plain_text(value: object) -> str:
     return re.sub(r"\s+", " ", str(value)).strip()
+
+
+def _escape_pdf_text(value: object) -> str:
+    text = _plain_text(value)
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
 
 
 def _non_empty(value: Any) -> str | None:

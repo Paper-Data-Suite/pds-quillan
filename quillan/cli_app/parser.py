@@ -224,18 +224,23 @@ def build_parser() -> argparse.ArgumentParser:
         "export-feedback",
         help="Export student-facing feedback from one review record.",
         description=(
-            "Generate a student-facing Markdown feedback file from the "
-            "canonical review.json for one student submission. The export "
-            "includes selected feedback comments and teacher-entered criterion "
-            "scores. It does not mutate the review record, submission manifest, "
-            "evidence files, or source comment banks."
+            "Generate student-facing feedback from the canonical review.json "
+            "for one student submission. PDF export updates feedback export "
+            "metadata after a successful write; Markdown remains available for "
+            "compatibility."
         ),
     )
     _add_submission_identity_arguments(export_feedback_parser)
     export_feedback_parser.add_argument(
+        "--format",
+        choices=("markdown", "pdf", "both"),
+        default="markdown",
+        help="Feedback export format. Defaults to markdown for compatibility.",
+    )
+    export_feedback_parser.add_argument(
         "--overwrite",
         action="store_true",
-        help="Replace an existing exports/feedback.md file.",
+        help="Replace existing feedback export files for the selected format.",
     )
     export_feedback_parser.set_defaults(handler=handle_export_feedback)
 

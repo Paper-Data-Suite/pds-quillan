@@ -32,6 +32,7 @@ from quillan.cli_app.output import (
     print_assignment_submission_status,
     print_exported_class_summary,
     print_exported_feedback,
+    print_exported_feedback_pdf,
     print_exported_standards_summary,
     print_completed_overall_standard_ratings,
     print_completed_review_unit_observations,
@@ -50,7 +51,9 @@ from quillan.comment_banks import CommentBankError, load_comment_bank
 from quillan.feedback_export import (
     FeedbackExportError,
     export_student_feedback,
+    export_student_feedback_pdf,
     feedback_export_path,
+    feedback_pdf_export_path,
 )
 from quillan.focus_standard_comments import FocusStandardCommentError, lookup_comments
 from quillan.standards_summary_export import (
@@ -4362,16 +4365,46 @@ def _menu_export_student_feedback(
     print(f"Comments included in feedback: {counts['included_comments']}")
     print(f"Overall ratings: {counts['ratings']}")
     print()
-    print("1. Export feedback")
-    print("2. Back")
+    try:
+        record = load_review_record(
+            review_record_path(workspace_root, class_id, assignment_id, student_id)
+        )
+    except (ReviewRecordError, OSError):
+        record = None
+    if record is not None:
+        print(f"Current review state: {record['review_state']}")
+        if record["review_state"] == "returned_without_full_review":
+            print("This will export returned-work feedback.")
+        elif record["review_state"] not in {
+            "feedback_composed",
+            "ready_for_export",
+            "exported",
+        }:
+            print("Warning: feedback is not marked composed yet.")
+        print()
+    print("1. Export PDF feedback")
+    print("2. Export Markdown feedback")
+    print("3. Export both PDF and Markdown")
+    print("4. Back")
     print()
-    if input("Select an option: ").strip() != "1":
+    selection = input("Select an option: ").strip()
+    if selection not in {"1", "2", "3"}:
         print("Export canceled.")
         return
 
-    output_path = feedback_export_path(workspace_root, class_id, assignment_id, student_id)
+    pdf_path = feedback_pdf_export_path(workspace_root, class_id, assignment_id, student_id)
+    markdown_path = feedback_export_path(workspace_root, class_id, assignment_id, student_id)
+    selected_paths = {
+        "1": [pdf_path],
+        "2": [markdown_path],
+        "3": [pdf_path, markdown_path],
+    }[selection]
+    print("Output files:")
+    for path in selected_paths:
+        print(f"- {path}")
     overwrite: bool
-    if output_path.exists():
+    existing_paths = [path for path in selected_paths if path.exists()]
+    if existing_paths:
         print()
         print("A feedback export already exists.")
         print()
@@ -4389,17 +4422,37 @@ def _menu_export_student_feedback(
         overwrite = False
 
     try:
-        exported = export_student_feedback(
-            workspace_root,
-            class_id,
-            assignment_id,
-            student_id,
-            overwrite=overwrite,
-        )
+        if selection == "1":
+            exported_pdf = export_student_feedback_pdf(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+                overwrite=overwrite,
+            )
+            print_exported_feedback_pdf(exported_pdf)
+        elif selection == "2":
+            exported = export_student_feedback(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+                overwrite=overwrite,
+            )
+            print_exported_feedback(exported)
+        else:
+            exported_pdf = export_student_feedback_pdf(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+                overwrite=overwrite,
+                include_markdown_companion=True,
+            )
+            print_exported_feedback_pdf(exported_pdf)
     except (FeedbackExportError, OSError) as error:
         print(f"Error: could not export student feedback: {error}")
         return
-    print_exported_feedback(exported)
 
 
 def _menu_export_class_summary(

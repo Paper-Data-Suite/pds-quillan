@@ -359,7 +359,7 @@ def test_menu_export_student_feedback_creates_feedback_file(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["10", "1"]
+        + ["10", "2"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -375,6 +375,47 @@ def test_menu_export_student_feedback_creates_feedback_file(
     assert "This should not appear in student feedback." not in feedback_text
     assert manifest_path.read_bytes() == manifest_before
     assert review_path.read_bytes() == review_before
+
+
+def test_menu_export_student_feedback_pdf_creates_pdf_and_updates_metadata(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_review_record(workspace, _review_record())
+    pdf_path = (
+        workspace
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "submissions"
+        / STUDENT_ID
+        / "exports"
+        / "feedback.pdf"
+    )
+    assert not pdf_path.exists()
+
+    _menu_input(
+        monkeypatch,
+        _enter_selected_student()
+        + ["10", "1"]
+        + _exit_after_selected_student_action_to_main(),
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Exported student feedback PDF:" in output
+    assert "Focus Standard ratings: 1" in output
+    assert pdf_path.is_file()
+    review = json.loads(
+        review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(
+            encoding="utf-8"
+        )
+    )
+    assert review["exports"]["feedback_pdf"]["path"].endswith(
+        "/submissions/stu_0001/exports/feedback.pdf"
+    )
 
 
 def test_menu_export_class_summary_creates_summary_file(
@@ -461,7 +502,7 @@ def test_menu_export_feedback_invalid_overwrite_cancels_without_writing(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["10", "2"]
+        + ["10", "4"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -526,7 +567,7 @@ def test_menu_export_feedback_requires_overwrite_when_existing(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["10", "1", "1"]
+        + ["10", "2", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -560,7 +601,7 @@ def test_menu_export_feedback_overwrites_existing_export(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["10", "1", "2"]
+        + ["10", "2", "2"]
         + _exit_after_selected_student_action_to_main(),
     )
 

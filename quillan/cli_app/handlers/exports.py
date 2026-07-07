@@ -13,9 +13,14 @@ from quillan.class_summary_export import (
 from quillan.cli_app.output import (
     print_exported_class_summary,
     print_exported_feedback,
+    print_exported_feedback_pdf,
     print_exported_standards_summary,
 )
-from quillan.feedback_export import FeedbackExportError, export_student_feedback
+from quillan.feedback_export import (
+    FeedbackExportError,
+    export_student_feedback,
+    export_student_feedback_pdf,
+)
 from quillan.standards_summary_export import (
     StandardsSummaryExportError,
     export_standards_summary,
@@ -23,9 +28,31 @@ from quillan.standards_summary_export import (
 
 
 def handle_export_feedback(args: argparse.Namespace) -> int:
-    """Export one student-facing Markdown feedback artifact."""
+    """Export one student-facing feedback artifact."""
     try:
         workspace_root = resolve_workspace_root()
+        export_format = getattr(args, "format", "markdown")
+        if export_format == "pdf":
+            exported_pdf = export_student_feedback_pdf(
+                workspace_root,
+                args.class_id,
+                args.assignment_id,
+                args.student_id,
+                overwrite=args.overwrite,
+            )
+            print_exported_feedback_pdf(exported_pdf)
+            return 0
+        if export_format == "both":
+            exported_pdf = export_student_feedback_pdf(
+                workspace_root,
+                args.class_id,
+                args.assignment_id,
+                args.student_id,
+                overwrite=args.overwrite,
+                include_markdown_companion=True,
+            )
+            print_exported_feedback_pdf(exported_pdf)
+            return 0
         exported = export_student_feedback(
             workspace_root,
             args.class_id,
