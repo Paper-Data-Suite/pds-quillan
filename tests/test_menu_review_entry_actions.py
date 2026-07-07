@@ -160,11 +160,11 @@ def _enter_selected_student() -> list[str]:
 
 
 def _exit_selected_student_to_main() -> list[str]:
-    return ["10", "6", "", "3", "6"]
+    return ["11", "6", "", "3", "6"]
 
 
 def _exit_after_selected_student_action_to_main() -> list[str]:
-    return ["", "10", "6", "", "3", "6"]
+    return ["", "11", "6", "", "3", "6"]
 
 
 @pytest.fixture
@@ -189,12 +189,13 @@ def test_review_menu_selected_student_excludes_legacy_review_entry_actions(
     assert "2. View current review details" in output
     assert "3. Review minimum requirements" in output
     assert "4. Review units and Focus Standard observations" in output
-    assert "5. Manage submission pages" in output
-    assert "6. Add teacher note" in output
-    assert "7. Update submission review state" in output
-    assert "8. Export student feedback" in output
-    assert "9. Refresh summary" in output
-    assert "10. Back" in output
+    assert "5. Overall Focus Standard ratings" in output
+    assert "6. Manage submission pages" in output
+    assert "7. Add teacher note" in output
+    assert "8. Update submission review state" in output
+    assert "9. Export student feedback" in output
+    assert "10. Refresh summary" in output
+    assert "11. Back" in output
     assert "Add structured tag" not in output
     assert "Select reusable comment" not in output
     assert "Set criterion score" not in output
@@ -296,7 +297,7 @@ def test_review_menu_blank_note_cancels_without_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["6", ""]
+        + ["7", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -314,7 +315,7 @@ def test_review_menu_updates_submission_review_state(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["7", "in_progress", "1"]
+        + ["8", "in_progress", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
