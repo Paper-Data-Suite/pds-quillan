@@ -318,13 +318,12 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
     assert len(class_rows) == 1
     class_row = class_rows[0]
     assert class_row["student_id"] == STUDENT_ID
-    assert class_row["row_status"] == "ready"
-    assert class_row["score_count"] == "0"
-    assert class_row["selected_comment_count"] == "0"
-    assert class_row["included_comment_count"] == "0"
-    assert class_row["tag_count"] == "0"
-    assert class_row["note_count"] == "1"
-    assert class_row["feedback_export_exists"] == "true"
+    assert class_row["review_valid"] == "true"
+    assert class_row["review_state"] == "not_started"
+    assert class_row["feedback_pdf_status"] == "missing"
+    assert class_row["feedback_markdown_status"] == "unknown"
+    assert class_row["warnings"] == "feedback_markdown_metadata_missing"
+    assert "Private note" not in class_summary.summary_path.read_text(encoding="utf-8")
     for path, original in canonical_before_exports.items():
         assert path.read_bytes() == original
 
@@ -335,6 +334,8 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
         created_at=EXPORTED_AT,
     )
     standards_rows = _read_csv_rows(standards_summary.summary_path)
-    assert standards_rows == []
+    assert len(standards_rows) == 1
+    assert standards_rows[0]["standard_id"] == STANDARD_ID
+    assert standards_rows[0]["students_reviewed_for_standard"] == "0"
     for path, original in canonical_before_exports.items():
         assert path.read_bytes() == original

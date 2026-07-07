@@ -803,67 +803,73 @@ Without `--overwrite`, an existing feedback file is preserved.
 The command does not mutate review state, timestamps, canonical records, or
 evidence.
 
-## Class Review Summary Export
+## Assignment-Local Class Summary Export
 
 ```powershell
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
 ```
 
-This direct command discovers immediate student directories under the
-assignment's canonical `submissions/` directory and writes:
+This direct command reads the assignment config, roster when available,
+submission manifests, review records, and feedback export metadata, then
+writes:
 
 ```text
 classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
 ```
 
-Rows are sorted by `student_id`.
+Rows follow roster order when a roster is available, then discovered
+unrostered submission folders by `student_id`. Without a roster, rows are
+sorted by discovered `student_id`.
 
-Valid matching records produce `ready` rows with submission and review states,
-score counts and simple score/max-score totals, selected and included comment
-counts, tag and note counts, feedback-export existence, and
-workspace-relative paths.
+Rows include submission and review states, minimum-requirement outcomes,
+returned-without-full-review status, assignment Focus Standard ratings,
+rating labels from the assignment rating scale, feedback PDF/Markdown status,
+warnings, and workspace-relative paths.
 
 Missing, invalid, and identity-mismatched student records produce
-`missing_submission`, `invalid_submission`, `missing_review`,
-`invalid_review`, or `identity_mismatch` rows rather than aborting the whole
-export.
+stable warnings such as `missing_submission`, `invalid_submission`,
+`missing_review`, `invalid_review`, or `identity_mismatch` rather than
+aborting the whole export.
 
-A missing assignment submissions directory is a handled failure.
+A missing assignment config is a handled failure.
 
 Success returns `0` and prints row/status counts, overwrite status, and the
 summary path. Handled failures return `1`.
 
 The export is read-only with respect to canonical records. It does not read
-evidence files or comment banks, use a roster, infer missing students,
-calculate percentages, grades, mastery, or weighted results, or generate a
-standards summary.
+evidence files, source comment banks, student writing, private notes, or full
+feedback text. It does not calculate percentages, grades, mastery, or
+weighted results, or generate a standards summary.
 
 Existing CSV files require `--overwrite`.
 
-## Standards Summary Export
+## Assignment-Local Focus Standard Summary Export
 
 ```powershell
 quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
 ```
 
-This command discovers immediate student directories under the assignment
-`submissions/` directory and writes:
+This command reads the assignment's configured Focus Standards, discovered
+or rostered student records, and feedback export metadata, then writes:
 
 ```text
 classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 ```
 
 It validates each available `submission.json` and `review.json`, counts
-missing, invalid, and identity-mismatched records without aborting the
-assignment export, and emits one row per referenced standard sorted by
-`standard_id`.
+missing, invalid, returned-without-full-review, and identity-mismatched
+records without aborting the assignment export, and emits one row per
+assignment Focus Standard in assignment order.
 
-Rows aggregate standards-linked structured tags by polarity and selected
-comments by feedback inclusion, plus distinct student counts.
+Rows aggregate teacher-entered overall Focus Standard ratings from
+`overall_standard_ratings`, missing-rating counts, feedback-inclusion counts,
+and feedback PDF coverage.
 
-Artifacts without `standard_id` are ignored.
+Ratings outside the assignment Focus Standards produce warnings rather than
+ordinary rows.
 
-If no valid linked artifacts exist, the command writes a header-only CSV.
+If no valid reviews exist, the command still writes one row per assignment
+Focus Standard with zero counts.
 
 Success returns `0`. Handled workspace, validation, missing-directory, and
 overwrite failures return `1`.

@@ -301,8 +301,8 @@ def test_assignment_review_actions_menu_includes_export_choices(
     output = capsys.readouterr().out
     assert "Assignment Review Actions" in output
     assert "2. Assemble routed submissions" in output
-    assert "3. Export class review summary" in output
-    assert "4. Export standards summary" in output
+    assert "3. Export assignment-local class summary" in output
+    assert "4. Export assignment-local Focus Standard summary" in output
 
 
 def test_selected_student_review_menu_includes_feedback_export(
@@ -444,7 +444,7 @@ def test_menu_export_class_summary_creates_summary_file(
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
-    assert "Exported class review summary:" in output
+    assert "Exported assignment-local class summary:" in output
     assert "Overwrote existing: no" in output
     assert summary_path.is_file()
 
@@ -475,7 +475,7 @@ def test_menu_export_standards_summary_creates_summary_file(
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
-    assert "Exported standards summary:" in output
+    assert "Exported assignment-local Focus Standard summary:" in output
     assert "Overwrote existing: no" in output
     assert summary_path.is_file()
 
@@ -671,7 +671,7 @@ def test_menu_export_class_summary_overwrites_existing_export(
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
-    assert "Exported class review summary:" in output
+    assert "Exported assignment-local class summary:" in output
     assert "Overwrote existing: yes" in output
     assert summary_path.read_text(encoding="utf-8") != "old content"
 
@@ -731,7 +731,7 @@ def test_menu_export_standards_summary_overwrites_existing_export(
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
-    assert "Exported standards summary:" in output
+    assert "Exported assignment-local Focus Standard summary:" in output
     assert "Overwrote existing: yes" in output
     assert summary_path.read_text(encoding="utf-8") != "old summary"
 

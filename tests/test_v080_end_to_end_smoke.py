@@ -373,11 +373,11 @@ def test_v080_scan_review_export_end_to_end_smoke(
     assert "not_started" in class_summary_text
 
     standards_summary_text = standards_summary_path.read_text(encoding="utf-8")
-    assert "student_count" in standards_summary_text
-    assert STANDARD_ID not in standards_summary_text
+    assert "students_expected" in standards_summary_text
+    assert STANDARD_ID in standards_summary_text
 
     output = capsys.readouterr().out
     assert "Routed Quillan response page." in output
     assert "Exported student feedback:" in output
-    assert "Exported class review summary:" in output
-    assert "Exported standards summary:" in output
+    assert "Exported assignment-local class summary:" in output
+    assert "Exported assignment-local Focus Standard summary:" in output

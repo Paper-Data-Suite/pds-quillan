@@ -1,8 +1,9 @@
-"""Tests for teacher-facing standards summary CSV export."""
+"""Tests for teacher-facing assignment-local Focus Standard summary CSV export."""
 
 from __future__ import annotations
 
 import csv
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -16,125 +17,68 @@ from quillan.standards_summary_export import (
     export_standards_summary,
     standards_summary_export_path,
 )
-from tests.test_class_summary_export import _records, _student_dir, _write_json
-from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID
-
-TIMESTAMP = "2026-06-23T13:00:00+00:00"
-
-
-def _tag(
-    tag_id: str, standard_id: str | None, polarity: str
-) -> dict[str, Any]:
-    tag = {
-        "tag_id": tag_id,
-        "label": f"{polarity} tag",
-        "polarity": polarity,
-        "created_at": TIMESTAMP,
-        "module_details": {},
-    }
-    if standard_id is not None:
-        tag["standard_id"] = standard_id
-    return tag
-
-
-def _comment(
-    comment_id: str, standard_id: str | None, included: bool
-) -> dict[str, Any]:
-    comment = {
-        "comment_record_id": comment_id,
-        "label": "Selected comment",
-        "text": "Snapshotted teacher-selected language.",
-        "source": "custom",
-        "include_in_feedback": included,
-        "created_at": TIMESTAMP,
-        "module_details": {},
-    }
-    if standard_id is not None:
-        comment.update(
-            {
-                "source": "comment_bank",
-                "bank_id": "general_writing",
-                "comment_id": f"source_{comment_id}",
-                "standard_id": standard_id,
-            }
-        )
-    return comment
+from tests.test_class_summary_export import (
+    ASSIGNMENT_ID,
+    CLASS_ID,
+    STANDARD_A,
+    STANDARD_A_KEY,
+    STANDARD_B,
+    STANDARD_B_KEY,
+    TIMESTAMP,
+    _records,
+    _student_dir,
+    _write_assignment,
+    _write_json,
+    _write_roster,
+)
 
 
 def _write_review(
     workspace: Path,
     student_id: str,
     *,
-    tags: list[dict[str, Any]],
-    comments: list[dict[str, Any]],
-) -> tuple[Path, Path]:
+    ratings: list[dict[str, Any]],
+    returned_without_full_review: bool = False,
+) -> tuple[Path, Path, dict[str, Any]]:
     manifest, review = _records(student_id)
-    observations = []
-    observation_ids_by_standard: dict[str, list[str]] = {}
-    for index, tag in enumerate(tags, start=1):
-        standard_id = tag.get("standard_id")
-        if standard_id is None:
-            continue
-        observation_id = f"observation_{index:04d}"
-        observations.append(
-            {
-                "observation_id": observation_id,
-                "standard_id": standard_id,
-                "applicable": True,
-                "evidence_present": True,
-                "rating": 1,
-                "rationale": tag["label"],
-                "include_in_feedback": True,
-                "updated_at": TIMESTAMP,
-                "module_details": {"legacy_polarity": tag["polarity"]},
-            }
-        )
-        observation_ids_by_standard.setdefault(standard_id, []).append(observation_id)
-    if observations:
-        review["review_units"] = [
-            {
-                "unit_id": f"unit_{index:04d}",
-                "sequence": index,
-                "label": f"Whole submission {index}",
-                "unit_type": "whole_submission",
-                "standard_observations": [observation],
-                "module_details": {},
-            }
-            for index, observation in enumerate(observations, start=1)
-        ]
-    comments_by_standard: dict[str, list[dict[str, Any]]] = {}
-    for index, comment in enumerate(comments, start=1):
-        standard_id = comment.get("standard_id")
-        if standard_id is None:
-            continue
-        comments_by_standard.setdefault(standard_id, []).append(
-            {
-                "feedback_comment_id": f"feedback_comment_{index:04d}",
-                "source": "custom",
-                "text": comment["text"],
-                "reusable_comment_id": None,
-                "save_for_reuse": False,
-                "include_in_feedback": comment["include_in_feedback"],
-                "created_at": TIMESTAMP,
-                "module_details": {},
-            }
-        )
-    review["feedback"]["standard_feedback"] = [
-        {
-            "standard_id": standard_id,
-            "include_overall_rating": False,
-            "include_overall_rationale": False,
-            "included_observation_ids": observation_ids_by_standard.get(standard_id, []),
-            "comments": standard_comments,
-            "module_details": {},
+    if returned_without_full_review:
+        review["review_state"] = "returned_without_full_review"
+        review["minimum_requirement_outcome"] = {
+            "status": "returned_without_full_review",
+            "returned_without_full_review": True,
+            "teacher_note": None,
+            "updated_at": review["updated_at"],
         }
-        for standard_id, standard_comments in sorted(comments_by_standard.items())
-    ]
+    else:
+        review["minimum_requirement_outcome"] = {
+            "status": "met",
+            "returned_without_full_review": False,
+            "teacher_note": None,
+            "updated_at": review["updated_at"],
+        }
+    review["overall_standard_ratings"] = ratings
     student_dir = _student_dir(workspace, student_id)
     return (
         _write_json(student_dir / "submission.json", manifest),
         _write_json(student_dir / "review.json", review),
+        review,
     )
+
+
+def _rating(
+    standard_id: str,
+    value: int,
+    *,
+    include_in_feedback: bool = True,
+) -> dict[str, Any]:
+    return {
+        "standard_id": standard_id,
+        "rating": value,
+        "rationale": "Teacher-entered rating.",
+        "include_in_feedback": include_in_feedback,
+        "updated_at": TIMESTAMP,
+        "module_details": {"debug": "must not leak"},
+    }
 
 
 def _read_rows(path: Path) -> list[dict[str, str]]:
@@ -142,44 +86,75 @@ def _read_rows(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(file))
 
 
-def test_aggregates_standards_in_sorted_stable_rows_without_mutation(
+def test_focus_standard_rows_follow_assignment_order_and_count_ratings(
     tmp_path: Path,
 ) -> None:
-    first_paths = _write_review(
+    assignment_path = _write_assignment(tmp_path)
+    roster_path = _write_roster(tmp_path)
+    first_manifest, first_review_path, first_review = _write_review(
         tmp_path,
         "00100",
-        tags=[
-            _tag("tag_1", "synthetic:W.Z", "positive"),
-            _tag("tag_2", "synthetic:W.A", "developing"),
-            _tag("tag_3", "synthetic:W.A", "negative"),
-            _tag("tag_4", None, "neutral"),
-        ],
-        comments=[
-            _comment("comment_1", "synthetic:W.A", True),
-            _comment("comment_2", "synthetic:W.A", False),
-            _comment("comment_3", None, True),
+        ratings=[
+            _rating(STANDARD_A, 3),
+            _rating(STANDARD_B, 2, include_in_feedback=False),
         ],
     )
-    second_paths = _write_review(
+    second_manifest, second_review_path, _ = _write_review(
         tmp_path,
         "00200",
-        tags=[
-            _tag("tag_1", "synthetic:W.A", "neutral"),
-            _tag("tag_2", "synthetic:W.A", "positive"),
-        ],
-        comments=[
-            _comment("comment_1", "synthetic:W.A", True),
-            _comment("comment_2", "synthetic:W.Z", False),
-        ],
+        ratings=[_rating(STANDARD_A, 2)],
     )
-    evidence = tmp_path / "evidence.pdf"
-    evidence.write_bytes(b"never read")
-    bank = tmp_path / "comment_banks" / "bank.json"
-    bank.parent.mkdir()
-    bank.write_text("{not json", encoding="utf-8")
+    returned_manifest, returned_review_path, _ = _write_review(
+        tmp_path,
+        "00300",
+        ratings=[],
+        returned_without_full_review=True,
+    )
+    outside_manifest, outside_review_path, outside_review = _write_review(
+        tmp_path,
+        "00400",
+        ratings=[_rating("synthetic:outside", 1)],
+    )
+    pdf_path = _student_dir(tmp_path, "00100") / "exports" / "feedback.pdf"
+    stale_pdf_path = _student_dir(tmp_path, "00200") / "exports" / "feedback.pdf"
+    pdf_path.parent.mkdir()
+    stale_pdf_path.parent.mkdir()
+    pdf_path.write_bytes(b"%PDF")
+    stale_pdf_path.write_bytes(b"%PDF")
+    first_review["exports"]["feedback_pdf"] = {
+        "path": (
+            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+            "00100/exports/feedback.pdf"
+        ),
+        "generated_at": TIMESTAMP,
+        "source_review_updated_at": first_review["updated_at"],
+        "module_details": {},
+    }
+    _write_json(first_review_path, first_review)
+    stale_review = json.loads(second_review_path.read_text(encoding="utf-8"))
+    stale_review["exports"]["feedback_pdf"] = {
+        "path": (
+            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+            "00200/exports/feedback.pdf"
+        ),
+        "generated_at": TIMESTAMP,
+        "source_review_updated_at": "2026-06-20T12:30:00+00:00",
+        "module_details": {},
+    }
+    _write_json(second_review_path, stale_review)
     originals = {
-        path: path.read_bytes()
-        for path in (*first_paths, *second_paths, evidence, bank)
+        assignment_path: assignment_path.read_bytes(),
+        roster_path: roster_path.read_bytes(),
+        first_manifest: first_manifest.read_bytes(),
+        first_review_path: first_review_path.read_bytes(),
+        second_manifest: second_manifest.read_bytes(),
+        second_review_path: second_review_path.read_bytes(),
+        returned_manifest: returned_manifest.read_bytes(),
+        returned_review_path: returned_review_path.read_bytes(),
+        outside_manifest: outside_manifest.read_bytes(),
+        outside_review_path: outside_review_path.read_bytes(),
+        pdf_path: pdf_path.read_bytes(),
+        stale_pdf_path: stale_pdf_path.read_bytes(),
     }
 
     result = export_standards_summary(
@@ -199,13 +174,14 @@ def test_aggregates_standards_in_sorted_stable_rows_without_mutation(
         ),
         row_count=2,
         standard_count=2,
-        student_count=2,
-        review_count=2,
+        student_count=5,
+        review_count=4,
         missing_review_count=0,
         invalid_review_count=0,
-        missing_submission_count=0,
+        missing_submission_count=1,
         invalid_submission_count=0,
         identity_mismatch_count=0,
+        returned_without_full_review_count=1,
         created_at=TIMESTAMP,
         overwrote_existing=False,
     )
@@ -213,35 +189,46 @@ def test_aggregates_standards_in_sorted_stable_rows_without_mutation(
         reader = csv.DictReader(file)
         assert tuple(reader.fieldnames or ()) == CSV_COLUMNS
         rows = list(reader)
-    assert [row["standard_id"] for row in rows] == ["synthetic:W.A", "synthetic:W.Z"]
+    assert [row["standard_id"] for row in rows] == [STANDARD_A, STANDARD_B]
+    assert [row["standard_column_key"] for row in rows] == [
+        STANDARD_A_KEY,
+        STANDARD_B_KEY,
+    ]
+    assert "tag_count" not in rows[0]
+    assert "positive_tag_count" not in rows[0]
+
     first = rows[0]
-    assert first["student_count"] == "2"
-    assert first["tag_student_count"] == "2"
-    assert first["comment_student_count"] == "2"
-    assert first["tag_count"] == "4"
-    assert first["positive_tag_count"] == "1"
-    assert first["developing_tag_count"] == "1"
-    assert first["negative_tag_count"] == "1"
-    assert first["neutral_tag_count"] == "1"
-    assert first["selected_comment_count"] == "3"
-    assert first["included_comment_count"] == "2"
-    assert first["excluded_comment_count"] == "1"
-    assert first["review_count"] == "2"
-    assert first["source"] == "review_record_v2"
-    assert rows[1]["student_count"] == "2"
-    assert rows[1]["tag_student_count"] == "1"
-    assert rows[1]["comment_student_count"] == "1"
+    assert first["standards_profile_id"] == "synthetic_profile"
+    assert first["focus_standard_order"] == "1"
+    assert first["students_expected"] == "5"
+    assert first["students_with_submissions"] == "4"
+    assert first["students_with_valid_reviews"] == "4"
+    assert first["students_reviewed_for_standard"] == "2"
+    assert first["students_returned_without_full_review"] == "1"
+    assert first["students_missing_rating"] == "1"
+    assert first["students_with_rating_included_in_feedback"] == "2"
+    assert first["feedback_pdf_present_count"] == "1"
+    assert first["feedback_pdf_stale_count"] == "1"
+    assert json.loads(first["rating_counts_json"]) == {"1": 0, "2": 1, "3": 1}
+    assert "rating_for_non_assignment_standard" in first["warnings"]
+    assert "standard_metadata_missing" in first["warnings"]
+
+    second = rows[1]
+    assert second["students_reviewed_for_standard"] == "1"
+    assert second["students_missing_rating"] == "2"
+    assert second["students_with_rating_included_in_feedback"] == "0"
+    assert json.loads(second["rating_counts_json"]) == {"1": 0, "2": 1, "3": 0}
+    csv_text = expected_path.read_text(encoding="utf-8")
+    assert "Teacher-entered rating" not in csv_text
+    assert "module_details" not in csv_text
+    assert "synthetic:outside" not in csv_text
     for path, original in originals.items():
         assert path.read_bytes() == original
 
 
 def test_non_ready_counts_repeat_on_rows_and_do_not_abort(tmp_path: Path) -> None:
-    _write_review(
-        tmp_path,
-        "00100",
-        tags=[_tag("tag_1", "synthetic:W.A", "positive")],
-        comments=[],
-    )
+    _write_assignment(tmp_path)
+    _write_review(tmp_path, "00100", ratings=[_rating(STANDARD_A, 3)])
     _student_dir(tmp_path, "00200").mkdir(parents=True)
     manifest, _ = _records("00300")
     _write_json(_student_dir(tmp_path, "00300") / "submission.json", manifest)
@@ -268,60 +255,45 @@ def test_non_ready_counts_repeat_on_rows_and_do_not_abort(tmp_path: Path) -> Non
     assert result.invalid_submission_count == 1
     assert result.identity_mismatch_count == 1
     row = _read_rows(result.summary_path)[0]
-    assert row["missing_submission_count"] == "1"
-    assert row["missing_review_count"] == "1"
-    assert row["invalid_review_count"] == "1"
-    assert row["invalid_submission_count"] == "1"
-    assert row["identity_mismatch_count"] == "1"
+    assert row["students_with_valid_reviews"] == "1"
+    assert row["students_with_submissions"] == "3"
 
 
-def test_no_linked_artifacts_writes_header_only(tmp_path: Path) -> None:
-    _write_review(
-        tmp_path,
-        "00100",
-        tags=[_tag("tag_1", None, "neutral")],
-        comments=[_comment("comment_1", None, True)],
-    )
-
-    result = export_standards_summary(
-        tmp_path, CLASS_ID, ASSIGNMENT_ID, created_at=TIMESTAMP
-    )
-
-    assert result.row_count == result.standard_count == 0
-    assert result.review_count == 1
-    assert _read_rows(result.summary_path) == []
-    assert result.summary_path.read_text(encoding="utf-8").splitlines() == [
-        ",".join(CSV_COLUMNS)
-    ]
-
-
-def test_no_valid_reviews_writes_header_only_with_counts(tmp_path: Path) -> None:
+def test_no_valid_reviews_writes_focus_standard_rows_with_counts(tmp_path: Path) -> None:
+    _write_assignment(tmp_path)
     _student_dir(tmp_path, "00100").mkdir(parents=True)
 
     result = export_standards_summary(
         tmp_path, CLASS_ID, ASSIGNMENT_ID, created_at=TIMESTAMP
     )
 
-    assert result.row_count == result.review_count == 0
+    assert result.row_count == result.standard_count == 2
+    assert result.review_count == 0
     assert result.missing_submission_count == 1
-    assert _read_rows(result.summary_path) == []
+    rows = _read_rows(result.summary_path)
+    assert [row["standard_id"] for row in rows] == [STANDARD_A, STANDARD_B]
+    assert all(row["students_reviewed_for_standard"] == "0" for row in rows)
 
 
-def test_missing_submissions_directory_is_rejected(tmp_path: Path) -> None:
-    with pytest.raises(StandardsSummaryExportError, match="does not exist"):
+def test_missing_assignment_config_is_rejected(tmp_path: Path) -> None:
+    with pytest.raises(StandardsSummaryExportError, match="assignment config"):
         export_standards_summary(
             tmp_path, CLASS_ID, ASSIGNMENT_ID, created_at=TIMESTAMP
         )
 
 
 def test_overwrite_replaces_only_the_derived_csv(tmp_path: Path) -> None:
-    paths = _write_review(
+    assignment_path = _write_assignment(tmp_path)
+    manifest_path, review_path, _ = _write_review(
         tmp_path,
         "00100",
-        tags=[_tag("tag_1", "synthetic:W.A", "positive")],
-        comments=[],
+        ratings=[_rating(STANDARD_A, 3)],
     )
-    originals = {path: path.read_bytes() for path in paths}
+    originals = {
+        assignment_path: assignment_path.read_bytes(),
+        manifest_path: manifest_path.read_bytes(),
+        review_path: review_path.read_bytes(),
+    }
     first = export_standards_summary(
         tmp_path, CLASS_ID, ASSIGNMENT_ID, created_at=TIMESTAMP
     )
@@ -341,7 +313,7 @@ def test_overwrite_replaces_only_the_derived_csv(tmp_path: Path) -> None:
         created_at=TIMESTAMP,
     )
     assert second.overwrote_existing is True
-    assert _read_rows(second.summary_path)[0]["standard_id"] == "synthetic:W.A"
+    assert _read_rows(second.summary_path)[0]["standard_id"] == STANDARD_A
     for path, original in originals.items():
         assert path.read_bytes() == original
 

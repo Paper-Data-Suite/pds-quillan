@@ -1,57 +1,54 @@
-"""Teacher-facing standards-linked review summary CSV export."""
+"""Teacher-facing assignment-local Focus Standard summary CSV export."""
 
 from __future__ import annotations
 
 import csv
+import json
 import os
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Final
 
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
 from pds_core.standards import (
-    StandardDefinition,
     StandardsLibrary,
-    load_workspace_standards_library,
     find_standard_definition,
+    load_workspace_standards_library,
 )
 
-from quillan.review_record import ReviewRecordError, load_review_record
-from quillan.submission_manifest import (
-    SubmissionManifestError,
-    load_submission_manifest,
+from quillan.assignment_summary_context import (
+    LoadedStudentRecord,
+    discover_students,
+    feedback_status,
+    load_assignment,
+    load_student_record,
+    rating_values,
+    relative_path_for,
+    standard_column_keys,
 )
 
 CSV_COLUMNS: Final[tuple[str, ...]] = (
     "class_id",
     "assignment_id",
+    "standards_profile_id",
+    "focus_standard_order",
     "standard_id",
-    "code",
-    "short_name",
-    "standard_source",
-    "subject",
-    "course",
-    "domain",
-    "student_count",
-    "tag_student_count",
-    "comment_student_count",
-    "tag_count",
-    "positive_tag_count",
-    "developing_tag_count",
-    "negative_tag_count",
-    "neutral_tag_count",
-    "selected_comment_count",
-    "included_comment_count",
-    "excluded_comment_count",
-    "review_count",
-    "missing_review_count",
-    "invalid_review_count",
-    "missing_submission_count",
-    "invalid_submission_count",
-    "identity_mismatch_count",
-    "source",
+    "standard_column_key",
+    "standard_display_code",
+    "standard_display_name",
+    "students_expected",
+    "students_with_submissions",
+    "students_with_valid_reviews",
+    "students_reviewed_for_standard",
+    "students_returned_without_full_review",
+    "students_missing_rating",
+    "students_with_rating_included_in_feedback",
+    "feedback_pdf_present_count",
+    "feedback_pdf_stale_count",
+    "rating_counts_json",
+    "warnings",
 )
 
 
@@ -61,7 +58,7 @@ class StandardsSummaryExportError(Exception):
 
 @dataclass(frozen=True, slots=True)
 class ExportedStandardsSummary:
-    """Information about one generated assignment standards summary."""
+    """Information about one generated assignment Focus Standard summary."""
 
     class_id: str
     assignment_id: str
@@ -76,24 +73,9 @@ class ExportedStandardsSummary:
     missing_submission_count: int
     invalid_submission_count: int
     identity_mismatch_count: int
+    returned_without_full_review_count: int
     created_at: str
     overwrote_existing: bool
-
-
-@dataclass(slots=True)
-class _StandardCounts:
-    """Mutable aggregation state for one durable standard ID."""
-
-    tag_students: set[str] = field(default_factory=set)
-    comment_students: set[str] = field(default_factory=set)
-    tag_count: int = 0
-    positive_tag_count: int = 0
-    developing_tag_count: int = 0
-    negative_tag_count: int = 0
-    neutral_tag_count: int = 0
-    selected_comment_count: int = 0
-    included_comment_count: int = 0
-    excluded_comment_count: int = 0
 
 
 def standards_summary_export_path(
@@ -101,7 +83,7 @@ def standards_summary_export_path(
     class_id: str,
     assignment_id: str,
 ) -> Path:
-    """Return the canonical assignment-level standards summary CSV path."""
+    """Return the canonical assignment-local standards summary CSV path."""
     _validate_identifier(class_id, "class_id")
     _validate_identifier(assignment_id, "assignment_id")
     return (
@@ -123,22 +105,20 @@ def export_standards_summary(
     overwrite: bool = False,
     created_at: datetime | str | None = None,
 ) -> ExportedStandardsSummary:
-    """Export standards-linked schema version 2 review aggregates."""
+    """Export assignment-local Focus Standard rating aggregates."""
     normalized_created_at = _normalize_timestamp(created_at)
     try:
         resolved_root = Path(workspace_root).resolve(strict=False)
         output_path = standards_summary_export_path(
             resolved_root, class_id, assignment_id
         )
-    except (OSError, RuntimeError, StandardsSummaryExportError) as error:
+        assignment = load_assignment(resolved_root, class_id, assignment_id)
+        focus_standard_ids = list(assignment["focus_standard_ids"])
+        column_keys, key_warnings = standard_column_keys(focus_standard_ids)
+        values = rating_values(assignment)
+        students = discover_students(resolved_root, class_id, assignment_id)
+    except (OSError, RuntimeError, ValueError, StandardsSummaryExportError) as error:
         raise StandardsSummaryExportError(str(error)) from error
-
-    submissions_dir = output_path.parent.parent / "submissions"
-    if not submissions_dir.is_dir():
-        raise StandardsSummaryExportError(
-            "Assignment submissions directory does not exist: "
-            f"{submissions_dir}"
-        )
 
     overwrote_existing = output_path.exists()
     if overwrote_existing and not overwrite:
@@ -147,196 +127,168 @@ def export_standards_summary(
             "Use --overwrite to replace it."
         )
 
-    try:
-        student_dirs = sorted(
-            (path for path in submissions_dir.iterdir() if path.is_dir()),
-            key=lambda path: path.name,
-        )
-    except OSError as error:
-        raise StandardsSummaryExportError(
-            f"Could not discover student submission directories: {error}"
-        ) from error
-
-    aggregates: dict[str, _StandardCounts] = {}
-    status_counts = {
-        "review": 0,
-        "missing_review": 0,
-        "invalid_review": 0,
-        "missing_submission": 0,
-        "invalid_submission": 0,
-        "identity_mismatch": 0,
-    }
-    try:
-        standards_library = load_workspace_standards_library(resolved_root)
-    except OSError:
-        standards_library = StandardsLibrary(standards=(), profiles=())
-    for student_dir in student_dirs:
-        _inspect_student(
-            class_id,
-            assignment_id,
-            student_dir,
-            aggregates,
-            status_counts,
-        )
-
+    loaded_records = [
+        load_student_record(student, class_id, assignment_id) for student in students
+    ]
+    standards_library = _load_standards_library(resolved_root)
     rows = [
         _build_row(
+            resolved_root,
             class_id,
             assignment_id,
+            assignment,
             standard_id,
-            aggregates[standard_id],
-            status_counts,
-            find_standard_definition(standards_library, standard_id),
+            index,
+            column_keys[standard_id],
+            values,
+            loaded_records,
+            standards_library,
+            key_warnings,
         )
-        for standard_id in sorted(aggregates)
+        for index, standard_id in enumerate(focus_standard_ids, start=1)
     ]
     _write_csv(output_path, rows, overwrite=overwrite)
 
+    warning_counts = _warning_counts(loaded_records)
     return ExportedStandardsSummary(
         class_id=class_id,
         assignment_id=assignment_id,
         summary_path=output_path,
-        summary_relative_path=_relative_path(output_path, resolved_root),
+        summary_relative_path=relative_path_for(output_path, resolved_root),
         row_count=len(rows),
-        standard_count=len(aggregates),
-        student_count=len(student_dirs),
-        review_count=status_counts["review"],
-        missing_review_count=status_counts["missing_review"],
-        invalid_review_count=status_counts["invalid_review"],
-        missing_submission_count=status_counts["missing_submission"],
-        invalid_submission_count=status_counts["invalid_submission"],
-        identity_mismatch_count=status_counts["identity_mismatch"],
+        standard_count=len(rows),
+        student_count=len(students),
+        review_count=sum(record.review is not None for record in loaded_records),
+        missing_review_count=warning_counts["missing_review"],
+        invalid_review_count=warning_counts["invalid_review"],
+        missing_submission_count=warning_counts["missing_submission"],
+        invalid_submission_count=warning_counts["invalid_submission"],
+        identity_mismatch_count=warning_counts["identity_mismatch"],
+        returned_without_full_review_count=sum(
+            _returned_without_full_review(record.review)
+            for record in loaded_records
+        ),
         created_at=normalized_created_at,
         overwrote_existing=overwrote_existing,
     )
 
 
-def _inspect_student(
-    class_id: str,
-    assignment_id: str,
-    student_dir: Path,
-    aggregates: dict[str, _StandardCounts],
-    status_counts: dict[str, int],
-) -> None:
-    student_id = student_dir.name
-    manifest_path = student_dir / "submission.json"
-    review_path = student_dir / "review.json"
-
-    if not manifest_path.is_file():
-        status_counts["missing_submission"] += 1
-        return
-    try:
-        manifest = load_submission_manifest(manifest_path)
-    except (OSError, SubmissionManifestError):
-        status_counts["invalid_submission"] += 1
-        return
-    if _has_identity_mismatch(
-        manifest, class_id, assignment_id, student_id
-    ):
-        status_counts["identity_mismatch"] += 1
-        return
-
-    if not review_path.is_file():
-        status_counts["missing_review"] += 1
-        return
-    try:
-        review = load_review_record(review_path)
-    except (OSError, ReviewRecordError):
-        status_counts["invalid_review"] += 1
-        return
-    if _has_identity_mismatch(review, class_id, assignment_id, student_id):
-        status_counts["identity_mismatch"] += 1
-        return
-
-    status_counts["review"] += 1
-    for unit in review["review_units"]:
-        for observation in unit["standard_observations"]:
-            standard_id = observation["standard_id"]
-            counts = aggregates.setdefault(standard_id, _StandardCounts())
-            counts.tag_students.add(student_id)
-            counts.tag_count += 1
-            polarity = observation.get("module_details", {}).get("legacy_polarity")
-            if polarity in {"positive", "developing", "negative", "neutral"}:
-                polarity_field = f"{polarity}_tag_count"
-                setattr(counts, polarity_field, getattr(counts, polarity_field) + 1)
-
-    for rating in review["overall_standard_ratings"]:
-        standard_id = rating["standard_id"]
-        counts = aggregates.setdefault(standard_id, _StandardCounts())
-        counts.tag_students.add(student_id)
-
-    for standard_feedback in review["feedback"]["standard_feedback"]:
-        standard_id = standard_feedback["standard_id"]
-        comments = standard_feedback["comments"]
-        if not comments:
-            aggregates.setdefault(standard_id, _StandardCounts())
-            continue
-        counts = aggregates.setdefault(standard_id, _StandardCounts())
-        counts.comment_students.add(student_id)
-        counts.selected_comment_count += len(comments)
-        counts.included_comment_count += sum(
-            comment["include_in_feedback"] for comment in comments
-        )
-        counts.excluded_comment_count += sum(
-            not comment["include_in_feedback"] for comment in comments
-        )
-
-
 def _build_row(
+    workspace_root: Path,
     class_id: str,
     assignment_id: str,
+    assignment: dict[str, Any],
     standard_id: str,
-    counts: _StandardCounts,
-    status_counts: dict[str, int],
-    definition: StandardDefinition | None,
+    focus_order: int,
+    standard_column_key: str,
+    rating_scale_values: tuple[int, ...],
+    records: list[LoadedStudentRecord],
+    standards_library: StandardsLibrary,
+    key_warnings: tuple[str, ...],
 ) -> dict[str, str]:
+    warnings = list(key_warnings)
+    definition = find_standard_definition(standards_library, standard_id)
+    if definition is None:
+        warnings.append("standard_metadata_missing")
+
+    rating_counts = {str(value): 0 for value in rating_scale_values}
+    students_with_submissions = 0
+    students_with_valid_reviews = 0
+    students_reviewed_for_standard = 0
+    students_returned = 0
+    students_missing_rating = 0
+    students_included = 0
+    feedback_pdf_present = 0
+    feedback_pdf_stale = 0
+
+    for record in records:
+        if record.submission is not None:
+            students_with_submissions += 1
+        review = record.review
+        if review is None:
+            continue
+        students_with_valid_reviews += 1
+        pdf_path = record.student.student_dir / "exports" / "feedback.pdf"
+        _, pdf_status, _, _ = feedback_status(
+            workspace_root, review, "feedback_pdf", pdf_path
+        )
+        if pdf_status == "present":
+            feedback_pdf_present += 1
+        elif pdf_status == "stale":
+            feedback_pdf_stale += 1
+
+        if _returned_without_full_review(review):
+            students_returned += 1
+            continue
+
+        ratings_by_standard = {
+            rating["standard_id"]: rating
+            for rating in review["overall_standard_ratings"]
+        }
+        extra_ratings = set(ratings_by_standard) - set(assignment["focus_standard_ids"])
+        if extra_ratings:
+            warnings.append("rating_for_non_assignment_standard")
+
+        rating = ratings_by_standard.get(standard_id)
+        if rating is None:
+            students_missing_rating += 1
+            continue
+        students_reviewed_for_standard += 1
+        value = str(rating["rating"])
+        if value not in rating_counts:
+            warnings.append("unknown_rating_value")
+            rating_counts[value] = 0
+        rating_counts[value] += 1
+        if rating["include_in_feedback"]:
+            students_included += 1
+
     return {
         "class_id": class_id,
         "assignment_id": assignment_id,
+        "standards_profile_id": str(assignment["standards_profile_id"]),
+        "focus_standard_order": str(focus_order),
         "standard_id": standard_id,
-        "code": definition.code if definition is not None else "",
-        "short_name": definition.short_name if definition is not None else "",
-        "standard_source": definition.source if definition is not None else "",
-        "subject": definition.subject or "" if definition is not None else "",
-        "course": definition.course or "" if definition is not None else "",
-        "domain": definition.domain or "" if definition is not None else "",
-        "student_count": str(
-            len(counts.tag_students | counts.comment_students)
-        ),
-        "tag_student_count": str(len(counts.tag_students)),
-        "comment_student_count": str(len(counts.comment_students)),
-        "tag_count": str(counts.tag_count),
-        "positive_tag_count": str(counts.positive_tag_count),
-        "developing_tag_count": str(counts.developing_tag_count),
-        "negative_tag_count": str(counts.negative_tag_count),
-        "neutral_tag_count": str(counts.neutral_tag_count),
-        "selected_comment_count": str(counts.selected_comment_count),
-        "included_comment_count": str(counts.included_comment_count),
-        "excluded_comment_count": str(counts.excluded_comment_count),
-        "review_count": str(status_counts["review"]),
-        "missing_review_count": str(status_counts["missing_review"]),
-        "invalid_review_count": str(status_counts["invalid_review"]),
-        "missing_submission_count": str(status_counts["missing_submission"]),
-        "invalid_submission_count": str(status_counts["invalid_submission"]),
-        "identity_mismatch_count": str(status_counts["identity_mismatch"]),
-        "source": "review_record_v2",
+        "standard_column_key": standard_column_key,
+        "standard_display_code": definition.code if definition is not None else "",
+        "standard_display_name": definition.short_name if definition is not None else "",
+        "students_expected": str(len(records)),
+        "students_with_submissions": str(students_with_submissions),
+        "students_with_valid_reviews": str(students_with_valid_reviews),
+        "students_reviewed_for_standard": str(students_reviewed_for_standard),
+        "students_returned_without_full_review": str(students_returned),
+        "students_missing_rating": str(students_missing_rating),
+        "students_with_rating_included_in_feedback": str(students_included),
+        "feedback_pdf_present_count": str(feedback_pdf_present),
+        "feedback_pdf_stale_count": str(feedback_pdf_stale),
+        "rating_counts_json": json.dumps(rating_counts, sort_keys=True, separators=(",", ":")),
+        "warnings": ";".join(dict.fromkeys(warnings)),
     }
 
 
-def _has_identity_mismatch(
-    record: dict[str, Any],
-    class_id: str,
-    assignment_id: str,
-    student_id: str,
-) -> bool:
-    return any(
-        record[field] != expected
-        for field, expected in (
-            ("class_id", class_id),
-            ("assignment_id", assignment_id),
-            ("student_id", student_id),
+def _warning_counts(records: list[LoadedStudentRecord]) -> dict[str, int]:
+    return {
+        warning: sum(warning in record.warnings for record in records)
+        for warning in (
+            "missing_review",
+            "invalid_review",
+            "missing_submission",
+            "invalid_submission",
+            "identity_mismatch",
         )
-    )
+    }
+
+
+def _returned_without_full_review(review: dict[str, Any] | None) -> bool:
+    if review is None:
+        return False
+    return bool(review["minimum_requirement_outcome"]["returned_without_full_review"])
+
+
+def _load_standards_library(workspace_root: Path) -> StandardsLibrary:
+    try:
+        return load_workspace_standards_library(workspace_root)
+    except OSError:
+        return StandardsLibrary(standards=(), profiles=())
 
 
 def _write_csv(
@@ -430,12 +382,3 @@ def _validate_identifier(value: str, field: str) -> None:
         validate_identifier(value, field)
     except IdentifierValidationError as error:
         raise StandardsSummaryExportError(str(error)) from error
-
-
-def _relative_path(path: Path, workspace_root: Path) -> str:
-    try:
-        return path.resolve(strict=False).relative_to(workspace_root).as_posix()
-    except (OSError, RuntimeError, ValueError) as error:
-        raise StandardsSummaryExportError(
-            f"Could not resolve workspace-relative export path: {error}"
-        ) from error

@@ -11,7 +11,8 @@ from quillan.cli import main
 import quillan.cli_app.handlers.exports as cli_exports
 from quillan.standards_summary_export import standards_summary_export_path
 from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID
-from tests.test_standards_summary_export import _tag, _write_review
+from tests.test_class_summary_export import STANDARD_A, _write_assignment
+from tests.test_standards_summary_export import _rating, _write_review
 
 
 def test_cli_exports_standards_rows_and_prints_summary(
@@ -19,24 +20,30 @@ def test_cli_exports_standards_rows_and_prints_summary(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    paths = _write_review(
+    assignment_path = _write_assignment(tmp_path)
+    manifest_path, review_path, _ = _write_review(
         tmp_path,
         "00100",
-        tags=[_tag("tag_1", "synthetic:W.A", "positive")],
-        comments=[],
+        ratings=[_rating(STANDARD_A, 3)],
     )
-    originals = {path: path.read_bytes() for path in paths}
+    originals = {
+        assignment_path: assignment_path.read_bytes(),
+        manifest_path: manifest_path.read_bytes(),
+        review_path: review_path.read_bytes(),
+    }
     monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(["export-standards-summary", CLASS_ID, ASSIGNMENT_ID]) == 0
 
     output = capsys.readouterr().out
-    assert "Exported standards summary:" in output
+    assert "Exported assignment-local Focus Standard summary:" in output
     assert f"Class: {CLASS_ID}" in output
     assert f"Assignment: {ASSIGNMENT_ID}" in output
-    assert "Rows: 1" in output
-    assert "Standards: 1" in output
+    assert "Standards: 2" in output
+    assert "Expected students: 1" in output
     assert "Valid reviews: 1" in output
+    assert "Missing reviews: 0" in output
+    assert "Returned without full review: 0" in output
     assert "Missing review: 0" in output
     assert "Invalid review: 0" in output
     assert "Missing submission: 0" in output
@@ -51,7 +58,7 @@ def test_cli_exports_standards_rows_and_prints_summary(
     with standards_summary_export_path(
         tmp_path, CLASS_ID, ASSIGNMENT_ID
     ).open("r", encoding="utf-8", newline="") as file:
-        assert list(csv.DictReader(file))[0]["standard_id"] == "synthetic:W.A"
+        assert list(csv.DictReader(file))[0]["standard_id"] == STANDARD_A
     for path, original in originals.items():
         assert path.read_bytes() == original
 
@@ -64,13 +71,13 @@ def test_cli_handles_missing_directory_and_overwrite(
     monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
     command = ["export-standards-summary", CLASS_ID, ASSIGNMENT_ID]
     assert main(command) == 1
-    assert "submissions directory does not exist" in capsys.readouterr().out
+    assert "assignment config" in capsys.readouterr().out
 
+    _write_assignment(tmp_path)
     _write_review(
         tmp_path,
         "00100",
-        tags=[_tag("tag_1", "synthetic:W.A", "positive")],
-        comments=[],
+        ratings=[_rating(STANDARD_A, 3)],
     )
     output_path = standards_summary_export_path(
         tmp_path, CLASS_ID, ASSIGNMENT_ID
@@ -90,11 +97,11 @@ def test_cli_writes_header_only_when_no_standard_artifacts(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _write_assignment(tmp_path)
     _write_review(
         tmp_path,
         "00100",
-        tags=[_tag("tag_1", None, "neutral")],
-        comments=[],
+        ratings=[],
     )
     monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
 
@@ -103,4 +110,6 @@ def test_cli_writes_header_only_when_no_standard_artifacts(
     with standards_summary_export_path(
         tmp_path, CLASS_ID, ASSIGNMENT_ID
     ).open("r", encoding="utf-8", newline="") as file:
-        assert list(csv.DictReader(file)) == []
+        rows = list(csv.DictReader(file))
+    assert len(rows) == 2
+    assert all(row["students_reviewed_for_standard"] == "0" for row in rows)
