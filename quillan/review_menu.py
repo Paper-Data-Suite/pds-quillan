@@ -33,7 +33,10 @@ from quillan.cli_app.output import (
     print_exported_class_summary,
     print_exported_feedback,
     print_exported_standards_summary,
+    print_completed_review_unit_observations,
     print_opened_submission_review,
+    print_updated_review_unit_observation,
+    print_updated_review_units,
     print_updated_review_score,
     print_updated_submission_review_state,
 )
@@ -49,6 +52,12 @@ from quillan.standards_summary_export import (
 )
 from quillan.tag_bank_writing import list_valid_tag_banks
 from quillan.review_notes import ReviewNoteError, add_review_note
+from quillan.review_observations import (
+    ReviewObservationError,
+    mark_observations_complete,
+    set_review_unit_observation,
+    set_review_units,
+)
 from quillan.review_comments import ReviewCommentError, add_review_comment
 from quillan.review_record import (
     ALLOWED_TAG_POLARITIES,
@@ -414,18 +423,19 @@ def _launch_selected_student_review(
         print("1. Open submission evidence")
         print("2. View current review details")
         print("3. Review minimum requirements")
-        print("4. Manage submission pages")
-        print("5. Add teacher note")
-        print("6. Update submission review state")
-        print("7. Export student feedback")
-        print("8. Refresh summary")
-        print("9. Back")
+        print("4. Review units and Focus Standard observations")
+        print("5. Manage submission pages")
+        print("6. Add teacher note")
+        print("7. Update submission review state")
+        print("8. Export student feedback")
+        print("9. Refresh summary")
+        print("10. Back")
         print()
 
         choice = input("Select an option: ").strip()
         print()
 
-        if choice in {"", "9"}:
+        if choice in {"", "10"}:
             return 0
         if choice == "1":
             _open_submission_evidence(
@@ -451,6 +461,13 @@ def _launch_selected_student_review(
                 student_id,
             )
         elif choice == "4":
+            _menu_review_unit_observations(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+        elif choice == "5":
             _menu_manage_submission_pages(
                 workspace_root,
                 class_id,
@@ -458,7 +475,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "5":
+        elif choice == "6":
             _menu_add_review_note(
                 workspace_root,
                 class_id,
@@ -466,7 +483,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "6":
+        elif choice == "7":
             _menu_update_submission_review_state(
                 workspace_root,
                 class_id,
@@ -474,7 +491,7 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "7":
+        elif choice == "8":
             _menu_export_student_feedback(
                 workspace_root,
                 class_id,
@@ -482,10 +499,10 @@ def _launch_selected_student_review(
                 student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "8":
+        elif choice == "9":
             continue
         else:
-            print("Invalid selection. Please enter a number from 1 to 9.")
+            print("Invalid selection. Please enter a number from 1 to 10.")
             input("Press Enter to continue...")
 
 
@@ -2016,6 +2033,11 @@ def _prompt_yes_no_default_no(prompt: str) -> bool:
     return response in {"y", "yes"}
 
 
+def _prompt_yes_no_default_yes(prompt: str) -> bool:
+    response = input(f"{prompt} (Y/n): ").strip().casefold()
+    return response not in {"n", "no"}
+
+
 def _format_yes_no(value: bool) -> str:
     return "yes" if value else "no"
 
@@ -2090,6 +2112,96 @@ def _review_record_counts(
         "included_comments": included_comments,
         "ratings": _count_record_items(record, "overall_standard_ratings"),
     }
+
+
+def _current_review_record(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> dict[str, Any] | None:
+    path = review_record_path(workspace_root, class_id, assignment_id, student_id)
+    if not path.exists():
+        return None
+    try:
+        return load_review_record(path)
+    except (OSError, ReviewRecordError) as error:
+        print(f"Error: could not load review record: {error}")
+        return None
+
+
+def _print_review_observation_status(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
+    if record is None:
+        print("Review units: 0")
+        print("Observations: 0")
+        print("Included for feedback: 0")
+        print("Review record state: not_started")
+        return
+    print(f"Review units: {_count_record_items(record, 'review_units')}")
+    print(f"Observations: {_count_review_unit_observations(record)}")
+    print(f"Included for feedback: {_count_included_review_unit_observations(record)}")
+    print(f"Review record state: {record['review_state']}")
+
+
+def _count_included_review_unit_observations(record: dict[str, Any]) -> int:
+    units = record.get("review_units")
+    if not isinstance(units, list):
+        return 0
+    total = 0
+    for unit in units:
+        observations = unit.get("standard_observations") if isinstance(unit, dict) else None
+        if isinstance(observations, list):
+            total += sum(
+                1
+                for observation in observations
+                if isinstance(observation, dict) and observation.get("include_in_feedback")
+            )
+    return total
+
+
+def _prompt_review_unit(units: list[dict[str, Any]]) -> dict[str, Any] | None:
+    print("Review units:")
+    for index, unit in enumerate(units, start=1):
+        observation_count = len(unit.get("standard_observations", []))
+        print(f"{index}. {unit['label']} ({observation_count} observations)")
+    print("B. Back")
+    print()
+    selection = input("Select review unit: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        return None
+    if selection.isdigit() and 1 <= int(selection) <= len(units):
+        return units[int(selection) - 1]
+    for unit in units:
+        if unit["unit_id"] == selection:
+            return unit
+    print("Invalid review unit selection.")
+    return None
+
+
+def _prompt_focus_standard(
+    workspace_root: Path,
+    focus_standard_ids: list[str],
+) -> str | None:
+    print("Focus Standards:")
+    for index, standard_id in enumerate(focus_standard_ids, start=1):
+        print(f"{index}. {_format_standard_display(workspace_root, standard_id)}")
+    print("B. Back")
+    print()
+    selection = input("Select Focus Standard: ").strip()
+    if selection == "" or selection.casefold() == "b":
+        return None
+    if selection.isdigit() and 1 <= int(selection) <= len(focus_standard_ids):
+        return focus_standard_ids[int(selection) - 1]
+    if selection in focus_standard_ids:
+        return selection
+    print("Invalid Focus Standard selection.")
+    return None
 
 
 def _parse_optional_positive_int(value: str) -> int | None:
@@ -2207,6 +2319,7 @@ def _print_review_record_summary(
     print("Review record: exists")
     print(f"Review record state: {record['review_state']}")
     print(f"Private notes: {_count_record_items(record, 'private_notes')}")
+    print(f"Review units: {_count_record_items(record, 'review_units')}")
     print(f"Review-unit observations: {_count_review_unit_observations(record)}")
     print(f"Feedback comments: {_count_feedback_comments(record)}")
     print(f"Overall ratings: {_count_record_items(record, 'overall_standard_ratings')}")
@@ -2389,6 +2502,212 @@ def _choose_submission_evidence_page(
             return pages[index - 1].page_number
     print("Invalid selection. Please choose a listed page, A, or B.")
     return _BACK
+
+
+def _menu_review_unit_observations(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    while True:
+        _print_review_action_header(
+            "Review Units and Focus Standard Observations",
+            class_id,
+            assignment_id,
+            student_id,
+        )
+        assignment = _load_assignment_for_review(
+            workspace_root, class_id, assignment_id
+        )
+        if assignment is None:
+            input("Press Enter to continue...")
+            return
+        _print_review_observation_status(
+            workspace_root, class_id, assignment_id, student_id
+        )
+        print()
+        print("1. Define/replace review units")
+        print("2. Record/update Focus Standard observation")
+        print("3. Mark observations complete")
+        print("4. Back")
+        print()
+        choice = input("Select an option: ").strip()
+        print()
+        if choice in {"", "4"}:
+            return
+        if choice == "1":
+            _menu_define_review_units(
+                workspace_root, class_id, assignment_id, student_id, assignment
+            )
+            input("Press Enter to continue...")
+        elif choice == "2":
+            _menu_record_review_unit_observation(
+                workspace_root, class_id, assignment_id, student_id, assignment
+            )
+            input("Press Enter to continue...")
+        elif choice == "3":
+            _menu_mark_observations_complete(
+                workspace_root, class_id, assignment_id, student_id
+            )
+            input("Press Enter to continue...")
+        else:
+            print("Invalid selection. Please enter a number from 1 to 4.")
+            input("Press Enter to continue...")
+
+
+def _menu_define_review_units(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    assignment: dict[str, Any],
+) -> None:
+    review_unit = assignment["review_unit"]
+    unit_type = str(review_unit["type"])
+    plural_label = str(review_unit["plural_label"])
+    existing = _current_review_record(workspace_root, class_id, assignment_id, student_id)
+    existing_units = existing.get("review_units", []) if existing is not None else []
+    print(f"Assignment review unit type: {unit_type}")
+    print(f"Focus Standards: {len(assignment['focus_standard_ids'])}")
+    if existing_units:
+        existing_observations = _count_review_unit_observations(existing)
+        print(
+            f"Existing review units: {len(existing_units)}; "
+            f"observations: {existing_observations}"
+        )
+        print("Replacing units keeps observations only when unit IDs still match.")
+    count_text = input(f"How many {plural_label} does this submission have? ").strip()
+    if not count_text:
+        print("Review unit definition canceled.")
+        return
+    try:
+        unit_count = int(count_text)
+    except ValueError:
+        print("Review unit definition canceled. Enter a positive whole number.")
+        return
+    if unit_count < 1:
+        print("Review unit definition canceled. Enter at least 1.")
+        return
+    print()
+    print(f"Create {unit_count} {plural_label}?")
+    print("1. Save review units")
+    print("2. Back")
+    print()
+    if input("Select an option: ").strip() != "1":
+        print("Review unit definition canceled.")
+        return
+    try:
+        updated = set_review_units(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            [{"sequence": sequence} for sequence in range(1, unit_count + 1)],
+        )
+    except ReviewObservationError as error:
+        print(f"Error: could not update review units: {error}")
+        return
+    print_updated_review_units(updated)
+
+
+def _menu_record_review_unit_observation(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    assignment: dict[str, Any],
+) -> None:
+    record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
+    if record is None or not record.get("review_units"):
+        print("Define review units before recording observations.")
+        return
+    unit = _prompt_review_unit(record["review_units"])
+    if unit is None:
+        print("Observation entry canceled.")
+        return
+    standard_id = _prompt_focus_standard(workspace_root, assignment["focus_standard_ids"])
+    if standard_id is None:
+        print("Observation entry canceled.")
+        return
+    print()
+    print("Applicability")
+    print("1. Applicable")
+    print("2. Not applicable")
+    print("B. Back")
+    print()
+    applicability = input("Select applicability: ").strip().casefold()
+    if applicability in {"", "b"}:
+        print("Observation entry canceled.")
+        return
+    applicable = applicability == "1"
+    if not applicable and applicability != "2":
+        print("Observation entry canceled. Invalid applicability selection.")
+        return
+    if applicable:
+        evidence_present = _prompt_yes_no_default_yes("Evidence present?")
+        include_in_feedback = _prompt_yes_no_default_yes("Include in feedback?")
+    else:
+        evidence_present = None
+        include_in_feedback = _prompt_yes_no_default_no("Include in feedback?")
+    rationale = input("Rationale/note (optional): ").strip() or None
+    print()
+    print("Save this observation?")
+    print("1. Save observation")
+    print("2. Back")
+    print()
+    if input("Select an option: ").strip() != "1":
+        print("Observation entry canceled.")
+        return
+    try:
+        updated = set_review_unit_observation(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            unit_id=unit["unit_id"],
+            standard_id=standard_id,
+            applicable=applicable,
+            evidence_present=evidence_present,
+            rationale=rationale,
+            include_in_feedback=include_in_feedback,
+        )
+    except ReviewObservationError as error:
+        print(f"Error: could not update observation: {error}")
+        return
+    print_updated_review_unit_observation(updated)
+
+
+def _menu_mark_observations_complete(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
+    if record is None or not record.get("review_units"):
+        print("Define review units before marking observations complete.")
+        return
+    print("Observations may be marked complete without observing every unit-standard pair.")
+    print("1. Mark observations complete")
+    print("2. Back")
+    print()
+    if input("Select an option: ").strip() != "1":
+        print("Observations were not changed.")
+        return
+    try:
+        completed = mark_observations_complete(
+            workspace_root, class_id, assignment_id, student_id
+        )
+    except ReviewObservationError as error:
+        print(f"Error: could not mark observations complete: {error}")
+        return
+    if completed.missing_focus_standard_pairs:
+        print(
+            "Unobserved unit-standard pairs: "
+            f"{completed.missing_focus_standard_pairs}"
+        )
+    print_completed_review_unit_observations(completed)
 
 
 def _menu_review_minimum_requirements(

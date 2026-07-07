@@ -44,7 +44,7 @@ def _review() -> dict[str, Any]:
                     "standard_id": "synthetic:W.A",
                     "applicable": True,
                     "evidence_present": True,
-                    "rating": 3,
+                    "rating": None,
                     "rationale": "Relevant evidence, uneven explanation.",
                     "include_in_feedback": True,
                     "updated_at": TIMESTAMP,
@@ -120,7 +120,11 @@ def test_current_review_details_formats_saved_artifacts(tmp_path: Path) -> None:
     assert "Review record: exists" in text
     assert "Minimum paragraphs: not met" in text
     assert "Paragraph 2 (paragraph)" in text
-    assert "synthetic:W.A: applicable; rating 3" in text
+    assert (
+        "synthetic:W.A: applicable; evidence present: yes; "
+        "include in feedback: yes"
+    ) in text
+    assert "rating not recorded" not in text
     assert "Include in feedback: yes" in text
     assert "synthetic:W.A: 3" in text
     assert "Needs conference about missing counterargument." in text
