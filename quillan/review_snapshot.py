@@ -151,14 +151,37 @@ def _append_feedback(lines: list[str], record: dict[str, Any]) -> None:
         return
     for item in standard_feedback:
         lines.append(f"- {item['standard_id']}")
+        lines.append(
+            "  Include overall rating: "
+            f"{'yes' if item['include_overall_rating'] else 'no'}"
+        )
+        lines.append(
+            "  Include overall rationale: "
+            f"{'yes' if item['include_overall_rationale'] else 'no'}"
+        )
+        lines.append(
+            "  Included observations: "
+            f"{len(item['included_observation_ids'])}"
+        )
         comments = _record_list(item, "comments")
+        included_comment_count = sum(
+            1 for comment in comments if comment["include_in_feedback"]
+        )
+        lines.append(f"  Comments: {len(comments)}")
+        lines.append(f"  Included comments: {included_comment_count}")
         if not comments:
             lines.append("  No comments recorded.")
             continue
         for comment in comments:
             include = "yes" if comment["include_in_feedback"] else "no"
-            lines.append(f"  - Include in feedback: {include}")
-            lines.append(f"    Feedback: {comment['text']}")
+            source = (
+                "reusable Focus Standard comment"
+                if comment["source"] == "reusable_focus_standard_comment"
+                else "custom"
+            )
+            lines.append(f"  - Source: {source}")
+            lines.append(f"    Include in feedback: {include}")
+            lines.append(f"    Feedback: {_preview(comment['text'])}")
     lines.append("")
 
 
@@ -185,3 +208,10 @@ def _format_evidence_present(value: Any) -> str:
     if value is None:
         return "not applicable"
     return "yes" if value is True else "no"
+
+
+def _preview(value: str, *, limit: int = 120) -> str:
+    text = " ".join(value.split())
+    if len(text) <= limit:
+        return text
+    return f"{text[: limit - 3].rstrip()}..."
