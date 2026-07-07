@@ -312,16 +312,22 @@ def print_exported_feedback_pdf(exported: ExportedFeedbackPdf) -> None:
 
 def print_exported_class_summary(exported: ExportedClassSummary) -> None:
     """Print a concise teacher-facing class summary export result."""
-    print("Exported class review summary:")
+    print("Exported assignment-local class summary:")
     print(f"Class: {exported.class_id}")
     print(f"Assignment: {exported.assignment_id}")
     print(f"Rows: {exported.row_count}")
-    print(f"Ready: {exported.ready_count}")
+    print(f"Valid reviews: {exported.ready_count}")
     print(f"Missing review: {exported.missing_review_count}")
     print(f"Invalid review: {exported.invalid_review_count}")
     print(f"Missing submission: {exported.missing_submission_count}")
     print(f"Invalid submission: {exported.invalid_submission_count}")
     print(f"Identity mismatch: {exported.identity_mismatch_count}")
+    print(
+        "Returned without full review: "
+        f"{exported.returned_without_full_review_count}"
+    )
+    print(f"Feedback PDF present: {exported.feedback_pdf_present_count}")
+    print(f"Feedback PDF stale: {exported.feedback_pdf_stale_count}")
     print(f"Overwrote existing: {format_bool(exported.overwrote_existing)}")
     print(f"Summary file: {exported.summary_relative_path}")
 
@@ -330,12 +336,18 @@ def print_exported_standards_summary(
     exported: ExportedStandardsSummary,
 ) -> None:
     """Print a concise teacher-facing standards summary export result."""
-    print("Exported standards summary:")
+    missing_reviews = exported.missing_review_count + exported.invalid_review_count
+    print("Exported assignment-local Focus Standard summary:")
     print(f"Class: {exported.class_id}")
     print(f"Assignment: {exported.assignment_id}")
-    print(f"Rows: {exported.row_count}")
     print(f"Standards: {exported.standard_count}")
+    print(f"Expected students: {exported.student_count}")
     print(f"Valid reviews: {exported.review_count}")
+    print(f"Missing reviews: {missing_reviews}")
+    print(
+        "Returned without full review: "
+        f"{exported.returned_without_full_review_count}"
+    )
     print(f"Missing review: {exported.missing_review_count}")
     print(f"Invalid review: {exported.invalid_review_count}")
     print(f"Missing submission: {exported.missing_submission_count}")

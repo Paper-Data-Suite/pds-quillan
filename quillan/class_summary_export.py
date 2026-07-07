@@ -1,4 +1,4 @@
-"""Teacher-facing class review summary CSV export."""
+"""Teacher-facing assignment-local class summary CSV export."""
 
 from __future__ import annotations
 
@@ -12,32 +12,40 @@ from typing import Any, Final
 
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
 
-from quillan.review_record import ReviewRecordError, load_review_record
-from quillan.submission_manifest import (
-    SubmissionManifestError,
-    load_submission_manifest,
+from quillan.assignment_summary_context import (
+    LoadedStudentRecord,
+    discover_students,
+    feedback_status,
+    load_assignment,
+    load_student_record,
+    rating_labels,
+    relative_path_for,
+    standard_column_keys,
 )
 
-CSV_COLUMNS: Final[tuple[str, ...]] = (
+BASE_CSV_COLUMNS: Final[tuple[str, ...]] = (
     "class_id",
     "assignment_id",
     "student_id",
-    "row_status",
-    "review_state",
-    "submission_state",
-    "score_count",
-    "total_score",
-    "total_max_score",
-    "included_comment_count",
-    "selected_comment_count",
-    "tag_count",
-    "note_count",
-    "feedback_export_exists",
+    "student_display_name",
+    "roster_status",
     "submission_manifest_path",
+    "submission_state",
+    "submission_valid",
     "review_record_path",
-    "feedback_export_path",
-    "error",
+    "review_state",
+    "review_valid",
+    "minimum_requirement_status",
+    "returned_without_full_review",
+    "feedback_pdf_path",
+    "feedback_pdf_status",
+    "feedback_pdf_stale",
+    "feedback_markdown_path",
+    "feedback_markdown_status",
+    "feedback_markdown_stale",
+    "warnings",
 )
+CSV_COLUMNS: Final[tuple[str, ...]] = BASE_CSV_COLUMNS
 
 
 class ClassSummaryExportError(Exception):
@@ -46,7 +54,7 @@ class ClassSummaryExportError(Exception):
 
 @dataclass(frozen=True, slots=True)
 class ExportedClassSummary:
-    """Information about one generated assignment-level class summary."""
+    """Information about one generated assignment-local class summary."""
 
     class_id: str
     assignment_id: str
@@ -59,6 +67,9 @@ class ExportedClassSummary:
     missing_submission_count: int
     invalid_submission_count: int
     identity_mismatch_count: int
+    returned_without_full_review_count: int
+    feedback_pdf_present_count: int
+    feedback_pdf_stale_count: int
     created_at: str
     overwrote_existing: bool
 
@@ -68,7 +79,7 @@ def class_summary_export_path(
     class_id: str,
     assignment_id: str,
 ) -> Path:
-    """Return the canonical assignment-level class summary CSV path."""
+    """Return the canonical assignment-local class summary CSV path."""
     _validate_identifier(class_id, "class_id")
     _validate_identifier(assignment_id, "assignment_id")
     return (
@@ -90,22 +101,20 @@ def export_class_review_summary(
     overwrite: bool = False,
     created_at: datetime | str | None = None,
 ) -> ExportedClassSummary:
-    """Export one deterministic CSV row per discovered student directory."""
+    """Export one deterministic CSV row per rostered or discovered student."""
     normalized_created_at = _normalize_timestamp(created_at)
     try:
         resolved_root = Path(workspace_root).resolve(strict=False)
         output_path = class_summary_export_path(
             resolved_root, class_id, assignment_id
         )
-    except (OSError, RuntimeError, ClassSummaryExportError) as error:
+        assignment = load_assignment(resolved_root, class_id, assignment_id)
+        focus_standard_ids = list(assignment["focus_standard_ids"])
+        column_keys, key_warnings = standard_column_keys(focus_standard_ids)
+        labels = rating_labels(assignment)
+        students = discover_students(resolved_root, class_id, assignment_id)
+    except (OSError, RuntimeError, ValueError, ClassSummaryExportError) as error:
         raise ClassSummaryExportError(str(error)) from error
-
-    submissions_dir = output_path.parent.parent / "submissions"
-    if not submissions_dir.is_dir():
-        raise ClassSummaryExportError(
-            "Assignment submissions directory does not exist: "
-            f"{submissions_dir}"
-        )
 
     overwrote_existing = output_path.exists()
     if overwrote_existing and not overwrite:
@@ -114,189 +123,157 @@ def export_class_review_summary(
             "Use --overwrite to replace it."
         )
 
-    try:
-        student_dirs = sorted(
-            (path for path in submissions_dir.iterdir() if path.is_dir()),
-            key=lambda path: path.name,
-        )
-    except OSError as error:
-        raise ClassSummaryExportError(
-            f"Could not discover student submission directories: {error}"
-        ) from error
-
+    fieldnames = _fieldnames(focus_standard_ids, column_keys)
+    loaded_records = [
+        load_student_record(student, class_id, assignment_id) for student in students
+    ]
     rows = [
         _build_student_row(
             resolved_root,
             class_id,
             assignment_id,
-            student_dir,
+            record,
+            focus_standard_ids,
+            column_keys,
+            labels,
+            key_warnings,
         )
-        for student_dir in student_dirs
+        for record in loaded_records
     ]
-    _write_csv(output_path, rows, overwrite=overwrite)
+    _write_csv(output_path, rows, fieldnames=fieldnames, overwrite=overwrite)
 
-    counts = {
-        status: sum(row["row_status"] == status for row in rows)
-        for status in (
-            "ready",
-            "missing_review",
-            "invalid_review",
-            "missing_submission",
-            "invalid_submission",
-            "identity_mismatch",
-        )
-    }
     return ExportedClassSummary(
         class_id=class_id,
         assignment_id=assignment_id,
         summary_path=output_path,
-        summary_relative_path=_relative_path(output_path, resolved_root),
+        summary_relative_path=relative_path_for(output_path, resolved_root),
         row_count=len(rows),
-        ready_count=counts["ready"],
-        missing_review_count=counts["missing_review"],
-        invalid_review_count=counts["invalid_review"],
-        missing_submission_count=counts["missing_submission"],
-        invalid_submission_count=counts["invalid_submission"],
-        identity_mismatch_count=counts["identity_mismatch"],
+        ready_count=sum(row["review_valid"] == "true" for row in rows),
+        missing_review_count=sum("missing_review" in row["warnings"].split(";") for row in rows),
+        invalid_review_count=sum("invalid_review" in row["warnings"].split(";") for row in rows),
+        missing_submission_count=sum("missing_submission" in row["warnings"].split(";") for row in rows),
+        invalid_submission_count=sum("invalid_submission" in row["warnings"].split(";") for row in rows),
+        identity_mismatch_count=sum("identity_mismatch" in row["warnings"].split(";") for row in rows),
+        returned_without_full_review_count=sum(
+            row["returned_without_full_review"] == "true" for row in rows
+        ),
+        feedback_pdf_present_count=sum(row["feedback_pdf_status"] == "present" for row in rows),
+        feedback_pdf_stale_count=sum(row["feedback_pdf_status"] == "stale" for row in rows),
         created_at=normalized_created_at,
         overwrote_existing=overwrote_existing,
     )
+
+
+def _fieldnames(
+    focus_standard_ids: list[str], column_keys: dict[str, str]
+) -> tuple[str, ...]:
+    dynamic_columns: list[str] = []
+    for standard_id in focus_standard_ids:
+        key = column_keys[standard_id]
+        dynamic_columns.extend(
+            (
+                f"rating__{key}",
+                f"rating_label__{key}",
+                f"rating_included_in_feedback__{key}",
+                f"rating_missing__{key}",
+            )
+        )
+    return BASE_CSV_COLUMNS[:-1] + tuple(dynamic_columns) + ("warnings",)
 
 
 def _build_student_row(
     workspace_root: Path,
     class_id: str,
     assignment_id: str,
-    student_dir: Path,
+    loaded: LoadedStudentRecord,
+    focus_standard_ids: list[str],
+    column_keys: dict[str, str],
+    labels: dict[int, str],
+    key_warnings: tuple[str, ...],
 ) -> dict[str, str]:
-    student_id = student_dir.name
-    manifest_path = student_dir / "submission.json"
-    review_path = student_dir / "review.json"
-    feedback_path = student_dir / "exports" / "feedback.md"
+    student = loaded.student
+    review = loaded.review
+    warnings = list(loaded.warnings) + list(key_warnings)
+    feedback_pdf_path = student.student_dir / "exports" / "feedback.pdf"
+    feedback_markdown_path = student.student_dir / "exports" / "feedback.md"
+    pdf_path, pdf_status, pdf_stale, pdf_warnings = feedback_status(
+        workspace_root, review, "feedback_pdf", feedback_pdf_path
+    )
+    md_path, md_status, md_stale, md_warnings = feedback_status(
+        workspace_root, review, "feedback_markdown", feedback_markdown_path
+    )
+    warnings.extend(pdf_warnings)
+    warnings.extend(md_warnings)
+
     row = {
         "class_id": class_id,
         "assignment_id": assignment_id,
-        "student_id": student_id,
-        "row_status": "",
-        "review_state": "",
-        "submission_state": "",
-        "score_count": "",
-        "total_score": "",
-        "total_max_score": "",
-        "included_comment_count": "",
-        "selected_comment_count": "",
-        "tag_count": "",
-        "note_count": "",
-        "feedback_export_exists": _csv_bool(feedback_path.is_file()),
-        "submission_manifest_path": _relative_path(
-            manifest_path, workspace_root
+        "student_id": student.student_id,
+        "student_display_name": student.display_name,
+        "roster_status": student.roster_status,
+        "submission_manifest_path": relative_path_for(
+            loaded.submission_manifest_path, workspace_root
         ),
-        "review_record_path": _relative_path(review_path, workspace_root),
-        "feedback_export_path": _relative_path(feedback_path, workspace_root),
-        "error": "",
+        "submission_state": _record_value(loaded.submission, "submission_state"),
+        "submission_valid": loaded.submission_valid,
+        "review_record_path": relative_path_for(loaded.review_record_path, workspace_root),
+        "review_state": _record_value(review, "review_state"),
+        "review_valid": loaded.review_valid,
+        "minimum_requirement_status": "",
+        "returned_without_full_review": "",
+        "feedback_pdf_path": pdf_path,
+        "feedback_pdf_status": pdf_status,
+        "feedback_pdf_stale": pdf_stale,
+        "feedback_markdown_path": md_path,
+        "feedback_markdown_status": md_status,
+        "feedback_markdown_stale": md_stale,
     }
 
-    if not manifest_path.is_file():
-        return _failed_row(
-            row,
-            "missing_submission",
-            f"Submission manifest is missing: {row['submission_manifest_path']}",
+    ratings_by_standard: dict[str, dict[str, Any]] = {}
+    if review is not None:
+        outcome = review["minimum_requirement_outcome"]
+        row["minimum_requirement_status"] = str(outcome["status"])
+        row["returned_without_full_review"] = _csv_bool(
+            bool(outcome["returned_without_full_review"])
         )
-    try:
-        manifest = load_submission_manifest(manifest_path)
-    except (OSError, SubmissionManifestError) as error:
-        return _failed_row(
-            row, "invalid_submission", f"Invalid submission manifest: {error}"
+        for rating in review["overall_standard_ratings"]:
+            standard_id = rating["standard_id"]
+            if standard_id not in focus_standard_ids:
+                warnings.append("rating_for_non_assignment_standard")
+                continue
+            ratings_by_standard[standard_id] = rating
+
+    for standard_id in focus_standard_ids:
+        key = column_keys[standard_id]
+        rating = ratings_by_standard.get(standard_id)
+        if rating is None:
+            row[f"rating__{key}"] = ""
+            row[f"rating_label__{key}"] = ""
+            row[f"rating_included_in_feedback__{key}"] = ""
+            row[f"rating_missing__{key}"] = "true"
+            continue
+        value = int(rating["rating"])
+        label = labels.get(value)
+        if label is None:
+            warnings.append("unknown_rating_value")
+            label = ""
+        row[f"rating__{key}"] = str(value)
+        row[f"rating_label__{key}"] = label
+        row[f"rating_included_in_feedback__{key}"] = _csv_bool(
+            bool(rating["include_in_feedback"])
         )
+        row[f"rating_missing__{key}"] = "false"
 
-    row["submission_state"] = str(manifest["submission_state"])
-    mismatch = _identity_mismatch(
-        manifest, class_id, assignment_id, student_id, "Submission manifest"
-    )
-    if mismatch is not None:
-        return _failed_row(row, "identity_mismatch", mismatch)
-
-    if not review_path.is_file():
-        return _failed_row(
-            row,
-            "missing_review",
-            f"Review record is missing: {row['review_record_path']}",
-        )
-    try:
-        review = load_review_record(review_path)
-    except (OSError, ReviewRecordError) as error:
-        return _failed_row(
-            row, "invalid_review", f"Invalid review record: {error}"
-        )
-
-    mismatch = _identity_mismatch(
-        review, class_id, assignment_id, student_id, "Review record"
-    )
-    if mismatch is not None:
-        return _failed_row(row, "identity_mismatch", mismatch)
-
-    ratings = review["overall_standard_ratings"]
-    comments = [
-        comment
-        for standard_feedback in review["feedback"]["standard_feedback"]
-        for comment in standard_feedback["comments"]
-    ]
-    observations = [
-        observation
-        for unit in review["review_units"]
-        for observation in unit["standard_observations"]
-    ]
-    row.update(
-        {
-            "row_status": "ready",
-            "review_state": str(review["review_state"]),
-            "score_count": str(len(ratings)),
-            "total_score": _format_number(
-                sum(rating["rating"] for rating in ratings)
-            ),
-            "total_max_score": "",
-            "included_comment_count": str(
-                sum(comment["include_in_feedback"] for comment in comments)
-            ),
-            "selected_comment_count": str(len(comments)),
-            "tag_count": str(len(observations)),
-            "note_count": str(len(review["private_notes"])),
-        }
-    )
+    row["warnings"] = ";".join(dict.fromkeys(warnings))
     return row
-
-
-def _failed_row(
-    row: dict[str, str], status: str, message: str
-) -> dict[str, str]:
-    row["row_status"] = status
-    row["error"] = " ".join(message.split())
-    return row
-
-
-def _identity_mismatch(
-    record: dict[str, Any],
-    class_id: str,
-    assignment_id: str,
-    student_id: str,
-    record_name: str,
-) -> str | None:
-    expected_values = {
-        "class_id": class_id,
-        "assignment_id": assignment_id,
-        "student_id": student_id,
-    }
-    for field, expected in expected_values.items():
-        actual = record[field]
-        if actual != expected:
-            return (
-                f"{record_name} {field} is {actual!r}, expected {expected!r}."
-            )
-    return None
 
 
 def _write_csv(
-    path: Path, rows: list[dict[str, str]], *, overwrite: bool
+    path: Path,
+    rows: list[dict[str, str]],
+    *,
+    fieldnames: tuple[str, ...],
+    overwrite: bool,
 ) -> None:
     parent = path.parent
     try:
@@ -324,7 +301,7 @@ def _write_csv(
             temporary_path = Path(temporary_file.name)
             writer = csv.DictWriter(
                 temporary_file,
-                fieldnames=CSV_COLUMNS,
+                fieldnames=fieldnames,
                 lineterminator="\n",
             )
             writer.writeheader()
@@ -387,18 +364,11 @@ def _validate_identifier(value: str, field: str) -> None:
         raise ClassSummaryExportError(str(error)) from error
 
 
-def _relative_path(path: Path, workspace_root: Path) -> str:
-    try:
-        return path.resolve(strict=False).relative_to(workspace_root).as_posix()
-    except (OSError, RuntimeError, ValueError) as error:
-        raise ClassSummaryExportError(
-            f"Could not resolve workspace-relative export path: {error}"
-        ) from error
+def _record_value(record: dict[str, Any] | None, field: str) -> str:
+    if record is None:
+        return ""
+    return str(record[field])
 
 
 def _csv_bool(value: bool) -> str:
     return "true" if value else "false"
-
-
-def _format_number(value: int | float) -> str:
-    return format(value, "g")

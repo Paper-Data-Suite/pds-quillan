@@ -704,39 +704,39 @@ Private notes, score notes, tags, and comment provenance are excluded.
 
 Existing feedback is protected unless `--overwrite` is supplied.
 
-Export a class review summary:
+Export an assignment-local class summary:
 
 ```powershell
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
 ```
 
-This discovers immediate student directories under the assignment `submissions/` directory and writes:
+This reads the assignment config, roster when available, submission manifests, review records, and feedback export metadata, then writes:
 
 ```text
 classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
 ```
 
-Each student gets one deterministic row, including status rows for missing, invalid, or identity-mismatched records.
+Each rostered or discovered student gets one deterministic row, including status rows for missing, invalid, or identity-mismatched records.
 
-Ready rows summarize states, teacher-entered score totals, selected comments, tags, notes, and feedback-file existence.
+Rows summarize submission/review status, minimum-requirement outcomes, returned-without-full-review status, assignment Focus Standard ratings, and feedback PDF/Markdown status.
 
-The totals are transparent arithmetic, not grades.
+The export is assignment-local and does not calculate grades, percentages, or cross-assignment mastery.
 
-Export a standards summary:
+Export an assignment-local Focus Standard summary:
 
 ```powershell
 quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
 ```
 
-This reads valid matching `submission.json` and `review.json` records and writes:
+This reads the assignment's configured Focus Standards, valid matching `submission.json` and `review.json` records, and feedback export metadata, then writes:
 
 ```text
 classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 ```
 
-It creates one sorted row per `standard_id` referenced by a structured tag or selected comment, including tag polarity, feedback-inclusion, and distinct-student counts.
+It creates one row per assignment Focus Standard in assignment order, including rating distributions, missing-rating counts, returned-without-full-review counts, and feedback PDF coverage.
 
-It does not include individual student IDs, scores, notes, mastery determinations, or grades.
+It does not include student writing, private notes, full feedback text, grades, percentages, or broad mastery determinations.
 
 All exports are derived files. Exports do not mutate:
 

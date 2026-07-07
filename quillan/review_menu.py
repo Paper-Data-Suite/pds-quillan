@@ -4524,8 +4524,8 @@ def _launch_assignment_review_actions(
 
         print("1. Select student/submission")
         print("2. Assemble routed submissions")
-        print("3. Export class review summary")
-        print("4. Export standards summary")
+        print("3. Export assignment-local class summary")
+        print("4. Export assignment-local Focus Standard summary")
         print("5. Refresh submission status")
         print("6. Back")
         print()

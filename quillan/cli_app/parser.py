@@ -246,13 +246,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     export_class_summary_parser = subparsers.add_parser(
         "export-class-summary",
-        help="Export a class-level review summary CSV for one assignment.",
+        help="Export an assignment-local class summary CSV.",
         description=(
-            "Generate a teacher-facing CSV summary from existing submission "
-            "and review records for one class assignment. The export reports "
-            "review availability, review state, score totals, selected feedback "
-            "counts, tag counts, and note counts. It does not mutate canonical "
-            "records or evidence."
+            "Generate a teacher-facing assignment-local CSV summary from "
+            "existing submission and review records for one class assignment. "
+            "The export reports submission/review status, minimum-requirement "
+            "outcomes, Focus Standard ratings, and feedback export status. It "
+            "does not mutate canonical records or evidence."
         ),
     )
     _add_assignment_identity_arguments(export_class_summary_parser)
@@ -265,12 +265,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     export_standards_summary_parser = subparsers.add_parser(
         "export-standards-summary",
-        help="Export a standards-focused review summary CSV for one assignment.",
+        help="Export an assignment-local Focus Standard summary CSV.",
         description=(
-            "Generate a teacher-facing CSV summary of standards-linked review "
-            "tags and selected comments across one class assignment. The "
-            "export reads existing review records and does not mutate "
-            "canonical records, evidence, or source comment banks."
+            "Generate a teacher-facing assignment-local CSV summary of "
+            "teacher-entered overall Focus Standard ratings for one class "
+            "assignment. The export includes minimum-requirement outcomes and "
+            "feedback export status, and does not mutate canonical records or "
+            "evidence."
         ),
     )
     _add_assignment_identity_arguments(export_standards_summary_parser)
