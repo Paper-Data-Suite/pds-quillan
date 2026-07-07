@@ -2,7 +2,7 @@
 
 ## Purpose and Boundary
 
-This document defines the target v0.8.6 Quillan student feedback export contract.
+This document defines the v0.8.6 Quillan student feedback export contract.
 
 A student feedback export is a derived student-facing artifact generated from canonical Quillan workspace records. It communicates teacher-entered review decisions to a student in a clear, standards-based format.
 
@@ -44,18 +44,12 @@ A generated feedback export must not replace, rewrite, or become the source of t
 
 ## Status
 
-This is the target student feedback export contract for the v0.8.6 standards-based workflow redesign.
-
-Implementation, runtime validators, CLI commands, menu workflows, PDF generation, Markdown generation, tests, and migration helpers may not yet match this contract until later v0.8.6 implementation issues are completed.
-
-At the time this contract is introduced, the current runtime may still export legacy schema version `1` Markdown feedback based on:
-
-```text
-review.json.scores
-review.json.comments
-```
-
-That legacy export behavior is implementation history. It is not the target architecture for new standards-based review work.
+This is the active student feedback export contract for the v0.8.6
+standards-based workflow redesign. Runtime export supports Markdown, PDF, and
+both formats from schema version `2` review records. Some optional future
+metadata or presentation details described later in this document may remain
+contract guidance, but the active export workflow is no longer the legacy
+schema version `1` criterion-score/comment export.
 
 ## Design Context
 
@@ -1310,7 +1304,7 @@ Please revise and resubmit with textual evidence before full standards review.
 
 ## Relationship to Legacy Feedback Export
 
-Legacy feedback export may currently use:
+Legacy feedback export used:
 
 ```text
 review.json.scores
@@ -1323,16 +1317,16 @@ and generate:
 exports/feedback.md
 ```
 
-That behavior belongs to the older schema version `1` review model.
+That behavior belongs to the older schema version `1` review model and is not
+the active v0.8.6 export path.
 
-The target v0.8.6 model supersedes that approach:
+The active v0.8.6 model supersedes that approach:
 
 * old generic criterion scores are superseded by overall Focus Standard ratings;
 * old generic selected comments are superseded by Focus Standard feedback comments;
 * old generic tag counts are not student-facing feedback structure;
-* old Markdown-first export is superseded by PDF-first export.
-
-Compatibility code may temporarily support legacy exports until the implementation issues replace runtime behavior.
+* old Markdown-first export is superseded by PDF-first export with Markdown
+  available as an explicit companion format.
 
 ## Relationship to Later Issues
 

@@ -62,10 +62,10 @@ quillan route-scan <source-folder> --decode-qr
 quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 quillan open-evidence <workspace-relative-evidence-path>
-quillan open-submission <class_id> <assignment_id> <student_id>
+quillan open-submission <class_id> <assignment_id> <student_id> [--page N]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
-quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
+quillan export-feedback <class_id> <assignment_id> <student_id> [--format markdown|pdf|both] [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
 quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
 quillan workspace show
@@ -219,7 +219,7 @@ Assignment Management provides:
 ```
 
 Creation selects one class with an existing canonical roster, prompts for the
-fields in the existing assignment config contract, and writes:
+fields in the active schema version `2` assignment config contract, and writes:
 
 ```text
 <workspace_root>/classes/<class_id>/assignments/<assignment_id>/assignment.json
@@ -230,11 +230,13 @@ Assignment creation prompts for:
 * assignment title;
 * assignment ID;
 * writing type;
+* student prompt;
 * pds-core standards profile selection;
-* tagging mode;
-* pds-core focus-standard selection;
+* pds-core Focus Standard selection stored as `focus_standard_ids`;
+* review-unit configuration;
+* rating-scale configuration;
 * basic requirements; and
-* rubric ID.
+* minimum-requirement return policy.
 
 `writing_type` is currently a typed teacher-entered value, not a discovered or
 selectable list.
@@ -249,8 +251,7 @@ View/validate accepts an explicit JSON path, uses the existing assignment
 loader and validator, prints a concise summary, and does not rewrite the file.
 
 These workflows do not add assignment editing, deletion, import, scoring,
-feedback, tagging execution, requirements checking, reports, scan routing,
-OCR, or AI.
+feedback, generic tagging, reports, scan routing, OCR, or AI.
 
 #### Roster Management
 
@@ -398,13 +399,16 @@ The selected-student review menu provides:
 ```text
 1. Open submission evidence
 2. View current review details
-3. Record minimum requirement checks
-4. Manage submission pages
-5. Add teacher note
-6. Update submission review state
-7. Export student feedback
-8. Refresh summary
-9. Back
+3. Review minimum requirements
+4. Review units and Focus Standard observations
+5. Overall Focus Standard ratings
+6. Compose Focus Standard feedback
+7. Manage submission pages
+8. Add teacher note
+9. Update submission review state
+10. Export student feedback
+11. Refresh summary
+12. Back
 ```
 
 Opening submission evidence delegates to the same existing safe selected
@@ -416,13 +420,30 @@ quillan open-submission <class_id> <assignment_id> <student_id>
 
 Missing manifests or missing selected evidence are reported clearly.
 
-`Record minimum requirement checks` lists checks generated from the selected
+`Review minimum requirements` lists checks generated from the selected
 assignment's `basic_requirements`: minimum/maximum paragraph count,
 minimum/maximum word count, and each configured required element. The teacher
 records each check as `1` for met/yes or `2` for not met/no. Quillan stores
-the teacher-entered boolean in `review.json.requirement_checks`; it does not
-count words or paragraphs, parse writing, run OCR, use AI, infer a result, or
-change rubric scores.
+the teacher-entered boolean in `minimum_requirement_checks` and stores the
+teacher-selected result in `minimum_requirement_outcome`. It does not count
+words or paragraphs, parse writing, run OCR, use AI, infer a result, or change
+standards ratings.
+
+`Review units and Focus Standard observations` lets the teacher define or
+replace review units and record teacher-entered observations for assignment
+Focus Standards. Observations may be applicable or not applicable, may record
+teacher-entered evidence presence, may omit a rating, and may be included or
+excluded from feedback consideration.
+
+`Overall Focus Standard ratings` summarizes observations by Focus Standard and
+lets the teacher enter overall ratings from the assignment `rating_scale`.
+Ratings are not inferred from observations. Marking ratings complete is an
+explicit teacher action.
+
+`Compose Focus Standard feedback` stores per-standard rating/rationale
+inclusion choices, selected observation IDs, custom comments, reusable Focus
+Standard comment snapshots, and save-for-reuse choices under
+`feedback.standard_feedback`. Marking feedback composed is explicit.
 
 Retained guided review-entry actions reuse the same underlying review services
 as the direct commands:
@@ -769,31 +790,34 @@ part of the v0.8.6 standards-based review redesign gate and must not write v1
 
 The matching selected-student menu actions for structured tags, reusable
 comments, and criterion scores are also removed. Replacement Focus Standard
-observation, rating, feedback, and reporting workflows are intentionally out of
-scope for this removal gate.
+observation, rating, feedback, and reporting workflows now live in the guided
+selected-student menu and schema version `2` review record.
 
 ## Student Feedback Export
 
 ```powershell
-quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
+quillan export-feedback <class_id> <assignment_id> <student_id> [--format markdown|pdf|both] [--overwrite]
 ```
 
 This direct command requires valid matching canonical `submission.json` and
-`review.json` records, then writes the derived artifact:
+`review.json` records, then writes the selected derived artifact or artifacts:
 
 ```text
+classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
 classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
-It includes ordered criterion scores and snapshotted comments marked
-`include_in_feedback: true`.
+`--format` accepts `markdown`, `pdf`, or `both`. The default is `markdown` for
+pre-1.0 compatibility with earlier scripts.
 
-It excludes private notes, score notes, structured tags, excluded comments,
-and comment source/provenance fields, and it does not read source comment
-banks.
+The export is standards-based. It uses the review record's
+`minimum_requirement_outcome`, `overall_standard_ratings`, selected review-unit
+observations, and `feedback.standard_feedback` content. It excludes private
+notes, unselected observations, unselected comments, reusable-comment
+provenance, routed evidence paths, and internal review IDs.
 
-Success returns `0` and reports the identity, included-comment count, score
-count, overwrite status, and workspace-relative feedback path.
+Success returns `0` and reports the identity, selected format, overwrite
+status, and workspace-relative feedback path or paths.
 
 Handled workspace, validation, missing-record, and overwrite failures return
 `1`.
@@ -898,7 +922,7 @@ Exports do not mutate:
 * retained source scans;
 * rosters;
 * assignment configs;
-* comment banks; or
+* reusable Focus Standard comments; or
 * pds-core standards libraries.
 
 The menu delegates to the same export services and output formatters as the
@@ -992,7 +1016,8 @@ explicitly outside the current end-to-end foundation:
   automatic production scan routing;
 * OCR or handwriting interpretation;
 * PDF text extraction;
-* complete requirements-checking workflows;
+* a direct CLI command for requirements review, review-unit observations,
+  overall Focus Standard ratings, or feedback composition;
 * AI grading, scoring, tagging, or feedback;
 * automatic grading, mastery calculation, review-state decisions, or
   duplicate-evidence selection;

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the target v0.8.6 Quillan assignment contract.
+This document defines the v0.8.6 Quillan assignment contract.
 
 The assignment record describes what the teacher asked students to do and how Quillan should structure review for that assignment. Under the standards-based redesign, the assignment is the source of truth for:
 
@@ -30,11 +30,13 @@ student evidence -> review unit -> Focus Standard -> teacher judgment -> feedbac
 
 ## Status
 
-This is the target assignment contract for the v0.8.6 standards-based workflow redesign.
+This is the active assignment contract for the v0.8.6 standards-based workflow redesign.
 
 It supersedes the old tag/comment/rubric-centered assignment shape that used `tagging_mode`, `focus_standards`, and `rubric_id` as central fields.
 
-This document is a contract target. Implementation, validators, assignment-creation menus, migration helpers, and tests may not yet fully match this contract until later v0.8.6 issues are completed.
+Runtime validation, assignment creation, assignment discovery, and tests now
+use this schema version `2` shape. Future migration helpers may still be added
+if legacy classroom data ever needs conversion.
 
 ## Canonical Path
 

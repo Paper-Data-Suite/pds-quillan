@@ -5,7 +5,7 @@
 Reusable Focus Standard comments are teacher-authored feedback language for
 Quillan's v0.8.6 standards-based review workflow.
 
-They replace generic prebuilt comment banks as the target reusable feedback
+They replace generic prebuilt comment banks as the active reusable feedback
 model for standards-based review.
 
 The old model treated reusable comments as generic review materials prepared
@@ -32,12 +32,13 @@ silently change prior student review records or previously generated feedback.
 
 ## Status
 
-This is the target reusable Focus Standard comment contract for the v0.8.6
+This is the active reusable Focus Standard comment contract for the v0.8.6
 standards-based workflow redesign.
 
-Implementation, runtime validators, feedback-composition workflows, reusable
-comment selection, usage tracking, migration helpers, and tests may not yet
-match this contract until later v0.8.6 issues are completed.
+Runtime validators, lookup, reusable-comment selection from feedback
+composition, saving for reuse, usage tracking, safe writes, and tests now use
+this contract. Future migration helpers may still be added if legacy classroom
+data ever needs conversion.
 
 ## Design Context
 
@@ -990,44 +991,26 @@ Committed examples must use synthetic data only.
 }
 ```
 
-## Runtime Status
+## Legacy Status
 
-At the time this target contract is introduced, current runtime workflows may
-still use legacy comment banks and schema version `1` `review.json.comments`.
-
-This document defines the target reusable Focus Standard comment contract. It
-does not by itself update:
-
-* comment-bank validators;
-* feedback-composition menus;
-* review workflows;
-* reusable-comment lookup;
-* feedback export code;
-* examples;
-* tests; or
-* migration behavior.
-
-Those implementation changes belong in later v0.8.6 issues.
+Legacy generic comment banks and schema version `1` `review.json.comments`
+remain historical/compatibility material. They are not the active v0.8.6
+student-feedback composition workflow.
 
 ## Explicit Non-Goals
 
-This contract does not implement:
+This contract does not define:
 
-* reusable Focus Standard comment storage;
-* reusable Focus Standard comment validation;
-* feedback-composition workflows;
-* comment lookup menus;
 * automatic comment suggestions;
 * automatic feedback generation;
 * AI-generated comments;
 * AI feedback drafting;
 * automatic scoring;
 * automatic standards detection;
-* migration from legacy comment banks;
 * deletion of legacy comment-bank documentation;
 * tag-bank redesign;
-* feedback export changes; or
-* report changes.
+* report changes; or
+* cross-assignment comment analytics.
 
 Reusable Focus Standard comments are teacher-authored source material only.
 They support teacher feedback work but do not replace teacher judgment.

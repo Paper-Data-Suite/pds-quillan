@@ -1,5 +1,9 @@
 # Quillan Rubric / Scoring Profile Contract
 
+Status: legacy/inactive compatibility documentation. Generic rubrics and
+criterion-score workflows are not the active v0.8.6 scoring workflow. Active
+ratings are overall Focus Standard ratings using the assignment `rating_scale`.
+
 Rubrics and scoring profiles are teacher-authored reusable review materials.
 They let a teacher score prepared criteria by selecting a criterion and level
 during review instead of typing raw score fields.

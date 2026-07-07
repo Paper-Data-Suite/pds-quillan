@@ -1,5 +1,10 @@
 # Quillan Shared Comment Bank Contract
 
+Status: legacy/inactive compatibility documentation. Generic comment banks are
+not the active v0.8.6 student-feedback composition workflow. Active feedback
+composition uses `feedback.standard_feedback` and reusable Focus Standard
+comments under `shared/focus_standard_comments/`.
+
 ## Purpose and Boundary
 
 A comment bank is reusable, teacher-authored source data for selecting
