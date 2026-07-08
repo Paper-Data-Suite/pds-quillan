@@ -97,7 +97,11 @@ from quillan.review_record_paths import (
     review_record_path,
     write_review_record,
 )
-from quillan.review_status_display import feedback_export_status, review_status_label
+from quillan.review_status_display import (
+    feedback_export_status,
+    review_progress_status,
+    review_status_label,
+)
 from quillan.review_snapshot import current_review_details_text
 from quillan.review_targets import (
     ReviewTargetError,
@@ -2201,11 +2205,17 @@ def _print_review_observation_status(
         print("Observations: 0")
         print("Included for feedback: 0")
         print("Review record state: not_started")
+        print("Observations complete: no")
         return
+    status = review_progress_status(record)
     print(f"Review units: {_count_record_items(record, 'review_units')}")
     print(f"Observations: {_count_review_unit_observations(record)}")
     print(f"Included for feedback: {_count_included_review_unit_observations(record)}")
-    print(f"Review record state: {record['review_state']}")
+    print(f"Review record state: {status.review_state}")
+    if status.is_returned_without_full_review:
+        print(f"Observations: {status.observations_status_label}")
+    else:
+        print(f"Observations complete: {_format_yes_no(status.observations_complete)}")
 
 
 def _count_included_review_unit_observations(record: dict[str, Any]) -> int:
@@ -2342,6 +2352,7 @@ def _print_review_summary(
         except (OSError, ReviewRecordError):
             pass
     print(f"Review: {review_status_label(record)}")
+    _print_review_phase_statuses(record)
     print(f"Feedback export: {feedback_export_status(workspace_root, record)}")
 
     _print_review_record_summary(
@@ -2400,6 +2411,18 @@ def _print_review_record_summary(
 def _count_record_items(record: dict[str, Any], field: str) -> int:
     value = record.get(field)
     return len(value) if isinstance(value, list) else 0
+
+
+def _print_review_phase_statuses(record: dict[str, Any] | None) -> None:
+    status = review_progress_status(record)
+    if status.is_returned_without_full_review:
+        print(f"Observations: {status.observations_status_label}")
+        print(f"Ratings: {status.ratings_status_label}")
+        print(f"Feedback composition: {status.feedback_status_label}")
+        return
+    print(f"Observations complete: {_format_yes_no(status.observations_complete)}")
+    print(f"Ratings complete: {_format_yes_no(status.ratings_complete)}")
+    print(f"Feedback composed: {_format_yes_no(status.feedback_composed)}")
 
 
 def _count_review_unit_observations(record: dict[str, Any]) -> int:
@@ -2910,19 +2933,21 @@ def _print_feedback_composer_status(
         return
     included_comments = sum(summary.included_comment_count for summary in summaries)
     records = sum(1 for summary in summaries if summary.has_feedback_record)
-    print(f"Review record state: {record['review_state']}")
+    status = review_progress_status(record)
+    print(f"Review record state: {status.review_state}")
     print(f"Focus Standards configured: {len(assignment['focus_standard_ids'])}")
     print(f"Standards with feedback records: {records}")
     print(f"Included comments: {included_comments}")
-    print(
-        "Ratings complete: "
-        f"{_format_yes_no(record['review_state'] in {'ratings_complete', 'feedback_composed'})}"
-    )
-    if record["review_state"] == "returned_without_full_review":
+    if status.is_returned_without_full_review:
+        print(f"Ratings: {status.ratings_status_label}")
+        print(f"Feedback composition: {status.feedback_status_label}")
         print(
             "This submission was returned without full standards review. "
             "Change the minimum-requirements outcome before composing feedback."
         )
+    else:
+        print(f"Ratings complete: {_format_yes_no(status.ratings_complete)}")
+        print(f"Feedback composed: {_format_yes_no(status.feedback_composed)}")
 
 
 def _menu_configure_standard_feedback_options(
@@ -3193,7 +3218,7 @@ def _menu_mark_feedback_composed(
     print(f"Focus Standards: {focus_standard_count}")
     print(f"Standards with feedback records: {len(feedback_records)}")
     print(f"Included comments: {included_comments}")
-    if record["review_state"] != "ratings_complete":
+    if not review_progress_status(record).ratings_complete:
         print("Warning: ratings are not marked complete.")
     if len(ratings) < focus_standard_count:
         print("Warning: some Focus Standards do not have overall ratings.")
@@ -3232,7 +3257,14 @@ def _print_overall_rating_status(
     print(f"Focus Standards configured: {len(focus_standard_ids)}")
     print(f"Ratings recorded: {len(rated)}")
     print(f"Missing ratings: {max(len(focus_standard_ids) - len(rated), 0)}")
-    print(f"Current review state: {record['review_state'] if record else 'not_started'}")
+    status = review_progress_status(record)
+    print(f"Current review state: {status.review_state}")
+    if status.is_returned_without_full_review:
+        print(f"Observations: {status.observations_status_label}")
+        print(f"Ratings: {status.ratings_status_label}")
+    else:
+        print(f"Observations complete: {_format_yes_no(status.observations_complete)}")
+        print(f"Ratings complete: {_format_yes_no(status.ratings_complete)}")
 
 
 def _print_overall_rating_warnings(record: dict[str, Any] | None) -> None:
@@ -3251,7 +3283,7 @@ def _print_overall_rating_warnings(record: dict[str, Any] | None) -> None:
     observation_count = _count_review_unit_observations(record)
     if observation_count == 0:
         print("Warning: no observations recorded.")
-    if record["review_state"] != "observations_complete":
+    if not review_progress_status(record).observations_complete:
         print("Warning: observations are not marked complete.")
 
 
@@ -4396,14 +4428,11 @@ def _menu_export_student_feedback(
     except (ReviewRecordError, OSError):
         record = None
     if record is not None:
-        print(f"Current review state: {record['review_state']}")
-        if record["review_state"] == "returned_without_full_review":
+        status = review_progress_status(record)
+        print(f"Current review state: {status.review_state}")
+        if status.is_returned_without_full_review:
             print("This will export returned-work feedback.")
-        elif record["review_state"] not in {
-            "feedback_composed",
-            "ready_for_export",
-            "exported",
-        }:
+        elif not status.feedback_composed:
             print("Warning: feedback is not marked composed yet.")
         print()
     print("1. Export PDF feedback")
