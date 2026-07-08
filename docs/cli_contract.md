@@ -394,6 +394,17 @@ before showing the student list. Nested review selections clear between levels
 so each screen stands on its own. `B. Back` returns to the immediate previous
 selection screen.
 
+Terminal review screens should clear and redraw after a teacher selects an
+option by default. Retaining prior output is intentional only when that
+information provides necessary context for the current action. Parent
+dashboards may show broader status, but focused action screens should show
+only the current task, selected student, selected review unit/requirement/Focus
+Standard when relevant, and immediately useful status. Confirmation screens
+should be concise, and `Back` should return to the previous menu with its
+fuller context restored. Prior menu options, parent dashboard blocks, and
+debug-style details should not remain on screen merely because the terminal
+transcript stacked them there.
+
 The selected-student review menu provides:
 
 ```text

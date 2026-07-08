@@ -418,6 +418,9 @@ def test_review_menu_records_applicable_focus_standard_observation(
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
+    assert "Record Focus Standard Observation" in output
+    assert "Step: Applicability" in output
+    assert "Step: Save confirmation" in output
     assert "Updated Focus Standard observation:" in output
     assert "Action: created" in output
     assert "Rating:" not in output
@@ -551,6 +554,9 @@ def test_review_menu_records_and_completes_overall_focus_standard_rating(
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
     assert "Overall Focus Standard Ratings" in output
+    assert "Record Overall Focus Standard Rating" in output
+    assert "Step: Rating" in output
+    assert "Step: Save confirmation" in output
     assert "Rating scale: standards_2_level" in output
     assert "Updated overall Focus Standard rating:" in output
     assert "Marked overall Focus Standard ratings complete:" in output
