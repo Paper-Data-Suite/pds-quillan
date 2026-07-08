@@ -887,6 +887,11 @@ def _update_export_metadata(
             "source_review_updated_at": context["review"]["updated_at"],
             "module_details": {},
         }
+    # Returned work remains a distinct terminal workflow state under the v2
+    # contract, even when its return feedback has been exported.
+    if review["review_state"] != "returned_without_full_review":
+        review["review_state"] = "exported"
+    review["updated_at"] = created_at
     try:
         validate_review_record(review)
         write_review_record(context["record_path"], review, overwrite=True)

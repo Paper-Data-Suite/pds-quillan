@@ -325,7 +325,7 @@ def test_review_summary_includes_existing_review_record_counts(
 
     output = capsys.readouterr().out
     assert "Review record: exists" in output
-    assert "Review record state: feedback_composed" in output
+    assert "Review: feedback composed" in output
     assert "Private notes: 1" in output
     assert "Review-unit observations: 0" in output
     assert review_path.read_bytes() == review_before
@@ -939,7 +939,7 @@ def test_review_menu_adds_teacher_note_to_review_record(
     assert review["review_state"] == "not_started"
 
 
-def test_review_menu_updates_submission_review_state(
+def test_review_menu_updates_review_workflow_state(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
@@ -954,7 +954,7 @@ def test_review_menu_updates_submission_review_state(
             "1",
             "1",
             "9",
-            "in_progress",
+            "4",
             "1",
             "",
             "12",
@@ -974,7 +974,13 @@ def test_review_menu_updates_submission_review_state(
         STUDENT_ID,
     )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert manifest["submission_state"] == "in_progress"
+    assert manifest["submission_state"] == "unreviewed"
+    review = json.loads(
+        review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(
+            encoding="utf-8"
+        )
+    )
+    assert review["review_state"] == "observations_in_progress"
 
 
 def test_review_menu_adds_custom_focus_standard_feedback_comment(

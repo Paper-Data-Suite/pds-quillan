@@ -116,7 +116,11 @@ def test_current_review_details_formats_saved_artifacts(tmp_path: Path) -> None:
 
     text = current_review_details_text(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
 
-    assert text.startswith("Review record: exists\nReview state: feedback_composed")
+    assert text.startswith(
+        "Review record: exists\n"
+        "Review: feedback composed\n"
+        "Feedback export: not exported"
+    )
     assert "Quillan" not in text
     assert "Current Review Details" not in text
     assert "Review record: exists" in text

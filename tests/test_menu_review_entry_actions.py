@@ -193,7 +193,7 @@ def test_review_menu_selected_student_excludes_legacy_review_entry_actions(
     assert "6. Compose Focus Standard feedback" in output
     assert "7. Manage submission pages" in output
     assert "8. Add teacher note" in output
-    assert "9. Update submission review state" in output
+    assert "9. Update review workflow state" in output
     assert "10. Export student feedback" in output
     assert "11. Refresh summary" in output
     assert "12. Back" in output
@@ -309,14 +309,14 @@ def test_review_menu_blank_note_cancels_without_review_record(
     assert manifest_path.read_bytes() == manifest_before
 
 
-def test_review_menu_updates_submission_review_state(
+def test_review_menu_updates_review_workflow_state(
     workspace: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["9", "in_progress", "1"]
+        + ["9", "4", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -329,4 +329,10 @@ def test_review_menu_updates_submission_review_state(
         STUDENT_ID,
     )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert manifest["submission_state"] == "in_progress"
+    assert manifest["submission_state"] == "unreviewed"
+    review = json.loads(
+        review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(
+            encoding="utf-8"
+        )
+    )
+    assert review["review_state"] == "observations_in_progress"

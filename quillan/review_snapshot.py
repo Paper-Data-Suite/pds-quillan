@@ -7,6 +7,7 @@ from typing import Any
 
 from quillan.review_record import ReviewRecordError, load_review_record
 from quillan.review_record_paths import review_record_path
+from quillan.review_status_display import feedback_export_status, review_status_label
 
 def current_review_details_text(
     workspace_root: str | Path,
@@ -35,7 +36,10 @@ def current_review_details_text(
         return "\n".join(lines)
 
     lines.append("Review record: exists")
-    lines.append(f"Review state: {record['review_state']}")
+    lines.append(f"Review: {review_status_label(record)}")
+    lines.append(
+        f"Feedback export: {feedback_export_status(workspace_root, record)}"
+    )
     lines.append("")
     _append_requirement_checks(lines, record)
     _append_review_units(lines, record)

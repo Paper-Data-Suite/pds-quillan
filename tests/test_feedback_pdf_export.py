@@ -203,6 +203,7 @@ def test_normal_pdf_export_creates_student_facing_pdf_and_metadata(
 
     review_after = json.loads(review_path.read_text(encoding="utf-8"))
     metadata = review_after["exports"]["feedback_pdf"]
+    assert review_after["review_state"] == "exported"
     assert metadata == {
         "path": (
             f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
