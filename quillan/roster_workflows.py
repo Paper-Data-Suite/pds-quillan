@@ -278,6 +278,35 @@ def prompt_remove_student_from_roster(roster: Roster) -> Roster:
     return remove_student_record(roster, student.student_id)
 
 
+def _print_roster_action_header(title: str) -> None:
+    from quillan.menu import clear_screen, print_menu_header
+
+    clear_screen()
+    print_menu_header(title)
+
+
+def _print_roster_edit_dashboard(
+    roster: Roster,
+    *,
+    dirty: bool,
+    last_status: str | None = None,
+) -> None:
+    _print_roster_action_header("Edit Class Roster")
+    print(f"Class ID: {roster.class_id}")
+    print(f"Student count: {len(roster.students)}")
+    print(f"Unsaved changes: {'yes' if dirty else 'no'}")
+    if last_status is not None:
+        print(f"Last action: {last_status}")
+    print()
+    print("1. Add student")
+    print("2. Edit student")
+    print("3. Remove student from active roster")
+    print("4. View current roster")
+    print("5. Save changes")
+    print("6. Cancel without saving")
+    print()
+
+
 def prompt_create_roster() -> int:
     """Create a canonical shared class roster from teacher prompts."""
     from quillan.menu import print_menu_header
@@ -379,9 +408,7 @@ def prompt_view_roster() -> int:
 
 def prompt_edit_class_roster() -> int:
     """Stage roster mutations and write only after explicit SAVE."""
-    from quillan.menu import print_menu_header
-
-    print_menu_header("Edit Class Roster")
+    _print_roster_action_header("Edit Class Roster")
     workspace_root = _workspace_root()
     if workspace_root is None:
         return 1
@@ -395,49 +422,57 @@ def prompt_edit_class_roster() -> int:
         return 1
 
     dirty = False
-    print()
-    print(format_roster_for_display(staged_roster, folder.roster_path))
+    last_status: str | None = None
     while True:
-        print()
-        print("Edit menu")
-        print("1. Add student")
-        print("2. Edit student")
-        print("3. Remove student from active roster")
-        print("4. View current roster")
-        print("5. Save changes")
-        print("6. Cancel without saving")
-        print()
+        _print_roster_edit_dashboard(
+            staged_roster,
+            dirty=dirty,
+            last_status=last_status,
+        )
+        last_status = None
         choice = input("Select an option: ").strip()
         print()
 
         try:
             if choice == "1":
+                _print_roster_action_header("Add Student")
                 staged_roster = prompt_add_student_to_roster(staged_roster)
                 dirty = True
-                print("Staged: student added.")
+                last_status = "student added"
             elif choice == "2":
+                _print_roster_action_header("Edit Student")
                 staged_roster = prompt_edit_student_in_roster(staged_roster)
                 dirty = True
-                print("Staged: student updated.")
+                last_status = "student updated"
             elif choice == "3":
+                _print_roster_action_header("Remove Student")
                 updated = prompt_remove_student_from_roster(staged_roster)
                 if updated is not staged_roster:
                     staged_roster = updated
                     dirty = True
-                    print("Staged: student removed from active roster.")
+                    last_status = "student removed from active roster"
+                else:
+                    last_status = "student removal canceled"
             elif choice == "4":
+                _print_roster_action_header("Current Roster")
                 print(format_roster_for_display(staged_roster, folder.roster_path))
                 if dirty:
                     print("\nUnsaved staged changes are shown above.")
+                print()
+                input("Press Enter to return to edit menu...")
             elif choice == "5":
                 if not dirty:
                     print("No changes to save.")
                     return 0
+                _print_roster_action_header("Save Roster Changes")
+                print(f"Class ID: {staged_roster.class_id}")
+                print(f"Student count: {len(staged_roster.students)}")
+                print()
                 confirmation = input(
                     "Type SAVE to write staged changes: "
                 ).strip()
                 if confirmation != "SAVE":
-                    print("Canceled: save not confirmed.")
+                    last_status = "save not confirmed"
                     continue
                 saved_path = write_class_roster(
                     workspace_root,
@@ -448,18 +483,23 @@ def prompt_edit_class_roster() -> int:
                 return 0
             elif choice == "6":
                 if dirty:
+                    _print_roster_action_header("Discard Roster Changes")
+                    print(f"Class ID: {staged_roster.class_id}")
+                    print(f"Student count: {len(staged_roster.students)}")
+                    print()
                     confirmation = input(
                         "Type DISCARD to discard staged changes: "
                     ).strip()
                     if confirmation != "DISCARD":
-                        print("Canceled: staged changes were not discarded.")
+                        last_status = "discard not confirmed"
                         continue
                 print("Canceled: no roster changes were saved.")
                 return 0
             else:
-                print("Invalid selection. Please enter a number from 1 to 6.")
+                last_status = "invalid selection"
         except (RosterError, ValueError) as error:
             print_roster_validation_error(error)
+            last_status = "action failed"
 
 
 def _normalize_path_input(value: str) -> str:

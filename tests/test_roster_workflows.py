@@ -282,6 +282,7 @@ def test_remove_is_in_memory_only_and_does_not_touch_evidence(
 def test_edit_cancel_discard_does_not_write_staged_changes(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     write_class_roster(tmp_path, _roster())
     original = load_class_roster(tmp_path, "synthetic_class")
@@ -303,8 +304,31 @@ def test_edit_cancel_discard_does_not_write_staged_changes(
     )
 
     assert workflows.prompt_edit_class_roster() == 0
+    output = capsys.readouterr().out
+    assert "Class ID: synthetic_class" in output
+    assert "Student count: 2" in output
+    assert "Unsaved changes: no" in output
+    assert "Last action: student added" in output
+    assert "Discard Roster Changes" in output
     saved = load_class_roster(tmp_path, "synthetic_class")
     assert saved == original
+
+
+def test_edit_view_current_roster_is_explicit_action(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    write_class_roster(tmp_path, _roster())
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    prompts = _inputs(monkeypatch, ["1", "4", "", "6"])
+
+    assert workflows.prompt_edit_class_roster() == 0
+    output = capsys.readouterr().out
+    assert "Current Roster" in output
+    assert "Roster path:" in output
+    assert "0012" in output
+    assert "Press Enter to return to edit menu..." in prompts
 
 
 def test_edit_save_requires_confirmation_then_writes(
