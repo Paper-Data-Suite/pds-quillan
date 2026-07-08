@@ -119,6 +119,9 @@ def test_current_review_details_formats_saved_artifacts(tmp_path: Path) -> None:
     assert text.startswith(
         "Review record: exists\n"
         "Review: feedback composed\n"
+        "Observations complete: yes\n"
+        "Ratings complete: yes\n"
+        "Feedback composed: yes\n"
         "Feedback export: not exported"
     )
     assert "Quillan" not in text
@@ -162,3 +165,30 @@ def test_current_review_details_formats_empty_sections(tmp_path: Path) -> None:
     assert "No overall standard ratings recorded." in text
     assert "No feedback composed." in text
     assert "No private notes recorded." in text
+
+
+def test_current_review_details_formats_returned_phases_as_not_applicable(
+    tmp_path: Path,
+) -> None:
+    review = _review()
+    review["review_state"] = "returned_without_full_review"
+    review["minimum_requirement_outcome"] = {
+        "status": "returned_without_full_review",
+        "returned_without_full_review": True,
+        "teacher_note": "Missing required work.",
+        "updated_at": TIMESTAMP,
+    }
+    path = review_record_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    write_review_record(path, review)
+
+    text = current_review_details_text(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+
+    assert "Review: returned without full standards review" in text
+    assert (
+        "Observations: not applicable - returned without full standards review"
+    ) in text
+    assert "Ratings: not applicable - returned without full standards review" in text
+    assert (
+        "Feedback composition: not applicable - returned without full standards review"
+    ) in text
+    assert "Observations complete: no" not in text

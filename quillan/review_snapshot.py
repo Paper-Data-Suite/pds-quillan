@@ -7,7 +7,12 @@ from typing import Any
 
 from quillan.review_record import ReviewRecordError, load_review_record
 from quillan.review_record_paths import review_record_path
-from quillan.review_status_display import feedback_export_status, review_status_label
+from quillan.review_status_display import (
+    feedback_export_status,
+    review_progress_status,
+    review_status_label,
+)
+
 
 def current_review_details_text(
     workspace_root: str | Path,
@@ -37,6 +42,7 @@ def current_review_details_text(
 
     lines.append("Review record: exists")
     lines.append(f"Review: {review_status_label(record)}")
+    _append_review_phase_statuses(lines, record)
     lines.append(
         f"Feedback export: {feedback_export_status(workspace_root, record)}"
     )
@@ -102,6 +108,20 @@ def _append_requirement_checks(lines: list[str], record: dict[str, Any]) -> None
         if note := _non_empty(check.get("teacher_note")):
             lines.append(f"  Note: {note}")
     lines.append("")
+
+
+def _append_review_phase_statuses(lines: list[str], record: dict[str, Any]) -> None:
+    status = review_progress_status(record)
+    if status.is_returned_without_full_review:
+        lines.append(f"Observations: {status.observations_status_label}")
+        lines.append(f"Ratings: {status.ratings_status_label}")
+        lines.append(f"Feedback composition: {status.feedback_status_label}")
+        return
+    lines.append(
+        f"Observations complete: {'yes' if status.observations_complete else 'no'}"
+    )
+    lines.append(f"Ratings complete: {'yes' if status.ratings_complete else 'no'}")
+    lines.append(f"Feedback composed: {'yes' if status.feedback_composed else 'no'}")
 
 
 def _append_review_units(lines: list[str], record: dict[str, Any]) -> None:
