@@ -3150,19 +3150,46 @@ def _menu_add_custom_focus_standard_feedback_comment(
         _print_returned_feedback_guard()
         return
     standard_id = _prompt_focus_standard_with_feedback_status(
-        workspace_root, assignment["focus_standard_ids"], record
+        workspace_root,
+        assignment["focus_standard_ids"],
+        record,
+        title="Add Focus Standard Feedback Comment",
+        student_id=student_id,
     )
     if standard_id is None:
         print("Custom feedback comment canceled.")
         return
-    _print_current_rating_and_rationale(record, standard_id)
+    _print_feedback_action_header(
+        "Add Focus Standard Feedback Comment",
+        student_id,
+        workspace_root=workspace_root,
+        standard_id=standard_id,
+    )
+    _print_feedback_comment_context(record, standard_id)
     _print_existing_standard_feedback_comments(record, standard_id)
     print()
     text = input("Feedback comment text:\n").strip()
     if not text:
         print("Custom feedback comment canceled.")
         return
+    _print_feedback_action_header(
+        "Add Focus Standard Feedback Comment",
+        student_id,
+        workspace_root=workspace_root,
+        standard_id=standard_id,
+    )
+    print(f"Comment: {_preview_text(text)}")
+    print()
     include_in_feedback = _prompt_yes_no_default_yes("Include this comment in feedback?")
+    _print_feedback_action_header(
+        "Add Focus Standard Feedback Comment",
+        student_id,
+        workspace_root=workspace_root,
+        standard_id=standard_id,
+    )
+    print(f"Comment: {_preview_text(text)}")
+    print(f"Include in feedback: {_format_yes_no(include_in_feedback)}")
+    print()
     save_for_reuse = _prompt_yes_no_default_no(
         "Save a reusable Focus Standard comment from this text?"
     )
@@ -3171,16 +3198,39 @@ def _menu_add_custom_focus_standard_feedback_comment(
     purpose = "general"
     rating_values = None
     if save_for_reuse:
-        print()
+        _print_feedback_action_header(
+            "Save Reusable Focus Standard Comment",
+            student_id,
+            workspace_root=workspace_root,
+            standard_id=standard_id,
+        )
         print(
             "Privacy reminder: remove student-specific details before saving "
             "reusable Focus Standard comments."
         )
+        print()
         reusable_label = input("Reusable comment label: ").strip()
         if not reusable_label:
             print("Custom feedback comment canceled.")
             return
+        _print_feedback_action_header(
+            "Save Reusable Focus Standard Comment",
+            student_id,
+            workspace_root=workspace_root,
+            standard_id=standard_id,
+        )
+        print(f"Reusable comment label: {reusable_label}")
+        print()
         reusable_text = input("Reusable comment text:\n").strip() or text
+        _print_feedback_action_header(
+            "Save Reusable Focus Standard Comment",
+            student_id,
+            workspace_root=workspace_root,
+            standard_id=standard_id,
+        )
+        print(f"Reusable comment label: {reusable_label}")
+        print(f"Reusable comment text: {_preview_text(reusable_text)}")
+        print()
         purpose = _prompt_reusable_comment_purpose()
         rating = _current_overall_rating(record, standard_id)
         if rating is not None and _prompt_yes_no_default_yes(
@@ -3189,11 +3239,18 @@ def _menu_add_custom_focus_standard_feedback_comment(
             rating_values = [rating]
         else:
             rating_values = []
-    print()
+    _print_feedback_action_header(
+        "Add Focus Standard Feedback Comment",
+        student_id,
+        workspace_root=workspace_root,
+        standard_id=standard_id,
+    )
     print("Save this Focus Standard feedback comment?")
-    print(f"Standard: {standard_id}")
+    print(f"Comment: {_preview_text(text)}")
     print(f"Include in feedback: {_format_yes_no(include_in_feedback)}")
     print(f"Save for reuse: {_format_yes_no(save_for_reuse)}")
+    if reusable_label is not None:
+        print(f"Reusable label: {reusable_label}")
     print()
     print("1. Save comment")
     print("2. Back")
@@ -3237,7 +3294,11 @@ def _menu_select_reusable_focus_standard_feedback_comment(
         _print_returned_feedback_guard()
         return
     standard_id = _prompt_focus_standard_with_feedback_status(
-        workspace_root, assignment["focus_standard_ids"], record
+        workspace_root,
+        assignment["focus_standard_ids"],
+        record,
+        title="Select Reusable Focus Standard Comment",
+        student_id=student_id,
     )
     if standard_id is None:
         print("Reusable feedback comment selection canceled.")
@@ -3255,15 +3316,27 @@ def _menu_select_reusable_focus_standard_feedback_comment(
         print(f"Error: could not load reusable Focus Standard comments: {error}")
         return
     if not matches:
+        _print_feedback_action_header(
+            "Reusable Focus Standard Comments",
+            student_id,
+            workspace_root=workspace_root,
+            standard_id=standard_id,
+        )
         print("No reusable Focus Standard comments match this assignment and standard.")
         if _prompt_yes_no_default_no("Add a custom Focus Standard comment instead?"):
             _menu_add_custom_focus_standard_feedback_comment(
                 workspace_root, class_id, assignment_id, student_id, assignment
             )
         return
+    _print_feedback_action_header(
+        "Reusable Focus Standard Comments",
+        student_id,
+        workspace_root=workspace_root,
+        standard_id=standard_id,
+    )
     print("Reusable Focus Standard comments:")
     for index, comment in enumerate(matches, start=1):
-        print(f"{index}. {comment.label} [{comment.comment_set_id}]")
+        print(f"{index}. {comment.label}")
         print(f"   {_preview_text(comment.text)}")
     print("B. Back")
     print()
@@ -3275,11 +3348,27 @@ def _menu_select_reusable_focus_standard_feedback_comment(
         print("Invalid reusable Focus Standard comment selection.")
         return
     selected = matches[int(selection) - 1]
+    _print_feedback_action_header(
+        "Reusable Focus Standard Comment",
+        student_id,
+        workspace_root=workspace_root,
+        standard_id=standard_id,
+    )
+    print(f"Comment label: {selected.label}")
     print()
     print(selected.text)
-    include_in_feedback = _prompt_yes_no_default_yes("Include this comment in feedback?")
     print()
+    include_in_feedback = _prompt_yes_no_default_yes("Include this comment in feedback?")
+    _print_feedback_action_header(
+        "Reusable Focus Standard Comment",
+        student_id,
+        workspace_root=workspace_root,
+        standard_id=standard_id,
+    )
     print("Copy this reusable Focus Standard comment into the review record?")
+    print(f"Comment label: {selected.label}")
+    print(f"Include in feedback: {_format_yes_no(include_in_feedback)}")
+    print()
     print("1. Copy comment")
     print("2. Back")
     print()
@@ -3630,7 +3719,12 @@ def _prompt_focus_standard_with_feedback_status(
     workspace_root: Path,
     focus_standard_ids: list[str],
     record: dict[str, Any],
+    *,
+    title: str | None = None,
+    student_id: str | None = None,
 ) -> str | None:
+    if title is not None and student_id is not None:
+        _print_feedback_action_header(title, student_id)
     ratings = {
         rating["standard_id"]: rating
         for rating in record["overall_standard_ratings"]
@@ -3643,9 +3737,9 @@ def _prompt_focus_standard_with_feedback_status(
     }
     print("Focus Standards:")
     for index, standard_id in enumerate(focus_standard_ids, start=1):
-        rating_status = "rating recorded" if standard_id in ratings else "no rating"
+        rating = ratings.get(standard_id)
+        rating_status = f"rating {rating['rating']}" if rating else "no rating"
         feedback_record = feedback.get(standard_id)
-        comment_count = len(feedback_record["comments"]) if feedback_record else 0
         included_count = (
             sum(
                 1
@@ -3655,11 +3749,16 @@ def _prompt_focus_standard_with_feedback_status(
             if feedback_record
             else 0
         )
-        record_status = "feedback record exists" if feedback_record else "no feedback record"
+        feedback_status = (
+            f"{included_count} included comment"
+            if included_count == 1
+            else f"{included_count} included comments"
+        )
+        if feedback_record is None:
+            feedback_status = "no feedback yet"
         print(
             f"{index}. {_format_standard_display(workspace_root, standard_id)} "
-            f"({rating_status}; {record_status}; comments {comment_count}; "
-            f"included {included_count})"
+            f"({rating_status}; {feedback_status})"
         )
     print("B. Back")
     print()
@@ -3672,6 +3771,65 @@ def _prompt_focus_standard_with_feedback_status(
         return selection
     print("Invalid Focus Standard selection.")
     return None
+
+
+def _print_feedback_action_header(
+    title: str,
+    student_id: str,
+    *,
+    workspace_root: Path | None = None,
+    standard_id: str | None = None,
+) -> None:
+    from quillan.menu import clear_screen, print_menu_header
+
+    clear_screen()
+    print_menu_header(title)
+    print(f"Student: {student_id}")
+    if workspace_root is not None and standard_id is not None:
+        print(f"Focus Standard: {_format_standard_display(workspace_root, standard_id)}")
+    print()
+
+
+def _feedback_record_for_standard(
+    record: dict[str, Any],
+    standard_id: str,
+) -> dict[str, Any] | None:
+    feedback = record.get("feedback", {})
+    standard_feedback = feedback.get("standard_feedback") if isinstance(feedback, dict) else []
+    for item in standard_feedback:
+        if isinstance(item, dict) and item.get("standard_id") == standard_id:
+            return item
+    return None
+
+
+def _feedback_comment_counts(
+    record: dict[str, Any],
+    standard_id: str,
+) -> tuple[int, int]:
+    feedback = _feedback_record_for_standard(record, standard_id)
+    comments = feedback.get("comments", []) if feedback is not None else []
+    if not isinstance(comments, list):
+        return 0, 0
+    included = sum(
+        1
+        for comment in comments
+        if isinstance(comment, dict) and comment.get("include_in_feedback") is True
+    )
+    return len(comments), included
+
+
+def _print_feedback_comment_context(
+    record: dict[str, Any],
+    standard_id: str,
+) -> None:
+    rating = _overall_rating_for_standard(record, standard_id)
+    if rating is None:
+        print("Current rating: not recorded")
+    else:
+        print(f"Current rating: {rating['rating']}")
+    total_comments, included_comments = _feedback_comment_counts(record, standard_id)
+    print(f"Existing comments: {total_comments}")
+    print(f"Included comments: {included_comments}")
 
 
 def _print_current_rating_and_rationale(record: dict[str, Any], standard_id: str) -> None:

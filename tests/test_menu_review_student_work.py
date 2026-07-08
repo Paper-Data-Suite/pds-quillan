@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 
 from quillan.cli import main
+from quillan.focus_standard_comments import focus_standard_comment_set_path
 import quillan.review_menu as review_menu
 from quillan.review_record import build_empty_review_record
 from quillan.review_record_paths import review_record_path
@@ -235,6 +236,56 @@ def _review_record() -> dict[str, Any]:
         }
     ]
     return record
+
+
+def _write_focus_standard_comment_set(root: Path) -> None:
+    path = focus_standard_comment_set_path(root, "synthetic_argument_focus_comments")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "1",
+                "module": "quillan",
+                "record_type": "focus_standard_comment_set",
+                "comment_set_id": "synthetic_argument_focus_comments",
+                "title": "Synthetic Argument Focus Comments",
+                "description": "Reusable teacher-authored Focus Standard comments.",
+                "standards_profile_id": "synthetic_profile",
+                "writing_types": ["argument"],
+                "grade_band": None,
+                "comments": [
+                    {
+                        "comment_id": "claim_next_step",
+                        "standard_id": "njsls-ela:W.1",
+                        "writing_types": ["argument"],
+                        "rating_values": [],
+                        "label": "Develop claim explanation",
+                        "text": "Explain how your evidence supports the claim.",
+                        "purpose": "next_step",
+                        "student_facing": True,
+                        "active": True,
+                        "created_at": TIMESTAMP,
+                        "updated_at": TIMESTAMP,
+                        "source": {
+                            "type": "manual",
+                            "class_id": None,
+                            "assignment_id": None,
+                            "student_id": None,
+                            "review_path": None,
+                            "feedback_comment_id": None,
+                            "saved_at": TIMESTAMP,
+                        },
+                        "usage": {"times_used": 0, "last_used_at": None},
+                        "module_details": {},
+                    }
+                ],
+                "created_at": TIMESTAMP,
+                "updated_at": TIMESTAMP,
+                "module_details": {},
+            }
+        ),
+        encoding="utf-8",
+    )
 
 
 def test_main_menu_shows_and_opens_review_student_work(
@@ -1028,6 +1079,9 @@ def test_review_menu_adds_custom_focus_standard_feedback_comment(
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
     assert "Compose Focus Standard Feedback" in output
+    assert "Add Focus Standard Feedback Comment" in output
+    assert "Current rating: not recorded" in output
+    assert "Existing comments: 0" in output
     assert "Added Focus Standard feedback comment:" in output
     review = json.loads(review_path.read_text(encoding="utf-8"))
     comment = review["feedback"]["standard_feedback"][0]["comments"][0]
@@ -1035,6 +1089,56 @@ def test_review_menu_adds_custom_focus_standard_feedback_comment(
     assert comment["text"] == "Focused feedback text."
     assert comment["include_in_feedback"] is True
     assert not {"comments", "scores", "tags", "notes"} & review.keys()
+
+
+def test_review_menu_selects_reusable_focus_standard_feedback_comment(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_focus_standard_comment_set(workspace)
+    review_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    review = _review_record()
+    review["feedback"]["standard_feedback"] = []
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+
+    _menu_input(
+        monkeypatch,
+        [
+            "2",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1",
+            "6",
+            "3",
+            "1",
+            "1",
+            "",
+            "1",
+            "",
+            "5",
+            "12",
+            "6",
+            "",
+            "3",
+            "6",
+        ],
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Select Reusable Focus Standard Comment" in output
+    assert "Reusable Focus Standard Comments" in output
+    assert "Develop claim explanation" in output
+    assert "Reusable Focus Standard Comment" in output
+    assert "Selected reusable Focus Standard comment:" in output
+    review = json.loads(review_path.read_text(encoding="utf-8"))
+    comment = review["feedback"]["standard_feedback"][0]["comments"][0]
+    assert comment["source"] == "reusable_focus_standard_comment"
+    assert comment["text"] == "Explain how your evidence supports the claim."
+    assert comment["include_in_feedback"] is True
 
 
 def test_review_menu_excludes_submission_page_without_touching_review_record(
