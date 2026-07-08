@@ -282,6 +282,16 @@ def test_prompt_create_assignment_writes_valid_v2_config(
     assert "focus_standards" not in assignment
     assert "rubric_id" not in assignment
     output = capsys.readouterr().out
+    assert "Select Assignment Class" in output
+    assert "Assignment Identity" in output
+    assert "Writing Prompt" in output
+    assert "Standards Profile" in output
+    assert "Focus Standard Selection" in output
+    assert "Review Unit Setup" in output
+    assert "Rating Scale Setup" in output
+    assert "Basic Requirements" in output
+    assert "Minimum Requirement Policy" in output
+    assert "Review Assignment Before Saving" in output
     assert "Saved assignment:" in output
     assert "Focus standard IDs (2)" in output
 

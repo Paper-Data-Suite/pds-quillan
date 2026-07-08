@@ -262,6 +262,24 @@ def _prompt_class_folder(workspace_root: Path) -> ClassFolder | None:
     return None
 
 
+def _print_assignment_section_header(
+    title: str,
+    *,
+    class_id: str | None = None,
+    assignment_id: str | None = None,
+) -> None:
+    from quillan.menu import clear_screen, print_menu_header
+
+    clear_screen()
+    print_menu_header(title)
+    if class_id is not None:
+        print(f"Class: {class_id}")
+    if assignment_id is not None:
+        print(f"Assignment ID: {assignment_id}")
+    if class_id is not None or assignment_id is not None:
+        print()
+
+
 def _required_input(prompt: str, field_name: str) -> str:
     value = input(prompt).strip()
     if not value:
@@ -347,6 +365,9 @@ def _prompt_standards_selection(
         )
         return None
 
+    _print_assignment_section_header("Focus Standard Selection")
+    print(f"Standards profile: {selected_profile.label}")
+    print()
     print("Available standards:")
     for index, standard in enumerate(standards, start=1):
         print(f"{index}. {standard.label}")
@@ -381,17 +402,19 @@ def _prompt_focus_standards(
 
 def prompt_create_assignment() -> int:
     """Prompt for and write one validated writing assignment config."""
-    from quillan.menu import print_menu_header
-
-    print_menu_header("Create Writing Assignment")
     workspace_root = _workspace_root()
     if workspace_root is None:
         return 1
+    _print_assignment_section_header("Select Assignment Class")
     class_folder = _prompt_class_folder(workspace_root)
     if class_folder is None:
         return 1
 
     try:
+        _print_assignment_section_header(
+            "Assignment Identity",
+            class_id=class_folder.class_id,
+        )
         title = _required_input("Assignment title: ", "assignment title")
         suggested_id = suggest_assignment_id(title)
         if not suggested_id:
@@ -402,15 +425,45 @@ def prompt_create_assignment() -> int:
             assignment_id = suggested_id
         validate_identifier(assignment_id, "assignment_id")
 
+        _print_assignment_section_header(
+            "Writing Prompt",
+            class_id=class_folder.class_id,
+            assignment_id=assignment_id,
+        )
         writing_type = _required_input("Writing type: ", "writing type")
         student_prompt = _prompt_student_prompt()
+        _print_assignment_section_header(
+            "Standards Profile",
+            class_id=class_folder.class_id,
+            assignment_id=assignment_id,
+        )
         standards_selection = _prompt_standards_selection(workspace_root)
         if standards_selection is None:
             return 1
         standards_profile_id, focus_standard_ids = standards_selection
+        _print_assignment_section_header(
+            "Review Unit Setup",
+            class_id=class_folder.class_id,
+            assignment_id=assignment_id,
+        )
         review_unit = _prompt_review_unit()
+        _print_assignment_section_header(
+            "Rating Scale Setup",
+            class_id=class_folder.class_id,
+            assignment_id=assignment_id,
+        )
         rating_scale = _prompt_rating_scale()
+        _print_assignment_section_header(
+            "Basic Requirements",
+            class_id=class_folder.class_id,
+            assignment_id=assignment_id,
+        )
         basic_requirements = _prompt_basic_requirements()
+        _print_assignment_section_header(
+            "Minimum Requirement Policy",
+            class_id=class_folder.class_id,
+            assignment_id=assignment_id,
+        )
         minimum_requirement_policy = _prompt_minimum_requirement_policy()
 
         assignment = build_assignment_config(
@@ -435,8 +488,11 @@ def prompt_create_assignment() -> int:
         class_folder.class_id,
         assignment_id,
     )
-    print()
-    print("Review assignment config before saving:")
+    _print_assignment_section_header(
+        "Review Assignment Before Saving",
+        class_id=class_folder.class_id,
+        assignment_id=assignment_id,
+    )
     print(format_assignment_summary(assignment, output_path, workspace_root))
     if not _prompt_yes_no("Save this assignment? [Y/n]: ", default=True):
         print("Canceled: assignment was not saved.")
@@ -444,6 +500,11 @@ def prompt_create_assignment() -> int:
 
     overwrite = False
     if output_path.exists():
+        _print_assignment_section_header(
+            "Confirm Assignment Overwrite",
+            class_id=class_folder.class_id,
+            assignment_id=assignment_id,
+        )
         print(f"Assignment config already exists: {output_path}")
         confirmation = input("Type OVERWRITE to replace it: ").strip()
         if confirmation != "OVERWRITE":
