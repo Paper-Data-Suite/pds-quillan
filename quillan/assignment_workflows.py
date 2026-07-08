@@ -575,9 +575,11 @@ def _prompt_review_unit() -> dict[str, str]:
 
 
 def _default_rating_scale() -> dict[str, Any]:
+    levels = _DEFAULT_RATING_SCALE["levels"]
+    assert isinstance(levels, list)
     return {
         "scale_id": _DEFAULT_RATING_SCALE["scale_id"],
-        "levels": [dict(level) for level in _DEFAULT_RATING_SCALE["levels"]],
+        "levels": [dict(level) for level in levels],
     }
 
 

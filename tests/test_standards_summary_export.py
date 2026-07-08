@@ -18,8 +18,6 @@ from quillan.standards_summary_export import (
     standards_summary_export_path,
 )
 from tests.test_class_summary_export import (
-    ASSIGNMENT_ID,
-    CLASS_ID,
     STANDARD_A,
     STANDARD_A_KEY,
     STANDARD_B,
@@ -31,6 +29,9 @@ from tests.test_class_summary_export import (
     _write_json,
     _write_roster,
 )
+
+CLASS_ID = "english12_p3_synthetic"
+ASSIGNMENT_ID = "essay_01_synthetic"
 
 
 def _write_review(

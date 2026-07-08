@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -113,11 +113,13 @@ def _write_workspace(root: Path) -> None:
 
 
 def _read_review(root: Path) -> dict[str, Any]:
-    return json.loads(
+    data = json.loads(
         review_record_path(root, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(
             encoding="utf-8"
         )
     )
+    assert isinstance(data, dict)
+    return cast(dict[str, Any], data)
 
 
 def test_setting_review_units_creates_v2_record_with_assignment_unit_type(

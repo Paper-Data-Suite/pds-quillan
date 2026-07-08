@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -33,11 +33,13 @@ from tests.test_review_ratings import (
 
 
 def _read_review(root: Path) -> dict[str, Any]:
-    return json.loads(
+    data = json.loads(
         review_record_path(root, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(
             encoding="utf-8"
         )
     )
+    assert isinstance(data, dict)
+    return cast(dict[str, Any], data)
 
 
 def _fresh_review() -> dict[str, Any]:
@@ -54,7 +56,7 @@ def _write_fresh_workspace(root: Path) -> None:
 def _write_comment_set(root: Path) -> None:
     path = focus_standard_comment_set_path(root, "synthetic_argument_focus_comments")
     path.parent.mkdir(parents=True)
-    data = {
+    data: dict[str, Any] = {
         "schema_version": "1",
         "module": "quillan",
         "record_type": "focus_standard_comment_set",
