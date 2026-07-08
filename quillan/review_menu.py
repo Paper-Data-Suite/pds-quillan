@@ -138,6 +138,7 @@ from quillan.submission_status import (
     StudentSubmissionStatus,
     list_assignment_submission_status,
 )
+from quillan.student_display import student_display_lookup, student_review_label
 from quillan.menu_navigation import (
     NavigationChoice,
     navigation_hint,
@@ -329,10 +330,11 @@ def _prompt_student_id(
         student_status.student_id: student_status
         for student_status in status.student_statuses
     }
+    student_labels = student_display_lookup(workspace_root, class_id)
     print("Select student/submission:")
     for index, student_id in enumerate(student_ids, start=1):
         print(
-            f"{index}. {student_id}: "
+            f"{index}. {student_labels.get(student_id, student_id)}: "
             f"{_student_status_label(status_by_student.get(student_id))}"
         )
     print_navigation_options()
@@ -603,7 +605,13 @@ def _print_review_action_header(
     print_menu_header(title)
     print(f"Class: {class_id}")
     print(f"Assignment: {assignment_id}")
-    print(f"Student: {student_id}")
+    try:
+        workspace_root = resolve_workspace_root()
+    except WorkspaceRootError:
+        student_label = student_id
+    else:
+        student_label = student_review_label(workspace_root, class_id, student_id)
+    print(f"Student: {student_label}")
     print()
 
 
@@ -2383,7 +2391,10 @@ def _print_review_summary(
     print()
     print(f"Class: {class_id}")
     print(f"Assignment: {assignment_id}")
-    print(f"Student: {student_id}")
+    print(
+        f"Student: "
+        f"{student_review_label(workspace_root, class_id, student_id)}"
+    )
 
     status = _load_submission_status(workspace_root, class_id, assignment_id)
     student_status = None
@@ -2724,7 +2735,7 @@ def _menu_define_review_units(
     existing_units = existing.get("review_units", []) if existing is not None else []
     print(f"Assignment review unit type: {unit_type}")
     print(f"Focus Standards: {len(assignment['focus_standard_ids'])}")
-    if existing_units:
+    if existing is not None and existing_units:
         existing_observations = _count_review_unit_observations(existing)
         print(
             f"Existing review units: {len(existing_units)}; "
@@ -3212,7 +3223,7 @@ def _menu_add_custom_focus_standard_feedback_comment(
     reusable_label = None
     reusable_text = None
     purpose = "general"
-    rating_values = None
+    rating_values: list[int | float] | None = None
     if save_for_reuse:
         _print_feedback_action_header(
             "Save Reusable Focus Standard Comment",
@@ -3811,7 +3822,12 @@ def _feedback_record_for_standard(
     standard_id: str,
 ) -> dict[str, Any] | None:
     feedback = record.get("feedback", {})
-    standard_feedback = feedback.get("standard_feedback") if isinstance(feedback, dict) else []
+    raw_standard_feedback = (
+        feedback.get("standard_feedback") if isinstance(feedback, dict) else None
+    )
+    standard_feedback = (
+        raw_standard_feedback if isinstance(raw_standard_feedback, list) else []
+    )
     for item in standard_feedback:
         if isinstance(item, dict) and item.get("standard_id") == standard_id:
             return item

@@ -205,7 +205,7 @@ def feedback_status(
         if not file_path.is_file():
             warnings.append(f"{field}_file_missing")
             return relative_path, "missing", "false", tuple(warnings)
-        if metadata["source_review_updated_at"] != review["updated_at"]:
+        if review is not None and metadata["source_review_updated_at"] != review["updated_at"]:
             warnings.append(f"{field}_stale")
             return relative_path, "stale", "true", tuple(warnings)
         return relative_path, "present", "false", tuple(warnings)

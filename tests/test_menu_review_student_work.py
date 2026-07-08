@@ -334,13 +334,19 @@ def test_review_workflow_selects_context_and_shows_read_only_summary(
     assert f"1. {CLASS_ID}" in output
     assert f"1. {ASSIGNMENT_ID} - Synthetic Essay" in output
     assert f"Submission status for assignment {ASSIGNMENT_ID}" in output
-    assert f"1. {STUDENT_ID}: unreviewed; manifest exists; evidence files=1" in output
-    assert f"2. {SECOND_STUDENT_ID}: no manifest; no routed evidence" in output
+    assert (
+        f"1. Avery Rivera ({STUDENT_ID}): "
+        "unreviewed; manifest exists; evidence files=1"
+    ) in output
+    assert (
+        f"2. Mina Patel ({SECOND_STUDENT_ID}): "
+        "no manifest; no routed evidence"
+    ) in output
     assert "Selected Student Review" in output
     assert "Current review summary" in output
     assert f"Class: {CLASS_ID}" in output
     assert f"Assignment: {ASSIGNMENT_ID}" in output
-    assert f"Student: {STUDENT_ID}" in output
+    assert f"Student: Avery Rivera ({STUDENT_ID})" in output
     assert "Submission: assembled" in output
     assert "Evidence files: 1" in output
     assert "Review record: not started" in output
@@ -754,6 +760,7 @@ def test_review_menu_views_current_review_details_read_only(
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
     assert "Current Review Details" in output
+    assert f"Student: Avery Rivera ({STUDENT_ID})" in output
     assert "Paragraph 2 (paragraph)" in output
     assert (
         "njsls-ela:W.1: applicable; evidence present: yes; "
@@ -947,7 +954,7 @@ def test_review_menu_reports_missing_openable_evidence(
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
-    assert f"Student: {SECOND_STUDENT_ID}" in output
+    assert f"Student: Mina Patel ({SECOND_STUDENT_ID})" in output
     assert "Submission: not assembled" in output
     assert "No routed evidence has been found for this student yet." in output
     assert "1. Assemble this assignment now" not in output

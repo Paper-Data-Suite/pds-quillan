@@ -8,7 +8,7 @@ import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from pds_core.classes import load_class_roster
 from pds_core.rosters import RosterError, student_display_name
@@ -683,20 +683,23 @@ def _render_pdf_to_path(path: Path, feedback: _StudentFeedback) -> None:
             spaceAfter=5,
         )
     )
+    title_style = cast(ParagraphStyle, styles["FeedbackTitle"])
+    section_style = cast(ParagraphStyle, styles["FeedbackSection"])
+    body_style = cast(ParagraphStyle, styles["FeedbackBody"])
     story: list[Any] = []
     title = "Returned for Revision" if feedback.returned_work else "Student Feedback"
-    story.append(Paragraph(title, styles["FeedbackTitle"]))
-    story.append(_metadata_table(feedback, styles["FeedbackBody"]))
+    story.append(Paragraph(title, title_style))
+    story.append(_metadata_table(feedback, body_style))
     story.append(Spacer(1, 0.08 * inch))
     if feedback.returned_work is not None:
-        _append_returned_work_pdf(story, styles, feedback)
+        _append_returned_work_pdf(story, section_style, body_style, feedback)
     else:
-        _append_standard_feedback_pdf(story, styles, feedback)
+        _append_standard_feedback_pdf(story, section_style, body_style, feedback)
     story.append(Spacer(1, 0.12 * inch))
     story.append(
         Paragraph(
             "Quillan student feedback export",
-            styles["FeedbackBody"],
+            body_style,
         )
     )
 
@@ -746,9 +749,12 @@ def _metadata_table(feedback: _StudentFeedback, style: ParagraphStyle) -> Table:
 
 
 def _append_standard_feedback_pdf(
-    story: list[Any], styles: dict[str, ParagraphStyle], feedback: _StudentFeedback
+    story: list[Any],
+    section_style: ParagraphStyle,
+    body_style: ParagraphStyle,
+    feedback: _StudentFeedback,
 ) -> None:
-    story.append(Paragraph("Focus Standard Ratings", styles["FeedbackSection"]))
+    story.append(Paragraph("Focus Standard Ratings", section_style))
     if feedback.ratings:
         for rating in feedback.ratings:
             value = _format_number(rating["rating"])
@@ -759,34 +765,34 @@ def _append_standard_feedback_pdf(
                     "<b>"
                     f"{_escape_pdf_text(rating['standard_id'])}</b>: "
                     f"{_escape_pdf_text(value + label_suffix)}",
-                    styles["FeedbackBody"],
+                    body_style,
                 )
             )
             if rating.get("rationale"):
                 story.append(
                     Paragraph(
                         f"Rationale: {_escape_pdf_text(rating['rationale'])}",
-                        styles["FeedbackBody"],
+                        body_style,
                     )
                 )
     else:
-        story.append(Paragraph("No Focus Standard ratings selected.", styles["FeedbackBody"]))
+        story.append(Paragraph("No Focus Standard ratings selected.", body_style))
 
-    story.append(Paragraph("Feedback Comments", styles["FeedbackSection"]))
+    story.append(Paragraph("Feedback Comments", section_style))
     if feedback.comments:
         for comment in feedback.comments:
             prefix = f"{comment.get('standard_id')}: " if comment.get("standard_id") else ""
             story.append(
                 Paragraph(
                     f"{_escape_pdf_text(prefix)}{_escape_pdf_text(comment['text'])}",
-                    styles["FeedbackBody"],
+                    body_style,
                 )
             )
     else:
-        story.append(Paragraph("No feedback comments selected.", styles["FeedbackBody"]))
+        story.append(Paragraph("No feedback comments selected.", body_style))
 
     if feedback.observations:
-        story.append(Paragraph("Review Unit Observations", styles["FeedbackSection"]))
+        story.append(Paragraph("Review Unit Observations", section_style))
         for observation in feedback.observations:
             evidence = observation.get("evidence_present")
             evidence_text = ""
@@ -801,49 +807,52 @@ def _append_standard_feedback_pdf(
             )
             if observation.get("rationale"):
                 text += f" {_plain_text(observation['rationale'])}"
-            story.append(Paragraph(_escape_pdf_text(text), styles["FeedbackBody"]))
+            story.append(Paragraph(_escape_pdf_text(text), body_style))
 
 
 def _append_returned_work_pdf(
-    story: list[Any], styles: dict[str, ParagraphStyle], feedback: _StudentFeedback
+    story: list[Any],
+    section_style: ParagraphStyle,
+    body_style: ParagraphStyle,
+    feedback: _StudentFeedback,
 ) -> None:
     assert feedback.returned_work is not None
     story.append(
         Paragraph(
             "This submission was returned without full standards review because "
             "minimum requirements were not met.",
-            styles["FeedbackBody"],
+            body_style,
         )
     )
-    story.append(Paragraph("Minimum Requirements Not Met", styles["FeedbackSection"]))
+    story.append(Paragraph("Minimum Requirements Not Met", section_style))
     for requirement in feedback.returned_work["unmet_requirements"]:
         story.append(
             Paragraph(
                 f"<b>{_escape_pdf_text(requirement['label'])}</b>",
-                styles["FeedbackBody"],
+                body_style,
             )
         )
         story.append(
             Paragraph(
                 f"Expected: {_escape_pdf_text(requirement['expected'])}",
-                styles["FeedbackBody"],
+                body_style,
             )
         )
         if note := _non_empty(requirement.get("teacher_note")):
             story.append(
-                Paragraph(f"Teacher note: {_escape_pdf_text(note)}", styles["FeedbackBody"])
+                Paragraph(f"Teacher note: {_escape_pdf_text(note)}", body_style)
             )
-    story.append(Paragraph("Return Note", styles["FeedbackSection"]))
+    story.append(Paragraph("Return Note", section_style))
     story.append(
         Paragraph(
             _escape_pdf_text(feedback.returned_work["outcome"]["teacher_note"]),
-            styles["FeedbackBody"],
+            body_style,
         )
     )
     story.append(
         Paragraph(
             "No full Focus Standard ratings were completed for this submission.",
-            styles["FeedbackBody"],
+            body_style,
         )
     )
 

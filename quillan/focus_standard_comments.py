@@ -238,6 +238,7 @@ def lookup_comments(
 ) -> tuple[ReusableFocusStandardComment, ...]:
     """Find active, student-facing reusable comments compatible with an assignment."""
     matches: list[ReusableFocusStandardComment] = []
+    files: tuple[FocusStandardCommentSetFile, ...]
     if comment_set_id is not None:
         files = (
             FocusStandardCommentSetFile(
