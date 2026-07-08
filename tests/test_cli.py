@@ -74,11 +74,34 @@ def test_cli_without_command_displays_menu_options_and_exits(
     assert "3. Roster Management" in output
     assert "4. Workspace Settings" in output
     assert "5. Help" in output
-    assert "6. Exit" in output
+    assert "Q. Quit" in output
+    assert "6. Exit" not in output
     assert "Printable Response Pages" not in output
     assert "Scan Intake / Route Paper Responses" not in output
     assert "Review Materials" not in output
     assert "Goodbye." in output
+
+
+def test_nested_menu_main_and_quit_shortcuts_unwind_globally(
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(monkeypatch, ["1", "m", "q"])
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert output.count("1. Assignment Management") == 2
+    assert "Goodbye." in output
+
+
+def test_nested_menu_quit_shortcut_exits_cleanly(
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(monkeypatch, ["1", "q"])
+
+    assert main(["menu"]) == 0
+    assert "Goodbye." in capsys.readouterr().out
 
 
 def test_cli_validates_assignment_config(
@@ -387,7 +410,8 @@ def test_menu_dispatch_displays_options_and_exits(
     assert "3. Roster Management" in output
     assert "4. Workspace Settings" in output
     assert "5. Help" in output
-    assert "6. Exit" in output
+    assert "Q. Quit" in output
+    assert "6. Exit" not in output
     assert "Printable Response Pages" not in output
     assert "Scan Intake / Route Paper Responses" not in output
     assert "Review Materials" not in output

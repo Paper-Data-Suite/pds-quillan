@@ -9,6 +9,12 @@ from pds_core.classes import list_class_folders
 
 from quillan.assignments import AssignmentConfigError, load_assignment_config
 from quillan.storage import assignment_config_path
+from quillan.menu_navigation import (
+    NavigationChoice,
+    navigation_hint,
+    parse_navigation_choice,
+    print_navigation_options,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,11 +37,12 @@ def prompt_assignment_choice(workspace_root: Path) -> AssignmentChoice | None:
     print("Available classes:")
     for index, folder in enumerate(folders, start=1):
         print(f"{index}. {folder.class_id}")
-    print("B. Back")
+    print_navigation_options()
     print()
     while True:
         selection = input("Select class: ").strip()
-        if selection == "" or selection.casefold() == "b":
+        navigation = parse_navigation_choice(selection)
+        if selection == "" or navigation is NavigationChoice.BACK:
             print("Class selection canceled.")
             return None
         if selection.isdigit() and 1 <= int(selection) <= len(folders):
@@ -47,7 +54,7 @@ def prompt_assignment_choice(workspace_root: Path) -> AssignmentChoice | None:
         if class_matches:
             class_id = class_matches[0].class_id
             break
-        print("Invalid class selection. Please choose a listed class or Back.")
+        print(f"Invalid class selection. {navigation_hint()}")
 
     assignments = available_assignments(workspace_root, class_id)
     if not assignments:
@@ -60,11 +67,12 @@ def prompt_assignment_choice(workspace_root: Path) -> AssignmentChoice | None:
         if assignment.title:
             label += f" - {assignment.title}"
         print(f"{index}. {label}")
-    print("B. Back")
+    print_navigation_options()
     print()
     while True:
         selection = input("Select assignment: ").strip()
-        if selection == "" or selection.casefold() == "b":
+        navigation = parse_navigation_choice(selection)
+        if selection == "" or navigation is NavigationChoice.BACK:
             print("Assignment selection canceled.")
             return None
         if selection.isdigit() and 1 <= int(selection) <= len(assignments):
@@ -74,7 +82,7 @@ def prompt_assignment_choice(workspace_root: Path) -> AssignmentChoice | None:
         ]
         if assignment_matches:
             return assignment_matches[0]
-        print("Invalid assignment selection. Please choose a listed assignment or Back.")
+        print(f"Invalid assignment selection. {navigation_hint()}")
 
 
 def available_assignments(

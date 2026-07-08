@@ -302,7 +302,9 @@ def test_main_menu_shows_and_opens_review_student_work(
     assert "Review Student Work" in output
     assert "1. Assignment Review Actions" in output
     assert "2. Scan Intake / Route Paper Responses" in output
-    assert "3. Back" in output
+    assert "B. Back" in output
+    assert "M. Main Menu" in output
+    assert "Q. Quit" in output
     assert "Manage Review Materials" not in output
     assert "Goodbye." in output
 
@@ -870,7 +872,7 @@ def test_review_menu_multi_page_open_submission_selects_one_page(
     assert "Open Submission Evidence" in output
     assert "1. Page 1 - present - evidence_001" in output
     assert "2. Page 2 - present - evidence_002" in output
-    assert "A. Open all selected pages" in output
+    assert "A. All" in output
 
 
 def test_review_menu_multi_page_open_submission_opens_all_pages(
@@ -1215,6 +1217,6 @@ def test_review_menu_no_classes_and_invalid_selection_back_out_safely(
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
-    assert "Invalid selection. Please enter a number from 1 to 3." in output
+    assert "Invalid selection. Please choose a listed option, B, M, or Q." in output
     assert "No classes found in the current workspace." in output
     assert "Goodbye." in output

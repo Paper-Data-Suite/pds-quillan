@@ -51,7 +51,7 @@ def test_main_menu_excludes_review_materials_and_exits_cleanly(
     assert "2. Review Student Work" in output
     assert "4. Workspace Settings" in output
     assert "5. Help" in output
-    assert "6. Exit" in output
+    assert "Q. Quit" in output
     assert "Review Materials" not in output
     assert "Goodbye." in output
 
@@ -68,7 +68,9 @@ def test_review_student_work_menu_excludes_review_materials(
     assert "Review Student Work" in output
     assert "1. Assignment Review Actions" in output
     assert "2. Scan Intake / Route Paper Responses" in output
-    assert "3. Back" in output
+    assert "B. Back" in output
+    assert "M. Main Menu" in output
+    assert "Q. Quit" in output
     assert "Manage Review Materials" not in output
     assert "Comment Banks" not in output
     assert "Tag Banks" not in output
@@ -86,11 +88,11 @@ def test_direct_review_materials_menu_is_disabled(
     output = capsys.readouterr().out
     assert "Review Materials" in output
     assert "Legacy generic comment-bank, tag-bank, and rubric workflows" in output
-    assert "1. Back" in output
+    assert "B. Back" in output
     assert "Comment Banks" not in output
     assert "Tag Banks" not in output
     assert "Starter Materials" not in output
-    assert "Invalid selection. Please enter 1 to go back." in output
+    assert "Invalid selection. Please choose a listed option, B, M, or Q." in output
 
 
 def test_review_materials_menu_has_no_workspace_side_effects(

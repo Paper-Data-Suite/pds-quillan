@@ -168,8 +168,18 @@ def _prompt_class_folder(
     print("Available classes:")
     for index, folder in enumerate(folders, start=1):
         print(f"{index}. {folder.class_id}")
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        parse_navigation_choice,
+        print_navigation_options,
+    )
+
+    print_navigation_options()
     print()
     selection = input(f"Select class to {action}: ").strip()
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
+        return None
     if selection.isdigit() and 1 <= int(selection) <= len(folders):
         return folders[int(selection) - 1]
     for folder in folders:
@@ -303,7 +313,9 @@ def _print_roster_edit_dashboard(
     print("3. Remove student from active roster")
     print("4. View current roster")
     print("5. Save changes")
-    print("6. Cancel without saving")
+    from quillan.menu_navigation import print_navigation_options
+
+    print_navigation_options()
     print()
 
 
@@ -423,6 +435,26 @@ def prompt_edit_class_roster() -> int:
 
     dirty = False
     last_status: str | None = None
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        QuitQuillan,
+        ReturnToMainMenu,
+        parse_navigation_choice,
+    )
+
+    def confirm_dirty_navigation(error: Exception) -> None:
+        if not dirty:
+            raise error
+        destination = (
+            "Main Menu" if isinstance(error, ReturnToMainMenu) else "quit Quillan"
+        )
+        _print_roster_action_header("Discard Roster Changes")
+        print("Unsaved roster changes will be discarded.")
+        print()
+        confirmation = input(f"Type DISCARD to {destination}: ").strip()
+        if confirmation == "DISCARD":
+            raise error
+
     while True:
         _print_roster_edit_dashboard(
             staged_roster,
@@ -434,6 +466,14 @@ def prompt_edit_class_roster() -> int:
         print()
 
         try:
+            try:
+                navigation = parse_navigation_choice(choice)
+            except (ReturnToMainMenu, QuitQuillan) as error:
+                confirm_dirty_navigation(error)
+                last_status = "discard not confirmed"
+                continue
+            if navigation is NavigationChoice.BACK:
+                choice = "6"
             if choice == "1":
                 _print_roster_action_header("Add Student")
                 staged_roster = prompt_add_student_to_roster(staged_roster)
@@ -538,6 +578,12 @@ def prompt_validate_roster() -> int:
 def launch_roster_menu() -> int:
     """Launch the teacher-facing roster management submenu."""
     from quillan.menu import clear_screen, pause_for_user, print_menu_header
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        navigation_hint,
+        parse_navigation_choice,
+        print_navigation_options,
+    )
 
     try:
         while True:
@@ -547,12 +593,13 @@ def launch_roster_menu() -> int:
             print("2. View class roster")
             print("3. Edit class roster")
             print("4. Validate class roster")
-            print("5. Back")
+            print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
+            navigation = parse_navigation_choice(choice)
             print()
 
-            if choice == "5":
+            if choice == "5" or navigation is NavigationChoice.BACK:
                 return 0
             workflows = {
                 "1": prompt_create_roster,
@@ -562,7 +609,7 @@ def launch_roster_menu() -> int:
             }
             workflow = workflows.get(choice)
             if workflow is None:
-                print("Invalid selection. Please enter a number from 1 to 5.")
+                print(f"Invalid selection. {navigation_hint()}")
             else:
                 clear_screen()
                 workflow()

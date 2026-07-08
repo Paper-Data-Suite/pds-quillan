@@ -138,6 +138,12 @@ from quillan.submission_status import (
     StudentSubmissionStatus,
     list_assignment_submission_status,
 )
+from quillan.menu_navigation import (
+    NavigationChoice,
+    navigation_hint,
+    parse_navigation_choice,
+    print_navigation_options,
+)
 
 _BACK = object()
 
@@ -152,12 +158,13 @@ def launch_review_student_work_menu() -> int:
             print_menu_header("Review Student Work")
             print("1. Assignment Review Actions")
             print("2. Scan Intake / Route Paper Responses")
-            print("3. Back")
+            print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
+            navigation = parse_navigation_choice(choice)
             print()
 
-            if choice in {"", "3"}:
+            if choice in {"", "3"} or navigation is NavigationChoice.BACK:
                 return 0
             if choice == "1":
                 clear_screen()
@@ -169,7 +176,7 @@ def launch_review_student_work_menu() -> int:
 
                 launch_scan_intake_workflow()
             else:
-                print("Invalid selection. Please enter a number from 1 to 3.")
+                print(f"Invalid selection. {navigation_hint()}")
                 print()
                 pause_for_user()
     except KeyboardInterrupt:
@@ -213,12 +220,13 @@ def _prompt_class_id(workspace_root: Path) -> str | None:
     print("Available classes:")
     for index, folder in enumerate(folders, start=1):
         print(f"{index}. {folder.class_id}")
-    print("B. Back")
+    print_navigation_options()
     print()
 
     while True:
         selection = input("Select class: ").strip()
-        if selection == "" or selection.casefold() == "b":
+        navigation = parse_navigation_choice(selection)
+        if selection == "" or navigation is NavigationChoice.BACK:
             print("Review selection canceled.")
             return None
         if selection.isdigit() and 1 <= int(selection) <= len(folders):
@@ -245,12 +253,13 @@ def _prompt_assignment(
         if assignment.title:
             label += f" - {assignment.title}"
         print(f"{index}. {label}")
-    print("B. Back")
+    print_navigation_options()
     print()
 
     while True:
         selection = input("Select assignment: ").strip()
-        if selection == "" or selection.casefold() == "b":
+        navigation = parse_navigation_choice(selection)
+        if selection == "" or navigation is NavigationChoice.BACK:
             print("Assignment selection canceled.")
             return None
         if selection.isdigit() and 1 <= int(selection) <= len(assignments):
@@ -326,12 +335,13 @@ def _prompt_student_id(
             f"{index}. {student_id}: "
             f"{_student_status_label(status_by_student.get(student_id))}"
         )
-    print("B. Back")
+    print_navigation_options()
     print()
 
     while True:
         selection = input("Select student/submission: ").strip()
-        if selection == "" or selection.casefold() == "b":
+        navigation = parse_navigation_choice(selection)
+        if selection == "" or navigation is NavigationChoice.BACK:
             print("Student selection canceled.")
             return None
         if selection.isdigit() and 1 <= int(selection) <= len(student_ids):
@@ -410,11 +420,12 @@ def _launch_selected_student_review(
             print()
             print("1. View routed evidence status")
             print("2. Refresh summary")
-            print("3. Back")
+            print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
+            navigation = parse_navigation_choice(choice)
             print()
-            if choice in {"", "3"}:
+            if choice in {"", "3"} or navigation is NavigationChoice.BACK:
                 return 0
             if choice in {"1", "2"}:
                 continue
@@ -434,11 +445,12 @@ def _launch_selected_student_review(
             print("1. Assemble this assignment now")
             print("2. View routed evidence status")
             print("3. Refresh summary")
-            print("4. Back")
+            print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
+            navigation = parse_navigation_choice(choice)
             print()
-            if choice in {"", "4"}:
+            if choice in {"", "4"} or navigation is NavigationChoice.BACK:
                 return 0
             if choice == "1":
                 _assemble_assignment(workspace_root, class_id, assignment_id)
@@ -460,13 +472,14 @@ def _launch_selected_student_review(
         print("9. Update review workflow state")
         print("10. Export student feedback")
         print("11. Refresh summary")
-        print("12. Back")
+        print_navigation_options()
         print()
 
         choice = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(choice)
         print()
 
-        if choice in {"", "12"}:
+        if choice in {"", "12"} or navigation is NavigationChoice.BACK:
             return 0
         if choice == "1":
             _open_submission_evidence(
@@ -1419,7 +1432,7 @@ def _confirm_comment_selection(
         print("1. Add comment")
         print("2. Change include-in-feedback setting")
         print("3. Change target")
-        print("4. Back")
+        print_navigation_options()
         print()
         selection = input("Select an option: ").strip()
         if selection == "1":
@@ -2626,21 +2639,21 @@ def _choose_submission_evidence_page(
             f"{index}. Page {page.page_number} - {page.page_state} - "
             f"{page.evidence_id}"
         )
-    print("A. Open all selected pages")
-    print("B. Back")
+    print_navigation_options(all_items=True)
     print()
 
     choice = input("Select page: ").strip()
+    navigation = parse_navigation_choice(choice, allow_all=True)
     print()
-    if choice.lower() == "b" or choice == "":
+    if navigation is NavigationChoice.BACK or choice == "":
         return _BACK
-    if choice.lower() == "a":
+    if navigation is NavigationChoice.ALL:
         return None
     if choice.isdecimal():
         index = int(choice)
         if 1 <= index <= len(pages):
             return pages[index - 1].page_number
-    print("Invalid selection. Please choose a listed page, A, or B.")
+    print(f"Invalid selection. {navigation_hint(all_items=True)}")
     return _BACK
 
 
@@ -2670,11 +2683,12 @@ def _menu_review_unit_observations(
         print("1. Define/replace review units")
         print("2. Record/update Focus Standard observation")
         print("3. Mark observations complete")
-        print("4. Back")
+        print_navigation_options()
         print()
         choice = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(choice)
         print()
-        if choice in {"", "4"}:
+        if choice in {"", "4"} or navigation is NavigationChoice.BACK:
             return
         if choice == "1":
             _menu_define_review_units(
@@ -2946,8 +2960,9 @@ def _menu_overall_focus_standard_ratings(
         print("4. Back")
         print()
         choice = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(choice)
         print()
-        if choice in {"", "4"}:
+        if choice in {"", "4"} or navigation is NavigationChoice.BACK:
             return
         if choice == "1":
             _menu_view_focus_standard_observation_summary(
@@ -2997,11 +3012,12 @@ def _menu_compose_focus_standard_feedback(
         print("2. Add custom Focus Standard comment")
         print("3. Select reusable Focus Standard comment")
         print("4. Mark feedback composed")
-        print("5. Back")
+        print_navigation_options()
         print()
         choice = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(choice)
         print()
-        if choice in {"", "5"}:
+        if choice in {"", "5"} or navigation is NavigationChoice.BACK:
             return
         if choice == "1":
             _menu_configure_standard_feedback_options(
@@ -4056,10 +4072,11 @@ def _menu_review_minimum_requirements(
         print("1. Record/update requirement check")
         print("2. Finalize minimum-requirements outcome")
         print("3. Export returned-work feedback")
-        print("4. Back")
+        print_navigation_options()
         print()
         selection = input("Select an option: ").strip()
-        if selection in {"", "4"} or selection.casefold() == "b":
+        navigation = parse_navigation_choice(selection)
+        if selection in {"", "4"} or navigation is NavigationChoice.BACK:
             return
         if selection == "1":
             _menu_record_requirement_checks(
@@ -4506,7 +4523,7 @@ def _menu_manage_submission_pages(
     print("1. Exclude page from review")
     print("2. Restore excluded page")
     print("3. Mark page as needs rescan")
-    print("4. Back")
+    print_navigation_options()
     print()
     choice = input("Select an option: ").strip()
     if choice in {"", "4"}:
@@ -4775,6 +4792,9 @@ def _menu_export_student_feedback(
     print("4. Back")
     print()
     export_choice = input("Select an option: ").strip()
+    navigation = parse_navigation_choice(export_choice)
+    if navigation is NavigationChoice.BACK:
+        return
     if export_choice not in {"1", "2", "3"}:
         print("Export canceled.")
         return
@@ -4804,9 +4824,13 @@ def _menu_export_student_feedback(
         print()
         print("1. Keep existing export and cancel")
         print("2. Overwrite existing export")
-        print("3. Back")
+        print_navigation_options()
         print()
         selection = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(selection)
+        if navigation is NavigationChoice.BACK:
+            print("Export canceled.")
+            return
         if selection == "2":
             overwrite = True
         else:
@@ -4930,13 +4954,14 @@ def _launch_assignment_review_actions(
         print("3. Export assignment-local class summary")
         print("4. Export assignment-local Focus Standard summary")
         print("5. Refresh submission status")
-        print("6. Back")
+        print_navigation_options()
         print()
 
         choice = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(choice)
         print()
 
-        if choice in {"", "6"}:
+        if choice in {"", "6"} or navigation is NavigationChoice.BACK:
             return 0
         elif choice == "1":
             student_id = _prompt_student_id(

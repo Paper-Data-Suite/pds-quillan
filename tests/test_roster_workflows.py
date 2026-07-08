@@ -17,6 +17,7 @@ from pds_core.rosters import (
 )
 import pytest
 
+from quillan.menu_navigation import QuitQuillan, ReturnToMainMenu
 import quillan.roster_workflows as workflows
 
 
@@ -312,6 +313,50 @@ def test_edit_cancel_discard_does_not_write_staged_changes(
     assert "Discard Roster Changes" in output
     saved = load_class_roster(tmp_path, "synthetic_class")
     assert saved == original
+
+
+@pytest.mark.parametrize(
+    ("command", "error_type", "destination"),
+    [
+        ("m", ReturnToMainMenu, "Main Menu"),
+        ("q", QuitQuillan, "quit Quillan"),
+    ],
+)
+def test_dirty_edit_global_navigation_requires_discard_confirmation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    command: str,
+    error_type: type[Exception],
+    destination: str,
+) -> None:
+    write_class_roster(tmp_path, _roster())
+    original = load_class_roster(tmp_path, "synthetic_class")
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    prompts = _inputs(
+        monkeypatch,
+        [
+            "1",
+            "1",
+            "0099",
+            "Person",
+            "Taylor",
+            "3",
+            "Tay",
+            "",
+            command,
+            "KEEP",
+            command,
+            "DISCARD",
+        ],
+    )
+
+    with pytest.raises(error_type):
+        workflows.prompt_edit_class_roster()
+    output = capsys.readouterr().out
+    assert output.count("Unsaved roster changes will be discarded.") == 2
+    assert f"Type DISCARD to {destination}: " in prompts
+    assert load_class_roster(tmp_path, "synthetic_class") == original
 
 
 def test_edit_view_current_roster_is_explicit_action(
