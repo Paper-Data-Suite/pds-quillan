@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -45,7 +46,6 @@ from quillan.cli_app.output import (
     print_updated_review_unit_observation,
     print_updated_review_units,
     print_updated_review_score,
-    print_updated_submission_review_state,
 )
 from quillan.comment_banks import CommentBankError, load_comment_bank
 from quillan.feedback_export import (
@@ -85,11 +85,19 @@ from quillan.review_feedback import (
     summarize_standard_feedback,
 )
 from quillan.review_record import (
+    ALLOWED_REVIEW_STATES,
     ALLOWED_TAG_POLARITIES,
     ReviewRecordError,
+    build_empty_review_record,
     load_review_record,
+    validate_review_record,
 )
-from quillan.review_record_paths import review_record_path
+from quillan.review_record_paths import (
+    ReviewRecordPathError,
+    review_record_path,
+    write_review_record,
+)
+from quillan.review_status_display import feedback_export_status, review_status_label
 from quillan.review_snapshot import current_review_details_text
 from quillan.review_targets import (
     ReviewTargetError,
@@ -110,11 +118,7 @@ from quillan.submission_review_opening import (
     open_student_submission_for_review,
     selected_submission_evidence_pages,
 )
-from quillan.submission_manifest import (
-    ALLOWED_SUBMISSION_STATES,
-    SubmissionManifestError,
-    load_submission_manifest,
-)
+from quillan.submission_manifest import SubmissionManifestError, load_submission_manifest
 from quillan.submission_manifest_paths import (
     SubmissionManifestPathError,
     submission_manifest_path,
@@ -124,10 +128,6 @@ from quillan.submission_page_management import (
     exclude_submission_page,
     mark_submission_page_needs_rescan,
     restore_excluded_submission_page,
-)
-from quillan.submission_review_state import (
-    SubmissionReviewStateError,
-    update_submission_review_state,
 )
 from quillan.submission_status import (
     AssignmentSubmissionStatus,
@@ -453,7 +453,7 @@ def _launch_selected_student_review(
         print("6. Compose Focus Standard feedback")
         print("7. Manage submission pages")
         print("8. Add teacher note")
-        print("9. Update submission review state")
+        print("9. Update review workflow state")
         print("10. Export student feedback")
         print("11. Refresh summary")
         print("12. Back")
@@ -2005,27 +2005,47 @@ def _menu_update_submission_review_state(
     _print_review_action_header(
         "Update Review State", class_id, assignment_id, student_id
     )
-    print("Use this to mark where this student's submission is in your review workflow.")
-    print("This is not a grade.")
+    print("Use this to update the teacher-review workflow. This is not a grade.")
     print()
-    current_state = _current_submission_state(
-        workspace_root, class_id, assignment_id, student_id
-    )
+    path = review_record_path(workspace_root, class_id, assignment_id, student_id)
+    if not path.exists():
+        timestamp = datetime.now(timezone.utc).isoformat()
+        record = build_empty_review_record(
+            class_id=class_id,
+            assignment_id=assignment_id,
+            student_id=student_id,
+            created_at=timestamp,
+        )
+    else:
+        try:
+            record = load_review_record(path)
+        except (OSError, ReviewRecordError) as error:
+            print(f"Error: could not load review record: {error}")
+            return
+    current_state = str(record["review_state"])
     print(f"Current state: {current_state}")
     print()
-    states = ("unreviewed", "in_progress", "needs_rescan", "reviewed")
+    states = (
+        "not_started",
+        "requirements_checked",
+        "returned_without_full_review",
+        "observations_in_progress",
+        "observations_complete",
+        "ratings_complete",
+        "feedback_composed",
+        "ready_for_export",
+        "exported",
+    )
     descriptions = {
-        "unreviewed": "Review has not started yet.",
-        "in_progress": "Review is underway.",
-        "needs_rescan": "The submission needs a corrected scan or page.",
-        "reviewed": "Review is complete.",
+        state: review_status_label({"review_state": state}).capitalize()
+        for state in states
     }
     for index, state_opt in enumerate(states, start=1):
         print(f"{index}. {state_opt} - {descriptions[state_opt]}")
     print("B. Back")
     print()
 
-    selection = input("Select submission review state: ").strip()
+    selection = input("Select review workflow state: ").strip()
     if not selection or selection.casefold() == "b":
         print("Update review state canceled.")
         return
@@ -2037,10 +2057,10 @@ def _menu_update_submission_review_state(
     else:
         selected_state = selection
 
-    if selected_state not in ALLOWED_SUBMISSION_STATES:
+    if selected_state not in ALLOWED_REVIEW_STATES:
         print(
             "Update review state canceled. Invalid state selection. "
-            f"Allowed values: {', '.join(sorted(ALLOWED_SUBMISSION_STATES))}."
+            f"Allowed values: {', '.join(states)}."
         )
         return
 
@@ -2055,18 +2075,16 @@ def _menu_update_submission_review_state(
         return
 
     try:
-        updated = update_submission_review_state(
-            workspace_root,
-            class_id,
-            assignment_id,
-            student_id,
-            selected_state,
-        )
-    except SubmissionReviewStateError as error:
-        print(f"Error: could not update submission review state: {error}")
+        updated_record = dict(record)
+        updated_record["review_state"] = selected_state
+        updated_record["updated_at"] = datetime.now(timezone.utc).isoformat()
+        validate_review_record(updated_record)
+        write_review_record(path, updated_record, overwrite=True)
+    except (ReviewRecordError, ReviewRecordPathError, OSError) as error:
+        print(f"Error: could not update review workflow state: {error}")
         return
 
-    print_updated_submission_review_state(updated)
+    print(f"Review: {review_status_label(updated_record)}")
 
 
 def _prompt_yes_no_default_no(prompt: str) -> bool:
@@ -2306,18 +2324,25 @@ def _print_review_summary(
     if student_status is None:
         print("Submission: not assembled")
         print("Evidence files: 0")
-        print("Review state: not_started")
     elif student_status.manifest_path is None:
         print("Submission: not assembled")
         print("Evidence files: routed but not assembled")
-        print("Review state: not_started")
     else:
         print("Submission: assembled")
         print(
             "Evidence files: "
             f"{sum(page.evidence_count for page in student_status.pages)}"
         )
-        print(f"Review state: {student_status.submission_state}")
+
+    path = review_record_path(workspace_root, class_id, assignment_id, student_id)
+    record = None
+    if path.exists():
+        try:
+            record = load_review_record(path)
+        except (OSError, ReviewRecordError):
+            pass
+    print(f"Review: {review_status_label(record)}")
+    print(f"Feedback export: {feedback_export_status(workspace_root, record)}")
 
     _print_review_record_summary(
         workspace_root,
@@ -2358,7 +2383,6 @@ def _print_review_record_summary(
         return
 
     print("Review record: exists")
-    print(f"Review record state: {record['review_state']}")
     print(f"Private notes: {_count_record_items(record, 'private_notes')}")
     print(f"Review units: {_count_record_items(record, 'review_units')}")
     print(f"Review-unit observations: {_count_review_unit_observations(record)}")

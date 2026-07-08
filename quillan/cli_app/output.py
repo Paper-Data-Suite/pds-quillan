@@ -308,6 +308,10 @@ def print_exported_feedback_pdf(exported: ExportedFeedbackPdf) -> None:
     print(f"PDF file: {exported.feedback_pdf_relative_path}")
     if exported.feedback_markdown_relative_path is not None:
         print(f"Markdown file: {exported.feedback_markdown_relative_path}")
+        export_formats = "PDF + Markdown"
+    else:
+        export_formats = "PDF"
+    print(f"Feedback export: {export_formats} exported {exported.created_at}")
 
 
 def print_exported_class_summary(exported: ExportedClassSummary) -> None:
