@@ -2144,39 +2144,6 @@ def _current_submission_state(
     return str(student_status.submission_state)
 
 
-def _review_record_counts(
-    workspace_root: Path,
-    class_id: str,
-    assignment_id: str,
-    student_id: str,
-) -> dict[str, int]:
-    path = review_record_path(workspace_root, class_id, assignment_id, student_id)
-    if not path.exists():
-        return {"notes": 0, "observations": 0, "included_comments": 0, "ratings": 0}
-    try:
-        record = load_review_record(path)
-    except (OSError, ReviewRecordError):
-        return {"notes": 0, "observations": 0, "included_comments": 0, "ratings": 0}
-    feedback = record.get("feedback", {})
-    standard_feedback = feedback.get("standard_feedback") if isinstance(feedback, dict) else []
-    included_comments = 0
-    if isinstance(standard_feedback, list):
-        for item in standard_feedback:
-            comments = item.get("comments") if isinstance(item, dict) else None
-            if isinstance(comments, list):
-                included_comments += sum(
-                    1
-                    for comment in comments
-                    if isinstance(comment, dict) and comment.get("include_in_feedback")
-                )
-    return {
-        "notes": _count_record_items(record, "private_notes"),
-        "observations": _count_review_unit_observations(record),
-        "included_comments": included_comments,
-        "ratings": _count_record_items(record, "overall_standard_ratings"),
-    }
-
-
 def _current_review_record(
     workspace_root: Path,
     class_id: str,
@@ -2270,6 +2237,91 @@ def _prompt_focus_standard(
     if selection in focus_standard_ids:
         return selection
     print("Invalid Focus Standard selection.")
+    return None
+
+
+def _print_observation_entry_header(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    step: str,
+    unit: dict[str, Any] | None = None,
+    standard_id: str | None = None,
+    current_observation: dict[str, Any] | None = None,
+) -> None:
+    _print_review_action_header(
+        "Record Focus Standard Observation", class_id, assignment_id, student_id
+    )
+    print(f"Step: {step}")
+    if unit is not None:
+        print(f"Review unit: {unit['label']}")
+    if standard_id is not None:
+        print(f"Focus Standard: {_format_standard_display(workspace_root, standard_id)}")
+    if current_observation is not None:
+        status = "applicable" if current_observation.get("applicable") else "not applicable"
+        print(f"Current observation: {status}")
+        evidence_present = current_observation.get("evidence_present")
+        if evidence_present is not None:
+            print(f"Current evidence present: {_format_yes_no(evidence_present)}")
+        print(
+            "Current include in feedback: "
+            f"{_format_yes_no(current_observation.get('include_in_feedback') is True)}"
+        )
+        if current_observation.get("rationale"):
+            print("Current note: present")
+    print()
+
+
+def _unit_standard_observation(
+    unit: dict[str, Any],
+    standard_id: str,
+) -> dict[str, Any] | None:
+    observations = unit.get("standard_observations")
+    if not isinstance(observations, list):
+        return None
+    for observation in observations:
+        if isinstance(observation, dict) and observation.get("standard_id") == standard_id:
+            return observation
+    return None
+
+
+def _print_rating_entry_header(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    step: str,
+    standard_id: str | None = None,
+    current_rating: dict[str, Any] | None = None,
+) -> None:
+    _print_review_action_header(
+        "Record Overall Focus Standard Rating", class_id, assignment_id, student_id
+    )
+    print(f"Step: {step}")
+    if standard_id is not None:
+        print(f"Focus Standard: {_format_standard_display(workspace_root, standard_id)}")
+    if current_rating is not None:
+        print(f"Current rating: {current_rating['rating']}")
+        print(
+            "Current include in feedback: "
+            f"{_format_yes_no(current_rating.get('include_in_feedback') is True)}"
+        )
+        if current_rating.get("rationale"):
+            print("Current rationale: present")
+    print()
+
+
+def _overall_rating_for_standard(
+    record: dict[str, Any] | None,
+    standard_id: str,
+) -> dict[str, Any] | None:
+    ratings = record.get("overall_standard_ratings", []) if record is not None else []
+    for rating in ratings:
+        if isinstance(rating, dict) and rating.get("standard_id") == standard_id:
+            return rating
     return None
 
 
@@ -2708,17 +2760,49 @@ def _menu_record_review_unit_observation(
 ) -> None:
     record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
     if record is None or not record.get("review_units"):
+        _print_observation_entry_header(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            step="Review unit selection",
+        )
         print("Define review units before recording observations.")
         return
+    _print_observation_entry_header(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        step="Select review unit",
+    )
     unit = _prompt_review_unit(record["review_units"])
     if unit is None:
         print("Observation entry canceled.")
         return
+    _print_observation_entry_header(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        step="Select Focus Standard",
+        unit=unit,
+    )
     standard_id = _prompt_focus_standard(workspace_root, assignment["focus_standard_ids"])
     if standard_id is None:
         print("Observation entry canceled.")
         return
-    print()
+    current_observation = _unit_standard_observation(unit, standard_id)
+    _print_observation_entry_header(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        step="Applicability",
+        unit=unit,
+        standard_id=standard_id,
+        current_observation=current_observation,
+    )
     print("Applicability")
     print("1. Applicable")
     print("2. Not applicable")
@@ -2732,15 +2816,50 @@ def _menu_record_review_unit_observation(
     if not applicable and applicability != "2":
         print("Observation entry canceled. Invalid applicability selection.")
         return
+    _print_observation_entry_header(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        step="Evidence and feedback",
+        unit=unit,
+        standard_id=standard_id,
+        current_observation=current_observation,
+    )
     if applicable:
         evidence_present = _prompt_yes_no_default_yes("Evidence present?")
         include_in_feedback = _prompt_yes_no_default_yes("Include in feedback?")
     else:
         evidence_present = None
         include_in_feedback = _prompt_yes_no_default_no("Include in feedback?")
+    _print_observation_entry_header(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        step="Rationale/note",
+        unit=unit,
+        standard_id=standard_id,
+        current_observation=current_observation,
+    )
     rationale = input("Rationale/note (optional): ").strip() or None
-    print()
+    _print_observation_entry_header(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        step="Save confirmation",
+        unit=unit,
+        standard_id=standard_id,
+        current_observation=current_observation,
+    )
     print("Save this observation?")
+    print(f"Applicability: {'applicable' if applicable else 'not applicable'}")
+    if evidence_present is not None:
+        print(f"Evidence present: {_format_yes_no(evidence_present)}")
+    print(f"Include in feedback: {_format_yes_no(include_in_feedback)}")
+    print(f"Rationale/note: {rationale if rationale else 'none'}")
+    print()
     print("1. Save observation")
     print("2. Back")
     print()
@@ -3314,8 +3433,22 @@ def _menu_record_overall_focus_standard_rating(
 ) -> None:
     record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
     if record is not None and record["review_state"] == "returned_without_full_review":
+        _print_rating_entry_header(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            step="Unavailable",
+        )
         _print_overall_rating_warnings(record)
         return
+    _print_rating_entry_header(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        step="Select Focus Standard",
+    )
     standard_id = _prompt_focus_standard_with_rating_status(
         workspace_root,
         assignment["focus_standard_ids"],
@@ -3324,6 +3457,7 @@ def _menu_record_overall_focus_standard_rating(
     if standard_id is None:
         print("Overall rating entry canceled.")
         return
+    current_rating = _overall_rating_for_standard(record, standard_id)
     try:
         summaries = summarize_focus_standard_observations(
             workspace_root, class_id, assignment_id, student_id
@@ -3332,18 +3466,62 @@ def _menu_record_overall_focus_standard_rating(
         print(f"Error: could not summarize observations: {error}")
         return
     summary = next(item for item in summaries if item.standard_id == standard_id)
+    _print_rating_entry_header(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        step="Observation summary",
+        standard_id=standard_id,
+        current_rating=current_rating,
+    )
     _print_focus_standard_observation_summary(summary)
     if summary.observation_count == 0:
         print("Warning: selected Focus Standard has no observations.")
     print()
+    _print_rating_entry_header(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        step="Rating",
+        standard_id=standard_id,
+        current_rating=current_rating,
+    )
     _print_rating_scale(assignment)
     rating = _prompt_rating_value(assignment)
     if rating is None:
         print("Overall rating entry canceled.")
         return
+    _print_rating_entry_header(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        step="Rationale",
+        standard_id=standard_id,
+        current_rating=current_rating,
+    )
     rationale = input("Rationale (optional): ").strip() or None
+    _print_rating_entry_header(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        step="Feedback inclusion",
+        standard_id=standard_id,
+        current_rating=current_rating,
+    )
     include_in_feedback = _prompt_yes_no_default_yes("Include rating/rationale in feedback?")
-    print()
+    _print_rating_entry_header(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        step="Save confirmation",
+        standard_id=standard_id,
+        current_rating=current_rating,
+    )
     print("Save this overall Focus Standard rating?")
     print(f"Standard: {standard_id}")
     print(f"Rating: {rating}")
@@ -3864,7 +4042,12 @@ def _menu_finalize_minimum_requirement_outcome(
         print("Invalid outcome selection. Please choose a listed item or Back.")
         return
 
-    status = options[int(selection) - 1][0]
+    status, label = options[int(selection) - 1]
+    _print_review_action_header(
+        "Finalize Minimum Requirements", class_id, assignment_id, student_id
+    )
+    print(f"Selected outcome: {label}")
+    print()
     teacher_note = None
     if status == "returned_without_full_review":
         teacher_note = input("Return note for student: ").strip()
@@ -4414,13 +4597,6 @@ def _menu_export_student_feedback(
     print("This creates a student feedback export from the current review record.")
     print("It does not rescore work or generate AI feedback.")
     print()
-    counts = _review_record_counts(workspace_root, class_id, assignment_id, student_id)
-    print("Review contents:")
-    print(f"Private notes: {counts['notes']}")
-    print(f"Review-unit observations: {counts['observations']}")
-    print(f"Comments included in feedback: {counts['included_comments']}")
-    print(f"Overall ratings: {counts['ratings']}")
-    print()
     try:
         record = load_review_record(
             review_record_path(workspace_root, class_id, assignment_id, student_id)
@@ -4440,8 +4616,8 @@ def _menu_export_student_feedback(
     print("3. Export both PDF and Markdown")
     print("4. Back")
     print()
-    selection = input("Select an option: ").strip()
-    if selection not in {"1", "2", "3"}:
+    export_choice = input("Select an option: ").strip()
+    if export_choice not in {"1", "2", "3"}:
         print("Export canceled.")
         return
 
@@ -4451,7 +4627,11 @@ def _menu_export_student_feedback(
         "1": [pdf_path],
         "2": [markdown_path],
         "3": [pdf_path, markdown_path],
-    }[selection]
+    }[export_choice]
+    _print_review_action_header(
+        "Export Student Feedback", class_id, assignment_id, student_id
+    )
+    print(f"Export type: {_student_feedback_export_choice_label(export_choice)}")
     print("Output files:")
     for path in selected_paths:
         print(f"- {path}")
@@ -4460,6 +4640,9 @@ def _menu_export_student_feedback(
     if existing_paths:
         print()
         print("A feedback export already exists.")
+        print("Existing output files:")
+        for path in existing_paths:
+            print(f"- {path}")
         print()
         print("1. Keep existing export and cancel")
         print("2. Overwrite existing export")
@@ -4475,7 +4658,7 @@ def _menu_export_student_feedback(
         overwrite = False
 
     try:
-        if selection == "1":
+        if export_choice == "1":
             exported_pdf = export_student_feedback_pdf(
                 workspace_root,
                 class_id,
@@ -4484,7 +4667,7 @@ def _menu_export_student_feedback(
                 overwrite=overwrite,
             )
             print_exported_feedback_pdf(exported_pdf)
-        elif selection == "2":
+        elif export_choice == "2":
             exported = export_student_feedback(
                 workspace_root,
                 class_id,
@@ -4506,6 +4689,15 @@ def _menu_export_student_feedback(
     except (FeedbackExportError, OSError) as error:
         print(f"Error: could not export student feedback: {error}")
         return
+
+
+def _student_feedback_export_choice_label(selection: str) -> str:
+    labels = {
+        "1": "PDF feedback",
+        "2": "Markdown feedback",
+        "3": "PDF and Markdown feedback",
+    }
+    return labels.get(selection, "unknown")
 
 
 def _menu_export_class_summary(

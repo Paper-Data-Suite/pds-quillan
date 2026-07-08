@@ -573,7 +573,9 @@ def test_menu_export_feedback_requires_overwrite_when_existing(
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
+    assert "Export type: Markdown feedback" in output
     assert "A feedback export already exists." in output
+    assert "Existing output files:" in output
     assert "Export canceled." in output
     assert feedback_path.read_text(encoding="utf-8") == "old feedback"
 

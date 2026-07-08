@@ -225,6 +225,7 @@ def test_review_menu_records_minimum_requirement_check(
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
     assert "Requirement Checks" in output
+    assert "Record Requirement Check" in output
     assert "Review Minimum Requirements" in output
     assert "Minimum paragraphs: not checked" in output
     assert "Recorded requirement check:" in output
@@ -265,6 +266,7 @@ def test_review_menu_returns_without_full_review_when_policy_allows(
 
     output = capsys.readouterr().out
     assert "Return without full standards review" in output
+    assert "Selected outcome: Return without full standards review" in output
     assert "Finalized minimum-requirements outcome:" in output
     review = json.loads(
         review_record_path(
