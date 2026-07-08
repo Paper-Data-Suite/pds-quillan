@@ -104,6 +104,12 @@ def _workspace_root() -> Path | None:
 
 
 def _prompt_class_selection(workspace_root: Path) -> ClassFolder | None:
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        parse_navigation_choice,
+        print_navigation_options,
+    )
+
     folders = list_class_folders(workspace_root, require_roster=True)
     if not folders:
         print("No class rosters found. Create a class roster first.")
@@ -112,8 +118,12 @@ def _prompt_class_selection(workspace_root: Path) -> ClassFolder | None:
     print("Available classes:")
     for index, folder in enumerate(folders, start=1):
         print(f"{index}. {folder.class_id}")
+    print_navigation_options()
     print()
     selection = input("Select class roster: ").strip()
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
+        return None
     if selection.isdigit() and 1 <= int(selection) <= len(folders):
         return folders[int(selection) - 1]
     for folder in folders:
@@ -135,6 +145,12 @@ def _prompt_assignment_selection(
     workspace_root: Path,
     class_id: str,
 ) -> AssignmentChoice | None:
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        parse_navigation_choice,
+        print_navigation_options,
+    )
+
     choices = discover_assignment_configs(workspace_root, class_id)
     if not choices:
         print("No assignment configs found for this class. Create an assignment first.")
@@ -143,8 +159,12 @@ def _prompt_assignment_selection(
     print("Available assignments:")
     for index, choice in enumerate(choices, start=1):
         print(f"{index}. {_format_assignment_choice(choice)}")
+    print_navigation_options()
     print()
     selection = input("Select assignment: ").strip()
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
+        return None
     selected: AssignmentChoice | None = None
     if selection.isdigit() and 1 <= int(selection) <= len(choices):
         selected = choices[int(selection) - 1]
@@ -232,24 +252,31 @@ def prompt_generate_class_packet() -> int:
 def launch_printable_response_menu() -> int:
     """Launch the teacher-facing printable response pages submenu."""
     from quillan.menu import clear_screen, pause_for_user, print_menu_header
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        navigation_hint,
+        parse_navigation_choice,
+        print_navigation_options,
+    )
 
     try:
         while True:
             clear_screen()
             print_menu_header("Printable Response Pages")
             print("1. Generate class packet")
-            print("2. Back")
+            print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
+            navigation = parse_navigation_choice(choice)
             print()
 
-            if choice == "2":
+            if choice == "2" or navigation is NavigationChoice.BACK:
                 return 0
             if choice == "1":
                 clear_screen()
                 prompt_generate_class_packet()
             else:
-                print("Invalid selection. Please enter a number from 1 to 2.")
+                print(f"Invalid selection. {navigation_hint()}")
             print()
             pause_for_user()
     except KeyboardInterrupt:

@@ -8,6 +8,14 @@ from collections.abc import Callable
 from pathlib import Path
 
 from pds_core.scan_routes import scans_inbox_dir
+from quillan.menu_navigation import (
+    NavigationChoice,
+    QuitQuillan,
+    ReturnToMainMenu,
+    navigation_hint,
+    parse_navigation_choice,
+    print_navigation_options,
+)
 
 WorkspaceShowHandler = Callable[[], int]
 WorkspaceSetHandler = Callable[[str], int]
@@ -140,9 +148,11 @@ def launch_scan_intake_workflow() -> None:
             if len(targets) == 1:
                 print("1. Assemble submissions now")
                 print("2. View submission status")
-                print("3. Return to Scan Intake")
-                print("4. Back to Main Menu")
+                print_navigation_options()
                 choice = input("Select an option: ").strip()
+                navigation = parse_navigation_choice(choice)
+                if navigation is NavigationChoice.BACK:
+                    return
                 if choice == "1":
                     target = targets[0]
                     result = assemble_assignment_submissions(
@@ -162,15 +172,12 @@ def launch_scan_intake_workflow() -> None:
                         workspace_root,
                     )
                     continue
-                if choice == "4":
-                    exit_to_main = True
-                return
-            print(
-                "Choose a numbered target to assemble it, or B to return "
-                "to Scan Intake."
-            )
+                print(f"Invalid selection. {navigation_hint()}")
+                continue
+            print_navigation_options()
             choice = input("Select target: ").strip()
-            if choice == "" or choice.casefold() == "b":
+            navigation = parse_navigation_choice(choice)
+            if choice == "" or navigation is NavigationChoice.BACK:
                 return
             if choice.isdigit() and 1 <= int(choice) <= len(targets):
                 target = targets[int(choice) - 1]
@@ -180,8 +187,7 @@ def launch_scan_intake_workflow() -> None:
                 print_assignment_submission_assembly(result, workspace_root)
             else:
                 print(
-                    "Invalid selection. Please choose a routed assignment "
-                    "or Back."
+                    f"Invalid selection. {navigation_hint()}"
                 )
 
     while True:
@@ -206,10 +212,11 @@ def launch_scan_intake_workflow() -> None:
             print(f"\nPlace scanned PDFs or images in:\n{inbox}")
         print("C. Choose custom file/folder path")
         print("R. Refresh")
-        print("B. Back")
+        print_navigation_options()
         print()
         selection = input("Select scan: ").strip()
-        if selection.casefold() == "b":
+        navigation = parse_navigation_choice(selection)
+        if navigation is NavigationChoice.BACK:
             return
         if selection == "":
             print("Scan intake canceled. No scan files were routed.")
@@ -234,7 +241,7 @@ def launch_scan_intake_workflow() -> None:
             # Preserve pasted-path convenience for experienced users of earlier menus.
             source_path = _normalize_menu_path(selection)
             if source_path is None:
-                print("Invalid selection. Please choose a scan, C, R, or B.")
+                print(f"Invalid selection. {navigation_hint()}")
                 pause_for_user()
                 continue
         print()
@@ -277,10 +284,11 @@ def launch_workspace_menu(
         print("2. Set workspace folder")
         print("3. Validate/create current workspace")
         print("4. Reset saved workspace preference")
-        print("5. Back")
+        print_navigation_options()
         print()
 
         choice = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(choice)
         print()
 
         if choice == "1":
@@ -314,10 +322,10 @@ def launch_workspace_menu(
             workspace_reset()
             print()
             pause_for_user()
-        elif choice == "5":
+        elif choice == "5" or navigation is NavigationChoice.BACK:
             return
         else:
-            print("Invalid selection. Please enter a number from 1 to 5.")
+            print(f"Invalid selection. {navigation_hint()}")
             print()
             pause_for_user()
 
@@ -338,10 +346,13 @@ def launch_menu(
             print("3. Roster Management")
             print("4. Workspace Settings")
             print("5. Help")
-            print("6. Exit")
+            print("Q. Quit")
             print()
 
             choice = input("Select an option: ").strip()
+            navigation = parse_navigation_choice(
+                choice, allow_back=False, allow_main_menu=False
+            )
             print()
 
             if choice == "1":
@@ -362,13 +373,23 @@ def launch_menu(
                 print_menu_help()
                 print()
                 pause_for_user()
-            elif choice == "6":
+            elif choice == "6" or navigation is NavigationChoice.QUIT:
                 print("Goodbye.")
                 return 0
             else:
-                print("Invalid selection. Please enter a number from 1 to 6.")
+                print("Invalid selection. Please choose a listed option or Q.")
                 print()
                 pause_for_user()
+    except ReturnToMainMenu:
+        return launch_menu(
+            workspace_show,
+            workspace_set,
+            workspace_validate,
+            workspace_reset,
+        )
+    except QuitQuillan:
+        print("Goodbye.")
+        return 0
     except KeyboardInterrupt:
         print("\nExiting Quillan.")
         return 0

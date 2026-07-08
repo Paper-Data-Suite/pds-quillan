@@ -243,6 +243,12 @@ def _available_class_folders(workspace_root: Path) -> tuple[ClassFolder, ...]:
 
 
 def _prompt_class_folder(workspace_root: Path) -> ClassFolder | None:
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        parse_navigation_choice,
+        print_navigation_options,
+    )
+
     folders = _available_class_folders(workspace_root)
     if not folders:
         print("No class rosters found. Create a class roster first.")
@@ -251,8 +257,12 @@ def _prompt_class_folder(workspace_root: Path) -> ClassFolder | None:
     print("Available classes:")
     for index, folder in enumerate(folders, start=1):
         print(f"{index}. {folder.class_id}")
+    print_navigation_options()
     print()
     selection = input("Select class for assignment: ").strip()
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
+        return None
     if selection.isdigit() and 1 <= int(selection) <= len(folders):
         return folders[int(selection) - 1]
     for folder in folders:
@@ -646,6 +656,12 @@ def prompt_view_validate_assignment() -> int:
 def launch_assignment_menu() -> int:
     """Launch the teacher-facing assignment management submenu."""
     from quillan.menu import clear_screen, pause_for_user, print_menu_header
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        navigation_hint,
+        parse_navigation_choice,
+        print_navigation_options,
+    )
 
     try:
         while True:
@@ -654,12 +670,13 @@ def launch_assignment_menu() -> int:
             print("1. Create writing assignment")
             print("2. View/validate assignment")
             print("3. Printable Response Pages")
-            print("4. Back")
+            print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
+            navigation = parse_navigation_choice(choice)
             print()
 
-            if choice == "4":
+            if choice == "4" or navigation is NavigationChoice.BACK:
                 return 0
             workflows = {
                 "1": prompt_create_assignment,
@@ -673,7 +690,7 @@ def launch_assignment_menu() -> int:
 
                 launch_printable_response_menu()
             elif workflow is None:
-                print("Invalid selection. Please enter a number from 1 to 4.")
+                print(f"Invalid selection. {navigation_hint()}")
             else:
                 clear_screen()
                 workflow()

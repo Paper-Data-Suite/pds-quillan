@@ -196,7 +196,9 @@ def test_review_menu_selected_student_excludes_legacy_review_entry_actions(
     assert "9. Update review workflow state" in output
     assert "10. Export student feedback" in output
     assert "11. Refresh summary" in output
-    assert "12. Back" in output
+    assert "B. Back" in output
+    assert "M. Main Menu" in output
+    assert "Q. Quit" in output
     assert "Add structured tag" not in output
     assert "Select reusable comment" not in output
     assert "Set criterion score" not in output

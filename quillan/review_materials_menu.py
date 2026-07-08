@@ -6,6 +6,12 @@ from __future__ import annotations
 def launch_review_materials_menu() -> int:
     """Launch an informational placeholder for removed legacy review materials."""
     from quillan.menu import clear_screen, pause_for_user, print_menu_header
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        navigation_hint,
+        parse_navigation_choice,
+        print_navigation_options,
+    )
 
     try:
         while True:
@@ -22,15 +28,16 @@ def launch_review_materials_menu() -> int:
                 "a later release."
             )
             print()
-            print("1. Back")
+            print_navigation_options()
             print()
 
             choice = input("Select an option: ").strip()
+            navigation = parse_navigation_choice(choice)
             print()
 
-            if choice in {"", "1"}:
+            if choice in {"", "1"} or navigation is NavigationChoice.BACK:
                 return 0
-            print("Invalid selection. Please enter 1 to go back.")
+            print(f"Invalid selection. {navigation_hint()}")
             print()
             pause_for_user()
     except KeyboardInterrupt:
