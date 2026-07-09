@@ -5,8 +5,17 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections.abc import Mapping, Sequence
+from datetime import datetime, timezone
 from pathlib import Path
 
+from pds_core.class_metadata import (
+    ClassMetadata,
+    ClassMetadataError,
+    class_metadata_path,
+    create_class_metadata,
+    load_class_metadata_for_class,
+    write_class_metadata_for_class,
+)
 from pds_core.classes import (
     ClassFolder,
     list_class_folders,
@@ -27,6 +36,12 @@ from pds_core.rosters import (
     replace_student_record,
 )
 from pds_core.routes import class_roster_path
+from pds_core.school_years import (
+    SchoolYearStateError,
+    SchoolYearValidationError,
+    get_active_school_year,
+    validate_school_year,
+)
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
 _REQUIRED_STUDENT_FIELDS = ("student_id", "last_name", "first_name", "period")
@@ -48,8 +63,32 @@ def shared_roster_period(roster: Roster) -> str | None:
     return next(iter(unique_periods)) if len(unique_periods) == 1 else None
 
 
-def format_roster_for_display(roster: Roster, roster_path: str | Path) -> str:
+def _metadata_school_year_label(
+    metadata: ClassMetadata | None,
+    metadata_error: Exception | None,
+) -> str:
+    if metadata is not None:
+        return metadata.school_year
+    if metadata_error is not None:
+        return "metadata error"
+    return "not set"
+
+
+def format_roster_for_display(
+    roster: Roster,
+    roster_path: str | Path,
+    *,
+    metadata: ClassMetadata | None = None,
+    metadata_path: str | Path | None = None,
+    metadata_error: Exception | None = None,
+) -> str:
     """Return a readable roster summary including all roster columns."""
+    roster_display_path = Path(roster_path)
+    metadata_display_path = (
+        roster_display_path.with_name("class.json")
+        if metadata_path is None
+        else Path(metadata_path)
+    )
     columns = tuple(
         column for column in roster.columns if column != "class_id"
     )
@@ -72,11 +111,19 @@ def format_roster_for_display(roster: Roster, roster_path: str | Path) -> str:
     }
     lines = [
         f"Class ID: {roster.class_id}",
-        f"Roster path: {Path(roster_path)}",
+        f"School year: {_metadata_school_year_label(metadata, metadata_error)}",
+        f"Roster path: {roster_display_path}",
+        f"Class metadata path: {metadata_display_path}",
         f"Student count: {len(roster.students)}",
-        "",
-        "  ".join(column.ljust(widths[column]) for column in columns),
     ]
+    if metadata_error is not None:
+        lines.append(f"Metadata error: {metadata_error}")
+    lines.extend(
+        [
+            "",
+            "  ".join(column.ljust(widths[column]) for column in columns),
+        ]
+    )
     lines.extend(
         "  ".join(row.get(column, "").ljust(widths[column]) for column in columns)
         for row in rows
@@ -108,12 +155,23 @@ def create_class_roster(
     class_id: str,
     students: Sequence[Mapping[str, str]],
     *,
+    school_year: str,
     overwrite: bool = False,
-) -> tuple[Roster, Path]:
-    """Create and write a validated roster at its canonical shared path."""
+) -> tuple[Roster, Path, ClassMetadata, Path]:
+    """Create and write validated roster and metadata artifacts."""
     roster = create_roster(class_id, students)
+    metadata = create_class_metadata(
+        class_id,
+        school_year,
+        created_at=datetime.now(timezone.utc),
+    )
     path = write_class_roster(workspace_root, roster, overwrite=overwrite)
-    return roster, path
+    metadata_path = write_class_metadata_for_class(
+        workspace_root,
+        metadata,
+        overwrite=overwrite,
+    )
+    return roster, path, metadata, metadata_path
 
 
 def validate_roster_file(path: str | Path) -> Roster:
@@ -153,6 +211,42 @@ def _workspace_root() -> Path | None:
 
 def _available_class_folders(workspace_root: Path) -> tuple[ClassFolder, ...]:
     return list_class_folders(workspace_root, require_roster=True)
+
+
+def _load_optional_class_metadata(
+    workspace_root: Path,
+    class_id: str,
+) -> tuple[ClassMetadata | None, Exception | None]:
+    metadata_path = class_metadata_path(workspace_root, class_id)
+    if not metadata_path.is_file():
+        return None, None
+    try:
+        return load_class_metadata_for_class(workspace_root, class_id), None
+    except ClassMetadataError as error:
+        return None, error
+
+
+def _prompt_school_year(workspace_root: Path) -> str | None:
+    try:
+        active_school_year = get_active_school_year(workspace_root)
+    except SchoolYearStateError as error:
+        print(f"Warning: could not read active school year: {error}")
+        active_school_year = None
+
+    if active_school_year is not None:
+        print(f"Active school year: {active_school_year}")
+        use_active = input("Use this school year for the class roster? [Y/n]: ")
+        if use_active.strip().casefold() not in {"n", "no"}:
+            return active_school_year
+    else:
+        print("No active school year is open for this workspace.")
+
+    entered = input("School year for this roster (YYYY-YYYY): ").strip()
+    try:
+        return validate_school_year(entered)
+    except SchoolYearValidationError as error:
+        print(f"Error: {error}")
+        return None
 
 
 def _prompt_class_folder(
@@ -298,11 +392,13 @@ def _print_roster_action_header(title: str) -> None:
 def _print_roster_edit_dashboard(
     roster: Roster,
     *,
+    school_year_label: str,
     dirty: bool,
     last_status: str | None = None,
 ) -> None:
     _print_roster_action_header("Edit Class Roster")
     print(f"Class ID: {roster.class_id}")
+    print(f"School year: {school_year_label}")
     print(f"Student count: {len(roster.students)}")
     print(f"Unsaved changes: {'yes' if dirty else 'no'}")
     if last_status is not None:
@@ -347,14 +443,26 @@ def prompt_create_roster() -> int:
     workspace_root = _workspace_root()
     if workspace_root is None:
         return 1
+    school_year = _prompt_school_year(workspace_root)
+    if school_year is None:
+        return 1
     output_path = class_roster_path(workspace_root, class_id)
+    output_metadata_path = class_metadata_path(workspace_root, class_id)
     overwrite = False
-    if output_path.exists():
-        print(f"Roster already exists for class '{class_id}':")
-        print(output_path)
-        confirmation = input("Type OVERWRITE to replace it: ").strip()
+    if output_path.exists() or output_metadata_path.exists():
+        if output_path.exists():
+            print(f"Roster already exists for class '{class_id}':")
+            print(output_path)
+        if output_metadata_path.exists():
+            if output_path.exists():
+                print()
+            print("Class metadata already exists:")
+            print(output_metadata_path)
+        confirmation = input(
+            "Type OVERWRITE to replace the roster and class metadata: "
+        ).strip()
         if confirmation != "OVERWRITE":
-            print("Canceled: existing roster was not changed.")
+            print("Canceled: existing roster and class metadata were not changed.")
             return 1
         overwrite = True
 
@@ -383,17 +491,19 @@ def prompt_create_roster() -> int:
         print(f"  Staged: {student_id} - {last_name}, {first_name}")
 
     try:
-        roster, saved_path = create_class_roster(
+        roster, saved_path, _metadata, saved_metadata_path = create_class_roster(
             workspace_root,
             class_id,
             students,
+            school_year=school_year,
             overwrite=overwrite,
         )
-    except RosterError as error:
+    except (RosterError, ClassMetadataError, SchoolYearValidationError) as error:
         print_roster_validation_error(error)
         return 1
     print(f"Created roster with {len(roster.students)} students:")
     print(saved_path)
+    print(f"Created class metadata: {saved_metadata_path}")
     return 0
 
 
@@ -413,8 +523,20 @@ def prompt_view_roster() -> int:
     except RosterError as error:
         print_roster_validation_error(error)
         return 1
+    metadata, metadata_error = _load_optional_class_metadata(
+        workspace_root,
+        folder.class_id,
+    )
     print()
-    print(format_roster_for_display(roster, folder.roster_path))
+    print(
+        format_roster_for_display(
+            roster,
+            folder.roster_path,
+            metadata=metadata,
+            metadata_path=folder.metadata_path,
+            metadata_error=metadata_error,
+        )
+    )
     return 0
 
 
@@ -432,6 +554,10 @@ def prompt_edit_class_roster() -> int:
     except RosterError as error:
         print_roster_validation_error(error)
         return 1
+    metadata, metadata_error = _load_optional_class_metadata(
+        workspace_root,
+        folder.class_id,
+    )
 
     dirty = False
     last_status: str | None = None
@@ -458,6 +584,7 @@ def prompt_edit_class_roster() -> int:
     while True:
         _print_roster_edit_dashboard(
             staged_roster,
+            school_year_label=_metadata_school_year_label(metadata, metadata_error),
             dirty=dirty,
             last_status=last_status,
         )
@@ -495,7 +622,15 @@ def prompt_edit_class_roster() -> int:
                     last_status = "student removal canceled"
             elif choice == "4":
                 _print_roster_action_header("Current Roster")
-                print(format_roster_for_display(staged_roster, folder.roster_path))
+                print(
+                    format_roster_for_display(
+                        staged_roster,
+                        folder.roster_path,
+                        metadata=metadata,
+                        metadata_path=folder.metadata_path,
+                        metadata_error=metadata_error,
+                    )
+                )
                 if dirty:
                     print("\nUnsaved staged changes are shown above.")
                 print()
@@ -552,9 +687,17 @@ def _normalize_path_input(value: str) -> str:
 def _print_roster_validation_summary(
     roster: Roster,
     roster_path: str | Path,
+    *,
+    metadata: ClassMetadata | None = None,
+    metadata_error: Exception | None = None,
+    include_metadata: bool = False,
 ) -> None:
     print("Roster file is valid.")
     print(f"Class ID: {roster.class_id}")
+    if include_metadata:
+        print(f"School year: {_metadata_school_year_label(metadata, metadata_error)}")
+        if metadata_error is not None:
+            print(f"Metadata error: {metadata_error}")
     print(f"Roster path: {Path(roster_path)}")
     print(f"Student count: {len(roster.students)}")
     print("First students:")
@@ -610,7 +753,17 @@ def prompt_validate_roster() -> int:
         except RosterError as error:
             print_roster_validation_error(error)
             return 1
-        _print_roster_validation_summary(roster, selected_folder.roster_path)
+        metadata, metadata_error = _load_optional_class_metadata(
+            workspace_root,
+            selected_folder.class_id,
+        )
+        _print_roster_validation_summary(
+            roster,
+            selected_folder.roster_path,
+            metadata=metadata,
+            metadata_error=metadata_error,
+            include_metadata=True,
+        )
         return 0
 
     if selection.casefold() != "c":
