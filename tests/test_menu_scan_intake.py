@@ -17,8 +17,11 @@ from qrcode.image.pil import PilImage
 
 from quillan.cli import main
 import quillan.cli_app.handlers.routing as cli_routing
+from quillan.intake_assembly import IntakeAssemblyTarget
+from quillan.menu import handle_scan_post_route_menu
 from quillan.payloads import build_response_payload
 from quillan.pdf_pages import PdfPageImage
+from quillan.submission_status import AssignmentSubmissionStatus
 
 CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"
@@ -184,6 +187,226 @@ def _routed_pngs(workspace: Path) -> list[Path]:
             / "scans"
         ).glob("response_*.png")
     )
+
+
+def _post_route_target() -> IntakeAssemblyTarget:
+    return IntakeAssemblyTarget(CLASS_ID, ASSIGNMENT_ID, 1)
+
+
+def _assignment_status(
+    *,
+    manifests: tuple[str, ...] = (),
+    routed: tuple[str, ...] = (STUDENT_ID,),
+    unassembled: tuple[Path, ...] = (),
+) -> AssignmentSubmissionStatus:
+    return AssignmentSubmissionStatus(
+        class_id=CLASS_ID,
+        assignment_id=ASSIGNMENT_ID,
+        students_with_manifests=manifests,
+        students_with_routed_evidence=routed,
+        students_without_manifests=tuple(
+            student_id for student_id in routed if student_id not in manifests
+        ),
+        unassembled_routed_files=unassembled,
+        skipped_routed_files=(),
+        student_statuses=(),
+    )
+
+
+def test_post_route_menu_pre_assembly_wording(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        lambda *_args, **_kwargs: _assignment_status(),
+    )
+    _menu_input(monkeypatch, ["b"])
+
+    handle_scan_post_route_menu(workspace, [_post_route_target()])
+
+    output = capsys.readouterr().out
+    assert "Submission records are required before review." in output
+    assert "Assemble submissions now" in output
+    assert "View submission status" in output
+
+
+def test_post_route_menu_recomputes_status_after_assembly(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    statuses = iter(
+        [
+            _assignment_status(),
+            _assignment_status(
+                manifests=(STUDENT_ID,),
+                routed=(STUDENT_ID,),
+            ),
+        ]
+    )
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        lambda *_args, **_kwargs: next(statuses),
+    )
+    monkeypatch.setattr(
+        "quillan.menu.assemble_assignment_submissions",
+        lambda *_args, **_kwargs: object(),
+    )
+    monkeypatch.setattr(
+        "quillan.menu.print_assignment_submission_assembly",
+        lambda *_args, **_kwargs: print("Assembly complete."),
+    )
+    _menu_input(monkeypatch, ["1", "b"])
+
+    handle_scan_post_route_menu(workspace, [_post_route_target()])
+
+    output = capsys.readouterr().out
+    after_assembly = output.split("Assembly complete.", maxsplit=1)[1]
+    assert "Submission records have been assembled" in after_assembly
+    assert "ready for review" in after_assembly
+    assert "Submission records are required before review." not in after_assembly
+    assert "Assemble submissions now" not in after_assembly
+    assert "Reassemble submissions" in after_assembly
+
+
+def test_post_route_menu_ready_state_offers_review(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reviewed_targets: list[tuple[Path, str, str]] = []
+
+    def fake_launch_review(root: Path, class_id: str, assignment_id: str) -> int:
+        reviewed_targets.append((root, class_id, assignment_id))
+        return 0
+
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        lambda *_args, **_kwargs: _assignment_status(
+            manifests=(STUDENT_ID,),
+            routed=(STUDENT_ID,),
+        ),
+    )
+    monkeypatch.setattr(
+        "quillan.review_menu.launch_assignment_review_actions",
+        fake_launch_review,
+    )
+    _menu_input(monkeypatch, ["2", "b"])
+
+    handle_scan_post_route_menu(workspace, [_post_route_target()])
+
+    output = capsys.readouterr().out
+    assert "Review student work" in output
+    assert reviewed_targets == [(workspace, CLASS_ID, ASSIGNMENT_ID)]
+
+
+def test_post_route_menu_partial_state_wording(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        lambda *_args, **_kwargs: _assignment_status(
+            manifests=(STUDENT_ID,),
+            routed=(STUDENT_ID, SECOND_STUDENT_ID),
+            unassembled=(workspace / "unassembled.png",),
+        ),
+    )
+    _menu_input(monkeypatch, ["b"])
+
+    handle_scan_post_route_menu(workspace, [_post_route_target()])
+
+    output = capsys.readouterr().out
+    assert "Some submission records have been assembled" in output
+    assert "routed evidence still needs assembly" in output
+    assert "Assemble remaining submissions" in output
+    assert "Review student work" in output
+
+
+def test_post_route_menu_view_status_uses_existing_status_output(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        lambda *_args, **_kwargs: _assignment_status(),
+    )
+    _menu_input(monkeypatch, ["2", "b"])
+
+    handle_scan_post_route_menu(workspace, [_post_route_target()])
+
+    output = capsys.readouterr().out
+    assert f"Submission status for assignment {ASSIGNMENT_ID}" in output
+    assert "Students with routed evidence: 1" in output
+
+
+def test_post_route_menu_status_error_falls_back_safely(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def raise_status_error(*_args: object, **_kwargs: object) -> None:
+        raise ValueError("synthetic status failure")
+
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        raise_status_error,
+    )
+    _menu_input(monkeypatch, ["b"])
+
+    handle_scan_post_route_menu(workspace, [_post_route_target()])
+
+    output = capsys.readouterr().out
+    assert "Submission status could not be loaded." in output
+    assert "Error: synthetic status failure" in output
+    assert "Try assembling submissions" in output
+    assert "Return to Scan Intake" in output
+    assert "Traceback" not in output
+
+
+def test_post_route_multi_target_lists_status_labels(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    second_target = IntakeAssemblyTarget("english12_p4_synthetic", ASSIGNMENT_ID, 1)
+
+    def status_for_target(
+        _workspace: Path,
+        class_id: str,
+        _assignment_id: str,
+    ) -> AssignmentSubmissionStatus:
+        if class_id == CLASS_ID:
+            return _assignment_status()
+        return AssignmentSubmissionStatus(
+            class_id=class_id,
+            assignment_id=ASSIGNMENT_ID,
+            students_with_manifests=(STUDENT_ID,),
+            students_with_routed_evidence=(STUDENT_ID,),
+            students_without_manifests=(),
+            unassembled_routed_files=(),
+            skipped_routed_files=(),
+            student_statuses=(),
+        )
+
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        status_for_target,
+    )
+    _menu_input(monkeypatch, ["b"])
+
+    handle_scan_post_route_menu(workspace, [_post_route_target(), second_target])
+
+    output = capsys.readouterr().out
+    assert f"Class: {CLASS_ID}; Assignment: {ASSIGNMENT_ID} - needs assembly" in output
+    assert (
+        "Class: english12_p4_synthetic; "
+        f"Assignment: {ASSIGNMENT_ID} - ready for review"
+    ) in output
 
 
 def test_review_student_work_exposes_scan_intake_option(

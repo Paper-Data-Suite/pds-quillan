@@ -204,6 +204,19 @@ def _run_review_selection_workflow() -> int:
     )
 
 
+def launch_assignment_review_actions(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> int:
+    """Launch review actions for a known class assignment."""
+    return _launch_assignment_review_actions(
+        workspace_root,
+        class_id,
+        assignment_id,
+    )
+
+
 def _workspace_root() -> Path | None:
     try:
         return resolve_workspace_root()
