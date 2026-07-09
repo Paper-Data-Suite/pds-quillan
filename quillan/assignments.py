@@ -159,8 +159,12 @@ def _validate_class_ids(class_ids: Any) -> None:
     if not class_ids:
         raise AssignmentConfigError("Field 'class_ids' must not be empty.")
 
+    seen_class_ids: set[str] = set()
     for class_id in class_ids:
         _validate_identifier(class_id, "class_id")
+        if class_id in seen_class_ids:
+            raise AssignmentConfigError(f"Duplicate class_id: {class_id}.")
+        seen_class_ids.add(class_id)
 
 
 def _validate_focus_standard_ids(focus_standard_ids: Any) -> None:

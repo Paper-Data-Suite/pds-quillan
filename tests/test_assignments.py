@@ -102,6 +102,27 @@ def test_validate_assignment_config_keeps_writing_type_compatibility() -> None:
     validate_assignment_config(assignment)
 
 
+def test_validate_assignment_config_accepts_multiple_unique_class_ids() -> None:
+    assignment = _valid_assignment_config()
+    assignment["class_ids"] = [
+        "english12_period3_synthetic",
+        "english12_period4_synthetic",
+    ]
+
+    validate_assignment_config(assignment)
+
+
+def test_validate_assignment_config_rejects_duplicate_class_ids(tmp_path: Path) -> None:
+    assignment = _valid_assignment_config()
+    assignment["class_ids"] = [
+        "english12_period3_synthetic",
+        "english12_period3_synthetic",
+    ]
+
+    with pytest.raises(AssignmentConfigError, match="Duplicate class_id"):
+        load_assignment_config(_write_assignment(tmp_path, assignment))
+
+
 def test_optional_metadata_fields_do_not_break_validation(tmp_path: Path) -> None:
     assignment = _valid_assignment_config()
     assignment["created_at"] = "2026-07-02T00:00:00+00:00"

@@ -123,7 +123,6 @@ def build_assignment_config(
     *,
     assignment_id: str,
     title: str,
-    class_id: str,
     writing_type: str,
     student_prompt: str,
     standards_profile_id: str,
@@ -132,15 +131,26 @@ def build_assignment_config(
     rating_scale: Mapping[str, Any],
     basic_requirements: Mapping[str, Any],
     minimum_requirement_policy: Mapping[str, Any],
+    class_ids: Sequence[str] | None = None,
+    class_id: str | None = None,
 ) -> dict[str, Any]:
     """Build and validate a v2 assignment config."""
+    if class_ids is None:
+        if class_id is None:
+            raise ValueError("class_ids is required.")
+        selected_class_ids = [class_id]
+    elif class_id is not None:
+        raise ValueError("Pass either class_ids or class_id, not both.")
+    else:
+        selected_class_ids = list(class_ids)
+
     assignment: dict[str, Any] = {
         "schema_version": "2",
         "module": "quillan",
         "record_type": "assignment",
         "assignment_id": assignment_id,
         "title": title,
-        "class_ids": [class_id],
+        "class_ids": selected_class_ids,
         "writing_type": writing_type,
         "student_prompt": student_prompt,
         "standards_profile_id": standards_profile_id,
@@ -164,9 +174,9 @@ def write_assignment_config(
     """Write a validated assignment config to its canonical shared path."""
     assignment_data = dict(assignment)
     validate_assignment_config(assignment_data)
-    if assignment_data["class_ids"] != [class_id]:
+    if class_id not in assignment_data["class_ids"]:
         raise AssignmentConfigError(
-            "Assignment class_ids must match the selected class_id."
+            "Assignment class_ids must include the selected class_id."
         )
     assignment_id = str(assignment_data["assignment_id"])
     path = assignment_config_path(workspace_root, class_id, assignment_id)
@@ -285,21 +295,95 @@ def _prompt_class_folder(workspace_root: Path) -> ClassFolder | None:
     return None
 
 
+def _parse_class_folder_selection(
+    selection: str,
+    folders: Sequence[ClassFolder],
+) -> tuple[ClassFolder, ...]:
+    """Parse comma-separated class numbers and class IDs in teacher-entered order."""
+    selected_folders: list[ClassFolder] = []
+    seen_class_ids: set[str] = set()
+    tokens = parse_comma_separated_values(selection)
+    if not tokens:
+        raise ValueError("At least one class selection is required.")
+
+    by_class_id = {folder.class_id: folder for folder in folders}
+    for token in tokens:
+        if token.isdigit():
+            index = int(token)
+            if not 1 <= index <= len(folders):
+                raise ValueError(f"Class selection not found: {token}")
+            folder = folders[index - 1]
+        else:
+            if token not in by_class_id:
+                raise ValueError(f"Class not found: {token}")
+            folder = by_class_id[token]
+        if folder.class_id in seen_class_ids:
+            raise ValueError(f"Duplicate class selection: {token}")
+        seen_class_ids.add(folder.class_id)
+        selected_folders.append(folder)
+    return tuple(selected_folders)
+
+
+def _prompt_assignment_class_folders(workspace_root: Path) -> tuple[ClassFolder, ...] | None:
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        parse_navigation_choice,
+        print_navigation_options,
+    )
+
+    folders = _available_class_folders(workspace_root)
+    if not folders:
+        print("No class rosters found. Create a class roster first.")
+        return None
+
+    print("Available classes:")
+    for index, folder in enumerate(folders, start=1):
+        print(f"{index}. {folder.class_id}")
+    print()
+    print("Select class(es) for assignment.")
+    print(
+        "Enter one number, multiple numbers separated by commas, "
+        "or exact class_id values."
+    )
+    print()
+    print("Examples:")
+    print("  1")
+    print("  1,3")
+    print("  english10_p2,english10_p4")
+    print()
+    print_navigation_options()
+    print()
+    selection = input("Select class(es) for assignment: ").strip()
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
+        return None
+    try:
+        return _parse_class_folder_selection(selection, folders)
+    except ValueError as error:
+        print(f"Error: {error}")
+        return None
+
+
 def _print_assignment_section_header(
     title: str,
     *,
     class_id: str | None = None,
+    class_ids: Sequence[str] | None = None,
     assignment_id: str | None = None,
 ) -> None:
     from quillan.menu import clear_screen, print_menu_header
 
     clear_screen()
     print_menu_header(title)
+    if class_ids is not None:
+        class_label = ", ".join(class_ids)
+        label = "Class" if len(class_ids) == 1 else "Classes"
+        print(f"{label}: {class_label}")
     if class_id is not None:
         print(f"Class: {class_id}")
     if assignment_id is not None:
         print(f"Assignment ID: {assignment_id}")
-    if class_id is not None or assignment_id is not None:
+    if class_ids is not None or class_id is not None or assignment_id is not None:
         print()
 
 
@@ -505,15 +589,16 @@ def prompt_create_assignment() -> int:
         return 1
     if not _confirm_standards_profile_prerequisite(workspace_root):
         return 1
-    _print_assignment_section_header("Select Assignment Class")
-    class_folder = _prompt_class_folder(workspace_root)
-    if class_folder is None:
+    _print_assignment_section_header("Select Assignment Classes")
+    class_folders = _prompt_assignment_class_folders(workspace_root)
+    if class_folders is None:
         return 1
+    class_ids = [folder.class_id for folder in class_folders]
 
     try:
         _print_assignment_section_header(
             "Assignment Identity",
-            class_id=class_folder.class_id,
+            class_ids=class_ids,
         )
         title = _required_input("Assignment title: ", "assignment title")
         suggested_id = suggest_assignment_id(title)
@@ -527,14 +612,14 @@ def prompt_create_assignment() -> int:
 
         _print_assignment_section_header(
             "Writing Prompt",
-            class_id=class_folder.class_id,
+            class_ids=class_ids,
             assignment_id=assignment_id,
         )
         writing_type = _prompt_writing_type()
         student_prompt = _prompt_student_prompt()
         _print_assignment_section_header(
             "Standards Profile",
-            class_id=class_folder.class_id,
+            class_ids=class_ids,
             assignment_id=assignment_id,
         )
         standards_selection = _prompt_standards_selection(workspace_root)
@@ -543,25 +628,25 @@ def prompt_create_assignment() -> int:
         standards_profile_id, focus_standard_ids = standards_selection
         _print_assignment_section_header(
             "Review Unit Setup",
-            class_id=class_folder.class_id,
+            class_ids=class_ids,
             assignment_id=assignment_id,
         )
         review_unit = _prompt_review_unit()
         _print_assignment_section_header(
             "Rating Scale Setup",
-            class_id=class_folder.class_id,
+            class_ids=class_ids,
             assignment_id=assignment_id,
         )
         rating_scale = _prompt_rating_scale()
         _print_assignment_section_header(
             "Basic Requirements",
-            class_id=class_folder.class_id,
+            class_ids=class_ids,
             assignment_id=assignment_id,
         )
         basic_requirements = _prompt_basic_requirements()
         _print_assignment_section_header(
             "Minimum Requirement Policy",
-            class_id=class_folder.class_id,
+            class_ids=class_ids,
             assignment_id=assignment_id,
         )
         minimum_requirement_policy = _prompt_minimum_requirement_policy()
@@ -569,7 +654,7 @@ def prompt_create_assignment() -> int:
         assignment = build_assignment_config(
             assignment_id=assignment_id,
             title=title,
-            class_id=class_folder.class_id,
+            class_ids=class_ids,
             writing_type=writing_type,
             student_prompt=student_prompt,
             standards_profile_id=standards_profile_id,
@@ -583,46 +668,70 @@ def prompt_create_assignment() -> int:
         print(f"Error: {error}")
         return 1
 
-    output_path = assignment_config_path(
-        workspace_root,
-        class_folder.class_id,
-        assignment_id,
-    )
+    output_paths = [
+        assignment_config_path(workspace_root, class_id, assignment_id)
+        for class_id in class_ids
+    ]
     _print_assignment_section_header(
         "Review Assignment Before Saving",
-        class_id=class_folder.class_id,
+        class_ids=class_ids,
         assignment_id=assignment_id,
     )
-    print(format_assignment_summary(assignment, output_path, workspace_root))
+    print(format_assignment_summary(assignment, output_paths[0], workspace_root))
+    print()
+    class_count = len(class_ids)
+    class_word = "class" if class_count == 1 else "classes"
+    print(f"This assignment will be saved for {class_count} {class_word}:")
+    for class_id, output_path in zip(class_ids, output_paths, strict=True):
+        print(f"- {class_id}: {output_path}")
     if not _prompt_yes_no("Save this assignment? [Y/n]: ", default=True):
         print("Canceled: assignment was not saved.")
         return 0
 
     overwrite = False
-    if output_path.exists():
+    existing_paths = [
+        (class_id, output_path)
+        for class_id, output_path in zip(class_ids, output_paths, strict=True)
+        if output_path.exists()
+    ]
+    if existing_paths:
         _print_assignment_section_header(
             "Confirm Assignment Overwrite",
-            class_id=class_folder.class_id,
+            class_ids=class_ids,
             assignment_id=assignment_id,
         )
-        print(f"Assignment config already exists: {output_path}")
-        confirmation = input("Type OVERWRITE to replace it: ").strip()
+        print("Assignment config already exists in one or more selected classes:")
+        print()
+        for class_id, output_path in existing_paths:
+            print(f"- {class_id}: {output_path}")
+        print()
+        confirmation = input(
+            "Type OVERWRITE to replace existing assignment configs: "
+        ).strip()
         if confirmation != "OVERWRITE":
-            print("Canceled: existing assignment was not changed.")
+            print("Canceled: existing assignments were not changed.")
             return 1
         overwrite = True
 
     try:
-        saved_path = write_assignment_config(
-            workspace_root,
-            class_folder.class_id,
-            assignment,
-            overwrite=overwrite,
-        )
+        saved_paths = [
+            write_assignment_config(
+                workspace_root,
+                class_id,
+                assignment,
+                overwrite=overwrite,
+            )
+            for class_id in class_ids
+        ]
     except (AssignmentConfigError, OSError, FileExistsError) as error:
         print(f"Error: {error}")
         return 1
-    print(f"Saved assignment: {saved_path}")
+    if len(saved_paths) == 1:
+        print(f"Saved assignment: {saved_paths[0]}")
+    else:
+        print(f"Saved assignment for {len(saved_paths)} classes:")
+        for class_id, saved_path in zip(class_ids, saved_paths, strict=True):
+            print(f"- {class_id}: {saved_path}")
     return 0
 
 

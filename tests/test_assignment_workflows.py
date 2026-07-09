@@ -31,11 +31,13 @@ def _assignment(
     *,
     assignment_id: str = "literary_analysis_essay",
     class_id: str = "english_12_p3",
+    class_ids: list[str] | None = None,
 ) -> dict[str, object]:
     return workflows.build_assignment_config(
         assignment_id=assignment_id,
         title="Literary Analysis Essay",
-        class_id=class_id,
+        class_ids=class_ids,
+        class_id=None if class_ids is not None else class_id,
         writing_type="literary_analysis",
         student_prompt="Analyze how the author develops a central idea.",
         standards_profile_id="synthetic_ela_11_12",
@@ -181,6 +183,13 @@ def test_build_assignment_config_has_required_v2_fields_and_validates() -> None:
     validate_assignment_config(assignment)
 
 
+def test_build_assignment_config_accepts_multiple_class_ids() -> None:
+    assignment = _assignment(class_ids=["english_12_p3", "english_12_p4"])
+
+    assert assignment["class_ids"] == ["english_12_p3", "english_12_p4"]
+    validate_assignment_config(assignment)
+
+
 def test_write_assignment_config_uses_canonical_path(tmp_path: Path) -> None:
     assignment = _assignment()
 
@@ -202,6 +211,28 @@ def test_write_assignment_config_uses_canonical_path(tmp_path: Path) -> None:
     assert path.read_text(encoding="utf-8").endswith("\n")
 
 
+def test_write_assignment_config_allows_included_multi_class_path(
+    tmp_path: Path,
+) -> None:
+    assignment = _assignment(class_ids=["english_12_p3", "english_12_p4"])
+
+    path = workflows.write_assignment_config(
+        tmp_path,
+        "english_12_p4",
+        assignment,
+    )
+
+    assert path == (
+        tmp_path
+        / "classes"
+        / "english_12_p4"
+        / "assignments"
+        / "literary_analysis_essay"
+        / "assignment.json"
+    )
+    assert load_assignment_config(path) == assignment
+
+
 def test_write_assignment_config_rejects_class_path_mismatch(
     tmp_path: Path,
 ) -> None:
@@ -215,6 +246,43 @@ def test_write_assignment_config_rejects_class_path_mismatch(
         )
 
     assert not list(tmp_path.rglob("assignment.json"))
+
+
+def test_parse_class_folder_selection_accepts_numbers_and_class_ids(
+    tmp_path: Path,
+) -> None:
+    _write_roster(tmp_path, "english10_p2")
+    _write_roster(tmp_path, "english10_p3")
+    _write_roster(tmp_path, "english10_p4")
+    folders = workflows._available_class_folders(tmp_path)
+
+    cases = [
+        ("1", ("english10_p2",)),
+        ("1,3", ("english10_p2", "english10_p4")),
+        ("1, 3", ("english10_p2", "english10_p4")),
+        ("english10_p2", ("english10_p2",)),
+        ("english10_p2,english10_p4", ("english10_p2", "english10_p4")),
+        ("1,english10_p4", ("english10_p2", "english10_p4")),
+    ]
+    for selection, expected in cases:
+        parsed = workflows._parse_class_folder_selection(selection, folders)
+        assert tuple(folder.class_id for folder in parsed) == expected
+
+
+@pytest.mark.parametrize(
+    "selection",
+    ["", "0", "99", "1,99", "missing_class", "1,1", "english10_p2,1"],
+)
+def test_parse_class_folder_selection_rejects_invalid_and_duplicate_values(
+    tmp_path: Path,
+    selection: str,
+) -> None:
+    _write_roster(tmp_path, "english10_p2")
+    _write_roster(tmp_path, "english10_p3")
+    folders = workflows._available_class_folders(tmp_path)
+
+    with pytest.raises(ValueError):
+        workflows._parse_class_folder_selection(selection, folders)
 
 
 def test_assignment_parsing_helpers() -> None:
@@ -333,7 +401,7 @@ def test_prompt_create_assignment_writes_valid_v2_config(
         output
     )
     assert "Standards profiles found: 1" in output
-    assert "Select Assignment Class" in output
+    assert "Select Assignment Classes" in output
     assert "Assignment Identity" in output
     assert "Writing Prompt" in output
     assert "Examples: literary_analysis, argument, research_paper, reflection" in output
@@ -348,6 +416,65 @@ def test_prompt_create_assignment_writes_valid_v2_config(
     assert "Review Assignment Before Saving" in output
     assert "Saved assignment:" in output
     assert "Focus standard IDs (2)" in output
+
+
+def test_prompt_create_assignment_writes_same_config_for_multiple_classes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path, "english_12_p3")
+    _write_roster(tmp_path, "english_12_p4")
+    _write_standards_library(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    _inputs(
+        monkeypatch,
+        [
+            "1",
+            "1,2",
+            "Argument Essay",
+            "",
+            "argument",
+            "Write an argument.",
+            "1",
+            "1",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+        ],
+    )
+
+    assert workflows.prompt_create_assignment() == 0
+    first_path = (
+        tmp_path
+        / "classes"
+        / "english_12_p3"
+        / "assignments"
+        / "argument_essay"
+        / "assignment.json"
+    )
+    second_path = (
+        tmp_path
+        / "classes"
+        / "english_12_p4"
+        / "assignments"
+        / "argument_essay"
+        / "assignment.json"
+    )
+    first_assignment = load_assignment_config(first_path)
+    second_assignment = load_assignment_config(second_path)
+    assert first_assignment == second_assignment
+    assert first_assignment["class_ids"] == ["english_12_p3", "english_12_p4"]
+    output = capsys.readouterr().out
+    assert "Classes: english_12_p3, english_12_p4" in output
+    assert "This assignment will be saved for 2 classes:" in output
+    assert "Saved assignment for 2 classes:" in output
 
 
 def test_prompt_create_assignment_prerequisite_back_stops_before_class_selection(
@@ -365,7 +492,7 @@ def test_prompt_create_assignment_prerequisite_back_stops_before_class_selection
     assert "Assignment creation requires an existing PDS Core standards profile." in (
         output
     )
-    assert "Select Assignment Class" not in output
+    assert "Select Assignment Classes" not in output
     assert "Assignment title:" not in prompts
 
 
@@ -406,7 +533,7 @@ def test_prompt_create_assignment_no_profiles_stops_before_assignment_entry(
     assert "No standards profiles were found in this workspace." in output
     assert "Create or import standards and standards profiles in PDS Core" in output
     assert "1. Continue" not in output
-    assert "Select Assignment Class" not in output
+    assert "Select Assignment Classes" not in output
     assert "Assignment title:" not in prompts
     assert "Writing type:" not in prompts
     assert "Student-facing assignment prompt:" not in prompts
@@ -434,7 +561,7 @@ def test_prompt_create_assignment_standards_load_failure_stops_before_entry(
     assert "Create or repair standards/profile data in PDS Core" in output
     assert "Error:" in output
     assert "1. Continue" not in output
-    assert "Select Assignment Class" not in output
+    assert "Select Assignment Classes" not in output
     assert "Assignment title:" not in prompts
     assert "Writing type:" not in prompts
     assert "Student-facing assignment prompt:" not in prompts
@@ -611,7 +738,63 @@ def test_prompt_create_assignment_does_not_overwrite_without_confirmation(
 
     assert workflows.prompt_create_assignment() == 1
     assert original_path.read_bytes() == original_bytes
-    assert "existing assignment was not changed" in capsys.readouterr().out
+    assert "existing assignments were not changed" in capsys.readouterr().out
+
+
+def test_prompt_create_assignment_preflights_all_overwrite_conflicts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path, "english_12_p3")
+    _write_roster(tmp_path, "english_12_p4")
+    _write_standards_library(tmp_path)
+    original_path = workflows.write_assignment_config(
+        tmp_path,
+        "english_12_p3",
+        _assignment(assignment_id="argument_essay"),
+    )
+    original_bytes = original_path.read_bytes()
+    second_path = (
+        tmp_path
+        / "classes"
+        / "english_12_p4"
+        / "assignments"
+        / "argument_essay"
+        / "assignment.json"
+    )
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    _inputs(
+        monkeypatch,
+        [
+            "1",
+            "1,2",
+            "Argument Essay",
+            "",
+            "argument",
+            "Write a new argument.",
+            "1",
+            "1",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "nope",
+        ],
+    )
+
+    assert workflows.prompt_create_assignment() == 1
+    assert original_path.read_bytes() == original_bytes
+    assert not second_path.exists()
+    output = capsys.readouterr().out
+    assert "Assignment config already exists in one or more selected classes" in output
+    assert "english_12_p3" in output
+    assert "existing assignments were not changed" in output
 
 
 def test_prompt_create_assignment_overwrites_with_explicit_confirmation(
