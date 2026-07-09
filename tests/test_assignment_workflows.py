@@ -21,6 +21,7 @@ from quillan.assignments import (
     load_assignment_config,
     validate_assignment_config,
 )
+from quillan.menu_navigation import QuitQuillan, ReturnToMainMenu
 
 STANDARD_ID = "njsls-ela:W.AW.11-12.1"
 SECOND_STANDARD_ID = "njsls-ela:L.KL.11-12.2"
@@ -117,6 +118,25 @@ def _write_standards_library(workspace_root: Path) -> None:
                     title="Synthetic ELA 11-12",
                 ),
             ),
+        ),
+    )
+
+
+def _write_standards_library_without_profiles(workspace_root: Path) -> None:
+    write_workspace_standards_library(
+        workspace_root,
+        StandardsLibrary(
+            standards=(
+                StandardDefinition(
+                    standard_id=STANDARD_ID,
+                    code="W.AW.11-12.1",
+                    source="NJSLS",
+                    short_name="Argument Writing",
+                    description="Write arguments supported by evidence.",
+                    available_modules=("quillan",),
+                ),
+            ),
+            profiles=(),
         ),
     )
 
@@ -229,6 +249,7 @@ def test_prompt_create_assignment_writes_valid_v2_config(
         monkeypatch,
         [
             "1",
+            "1",
             "Literary Analysis Essay",
             "",
             "literary analysis",
@@ -282,6 +303,10 @@ def test_prompt_create_assignment_writes_valid_v2_config(
     assert "focus_standards" not in assignment
     assert "rubric_id" not in assignment
     output = capsys.readouterr().out
+    assert "Assignment creation requires an existing PDS Core standards profile." in (
+        output
+    )
+    assert "Standards profiles found: 1" in output
     assert "Select Assignment Class" in output
     assert "Assignment Identity" in output
     assert "Writing Prompt" in output
@@ -296,6 +321,97 @@ def test_prompt_create_assignment_writes_valid_v2_config(
     assert "Focus standard IDs (2)" in output
 
 
+def test_prompt_create_assignment_prerequisite_back_stops_before_class_selection(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path)
+    _write_standards_library(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    prompts = _inputs(monkeypatch, ["b"])
+
+    assert workflows.prompt_create_assignment() == 1
+    output = capsys.readouterr().out
+    assert "Assignment creation requires an existing PDS Core standards profile." in (
+        output
+    )
+    assert "Select Assignment Class" not in output
+    assert "Assignment title:" not in prompts
+
+
+@pytest.mark.parametrize(
+    ("selection", "expected_exception"),
+    [("m", ReturnToMainMenu), ("q", QuitQuillan)],
+)
+def test_prompt_create_assignment_prerequisite_uses_shared_global_navigation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    selection: str,
+    expected_exception: type[Exception],
+) -> None:
+    _write_roster(tmp_path)
+    _write_standards_library(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    _inputs(monkeypatch, [selection])
+
+    with pytest.raises(expected_exception):
+        workflows.prompt_create_assignment()
+
+
+def test_prompt_create_assignment_no_profiles_stops_before_assignment_entry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path)
+    _write_standards_library_without_profiles(tmp_path)
+    original_files = {
+        path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()
+    }
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    prompts = _inputs(monkeypatch, ["b"])
+
+    assert workflows.prompt_create_assignment() == 1
+    output = capsys.readouterr().out
+    assert "No standards profiles were found in this workspace." in output
+    assert "Create or import standards and standards profiles in PDS Core" in output
+    assert "1. Continue" not in output
+    assert "Select Assignment Class" not in output
+    assert "Assignment title:" not in prompts
+    assert "Writing type:" not in prompts
+    assert "Student-facing assignment prompt:" not in prompts
+    assert not list(tmp_path.rglob("assignment.json"))
+    assert {
+        path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()
+    } == original_files
+
+
+def test_prompt_create_assignment_standards_load_failure_stops_before_entry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path)
+    standards_path = tmp_path / "standards" / "library.json"
+    standards_path.parent.mkdir()
+    standards_path.write_text("{not valid json", encoding="utf-8")
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    prompts = _inputs(monkeypatch, ["b"])
+
+    assert workflows.prompt_create_assignment() == 1
+    output = capsys.readouterr().out
+    assert "could not load the PDS Core standards library" in output
+    assert "Create or repair standards/profile data in PDS Core" in output
+    assert "Error:" in output
+    assert "1. Continue" not in output
+    assert "Select Assignment Class" not in output
+    assert "Assignment title:" not in prompts
+    assert "Writing type:" not in prompts
+    assert "Student-facing assignment prompt:" not in prompts
+    assert not list(tmp_path.rglob("assignment.json"))
+
+
 def test_prompt_create_assignment_default_rating_scale_has_four_unique_levels(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -306,6 +422,7 @@ def test_prompt_create_assignment_default_rating_scale_has_four_unique_levels(
     _inputs(
         monkeypatch,
         [
+            "1",
             "1",
             "Argument Essay",
             "",
@@ -355,6 +472,7 @@ def test_prompt_create_assignment_writes_declined_minimum_requirement_policy(
         monkeypatch,
         [
             "1",
+            "1",
             "Argument Essay",
             "",
             "argument",
@@ -399,6 +517,7 @@ def test_prompt_create_assignment_final_cancel_does_not_write(
         monkeypatch,
         [
             "1",
+            "1",
             "Argument Essay",
             "",
             "argument",
@@ -441,6 +560,7 @@ def test_prompt_create_assignment_does_not_overwrite_without_confirmation(
         monkeypatch,
         [
             "1",
+            "1",
             "Argument Essay",
             "",
             "argument",
@@ -481,6 +601,7 @@ def test_prompt_create_assignment_overwrites_with_explicit_confirmation(
         monkeypatch,
         [
             "1",
+            "1",
             "Argument Essay",
             "",
             "argument",
@@ -518,10 +639,12 @@ def test_prompt_create_assignment_invalid_input_fails_without_traceback(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write_roster(tmp_path)
+    _write_standards_library(tmp_path)
     monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
     _inputs(
         monkeypatch,
         [
+            "1",
             "1",
             "Argument Essay",
             "bad id",
