@@ -12,6 +12,11 @@ from pds_core.routes import class_assignments_dir
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
 from quillan.assignments import AssignmentConfigError, load_assignment_config
+from quillan.generated_output_opening import (
+    GeneratedOutputOpeningError,
+    open_generated_output_file,
+    open_generated_output_folder,
+)
 from quillan.printable_response import (
     PRINTABLE_RESPONSE_FILENAME,
     generate_printable_responses_for_roster,
@@ -101,6 +106,56 @@ def _workspace_root() -> Path | None:
     except WorkspaceRootError as error:
         print(f"Error: {error}")
         return None
+
+
+def _prompt_open_generated_packet(
+    workspace_root: Path,
+    generated_path: Path,
+) -> None:
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        parse_navigation_choice,
+    )
+
+    print()
+    print("What would you like to do next?")
+    print("1. Open generated packet")
+    print("2. Open containing folder")
+    print("3. Return to Printable Response Pages")
+    selection = input("Select an option: ").strip()
+    navigation = parse_navigation_choice(selection)
+    if (
+        selection == ""
+        or selection == "3"
+        or navigation is NavigationChoice.BACK
+    ):
+        return
+
+    if selection == "1":
+        try:
+            opened = open_generated_output_file(workspace_root, generated_path)
+        except GeneratedOutputOpeningError as error:
+            print(f"Error: could not open generated packet: {error}")
+            print("Generated packet remains saved at:")
+            print(generated_path)
+            return
+        print("Opened generated packet:")
+        print(opened.path)
+        return
+
+    if selection == "2":
+        try:
+            opened = open_generated_output_folder(workspace_root, generated_path)
+        except GeneratedOutputOpeningError as error:
+            print(f"Error: could not open containing folder: {error}")
+            print("Generated packet remains saved at:")
+            print(generated_path)
+            return
+        print("Opened containing folder:")
+        print(opened.path)
+        return
+
+    print("Returning to Printable Response Pages.")
 
 
 def _prompt_class_selection(workspace_root: Path) -> ClassFolder | None:
@@ -246,6 +301,7 @@ def prompt_generate_class_packet() -> int:
     print(f"Class: {class_folder.class_id}")
     print(f"Assignment: {assignment_label}")
     print(f"Pages per student: {pages_per_student}")
+    _prompt_open_generated_packet(workspace_root, generated_path)
     return 0
 
 

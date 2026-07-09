@@ -11,6 +11,10 @@ from pds_core.rosters import create_roster
 from pypdf import PdfReader
 import pytest
 
+from quillan.generated_output_opening import (
+    GeneratedOutputOpeningError,
+    OpenedGeneratedOutput,
+)
 import quillan.printable_response_workflows as workflows
 
 
@@ -137,7 +141,7 @@ def test_generate_class_packet_happy_path(
     roster_bytes = roster_path.read_bytes()
     assignment_bytes = assignment_path.read_bytes()
     monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-    _inputs(monkeypatch, ["1", "1", "2"])
+    _inputs(monkeypatch, ["1", "1", "2", "3"])
 
     assert workflows.prompt_generate_class_packet() == 0
 
@@ -163,6 +167,7 @@ def test_generate_class_packet_happy_path(
     assert f"Class: {CLASS_ID}" in output
     assert f"Assignment: {ASSIGNMENT_ID}" in output
     assert "Pages per student: 2" in output
+    assert "What would you like to do next?" in output
 
 
 def test_generate_class_packet_accepts_exact_ids_and_blank_page_default(
@@ -172,7 +177,7 @@ def test_generate_class_packet_accepts_exact_ids_and_blank_page_default(
     _write_roster(tmp_path)
     _write_assignment(tmp_path)
     monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-    _inputs(monkeypatch, [CLASS_ID, ASSIGNMENT_ID, ""])
+    _inputs(monkeypatch, [CLASS_ID, ASSIGNMENT_ID, "", ""])
 
     assert workflows.prompt_generate_class_packet() == 0
     output_path = workflows.expected_printable_packet_path(
@@ -181,6 +186,132 @@ def test_generate_class_packet_accepts_exact_ids_and_blank_page_default(
         ASSIGNMENT_ID,
     )
     assert len(PdfReader(str(output_path)).pages) == 2
+
+
+def test_generate_class_packet_can_open_generated_packet(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path)
+    _write_assignment(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    _inputs(monkeypatch, ["1", "1", "1", "1"])
+    calls: list[tuple[Path, Path]] = []
+
+    def open_file(
+        workspace_root: str | Path,
+        output_path: str | Path,
+    ) -> OpenedGeneratedOutput:
+        calls.append((Path(workspace_root), Path(output_path)))
+        return OpenedGeneratedOutput(Path(output_path), "synthetic.pdf")
+
+    monkeypatch.setattr(workflows, "open_generated_output_file", open_file)
+
+    assert workflows.prompt_generate_class_packet() == 0
+    output_path = workflows.expected_printable_packet_path(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+    )
+    assert calls == [(tmp_path, output_path)]
+    output = capsys.readouterr().out
+    assert "Opened generated packet:" in output
+    assert str(output_path) in output
+
+
+def test_generate_class_packet_can_open_containing_folder(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path)
+    _write_assignment(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    _inputs(monkeypatch, ["1", "1", "1", "2"])
+    calls: list[tuple[Path, Path]] = []
+
+    def open_folder(
+        workspace_root: str | Path,
+        output_path: str | Path,
+    ) -> OpenedGeneratedOutput:
+        calls.append((Path(workspace_root), Path(output_path)))
+        return OpenedGeneratedOutput(Path(output_path).parent, "templates")
+
+    monkeypatch.setattr(workflows, "open_generated_output_folder", open_folder)
+
+    assert workflows.prompt_generate_class_packet() == 0
+    output_path = workflows.expected_printable_packet_path(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+    )
+    assert calls == [(tmp_path, output_path)]
+    output = capsys.readouterr().out
+    assert "Opened containing folder:" in output
+    assert str(output_path.parent) in output
+
+
+@pytest.mark.parametrize("selection", ["3", ""])
+def test_generate_class_packet_declines_opening(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    selection: str,
+) -> None:
+    _write_roster(tmp_path)
+    _write_assignment(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    _inputs(monkeypatch, ["1", "1", "1", selection])
+    calls: list[Path] = []
+
+    def open_file(
+        _workspace_root: str | Path,
+        output_path: str | Path,
+    ) -> OpenedGeneratedOutput:
+        calls.append(Path(output_path))
+        return OpenedGeneratedOutput(Path(output_path), "synthetic.pdf")
+
+    monkeypatch.setattr(workflows, "open_generated_output_file", open_file)
+
+    assert workflows.prompt_generate_class_packet() == 0
+    assert calls == []
+    assert workflows.expected_printable_packet_path(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+    ).is_file()
+
+
+def test_generate_class_packet_opening_failure_preserves_success(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path)
+    _write_assignment(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    _inputs(monkeypatch, ["1", "1", "1", "1"])
+
+    def fail_to_open(
+        _workspace_root: str | Path,
+        _output_path: str | Path,
+    ) -> OpenedGeneratedOutput:
+        raise GeneratedOutputOpeningError("viewer failed")
+
+    monkeypatch.setattr(workflows, "open_generated_output_file", fail_to_open)
+
+    assert workflows.prompt_generate_class_packet() == 0
+    output_path = workflows.expected_printable_packet_path(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+    )
+    assert output_path.is_file()
+    output = capsys.readouterr().out
+    assert "Error: could not open generated packet: viewer failed" in output
+    assert "Generated packet remains saved at:" in output
+    assert str(output_path) in output
+    assert "Traceback" not in output
 
 
 def test_generate_class_packet_requires_roster(
@@ -299,7 +430,7 @@ def test_generate_class_packet_overwrites_after_exact_confirmation(
     output_path.parent.mkdir(parents=True)
     output_path.write_bytes(b"old")
     monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-    _inputs(monkeypatch, ["1", "1", "1", "OVERWRITE"])
+    _inputs(monkeypatch, ["1", "1", "1", "OVERWRITE", "3"])
 
     assert workflows.prompt_generate_class_packet() == 0
     assert output_path.read_bytes().startswith(b"%PDF")
