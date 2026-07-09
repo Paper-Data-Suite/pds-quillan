@@ -71,6 +71,12 @@ def pause_for_user() -> None:
     input("Press Enter to continue...")
 
 
+def _pause_for_post_route_menu() -> None:
+    """Wait after a post-route action before redrawing the action menu."""
+    print("Press Enter to return to the post-route menu...")
+    input()
+
+
 def print_menu_header(title: str | None = None) -> None:
     """Print the Quillan identity and an optional section title."""
     print("\033[32mQuillan\033[0m")
@@ -218,6 +224,17 @@ def _view_post_route_submission_status(
     print_assignment_submission_status(status, workspace_root)
 
 
+def _print_post_route_action_header(
+    title: str,
+    target: IntakeAssemblyTarget | PostRouteTargetStatus,
+) -> None:
+    clear_screen()
+    print_menu_header(title)
+    print(f"Class: {target.class_id}")
+    print(f"Assignment: {target.assignment_id}")
+    print()
+
+
 def _launch_post_route_review(
     workspace_root: Path,
     target: IntakeAssemblyTarget,
@@ -248,7 +265,10 @@ def _handle_single_post_route_target(
         if choice == "" or choice == "2" or navigation is NavigationChoice.BACK:
             return False
         if choice == "1":
+            _print_post_route_action_header("Assemble Submissions", target)
             _assemble_post_route_target(workspace_root, target)
+            print()
+            _pause_for_post_route_menu()
             return True
         print(f"Invalid selection. {navigation_hint()}")
         return True
@@ -268,12 +288,19 @@ def _handle_single_post_route_target(
         if choice == "" or navigation is NavigationChoice.BACK:
             return False
         if choice == "1":
+            _print_post_route_action_header("Assemble Submissions", target)
             _assemble_post_route_target(workspace_root, target)
+            print()
+            _pause_for_post_route_menu()
             return True
         if choice == "2":
+            _print_post_route_action_header("Submission Status", target)
             _view_post_route_submission_status(workspace_root, target)
+            print()
+            _pause_for_post_route_menu()
             return True
         if choice == "3":
+            _print_post_route_action_header("Review Student Work", target)
             _launch_post_route_review(workspace_root, target)
             return True
         print(f"Invalid selection. {navigation_hint()}")
@@ -292,13 +319,20 @@ def _handle_single_post_route_target(
         if choice == "" or navigation is NavigationChoice.BACK:
             return False
         if choice == "1":
+            _print_post_route_action_header("Submission Status", target)
             _view_post_route_submission_status(workspace_root, target)
+            print()
+            _pause_for_post_route_menu()
             return True
         if choice == "2":
+            _print_post_route_action_header("Review Student Work", target)
             _launch_post_route_review(workspace_root, target)
             return True
         if choice == "3":
+            _print_post_route_action_header("Assemble Submissions", target)
             _assemble_post_route_target(workspace_root, target)
+            print()
+            _pause_for_post_route_menu()
             return True
         print(f"Invalid selection. {navigation_hint()}")
         return True
@@ -313,10 +347,16 @@ def _handle_single_post_route_target(
     if choice == "" or navigation is NavigationChoice.BACK:
         return False
     if choice == "1":
+        _print_post_route_action_header("Assemble Submissions", target)
         _assemble_post_route_target(workspace_root, target)
+        print()
+        _pause_for_post_route_menu()
         return True
     if choice == "2":
+        _print_post_route_action_header("Submission Status", target)
         _view_post_route_submission_status(workspace_root, target)
+        print()
+        _pause_for_post_route_menu()
         return True
     print(f"Invalid selection. {navigation_hint()}")
     return True
@@ -330,12 +370,15 @@ def handle_scan_post_route_menu(
     if not targets:
         return
 
+    should_clear_menu = False
     while True:
+        if should_clear_menu:
+            clear_screen()
+        print_menu_header("Scan Intake / Route Paper Responses")
         statuses = [
             _post_route_target_status(workspace_root, target)
             for target in targets
         ]
-        print()
         print("Scan routed successfully.")
         print("Routed evidence was filed for:")
         for index, (target, status) in enumerate(
@@ -359,6 +402,7 @@ def handle_scan_post_route_menu(
             )
             if not should_redraw:
                 return
+            should_clear_menu = True
             continue
 
         print("Select a target to view status-aware actions.")
@@ -374,6 +418,7 @@ def handle_scan_post_route_menu(
                 targets[index],
                 statuses[index],
             )
+            should_clear_menu = True
             continue
         print(f"Invalid selection. {navigation_hint()}")
 

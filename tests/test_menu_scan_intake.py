@@ -19,6 +19,7 @@ from quillan.cli import main
 import quillan.cli_app.handlers.routing as cli_routing
 from quillan.intake_assembly import IntakeAssemblyTarget
 from quillan.menu import handle_scan_post_route_menu
+from quillan.menu_navigation import QuitQuillan, ReturnToMainMenu
 from quillan.payloads import build_response_payload
 from quillan.pdf_pages import PdfPageImage
 from quillan.submission_status import AssignmentSubmissionStatus
@@ -227,6 +228,7 @@ def test_post_route_menu_pre_assembly_wording(
     handle_scan_post_route_menu(workspace, [_post_route_target()])
 
     output = capsys.readouterr().out
+    assert "Scan Intake / Route Paper Responses" in output
     assert "Submission records are required before review." in output
     assert "Assemble submissions now" in output
     assert "View submission status" in output
@@ -258,11 +260,21 @@ def test_post_route_menu_recomputes_status_after_assembly(
         "quillan.menu.print_assignment_submission_assembly",
         lambda *_args, **_kwargs: print("Assembly complete."),
     )
-    _menu_input(monkeypatch, ["1", "b"])
+    clear_calls: list[str] = []
+    monkeypatch.setattr(
+        "quillan.menu.clear_screen",
+        lambda: clear_calls.append("clear"),
+    )
+    _menu_input(monkeypatch, ["1", "", "b"])
 
     handle_scan_post_route_menu(workspace, [_post_route_target()])
 
     output = capsys.readouterr().out
+    assert clear_calls == ["clear", "clear"]
+    assert "Assemble Submissions" in output
+    assert f"Class: {CLASS_ID}" in output
+    assert f"Assignment: {ASSIGNMENT_ID}" in output
+    assert "Press Enter to return to the post-route menu..." in output
     after_assembly = output.split("Assembly complete.", maxsplit=1)[1]
     assert "Submission records have been assembled" in after_assembly
     assert "ready for review" in after_assembly
@@ -335,13 +347,179 @@ def test_post_route_menu_view_status_uses_existing_status_output(
         "quillan.menu.list_assignment_submission_status",
         lambda *_args, **_kwargs: _assignment_status(),
     )
-    _menu_input(monkeypatch, ["2", "b"])
+    clear_calls: list[str] = []
+    monkeypatch.setattr(
+        "quillan.menu.clear_screen",
+        lambda: clear_calls.append("clear"),
+    )
+    _menu_input(monkeypatch, ["2", "", "b"])
 
     handle_scan_post_route_menu(workspace, [_post_route_target()])
 
     output = capsys.readouterr().out
-    assert f"Submission status for assignment {ASSIGNMENT_ID}" in output
+    assert clear_calls == ["clear", "clear"]
+    assert "Submission Status" in output
+    assert f"Class: {CLASS_ID}" in output
+    assert f"Assignment: {ASSIGNMENT_ID}" in output
+    assert "Press Enter to return to the post-route menu..." in output
+    status_heading_index = output.index("Submission Status")
+    status_report_index = output.index(
+        f"Submission status for assignment {ASSIGNMENT_ID}"
+    )
+    assert status_heading_index < status_report_index
     assert "Students with routed evidence: 1" in output
+    after_status = output.split(
+        "Press Enter to return to the post-route menu...",
+        maxsplit=1,
+    )[1]
+    assert "Scan Intake / Route Paper Responses" in after_status
+    assert "Submission records are required before review." in after_status
+
+
+def test_post_route_ready_state_reassemble_uses_clean_action_screen(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        lambda *_args, **_kwargs: _assignment_status(
+            manifests=(STUDENT_ID,),
+            routed=(STUDENT_ID,),
+        ),
+    )
+    monkeypatch.setattr(
+        "quillan.menu.assemble_assignment_submissions",
+        lambda *_args, **_kwargs: object(),
+    )
+    monkeypatch.setattr(
+        "quillan.menu.print_assignment_submission_assembly",
+        lambda *_args, **_kwargs: print("Reassembly complete."),
+    )
+    clear_calls: list[str] = []
+    monkeypatch.setattr(
+        "quillan.menu.clear_screen",
+        lambda: clear_calls.append("clear"),
+    )
+    _menu_input(monkeypatch, ["3", "", "b"])
+
+    handle_scan_post_route_menu(workspace, [_post_route_target()])
+
+    output = capsys.readouterr().out
+    assert clear_calls == ["clear", "clear"]
+    assert "Assemble Submissions" in output
+    assert "Reassembly complete." in output
+    assert "Press Enter to return to the post-route menu..." in output
+
+
+def test_post_route_partial_state_assemble_remaining_uses_clean_action_screen(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        lambda *_args, **_kwargs: _assignment_status(
+            manifests=(STUDENT_ID,),
+            routed=(STUDENT_ID, SECOND_STUDENT_ID),
+            unassembled=(workspace / "unassembled.png",),
+        ),
+    )
+    monkeypatch.setattr(
+        "quillan.menu.assemble_assignment_submissions",
+        lambda *_args, **_kwargs: object(),
+    )
+    monkeypatch.setattr(
+        "quillan.menu.print_assignment_submission_assembly",
+        lambda *_args, **_kwargs: print("Remaining submissions assembled."),
+    )
+    clear_calls: list[str] = []
+    monkeypatch.setattr(
+        "quillan.menu.clear_screen",
+        lambda: clear_calls.append("clear"),
+    )
+    _menu_input(monkeypatch, ["1", "", "b"])
+
+    handle_scan_post_route_menu(workspace, [_post_route_target()])
+
+    output = capsys.readouterr().out
+    assert clear_calls == ["clear", "clear"]
+    assert "Assemble Submissions" in output
+    assert "Remaining submissions assembled." in output
+    assert "Some submission records have been assembled" in output
+
+
+def test_post_route_review_action_clears_before_launching_review(
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+
+    def fake_clear_screen() -> None:
+        events.append("clear")
+
+    def fake_launch_review(_root: Path, _class_id: str, _assignment_id: str) -> int:
+        events.append("review")
+        return 0
+
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        lambda *_args, **_kwargs: _assignment_status(
+            manifests=(STUDENT_ID,),
+            routed=(STUDENT_ID,),
+        ),
+    )
+    monkeypatch.setattr("quillan.menu.clear_screen", fake_clear_screen)
+    monkeypatch.setattr(
+        "quillan.review_menu.launch_assignment_review_actions",
+        fake_launch_review,
+    )
+    _menu_input(monkeypatch, ["2", "b"])
+
+    handle_scan_post_route_menu(workspace, [_post_route_target()])
+
+    assert events == ["clear", "review", "clear"]
+
+
+def test_post_route_menu_back_returns(
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        lambda *_args, **_kwargs: _assignment_status(),
+    )
+    _menu_input(monkeypatch, ["b"])
+
+    handle_scan_post_route_menu(workspace, [_post_route_target()])
+
+
+def test_post_route_menu_main_menu_navigation_is_unchanged(
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        lambda *_args, **_kwargs: _assignment_status(),
+    )
+    _menu_input(monkeypatch, ["m"])
+
+    with pytest.raises(ReturnToMainMenu):
+        handle_scan_post_route_menu(workspace, [_post_route_target()])
+
+
+def test_post_route_menu_quit_navigation_is_unchanged(
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "quillan.menu.list_assignment_submission_status",
+        lambda *_args, **_kwargs: _assignment_status(),
+    )
+    _menu_input(monkeypatch, ["q"])
+
+    with pytest.raises(QuitQuillan):
+        handle_scan_post_route_menu(workspace, [_post_route_target()])
 
 
 def test_post_route_menu_status_error_falls_back_safely(
