@@ -4,10 +4,17 @@ from __future__ import annotations
 
 import os
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from pds_core.scan_routes import scans_inbox_dir
+from quillan.assignment_submission_assembly import assemble_assignment_submissions
+from quillan.cli_app.output import (
+    print_assignment_submission_assembly,
+    print_assignment_submission_status,
+)
+from quillan.intake_assembly import IntakeAssemblyTarget
 from quillan.menu_navigation import (
     NavigationChoice,
     QuitQuillan,
@@ -16,10 +23,36 @@ from quillan.menu_navigation import (
     parse_navigation_choice,
     print_navigation_options,
 )
+from quillan.submission_status import list_assignment_submission_status
 
 WorkspaceShowHandler = Callable[[], int]
 WorkspaceSetHandler = Callable[[str], int]
 WorkspaceActionHandler = Callable[[], int]
+
+
+@dataclass(frozen=True, slots=True)
+class PostRouteTargetStatus:
+    """Status summary used to render scan post-route actions."""
+
+    class_id: str
+    assignment_id: str
+    has_manifests: bool
+    has_routed_evidence: bool
+    has_unassembled_routed_files: bool
+    students_with_manifests: int
+    students_with_routed_evidence: int
+    unassembled_routed_file_count: int
+    status_error: str | None = None
+
+    @property
+    def ready_for_review(self) -> bool:
+        return self.has_manifests and not self.has_unassembled_routed_files
+
+    @property
+    def needs_assembly(self) -> bool:
+        return self.has_routed_evidence and (
+            not self.has_manifests or self.has_unassembled_routed_files
+        )
 
 
 def clear_screen() -> None:
@@ -108,11 +141,246 @@ def _normalize_menu_path(raw_path: str) -> Path | None:
     return Path(stripped)
 
 
+def _post_route_target_status(
+    workspace_root: Path,
+    target: IntakeAssemblyTarget,
+) -> PostRouteTargetStatus:
+    try:
+        status = list_assignment_submission_status(
+            workspace_root,
+            target.class_id,
+            target.assignment_id,
+        )
+    except Exception as error:
+        return PostRouteTargetStatus(
+            class_id=target.class_id,
+            assignment_id=target.assignment_id,
+            has_manifests=False,
+            has_routed_evidence=False,
+            has_unassembled_routed_files=False,
+            students_with_manifests=0,
+            students_with_routed_evidence=0,
+            unassembled_routed_file_count=0,
+            status_error=str(error),
+        )
+    return PostRouteTargetStatus(
+        class_id=target.class_id,
+        assignment_id=target.assignment_id,
+        has_manifests=bool(status.students_with_manifests),
+        has_routed_evidence=bool(status.students_with_routed_evidence),
+        has_unassembled_routed_files=bool(status.unassembled_routed_files),
+        students_with_manifests=len(status.students_with_manifests),
+        students_with_routed_evidence=len(status.students_with_routed_evidence),
+        unassembled_routed_file_count=len(status.unassembled_routed_files),
+    )
+
+
+def _post_route_status_label(status: PostRouteTargetStatus) -> str:
+    if status.status_error is not None:
+        return "status unavailable"
+    if status.ready_for_review:
+        return "ready for review"
+    if status.has_manifests and status.has_unassembled_routed_files:
+        return "partly assembled"
+    if status.needs_assembly:
+        return "needs assembly"
+    if status.has_manifests:
+        return "assembled"
+    return "no routed evidence found"
+
+
+def _assemble_post_route_target(
+    workspace_root: Path,
+    target: IntakeAssemblyTarget,
+) -> None:
+    result = assemble_assignment_submissions(
+        workspace_root,
+        target.class_id,
+        target.assignment_id,
+    )
+    print_assignment_submission_assembly(result, workspace_root)
+
+
+def _view_post_route_submission_status(
+    workspace_root: Path,
+    target: IntakeAssemblyTarget,
+) -> None:
+    try:
+        status = list_assignment_submission_status(
+            workspace_root,
+            target.class_id,
+            target.assignment_id,
+        )
+    except Exception as error:
+        print("Submission status could not be loaded.")
+        print(f"Error: {error}")
+        return
+    print_assignment_submission_status(status, workspace_root)
+
+
+def _launch_post_route_review(
+    workspace_root: Path,
+    target: IntakeAssemblyTarget,
+) -> None:
+    from quillan.review_menu import launch_assignment_review_actions
+
+    launch_assignment_review_actions(
+        workspace_root,
+        target.class_id,
+        target.assignment_id,
+    )
+
+
+def _handle_single_post_route_target(
+    workspace_root: Path,
+    target: IntakeAssemblyTarget,
+    status: PostRouteTargetStatus,
+) -> bool:
+    if status.status_error is not None:
+        print("Submission status could not be loaded.")
+        print(f"Error: {status.status_error}")
+        print()
+        print("1. Try assembling submissions")
+        print("2. Return to Scan Intake")
+        print_navigation_options()
+        choice = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(choice)
+        if choice == "" or choice == "2" or navigation is NavigationChoice.BACK:
+            return False
+        if choice == "1":
+            _assemble_post_route_target(workspace_root, target)
+            return True
+        print(f"Invalid selection. {navigation_hint()}")
+        return True
+
+    if status.has_manifests and status.has_unassembled_routed_files:
+        print(
+            "Some submission records have been assembled, but routed evidence "
+            "still needs assembly."
+        )
+        print()
+        print("1. Assemble remaining submissions")
+        print("2. View submission status")
+        print("3. Review student work")
+        print_navigation_options()
+        choice = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(choice)
+        if choice == "" or navigation is NavigationChoice.BACK:
+            return False
+        if choice == "1":
+            _assemble_post_route_target(workspace_root, target)
+            return True
+        if choice == "2":
+            _view_post_route_submission_status(workspace_root, target)
+            return True
+        if choice == "3":
+            _launch_post_route_review(workspace_root, target)
+            return True
+        print(f"Invalid selection. {navigation_hint()}")
+        return True
+
+    if status.ready_for_review:
+        print("Submission records have been assembled for this assignment.")
+        print("The assignment is ready for review.")
+        print()
+        print("1. View submission status")
+        print("2. Review student work")
+        print("3. Reassemble submissions")
+        print_navigation_options()
+        choice = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(choice)
+        if choice == "" or navigation is NavigationChoice.BACK:
+            return False
+        if choice == "1":
+            _view_post_route_submission_status(workspace_root, target)
+            return True
+        if choice == "2":
+            _launch_post_route_review(workspace_root, target)
+            return True
+        if choice == "3":
+            _assemble_post_route_target(workspace_root, target)
+            return True
+        print(f"Invalid selection. {navigation_hint()}")
+        return True
+
+    print("Submission records are required before review.")
+    print()
+    print("1. Assemble submissions now")
+    print("2. View submission status")
+    print_navigation_options()
+    choice = input("Select an option: ").strip()
+    navigation = parse_navigation_choice(choice)
+    if choice == "" or navigation is NavigationChoice.BACK:
+        return False
+    if choice == "1":
+        _assemble_post_route_target(workspace_root, target)
+        return True
+    if choice == "2":
+        _view_post_route_submission_status(workspace_root, target)
+        return True
+    print(f"Invalid selection. {navigation_hint()}")
+    return True
+
+
+def handle_scan_post_route_menu(
+    workspace_root: Path,
+    targets: Sequence[IntakeAssemblyTarget],
+) -> None:
+    """Show status-aware follow-up actions after scan intake routes evidence."""
+    if not targets:
+        return
+
+    while True:
+        statuses = [
+            _post_route_target_status(workspace_root, target)
+            for target in targets
+        ]
+        print()
+        print("Scan routed successfully.")
+        print("Routed evidence was filed for:")
+        for index, (target, status) in enumerate(
+            zip(targets, statuses, strict=True),
+            start=1,
+        ):
+            label = ""
+            if len(targets) > 1:
+                label = f" - {_post_route_status_label(status)}"
+            print(
+                f"{index}. Class: {target.class_id}; "
+                f"Assignment: {target.assignment_id}{label}"
+            )
+        print()
+
+        if len(targets) == 1:
+            should_redraw = _handle_single_post_route_target(
+                workspace_root,
+                targets[0],
+                statuses[0],
+            )
+            if not should_redraw:
+                return
+            continue
+
+        print("Select a target to view status-aware actions.")
+        print_navigation_options()
+        choice = input("Select target: ").strip()
+        navigation = parse_navigation_choice(choice)
+        if choice == "" or navigation is NavigationChoice.BACK:
+            return
+        if choice.isdigit() and 1 <= int(choice) <= len(targets):
+            index = int(choice) - 1
+            _ = _handle_single_post_route_target(
+                workspace_root,
+                targets[index],
+                statuses[index],
+            )
+            continue
+        print(f"Invalid selection. {navigation_hint()}")
+
+
 def launch_scan_intake_workflow() -> None:
     """Route scans from the shared inbox, with a power-user path fallback."""
-    from quillan.assignment_submission_assembly import assemble_assignment_submissions
     from quillan.cli_app.handlers import routing
-    from quillan.cli_app.output import print_assignment_submission_assembly
     from quillan.intake_assembly import assembly_targets_from_intake_summary
     from quillan.scan_intake_summary import ScanIntakeSummary
 
@@ -127,68 +395,10 @@ def launch_scan_intake_workflow() -> None:
         return
     inbox = scans_inbox_dir(workspace_root)
     inbox.mkdir(parents=True, exist_ok=True)
-    exit_to_main = False
 
     def post_route(summary: ScanIntakeSummary) -> None:
-        nonlocal exit_to_main
         targets = assembly_targets_from_intake_summary(summary)
-        if not targets:
-            return
-        while True:
-            print()
-            print("Scan routed successfully.")
-            print("Routed evidence was filed for:")
-            for index, target in enumerate(targets, start=1):
-                print(
-                    f"{index}. Class: {target.class_id}; "
-                    f"Assignment: {target.assignment_id}"
-                )
-            print()
-            print("Submission records are required before review.")
-            if len(targets) == 1:
-                print("1. Assemble submissions now")
-                print("2. View submission status")
-                print_navigation_options()
-                choice = input("Select an option: ").strip()
-                navigation = parse_navigation_choice(choice)
-                if navigation is NavigationChoice.BACK:
-                    return
-                if choice == "1":
-                    target = targets[0]
-                    result = assemble_assignment_submissions(
-                        workspace_root, target.class_id, target.assignment_id
-                    )
-                    print_assignment_submission_assembly(result, workspace_root)
-                    continue
-                if choice == "2":
-                    from quillan.submission_status import list_assignment_submission_status
-                    from quillan.cli_app.output import print_assignment_submission_status
-
-                    target = targets[0]
-                    print_assignment_submission_status(
-                        list_assignment_submission_status(
-                            workspace_root, target.class_id, target.assignment_id
-                        ),
-                        workspace_root,
-                    )
-                    continue
-                print(f"Invalid selection. {navigation_hint()}")
-                continue
-            print_navigation_options()
-            choice = input("Select target: ").strip()
-            navigation = parse_navigation_choice(choice)
-            if choice == "" or navigation is NavigationChoice.BACK:
-                return
-            if choice.isdigit() and 1 <= int(choice) <= len(targets):
-                target = targets[int(choice) - 1]
-                result = assemble_assignment_submissions(
-                    workspace_root, target.class_id, target.assignment_id
-                )
-                print_assignment_submission_assembly(result, workspace_root)
-            else:
-                print(
-                    f"Invalid selection. {navigation_hint()}"
-                )
+        handle_scan_post_route_menu(workspace_root, targets)
 
     while True:
         clear_screen()
@@ -252,8 +462,6 @@ def launch_scan_intake_workflow() -> None:
         )
         print()
         pause_for_user()
-        if exit_to_main:
-            return
 
 
 def launch_review_student_work_menu() -> None:
