@@ -84,6 +84,19 @@ def suggest_assignment_id(title: str) -> str:
     return suggestion.strip("_-").lower()
 
 
+def normalize_writing_type(value: str) -> str:
+    """Normalize teacher-friendly writing type input to lowercase snake case."""
+    normalized = unicodedata.normalize("NFKD", value)
+    ascii_value = normalized.encode("ascii", "ignore").decode("ascii")
+    writing_type = re.sub(r"[^a-z0-9]+", "_", ascii_value.strip().lower())
+    writing_type = re.sub(r"_+", "_", writing_type).strip("_")
+    if not writing_type:
+        raise ValueError("writing type is required.")
+    if re.fullmatch(r"[a-z][a-z0-9_]*", writing_type) is None:
+        raise ValueError("writing type must start with a letter after normalization.")
+    return writing_type
+
+
 def parse_comma_separated_values(value: str) -> list[str]:
     """Return trimmed, nonblank values from comma-separated teacher input."""
     return [item.strip() for item in value.split(",") if item.strip()]
@@ -517,7 +530,7 @@ def prompt_create_assignment() -> int:
             class_id=class_folder.class_id,
             assignment_id=assignment_id,
         )
-        writing_type = _required_input("Writing type: ", "writing type")
+        writing_type = _prompt_writing_type()
         student_prompt = _prompt_student_prompt()
         _print_assignment_section_header(
             "Standards Profile",
@@ -625,6 +638,18 @@ def _prompt_student_prompt() -> str:
         "Student-facing assignment prompt: ",
         "student-facing assignment prompt",
     )
+
+
+def _prompt_writing_type() -> str:
+    print("Writing type:")
+    print("Examples: literary_analysis, argument, research_paper, reflection")
+    print("You may type spaces; Quillan will store lowercase snake_case.")
+    print()
+    raw = _required_input("Writing type: ", "writing type")
+    normalized = normalize_writing_type(raw)
+    if normalized != raw.strip():
+        print(f"Stored writing type: {normalized}")
+    return normalized
 
 
 def _default_review_unit() -> dict[str, str]:

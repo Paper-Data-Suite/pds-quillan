@@ -95,6 +95,13 @@ def test_validate_assignment_config_accepts_example_assignment() -> None:
     validate_assignment_config(json.loads(path.read_text(encoding="utf-8")))
 
 
+def test_validate_assignment_config_keeps_writing_type_compatibility() -> None:
+    assignment = _valid_assignment_config()
+    assignment["writing_type"] = "literary analysis"
+
+    validate_assignment_config(assignment)
+
+
 def test_optional_metadata_fields_do_not_break_validation(tmp_path: Path) -> None:
     assignment = _valid_assignment_config()
     assignment["created_at"] = "2026-07-02T00:00:00+00:00"
