@@ -549,22 +549,13 @@ def _normalize_path_input(value: str) -> str:
     return stripped
 
 
-def prompt_validate_roster() -> int:
-    """Validate an explicit roster CSV without rewriting it."""
-    from quillan.menu import print_menu_header
-
-    print_menu_header("Validate Class Roster")
-    roster_path = _normalize_path_input(input("Roster CSV path: "))
-    if not roster_path:
-        print("Error: roster CSV path is required.")
-        return 1
-    try:
-        roster = validate_roster_file(roster_path)
-    except RosterError as error:
-        print_roster_validation_error(error)
-        return 1
+def _print_roster_validation_summary(
+    roster: Roster,
+    roster_path: str | Path,
+) -> None:
     print("Roster file is valid.")
     print(f"Class ID: {roster.class_id}")
+    print(f"Roster path: {Path(roster_path)}")
     print(f"Student count: {len(roster.students)}")
     print("First students:")
     for student in roster.students[:5]:
@@ -572,6 +563,70 @@ def prompt_validate_roster() -> int:
             f"  {student.student_id}: "
             f"{student.last_name}, {student.first_name}"
         )
+
+
+def prompt_validate_roster() -> int:
+    """Validate a selected canonical class roster or an explicit CSV path."""
+    from quillan.menu import print_menu_header
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        parse_navigation_choice,
+        print_navigation_options,
+    )
+
+    print_menu_header("Validate Class Roster")
+    workspace_root = _workspace_root()
+    if workspace_root is None:
+        return 1
+    folders = _available_class_folders(workspace_root)
+    if folders:
+        print("Available classes:")
+        for index, folder in enumerate(folders, start=1):
+            print(f"{index}. {folder.class_id}")
+    else:
+        print("No class rosters found.")
+        print("Create a class roster first, or choose a custom roster CSV path.")
+    print("C. Custom roster CSV path")
+    print_navigation_options()
+    print()
+
+    selection = input("Select class to validate: ").strip()
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
+        return 1
+
+    selected_folder: ClassFolder | None = None
+    if selection.isdigit() and 1 <= int(selection) <= len(folders):
+        selected_folder = folders[int(selection) - 1]
+    else:
+        selected_folder = next(
+            (folder for folder in folders if folder.class_id == selection),
+            None,
+        )
+
+    if selected_folder is not None:
+        try:
+            roster = load_class_roster(workspace_root, selected_folder.class_id)
+        except RosterError as error:
+            print_roster_validation_error(error)
+            return 1
+        _print_roster_validation_summary(roster, selected_folder.roster_path)
+        return 0
+
+    if selection.casefold() != "c":
+        print(f"Error: Class not found: {selection}")
+        return 1
+
+    roster_path = _normalize_path_input(input("Roster CSV path, or B/M/Q: "))
+    navigation = parse_navigation_choice(roster_path)
+    if roster_path == "" or navigation is NavigationChoice.BACK:
+        return 1
+    try:
+        roster = validate_roster_file(roster_path)
+    except RosterError as error:
+        print_roster_validation_error(error)
+        return 1
+    _print_roster_validation_summary(roster, roster_path)
     return 0
 
 
