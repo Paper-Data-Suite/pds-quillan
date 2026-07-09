@@ -237,6 +237,31 @@ def test_assignment_parsing_helpers() -> None:
         workflows.parse_optional_nonnegative_int("many", "paragraphs_min")
 
 
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("literary analysis", "literary_analysis"),
+        ("Literary Analysis", "literary_analysis"),
+        ("  literary analysis  ", "literary_analysis"),
+        ("research-paper", "research_paper"),
+        ("research_paper", "research_paper"),
+        ("short response", "short_response"),
+        ("compare/contrast", "compare_contrast"),
+    ],
+)
+def test_normalize_writing_type_accepts_teacher_friendly_input(
+    value: str,
+    expected: str,
+) -> None:
+    assert workflows.normalize_writing_type(value) == expected
+
+
+@pytest.mark.parametrize("value", ["", " !?! ", "123 response"])
+def test_normalize_writing_type_rejects_unusable_input(value: str) -> None:
+    with pytest.raises(ValueError, match="writing type"):
+        workflows.normalize_writing_type(value)
+
+
 def test_prompt_create_assignment_writes_valid_v2_config(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -279,6 +304,7 @@ def test_prompt_create_assignment_writes_valid_v2_config(
     )
     assignment = load_assignment_config(path)
     assert assignment["schema_version"] == "2"
+    assert assignment["writing_type"] == "literary_analysis"
     assert assignment["student_prompt"] == (
         "Analyze how the author develops a central idea."
     )
@@ -310,6 +336,9 @@ def test_prompt_create_assignment_writes_valid_v2_config(
     assert "Select Assignment Class" in output
     assert "Assignment Identity" in output
     assert "Writing Prompt" in output
+    assert "Examples: literary_analysis, argument, research_paper, reflection" in output
+    assert "Quillan will store lowercase snake_case" in output
+    assert "Stored writing type: literary_analysis" in output
     assert "Standards Profile" in output
     assert "Focus Standard Selection" in output
     assert "Review Unit Setup" in output
