@@ -388,6 +388,81 @@ def _prompt_standards_selection(
     return selected_profile.profile_id, selected_standards
 
 
+def _confirm_standards_profile_prerequisite(workspace_root: Path) -> bool:
+    from quillan.menu_navigation import (
+        NavigationChoice,
+        navigation_hint,
+        parse_navigation_choice,
+        print_navigation_options,
+    )
+
+    _print_assignment_section_header("Create Writing Assignment")
+    print("Assignment creation requires an existing PDS Core standards profile.")
+    print()
+
+    try:
+        library = load_standards_for_selection(workspace_root)
+    except (OSError, StandardsReadError, StandardsValidationError) as error:
+        print(
+            "Quillan could not load the PDS Core standards library for this "
+            "workspace."
+        )
+        print()
+        print(
+            "Create or repair standards/profile data in PDS Core, then return "
+            "to Quillan."
+        )
+        print()
+        print(f"Error: {error}")
+        print()
+        print_navigation_options()
+        print()
+        selection = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(selection)
+        if selection == "" or navigation is NavigationChoice.BACK:
+            return False
+        print(f"Invalid selection. {navigation_hint()}")
+        return False
+
+    profiles = list_profiles_for_selection(library)
+    if not profiles:
+        print("No standards profiles were found in this workspace.")
+        print()
+        print(
+            "Create or import standards and standards profiles in PDS Core, "
+            "then return to Quillan to create the assignment."
+        )
+        print()
+        print_navigation_options()
+        print()
+        selection = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(selection)
+        if selection == "" or navigation is NavigationChoice.BACK:
+            return False
+        print(f"Invalid selection. {navigation_hint()}")
+        return False
+
+    print(
+        "Quillan uses a standards profile to let you choose Focus Standards "
+        "for this assignment. Standards and standards profiles are created in "
+        "PDS Core, not in Quillan."
+    )
+    print()
+    print(f"Standards profiles found: {len(profiles)}")
+    print()
+    print("1. Continue")
+    print_navigation_options()
+    print()
+    selection = input("Select an option: ").strip()
+    navigation = parse_navigation_choice(selection)
+    if selection == "1":
+        return True
+    if selection == "" or navigation is NavigationChoice.BACK:
+        return False
+    print(f"Invalid selection. {navigation_hint()}")
+    return False
+
+
 def _prompt_focus_standards(
     standards: Sequence[StandardSelectionItem],
 ) -> list[str] | None:
@@ -414,6 +489,8 @@ def prompt_create_assignment() -> int:
     """Prompt for and write one validated writing assignment config."""
     workspace_root = _workspace_root()
     if workspace_root is None:
+        return 1
+    if not _confirm_standards_profile_prerequisite(workspace_root):
         return 1
     _print_assignment_section_header("Select Assignment Class")
     class_folder = _prompt_class_folder(workspace_root)
