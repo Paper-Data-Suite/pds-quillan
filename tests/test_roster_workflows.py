@@ -407,31 +407,110 @@ def test_edit_save_requires_confirmation_then_writes(
     assert saved.students[0].extra_fields["preferred_name"] == "Ari"
 
 
-def test_validate_roster_summary_and_structured_error(
+@pytest.mark.parametrize("selection", ["1", "synthetic_class"])
+def test_validate_selected_class_roster(
+    selection: str,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     valid_path = write_class_roster(tmp_path, _roster())
-    _inputs(monkeypatch, [str(valid_path)])
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    _inputs(monkeypatch, [selection])
     assert workflows.prompt_validate_roster() == 0
     valid_output = capsys.readouterr().out
+    assert "Available classes:" in valid_output
     assert "Roster file is valid." in valid_output
+    assert "Class ID: synthetic_class" in valid_output
+    assert f"Roster path: {valid_path}" in valid_output
     assert "Student count: 2" in valid_output
     assert "0012" in valid_output
 
+
+def test_validate_custom_roster_path(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    valid_path = write_class_roster(tmp_path / "external", _roster())
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: workspace)
+    prompts = _inputs(monkeypatch, ["c", str(valid_path)])
+
+    assert workflows.prompt_validate_roster() == 0
+    output = capsys.readouterr().out
+    assert "No class rosters found." in output
+    assert "C. Custom roster CSV path" in output
+    assert f"Roster path: {valid_path}" in output
+    assert any("Roster CSV path, or B/M/Q:" in prompt for prompt in prompts)
+
+
+def test_validate_selected_class_prints_structured_error(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    roster_path = tmp_path / "classes" / "synthetic_class" / "roster.csv"
+    roster_path.parent.mkdir(parents=True)
+    roster_path.write_text(
+        "class_id,student_id,last_name,first_name,period\n"
+        "synthetic_class,0001,Example,,3\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    _inputs(monkeypatch, ["1"])
+
+    assert workflows.prompt_validate_roster() == 1
+    invalid_output = capsys.readouterr().out
+    assert "[blank_required_value]" in invalid_output
+    assert "row 2" in invalid_output
+    assert "column first_name" in invalid_output
+    assert "Traceback" not in invalid_output
+
+
+def test_validate_custom_roster_prints_structured_error(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     invalid_path = tmp_path / "invalid.csv"
     invalid_path.write_text(
         "class_id,student_id,last_name,first_name,period\n"
         "synthetic_class,0001,Example,,3\n",
         encoding="utf-8",
     )
-    _inputs(monkeypatch, [str(invalid_path)])
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    _inputs(monkeypatch, ["c", str(invalid_path)])
     assert workflows.prompt_validate_roster() == 1
     invalid_output = capsys.readouterr().out
     assert "[blank_required_value]" in invalid_output
     assert "row 2" in invalid_output
     assert "column first_name" in invalid_output
+
+
+@pytest.mark.parametrize(
+    ("selection", "expected"),
+    [
+        ("b", None),
+        ("m", ReturnToMainMenu),
+        ("q", QuitQuillan),
+    ],
+)
+def test_validate_roster_selection_navigation(
+    selection: str,
+    expected: type[Exception] | None,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    _inputs(monkeypatch, [selection])
+
+    if expected is None:
+        assert workflows.prompt_validate_roster() == 1
+    else:
+        with pytest.raises(expected):
+            workflows.prompt_validate_roster()
 
 
 def test_shared_validation_rejects_duplicate_student_id() -> None:
