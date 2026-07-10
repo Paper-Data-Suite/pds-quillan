@@ -34,6 +34,7 @@ from quillan.cli_app.output import (
     print_exported_class_summary,
     print_exported_feedback,
     print_exported_feedback_pdf,
+    print_exported_student_performance_summary,
     print_exported_standards_summary,
     print_completed_overall_standard_ratings,
     print_completed_review_unit_observations,
@@ -63,6 +64,10 @@ from quillan.focus_standard_comments import (
 from quillan.standards_summary_export import (
     StandardsSummaryExportError,
     export_standards_summary,
+)
+from quillan.student_performance_summary_export import (
+    StudentPerformanceSummaryExportError,
+    export_student_performance_summary,
 )
 from quillan.tag_bank_writing import list_valid_tag_banks
 from quillan.review_notes import ReviewNoteError, add_review_note
@@ -5095,6 +5100,23 @@ def _menu_export_standards_summary(
     print_exported_standards_summary(exported)
 
 
+def _menu_export_student_performance_summary(
+    workspace_root: Path, class_id: str, assignment_id: str
+) -> None:
+    overwrite = _prompt_overwrite_export()
+    if overwrite is _CANCEL:
+        return
+    assert isinstance(overwrite, bool)
+    try:
+        exported = export_student_performance_summary(
+            workspace_root, class_id, assignment_id, overwrite=overwrite
+        )
+    except (StudentPerformanceSummaryExportError, OSError) as error:
+        print(f"Error: could not export student performance summary: {error}")
+        return
+    print_exported_student_performance_summary(exported)
+
+
 def _launch_assignment_review_actions(
     workspace_root: Path,
     class_id: str,
@@ -5120,9 +5142,9 @@ def _launch_assignment_review_actions(
 
         print("1. Select student/submission")
         print("2. Assemble routed submissions")
-        print("3. Export assignment-local class summary")
-        print("4. Export assignment-local Focus Standard summary")
-        print("5. Refresh submission status")
+        print("3. Export assignment-local class summary — Comprehensive Class Summary")
+        print("4. Export assignment-local Focus Standard summary — Standards Summary")
+        print("5. Export Student Performance Summary")
         print_navigation_options()
         print()
 
@@ -5153,7 +5175,10 @@ def _launch_assignment_review_actions(
             _menu_export_standards_summary(workspace_root, class_id, assignment_id)
             input("Press Enter to continue...")
         elif choice == "5":
-            continue
+            _menu_export_student_performance_summary(
+                workspace_root, class_id, assignment_id
+            )
+            input("Press Enter to continue...")
         else:
             print("Invalid selection. Please enter a number from 1 to 6.")
             input("Press Enter to continue...")

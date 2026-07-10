@@ -38,8 +38,8 @@ Those broader questions belong to a future Paper Data Suite reporting module.
 ## Status
 
 This is the active assignment-level reporting contract for the v0.8.6
-standards-based workflow redesign. Runtime exports support assignment-local
-class summary CSVs and Focus Standard summary CSVs from schema version `2`
+standards-based workflow redesign. Runtime exports support compact student
+performance, comprehensive class, and Focus Standard summary CSVs from schema version `2`
 review records. Some optional future formats, such as PDFs or assignment
 results manifests, may remain contract guidance, but the active reporting
 workflow is no longer the legacy schema version `1` tag/comment/score summary
@@ -68,9 +68,26 @@ Assignment-level reports are derived artifacts generated from canonical Quillan 
 
 Quillan owns three target assignment-local reporting artifacts.
 
-### Assignment-Level Class Summary
+### Student Performance Summary
 
-A teacher-facing summary of review progress, requirement status, feedback export status, and overall Focus Standard ratings for one class and one assignment.
+The ordinary teacher-facing student-by-standard report. It answers which
+rating each student received on each assignment Focus Standard without
+including internal record paths or routine workflow diagnostics.
+
+```text
+classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
+```
+
+It contains student identity, review status, minimum-requirement status,
+actionable flags, and one compact rating cell per Focus Standard in assignment
+order. Missing and returned ratings remain missing; they are never converted
+to zero or the lowest rating.
+
+### Comprehensive Class Summary
+
+An audit/troubleshooting summary of record validity and paths, review progress,
+requirement status, feedback export status, and detailed Focus Standard fields.
+`class_summary.csv` remains its backward-compatible path.
 
 Suggested paths:
 
@@ -79,7 +96,7 @@ classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/class_summary.pdf
 ```
 
-### Assignment-Level Focus Standard Summary
+### Standards Summary
 
 A teacher-facing summary of Focus Standard performance for one class and one assignment.
 

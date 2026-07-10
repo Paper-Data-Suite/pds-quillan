@@ -35,6 +35,9 @@ from quillan.review_tags import AddedReviewTag
 from quillan.route_planning import RouteFailure
 from quillan.routing_review import RoutingReviewRecord
 from quillan.standards_summary_export import ExportedStandardsSummary
+from quillan.student_performance_summary_export import (
+    ExportedStudentPerformanceSummary,
+)
 from quillan.submission_review_opening import OpenedSubmissionReview
 from quillan.submission_review_state import UpdatedSubmissionReviewState
 from quillan.submission_status import AssignmentSubmissionStatus
@@ -316,7 +319,8 @@ def print_exported_feedback_pdf(exported: ExportedFeedbackPdf) -> None:
 
 def print_exported_class_summary(exported: ExportedClassSummary) -> None:
     """Print a concise teacher-facing class summary export result."""
-    print("Exported assignment-local class summary:")
+    print("Exported assignment-local class summary: Comprehensive Class Summary")
+    print("Purpose: audit/troubleshooting")
     print(f"Class: {exported.class_id}")
     print(f"Assignment: {exported.assignment_id}")
     print(f"Rows: {exported.row_count}")
@@ -332,6 +336,22 @@ def print_exported_class_summary(exported: ExportedClassSummary) -> None:
     )
     print(f"Feedback PDF present: {exported.feedback_pdf_present_count}")
     print(f"Feedback PDF stale: {exported.feedback_pdf_stale_count}")
+    print(f"Overwrote existing: {format_bool(exported.overwrote_existing)}")
+    print(f"Summary file: {exported.summary_relative_path}")
+
+
+def print_exported_student_performance_summary(
+    exported: ExportedStudentPerformanceSummary,
+) -> None:
+    """Print a concise student performance summary export result."""
+    print("Exported Student Performance Summary:")
+    print(f"Class: {exported.class_id}")
+    print(f"Assignment: {exported.assignment_id}")
+    print(f"Rows: {exported.row_count}")
+    print(f"Reviewed: {exported.reviewed_count}")
+    print(f"Returned without full review: {exported.returned_without_full_review_count}")
+    print(f"Missing submission: {exported.missing_submission_count}")
+    print(f"Missing review: {exported.missing_review_count}")
     print(f"Overwrote existing: {format_bool(exported.overwrote_existing)}")
     print(f"Summary file: {exported.summary_relative_path}")
 
