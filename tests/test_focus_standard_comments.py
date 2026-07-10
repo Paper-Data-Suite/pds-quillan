@@ -186,3 +186,43 @@ def test_saving_reusable_comment_creates_default_set_with_teacher_text(
     assert saved.comment_set_id == "synthetic_profile_argument_focus_comments"
     assert loaded["comments"][0]["source"]["type"] == "teacher_saved_from_feedback"
     assert loaded["comments"][0]["text"] == "Teacher-approved reusable text."
+
+
+def test_teacher_tags_are_normalized_without_affecting_lookup(tmp_path: Path) -> None:
+    saved = append_saved_comment(
+        tmp_path,
+        standards_profile_id="synthetic_profile",
+        writing_type="narrative",
+        standard_id="njsls-ela:W.3",
+        label="Develop the scene",
+        text="Develop the scene through dialogue and sensory details.",
+        purpose="general",
+        teacher_tags=["Character", "Scene Development", "dialogue", "character"],
+        rating_values=[],
+        source={
+            "type": "manual",
+            "class_id": None,
+            "assignment_id": None,
+            "student_id": None,
+            "review_path": None,
+            "feedback_comment_id": None,
+            "saved_at": TIMESTAMP,
+        },
+        created_at=TIMESTAMP,
+    )
+
+    loaded = load_comment_set(saved.path)
+    assert loaded["comments"][0]["module_details"] == {
+        "teacher_tags": ["character", "scene_development", "dialogue"]
+    }
+    matches = lookup_comments(
+        tmp_path,
+        standards_profile_id="synthetic_profile",
+        writing_type="narrative",
+        standard_id="njsls-ela:W.3",
+    )
+    assert [match.comment_id for match in matches] == [saved.comment_id]
+
+
+def test_existing_comment_without_teacher_tags_remains_valid() -> None:
+    validate_comment_set(_comment_set())

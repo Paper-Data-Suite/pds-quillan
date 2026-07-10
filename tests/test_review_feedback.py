@@ -282,6 +282,7 @@ def test_custom_comment_can_be_saved_for_reuse_with_approved_text(
         reusable_label="General claim next step",
         reusable_text="Reusable teacher-approved text.",
         purpose="next_step",
+        teacher_tags=["Claim Development", "voice"],
         created_at=FIRST_TIMESTAMP,
     )
 
@@ -289,6 +290,10 @@ def test_custom_comment_can_be_saved_for_reuse_with_approved_text(
     saved = load_comment_set(result.saved_reusable_comment.path)
     assert saved["comments"][0]["text"] == "Reusable teacher-approved text."
     assert saved["comments"][0]["rating_values"] == [2]
+    assert saved["comments"][0]["module_details"]["teacher_tags"] == [
+        "claim_development",
+        "voice",
+    ]
     assert _read_review(tmp_path)["feedback"]["standard_feedback"][0]["comments"][0][
         "text"
     ] == "Student-specific custom text."
