@@ -3019,7 +3019,6 @@ def _menu_overall_focus_standard_ratings(
             _menu_record_overall_focus_standard_rating(
                 workspace_root, class_id, assignment_id, student_id, assignment
             )
-            input("Press Enter to continue...")
         elif choice == "3":
             _menu_mark_overall_ratings_complete(
                 workspace_root, class_id, assignment_id, student_id, assignment
@@ -3582,32 +3581,58 @@ def _menu_record_overall_focus_standard_rating(
     student_id: str,
     assignment: dict[str, Any],
 ) -> None:
-    record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
-    if record is not None and record["review_state"] == "returned_without_full_review":
+    while True:
+        record = _current_review_record(
+            workspace_root, class_id, assignment_id, student_id
+        )
+        if (
+            record is not None
+            and record["review_state"] == "returned_without_full_review"
+        ):
+            _print_rating_entry_header(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+                step="Unavailable",
+            )
+            _print_overall_rating_warnings(record)
+            input("Press Enter to continue...")
+            return
         _print_rating_entry_header(
             workspace_root,
             class_id,
             assignment_id,
             student_id,
-            step="Unavailable",
+            step="Select Focus Standard",
         )
-        _print_overall_rating_warnings(record)
-        return
-    _print_rating_entry_header(
-        workspace_root,
-        class_id,
-        assignment_id,
-        student_id,
-        step="Select Focus Standard",
-    )
-    standard_id = _prompt_focus_standard_with_rating_status(
-        workspace_root,
-        assignment["focus_standard_ids"],
-        record,
-    )
-    if standard_id is None:
-        print("Overall rating entry canceled.")
-        return
+        standard_id = _prompt_focus_standard_with_rating_status(
+            workspace_root,
+            assignment["focus_standard_ids"],
+            record,
+        )
+        if standard_id is None:
+            return
+        _record_overall_focus_standard_rating(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            assignment,
+            standard_id,
+            record,
+        )
+
+
+def _record_overall_focus_standard_rating(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    assignment: dict[str, Any],
+    standard_id: str,
+    record: dict[str, Any] | None,
+) -> None:
     current_rating = _overall_rating_for_standard(record, standard_id)
     try:
         summaries = summarize_focus_standard_observations(
@@ -3615,6 +3640,7 @@ def _menu_record_overall_focus_standard_rating(
         )
     except ReviewRatingError as error:
         print(f"Error: could not summarize observations: {error}")
+        input("Press Enter to continue...")
         return
     summary = next(item for item in summaries if item.standard_id == standard_id)
     _print_rating_entry_header(
@@ -3698,8 +3724,10 @@ def _menu_record_overall_focus_standard_rating(
         )
     except ReviewRatingError as error:
         print(f"Error: could not update overall rating: {error}")
+        input("Press Enter to continue...")
         return
     print_updated_overall_standard_rating(updated)
+    input("Press Enter to continue...")
 
 
 def _menu_mark_overall_ratings_complete(
