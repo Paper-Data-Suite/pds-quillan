@@ -9,6 +9,7 @@ from quillan.cli_app.arguments import positive_integer
 from quillan.cli_app.handlers.exports import (
     handle_export_class_summary,
     handle_export_feedback,
+    handle_export_student_performance_summary,
     handle_export_standards_summary,
 )
 from quillan.cli_app.handlers.decoding import handle_decode_scan
@@ -246,9 +247,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     export_class_summary_parser = subparsers.add_parser(
         "export-class-summary",
-        help="Export an assignment-local class summary CSV.",
+        aliases=["export-comprehensive-class-summary"],
+        help="Export a comprehensive assignment-local class summary CSV for audit/troubleshooting.",
         description=(
-            "Generate a teacher-facing assignment-local CSV summary from "
+            "Generate a comprehensive audit/troubleshooting CSV summary from "
             "existing submission and review records for one class assignment. "
             "The export reports submission/review status, minimum-requirement "
             "outcomes, Focus Standard ratings, and feedback export status. It "
@@ -262,6 +264,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Replace an existing exports/class_summary.csv file.",
     )
     export_class_summary_parser.set_defaults(handler=handle_export_class_summary)
+
+    export_student_performance_parser = subparsers.add_parser(
+        "export-student-performance-summary",
+        help="Export a compact student-by-Focus-Standard performance summary CSV.",
+        description=(
+            "Generate the ordinary teacher-facing student performance report with "
+            "review status, minimum requirements, and one readable rating column "
+            "per assignment Focus Standard."
+        ),
+    )
+    _add_assignment_identity_arguments(export_student_performance_parser)
+    export_student_performance_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace an existing exports/student_performance_summary.csv file.",
+    )
+    export_student_performance_parser.set_defaults(
+        handler=handle_export_student_performance_summary
+    )
 
     export_standards_summary_parser = subparsers.add_parser(
         "export-standards-summary",

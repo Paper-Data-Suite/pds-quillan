@@ -1,4 +1,4 @@
-"""Teacher-facing assignment-local class summary CSV export."""
+"""Comprehensive assignment-local class summary CSV for audit/troubleshooting."""
 
 from __future__ import annotations
 
@@ -79,7 +79,7 @@ def class_summary_export_path(
     class_id: str,
     assignment_id: str,
 ) -> Path:
-    """Return the canonical assignment-local class summary CSV path."""
+    """Return the compatibility path for the comprehensive class summary."""
     _validate_identifier(class_id, "class_id")
     _validate_identifier(assignment_id, "assignment_id")
     return (
