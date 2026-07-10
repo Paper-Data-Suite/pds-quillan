@@ -8,6 +8,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from pds_core.standards import (
+    StandardDefinition,
+    StandardsLibrary,
+    StandardsProfile,
+    write_workspace_standards_library,
+)
 
 from quillan.feedback_export import (
     ExportedFeedback,
@@ -27,6 +33,10 @@ from tests.test_review_tags import (
 )
 
 TIMESTAMP = "2026-06-23T12:30:00+00:00"
+STANDARD_DESCRIPTION = (
+    "Cite a range of thorough textual evidence and make relevant connections "
+    "to support analysis."
+)
 
 
 def _write_assignment(root: Path) -> None:
@@ -65,6 +75,30 @@ def _write_assignment(root: Path) -> None:
     }
     (assignment_dir / "assignment.json").write_text(
         json.dumps(assignment), encoding="utf-8"
+    )
+
+
+def _write_standards_library(root: Path) -> None:
+    write_workspace_standards_library(
+        root,
+        StandardsLibrary(
+            standards=(
+                StandardDefinition(
+                    standard_id="synthetic:W.A",
+                    code="RL.CR.9-10.1",
+                    source="Synthetic standards",
+                    short_name="Cite Textual Evidence",
+                    description=STANDARD_DESCRIPTION,
+                    available_modules=("quillan",),
+                ),
+            ),
+            profiles=(
+                StandardsProfile(
+                    profile_id="synthetic_profile",
+                    standards=("synthetic:W.A",),
+                ),
+            ),
+        ),
     )
 
 
@@ -202,9 +236,9 @@ def test_exports_ordered_student_content_without_mutating_sources(
     assert f"Assignment: {ASSIGNMENT_ID}" in content
     assert f"Student: {STUDENT_ID}" in content
     assert f"Generated: {TIMESTAMP}" in content
-    assert content.index("- synthetic:W.A: 3 - Uses evidence.") < content.index(
-        "- synthetic:W.B: 4"
-    )
+    assert content.index("### synthetic:W.A") < content.index("### synthetic:W.B")
+    assert "Rating: 3" in content
+    assert "Rationale:\nUses evidence." in content
     assert content.index(
         "- First student comment. With a second line."
     ) < content.index("- Second student comment.")
@@ -230,8 +264,63 @@ def test_empty_scores_and_comments_have_clear_messages(tmp_path: Path) -> None:
     )
 
     content = result.feedback_path.read_text(encoding="utf-8")
-    assert "No standards ratings recorded." in content
-    assert "No feedback comments selected." in content
+    assert "No Focus Standard feedback selected." in content
+
+
+def test_groups_feedback_under_resolved_standard_with_full_description(
+    tmp_path: Path,
+) -> None:
+    _write_manifest(tmp_path)
+    _write_assignment(tmp_path)
+    _write_standards_library(tmp_path)
+    review = _review("feedback_composed")
+    review["overall_standard_ratings"] = [
+        {
+            "standard_id": "synthetic:W.A",
+            "rating": 1,
+            "rationale": "Teacher rationale unchanged.",
+            "include_in_feedback": True,
+            "updated_at": review["updated_at"],
+            "module_details": {},
+        }
+    ]
+    review["feedback"]["standard_feedback"] = [
+        {
+            "standard_id": "synthetic:W.A",
+            "include_overall_rating": True,
+            "include_overall_rationale": True,
+            "included_observation_ids": [],
+            "comments": [
+                {
+                    "feedback_comment_id": "feedback_comment_0001",
+                    "source": "custom",
+                    "text": "Student comment unchanged.",
+                    "reusable_comment_id": None,
+                    "save_for_reuse": False,
+                    "include_in_feedback": True,
+                    "created_at": review["created_at"],
+                    "module_details": {},
+                }
+            ],
+            "module_details": {},
+        }
+    ]
+    _write_review(tmp_path, review)
+
+    result = export_student_feedback(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+    )
+    content = result.feedback_path.read_text(encoding="utf-8")
+
+    heading = "### RL.CR.9-10.1 — Cite Textual Evidence"
+    assert heading in content
+    assert STANDARD_DESCRIPTION in content
+    assert "Rating: 1 (Developing)" in content
+    assert content.index(heading) < content.index(STANDARD_DESCRIPTION)
+    assert content.index(STANDARD_DESCRIPTION) < content.index("Rating: 1 (Developing)")
+    assert content.index("Rating: 1 (Developing)") < content.index("Feedback:")
+    assert "synthetic:W.A" not in content
+    assert "\n---\n" in content
 
 
 def test_exports_returned_work_notice_without_standards_ratings(
@@ -581,7 +670,8 @@ def test_export_respects_composed_feedback_options_and_selected_observations(
     )
     text = result.feedback_path.read_text(encoding="utf-8")
 
-    assert "- synthetic:W.A: 3" in text
+    assert "### synthetic:W.A" in text
+    assert "Rating: 3" in text
     assert "Hidden rationale." not in text
     assert "Reusable snapshot text." in text
     assert "Excluded custom text." not in text

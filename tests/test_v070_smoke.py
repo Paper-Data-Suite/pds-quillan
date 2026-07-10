@@ -294,8 +294,7 @@ def test_v070_synthetic_teacher_review_and_export_workflow(
         submission_path.parent / "exports" / "feedback.md"
     )
     feedback_text = feedback.feedback_path.read_text(encoding="utf-8")
-    assert "No standards ratings recorded." in feedback_text
-    assert "No feedback comments selected." in feedback_text
+    assert "No Focus Standard feedback selected." in feedback_text
     for private_value in (
         "Private synthetic teacher note.",
         comment_text,

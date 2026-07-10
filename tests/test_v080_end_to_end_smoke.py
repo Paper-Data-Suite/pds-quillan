@@ -366,7 +366,7 @@ def test_v080_scan_review_export_end_to_end_smoke(
     feedback_text = feedback_path.read_text(encoding="utf-8")
     assert f"Assignment: {ASSIGNMENT_ID}" in feedback_text
     assert "Teacher Notes" not in feedback_text
-    assert "No standards ratings recorded." in feedback_text
+    assert "No Focus Standard feedback selected." in feedback_text
 
     class_summary_text = class_summary_path.read_text(encoding="utf-8")
     assert STUDENT_ID in class_summary_text

@@ -87,7 +87,9 @@ def test_cli_exports_feedback_and_prints_summary(
     ).read_text(encoding="utf-8")
     assert "Existing selected language." in content
     assert "Excluded comment." not in content
-    assert "- synthetic:W.A: 3 - Uses evidence." in content
+    assert "### synthetic:W.A" in content
+    assert "Rating: 3" in content
+    assert "Rationale:\nUses evidence." in content
     assert review_path.read_bytes() == review_before
 
 
