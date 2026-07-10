@@ -305,6 +305,53 @@ def test_assignment_review_actions_menu_includes_export_choices(
     assert "4. Export assignment-local Focus Standard summary" in output
 
 
+def test_assignment_review_dashboard_hides_unused_duplicate_files(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    duplicate = (
+        workspace
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "scans"
+        / "response_stu_0001_pg_001__dup_001.pdf"
+    )
+    duplicate.write_bytes(b"duplicate synthetic evidence")
+    _menu_input(monkeypatch, ["6"])
+
+    assert (
+        review_menu._launch_assignment_review_actions(
+            workspace, CLASS_ID, ASSIGNMENT_ID
+        )
+        == 0
+    )
+
+    output = capsys.readouterr().out
+    assert "Unassembled routed files: 0" in output
+    assert "Duplicate routed files not used" not in output
+    assert duplicate.name not in output
+
+
+def test_assignment_assembly_action_clears_and_prints_focused_header(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("quillan.menu.clear_screen", lambda: print("<clear>"))
+
+    review_menu._assemble_assignment(workspace, CLASS_ID, ASSIGNMENT_ID)
+
+    output = capsys.readouterr().out
+    assert output.startswith("<clear>\n")
+    assert "Quillan\x1b[0m\nAssemble Routed Submissions" in output
+    assert f"Class: {CLASS_ID}" in output
+    assert f"Assignment: {ASSIGNMENT_ID}" in output
+    assert "Skipped existing manifests: 1" in output
+
+
 def test_selected_student_review_menu_includes_feedback_export(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],

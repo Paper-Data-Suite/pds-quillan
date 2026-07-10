@@ -384,6 +384,8 @@ def print_exported_standards_summary(
 def print_assignment_submission_status(
     result: AssignmentSubmissionStatus,
     workspace_root: Path,
+    *,
+    show_unused_duplicate_files: bool = False,
 ) -> None:
     """Print a deterministic teacher-facing assignment status summary."""
     submission_states = (
@@ -434,6 +436,11 @@ def print_assignment_submission_status(
     )
     print(f"Students needing assembly: {len(result.students_without_manifests)}")
     print(f"Unassembled routed files: {len(result.unassembled_routed_files)}")
+    if show_unused_duplicate_files:
+        print(
+            "Duplicate routed files not used: "
+            f"{len(result.unused_duplicate_routed_files)}"
+        )
     print(f"Skipped routed files: {len(result.skipped_routed_files)}")
     print()
     print("Submission states:")
@@ -489,6 +496,12 @@ def print_assignment_submission_status(
         print()
         print("Unassembled routed files:")
         for path in result.unassembled_routed_files:
+            print(f"- {workspace_relative_display(path, workspace_root)}")
+
+    if show_unused_duplicate_files and result.unused_duplicate_routed_files:
+        print()
+        print("Duplicate routed files not used:")
+        for path in result.unused_duplicate_routed_files:
             print(f"- {workspace_relative_display(path, workspace_root)}")
 
 

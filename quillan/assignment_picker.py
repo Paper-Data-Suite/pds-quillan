@@ -56,12 +56,18 @@ def prompt_assignment_choice(workspace_root: Path) -> AssignmentChoice | None:
             break
         print(f"Invalid class selection. {navigation_hint()}")
 
+    from quillan.menu import clear_screen, print_menu_header
+
+    clear_screen()
+    print_menu_header("Select Assignment")
+    print(f"Class: {class_id}")
+    print()
+
     assignments = available_assignments(workspace_root, class_id)
     if not assignments:
         print(f"No valid assignments found for class {class_id}.")
         return None
-    print()
-    print(f"Assignments for {class_id}:")
+    print("Assignments:")
     for index, assignment in enumerate(assignments, start=1):
         label = assignment.assignment_id
         if assignment.title:
