@@ -678,6 +678,7 @@ def test_review_menu_records_and_completes_overall_focus_standard_rating(
             "",
             "1",
             "",
+            "B",
             "3",
             "1",
             "",
@@ -717,6 +718,132 @@ def test_review_menu_records_and_completes_overall_focus_standard_rating(
     ]
     for legacy_field in ("scores", "tags", "comments", "notes"):
         assert legacy_field not in review
+
+
+def test_overall_rating_entry_loops_and_updates_without_duplicates(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assignment_path = (
+        workspace
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "assignment.json"
+    )
+    assignment = json.loads(assignment_path.read_text(encoding="utf-8"))
+    assignment["focus_standard_ids"] = ["njsls-ela:W.1", "njsls-ela:W.2"]
+    assignment_path.write_text(json.dumps(assignment), encoding="utf-8")
+
+    review = _review_record()
+    review["review_state"] = "observations_complete"
+    review["review_units"] = [
+        {
+            "unit_id": "paragraph_1",
+            "sequence": 1,
+            "label": "Paragraph 1",
+            "unit_type": "paragraph",
+            "standard_observations": [],
+            "module_details": {},
+        }
+    ]
+    review_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+    _menu_input(
+        monkeypatch,
+        [
+            "1",
+            "1",
+            "First rationale",
+            "",
+            "1",
+            "",
+            "1",
+            "1",
+            "Updated rationale",
+            "n",
+            "1",
+            "",
+            "2",
+            "1",
+            "Second rationale",
+            "",
+            "1",
+            "",
+            "B",
+        ],
+    )
+
+    review_menu._menu_record_overall_focus_standard_rating(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, assignment
+    )
+
+    output = capsys.readouterr().out
+    assert output.count("Updated overall Focus Standard rating:") == 3
+    assert "(current rating: 1)" in output
+    assert "(not rated)" in output
+    updated = json.loads(review_path.read_text(encoding="utf-8"))
+    assert len(updated["overall_standard_ratings"]) == 2
+    ratings = {
+        item["standard_id"]: item for item in updated["overall_standard_ratings"]
+    }
+    assert ratings["njsls-ela:W.1"]["rationale"] == "Updated rationale"
+    assert ratings["njsls-ela:W.1"]["include_in_feedback"] is False
+    assert ratings["njsls-ela:W.2"]["rationale"] == "Second rationale"
+
+
+def test_overall_rating_entry_cancellations_do_not_write(
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    review = _review_record()
+    review["review_state"] = "observations_complete"
+    review["review_units"] = [
+        {
+            "unit_id": "paragraph_1",
+            "sequence": 1,
+            "label": "Paragraph 1",
+            "unit_type": "paragraph",
+            "standard_observations": [],
+            "module_details": {},
+        }
+    ]
+    review_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+    before = review_path.read_bytes()
+    assignment = json.loads(
+        (
+            workspace
+            / "classes"
+            / CLASS_ID
+            / "assignments"
+            / ASSIGNMENT_ID
+            / "assignment.json"
+        ).read_text(encoding="utf-8")
+    )
+    _menu_input(
+        monkeypatch,
+        ["1", "", "1", "1", "Unsaved rationale", "", "2", "B"],
+    )
+
+    review_menu._menu_record_overall_focus_standard_rating(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, assignment
+    )
+
+    assert review_path.read_bytes() == before
+
+
+def test_overall_rating_parent_menu_has_no_pause_after_entry_back(
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(monkeypatch, ["2", "B", "4"])
+
+    review_menu._menu_overall_focus_standard_ratings(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    )
 
 
 def test_review_menu_blocks_observations_for_returned_without_full_review(
