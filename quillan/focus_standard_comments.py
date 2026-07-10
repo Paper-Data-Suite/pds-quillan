@@ -292,6 +292,7 @@ def append_saved_comment(
     purpose: str,
     rating_values: list[int | float] | None,
     source: dict[str, Any],
+    teacher_tags: list[str] | None = None,
     created_at: datetime | str | None = None,
     comment_set_id: str | None = None,
     comment_id: str | None = None,
@@ -311,6 +312,7 @@ def append_saved_comment(
     normalized_label = _normalize_required_string(label, "label")
     normalized_text = _normalize_required_string(text, "text")
     normalized_purpose = _validate_allowed(purpose, "purpose", ALLOWED_PURPOSES)
+    normalized_teacher_tags = normalize_teacher_tags(teacher_tags)
     normalized_rating_values = _normalize_unique_numbers(
         rating_values or [], "rating_values"
     )
@@ -351,7 +353,11 @@ def append_saved_comment(
         "updated_at": normalized_created_at,
         "source": copy.deepcopy(source),
         "usage": {"times_used": 0, "last_used_at": None},
-        "module_details": {},
+        "module_details": (
+            {"teacher_tags": normalized_teacher_tags}
+            if normalized_teacher_tags
+            else {}
+        ),
     }
     comment_set["comments"].append(comment)
     if not comment_set["writing_types"]:
@@ -471,6 +477,34 @@ def suggest_identifier(label: str) -> str:
     return suggestion or "focus_standard_comment"
 
 
+def normalize_teacher_tags(teacher_tags: list[str] | None) -> list[str]:
+    """Normalize optional teacher-facing tags to unique lowercase snake-case."""
+    if teacher_tags is None:
+        return []
+    if not isinstance(teacher_tags, list):
+        raise FocusStandardCommentError("teacher_tags must be a list.")
+    normalized_tags: list[str] = []
+    seen: set[str] = set()
+    for index, value in enumerate(teacher_tags):
+        tag = _normalize_teacher_tag(value, f"teacher_tags[{index}]")
+        if tag not in seen:
+            seen.add(tag)
+            normalized_tags.append(tag)
+    return normalized_tags
+
+
+def _normalize_teacher_tag(value: Any, field: str) -> str:
+    text = _validate_non_empty_string(value, field)
+    normalized = unicodedata.normalize("NFKD", text)
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    tag = re.sub(r"[^A-Za-z0-9]+", "_", ascii_text.strip()).strip("_").lower()
+    if not tag:
+        raise FocusStandardCommentError(
+            f"Field '{field}' must contain letters or numbers."
+        )
+    return tag
+
+
 def _comment_sets_dir(workspace_root: str | Path) -> Path:
     return Path(workspace_root) / "shared" / "focus_standard_comments"
 
@@ -518,7 +552,18 @@ def _validate_comment(
         )
     _validate_source(comment["source"], f"{context}.source")
     _validate_usage(comment["usage"], f"{context}.usage")
-    _validate_object(comment["module_details"], f"{context}.module_details")
+    module_details = comment["module_details"]
+    _validate_object(module_details, f"{context}.module_details")
+    if "teacher_tags" in module_details:
+        teacher_tags = _validate_unique_strings(
+            module_details["teacher_tags"],
+            f"{context}.module_details.teacher_tags",
+        )
+        if normalize_teacher_tags(teacher_tags) != teacher_tags:
+            raise FocusStandardCommentError(
+                f"Field '{context}.module_details.teacher_tags' must contain "
+                "lowercase snake-case values."
+            )
 
 
 def _validate_source(value: Any, context: str) -> None:

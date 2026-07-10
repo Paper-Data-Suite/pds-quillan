@@ -477,7 +477,9 @@ Example:
 
 ### `purpose`
 
-`purpose` organizes comments by feedback function.
+`purpose` is a stable, broad feedback-function enum for teacher-facing
+organization. It describes the feedback move, not the assignment's writing
+type or genre.
 
 Allowed values are:
 
@@ -499,7 +501,14 @@ Example:
 ```
 
 Purpose is teacher-facing organization only. It must not imply automatic
-scoring or automatic comment selection.
+scoring and is not required for automatic comment selection. `general` is the
+appropriate value when none of the stable categories fits. For example, a
+creative-writing comment about character or dialogue may use `general` plus
+optional teacher tags rather than forcing genre vocabulary into `purpose`.
+
+Writing-type compatibility remains represented by `writing_types`, including
+creative writing, narrative writing, poetry, multimedia writing, and
+teacher-defined assignment types.
 
 ### `student_facing`
 
@@ -557,6 +566,22 @@ Rules:
 * must be an object;
 * may be empty;
 * consumers must not require unknown keys inside `module_details`.
+
+Quillan may store optional teacher-facing, writing-type-specific organization
+tags under `module_details.teacher_tags`:
+
+```json
+"module_details": {
+  "teacher_tags": ["character", "dialogue"]
+}
+```
+
+When present, `teacher_tags` must be an array of unique, non-empty lowercase
+snake-case strings. Quillan normalizes teacher input such as `Scene
+Development` to `scene_development`. Tags are optional; consumers must tolerate
+their absence, and existing schema version `1` comments with empty
+`module_details` remain valid. Consumers must not require teacher tags for
+lookup or automatic selection.
 
 ## Source and Provenance
 
@@ -672,6 +697,13 @@ Optional lookup filters may include:
 * course or class context if future contracts define that metadata;
 * usage recency; and
 * usage count.
+
+Teacher tags are display and organization metadata, not durable lookup keys.
+Lookup must not require them. Stable matching remains based on the comment
+set's `standards_profile_id` and durable comment/assignment fields such as
+`writing_type`, `standard_id`, optional `rating_value`, `active`, and
+`student_facing` status. `purpose` may support an explicit future teacher
+filter, but is not required for automatic comment selection.
 
 A typical feedback-composition workflow should use the current assignment and
 review context:

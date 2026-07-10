@@ -228,6 +228,7 @@ def add_custom_feedback_comment(
     reusable_label: str | None = None,
     reusable_text: str | None = None,
     purpose: str = "general",
+    teacher_tags: list[str] | None = None,
     rating_values: list[int | float] | None = None,
 ) -> AddedFeedbackComment:
     """Add one teacher-authored feedback comment under a Focus Standard."""
@@ -275,6 +276,7 @@ def add_custom_feedback_comment(
             label=reusable_label_text,
             text=reusable_comment_text,
             purpose=purpose,
+            teacher_tags=teacher_tags,
             rating_values=rating_values_to_save,
             source=_saved_comment_source(
                 context,

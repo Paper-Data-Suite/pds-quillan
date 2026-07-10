@@ -1324,7 +1324,7 @@ def test_review_menu_saves_default_custom_comment_text_for_reuse(
             "Student-specific feedback text.",
             "1", "",  # Reject invalid default-yes input, then accept its default.
             "1", "y",  # Reject invalid default-no input, then choose yes.
-            "General feedback", "1", "", "1",
+            "General feedback", "1", "", "", "1",
             "", "5", "12", "6", "", "3", "6",
         ],
     )
@@ -1349,6 +1349,8 @@ def test_review_menu_saves_default_custom_comment_text_for_reuse(
     assert len(comment_set_paths) == 1
     comment_set = json.loads(comment_set_paths[0].read_text(encoding="utf-8"))
     assert comment_set["comments"][0]["text"] == "Student-specific feedback text."
+    assert comment_set["comments"][0]["purpose"] == "general"
+    assert comment_set["comments"][0]["module_details"] == {}
 
 
 def test_review_menu_keeps_revised_reusable_text_separate(
@@ -1366,7 +1368,8 @@ def test_review_menu_keeps_revised_reusable_text_separate(
         [
             "2", "1", "1", "1", "1", "1", "6", "2", "1",
             "Avery, revise paragraph 2.", "", "y", "General revision", "2",
-            "Revise the relevant paragraph.", "", "1",
+            "Revise the relevant paragraph.", "",
+            "Character, Scene Development, dialogue", "1",
             "", "5", "12", "6", "", "3", "6",
         ],
     )
@@ -1385,6 +1388,12 @@ def test_review_menu_keeps_revised_reusable_text_separate(
     )
     comment_set = json.loads(comment_set_path.read_text(encoding="utf-8"))
     assert comment_set["comments"][0]["text"] == "Revise the relevant paragraph."
+    assert comment_set["comments"][0]["purpose"] == "general"
+    assert comment_set["comments"][0]["module_details"]["teacher_tags"] == [
+        "character",
+        "scene_development",
+        "dialogue",
+    ]
 
 
 @pytest.mark.parametrize("back_at_text_step", [True, False])
@@ -1399,7 +1408,7 @@ def test_review_menu_back_while_saving_reusable_comment_writes_nothing(
     review_path.write_text(json.dumps(review), encoding="utf-8")
     original_review = review_path.read_bytes()
     reusable_steps = ["Cancelable feedback.", "", "y", "Cancelable label"]
-    reusable_steps.extend(["3"] if back_at_text_step else ["1", "", "2"])
+    reusable_steps.extend(["3"] if back_at_text_step else ["1", "", "", "2"])
 
     _menu_input(
         monkeypatch,
@@ -1413,6 +1422,45 @@ def test_review_menu_back_while_saving_reusable_comment_writes_nothing(
     assert main(["menu"]) == 0
     assert review_path.read_bytes() == original_review
     assert not (workspace / "shared" / "focus_standard_comments").exists()
+
+
+@pytest.mark.parametrize(
+    ("responses", "expected"),
+    [
+        ([""], "general"),
+        (["2"], "next_step"),
+        (["revision"], "revision"),
+        (["character", "10"], "general"),
+    ],
+)
+def test_reusable_comment_purpose_prompt_handles_input_explicitly(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    responses: list[str],
+    expected: str,
+) -> None:
+    _menu_input(monkeypatch, responses)
+
+    purpose = review_menu._prompt_reusable_comment_purpose()
+
+    output = capsys.readouterr().out
+    assert purpose == expected
+    assert "broad teacher-facing organization metadata" in output
+    assert "not the assignment genre" in output
+    assert "not used for automatic scoring or automatic comment selection" in output
+    assert 'Use "general" when none of the categories fit.' in output
+    if responses[0] == "character":
+        assert "Invalid purpose selection" in output
+
+
+def test_reusable_comment_teacher_tags_normalize_and_deduplicate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(monkeypatch, ["Character, Scene Development, dialogue, character"])
+
+    tags = review_menu._prompt_reusable_comment_teacher_tags()
+
+    assert tags == ["character", "scene_development", "dialogue"]
 
 
 def test_review_menu_selects_reusable_focus_standard_feedback_comment(

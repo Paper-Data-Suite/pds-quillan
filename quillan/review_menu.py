@@ -55,7 +55,11 @@ from quillan.feedback_export import (
     feedback_export_path,
     feedback_pdf_export_path,
 )
-from quillan.focus_standard_comments import FocusStandardCommentError, lookup_comments
+from quillan.focus_standard_comments import (
+    FocusStandardCommentError,
+    lookup_comments,
+    normalize_teacher_tags,
+)
 from quillan.standards_summary_export import (
     StandardsSummaryExportError,
     export_standards_summary,
@@ -3267,6 +3271,7 @@ def _menu_add_custom_focus_standard_feedback_comment(
     reusable_label = None
     reusable_text = None
     purpose = "general"
+    teacher_tags: list[str] = []
     rating_values: list[int | float] | None = None
     if save_for_reuse:
         _print_feedback_action_header(
@@ -3307,6 +3312,7 @@ def _menu_add_custom_focus_standard_feedback_comment(
         print(f"Reusable comment text: {_preview_text(reusable_text)}")
         print()
         purpose = _prompt_reusable_comment_purpose()
+        teacher_tags = _prompt_reusable_comment_teacher_tags()
         rating = _current_overall_rating(record, standard_id)
         if rating is not None and _prompt_yes_no_default_yes(
             f"Tag reusable comment with current rating {rating}?"
@@ -3330,6 +3336,8 @@ def _menu_add_custom_focus_standard_feedback_comment(
         print("Reusable text:")
         print(_preview_text(cast(str, reusable_text)))
         print(f"Reusable purpose: {purpose}")
+        if teacher_tags:
+            print(f"Teacher tags: {', '.join(teacher_tags)}")
     print()
     print("1. Save comment")
     print("2. Back")
@@ -3350,6 +3358,7 @@ def _menu_add_custom_focus_standard_feedback_comment(
             reusable_label=reusable_label,
             reusable_text=reusable_text,
             purpose=purpose,
+            teacher_tags=teacher_tags,
             rating_values=rating_values,
         )
     except ReviewFeedbackError as error:
@@ -4030,26 +4039,59 @@ def _print_existing_standard_feedback_comments(
 
 def _prompt_reusable_comment_purpose() -> str:
     purposes = [
-        "praise",
-        "next_step",
-        "clarification",
-        "evidence",
-        "reasoning",
-        "organization",
-        "style",
-        "conventions",
-        "revision",
-        "general",
+        ("praise", "identifies something the student is doing well"),
+        ("next_step", "suggests what the student should do next"),
+        ("clarification", "asks for clearer explanation or wording"),
+        ("evidence", "addresses textual support, examples, or details"),
+        ("reasoning", "addresses explanation, logic, or development"),
+        ("organization", "addresses structure, sequence, or arrangement"),
+        ("style", "addresses voice, tone, diction, or sentence craft"),
+        ("conventions", "addresses grammar, mechanics, or formatting"),
+        ("revision", "addresses broader revision work"),
+        ("general", "use when no category fits"),
     ]
-    print("Reusable comment purpose:")
-    for index, purpose in enumerate(purposes, start=1):
-        print(f"{index}. {purpose}")
-    selection = input("Select purpose (default general): ").strip()
-    if selection.isdigit() and 1 <= int(selection) <= len(purposes):
-        return purposes[int(selection) - 1]
-    if selection in purposes:
-        return selection
-    return "general"
+    purpose_names = [purpose for purpose, _description in purposes]
+    print("Reusable comment purpose")
+    print()
+    print("Purpose is broad teacher-facing organization metadata.")
+    print("It describes the feedback move, not the assignment genre.")
+    print("It is not used for automatic scoring or automatic comment selection.")
+    print('Use "general" when none of the categories fit.')
+    print()
+    print(
+        "For creative or narrative writing, ideas such as character, dialogue, "
+        "pacing, or imagery belong in optional teacher tags."
+    )
+    print()
+    for index, (purpose, description) in enumerate(purposes, start=1):
+        print(f"{index}. {purpose} - {description}")
+    while True:
+        selection = input("Select purpose (default general): ").strip()
+        if not selection:
+            return "general"
+        if selection.isdigit() and 1 <= int(selection) <= len(purposes):
+            return purposes[int(selection) - 1][0]
+        if selection in purpose_names:
+            return selection
+        print(
+            "Invalid purpose selection. Choose a listed number, type a listed "
+            "purpose, or press Enter for general."
+        )
+
+
+def _prompt_reusable_comment_teacher_tags() -> list[str]:
+    print()
+    print("Optional teacher tags")
+    print()
+    print("Use tags for writing-type-specific organization.")
+    print("Examples for creative writing: character, dialogue, pacing, imagery.")
+    print("Leave blank for none.")
+    raw_tags = input("Teacher tags, comma-separated: ").strip()
+    if not raw_tags:
+        return []
+    return normalize_teacher_tags(
+        [raw_tag for raw_tag in raw_tags.split(",") if raw_tag.strip()]
+    )
 
 
 def _prompt_reusable_comment_text(default_text: str) -> str | object:
