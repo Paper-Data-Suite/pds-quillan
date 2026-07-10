@@ -18,7 +18,7 @@ from tests.test_class_summary_export import (
     _write_records,
     _write_roster,
 )
-from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID
+from tests.review_test_support import ASSIGNMENT_ID, CLASS_ID
 
 
 def test_compact_rows_preserve_missing_and_returned_ratings(tmp_path: Path) -> None:

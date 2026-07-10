@@ -24,8 +24,8 @@ from tests.test_feedback_export import (
     _write_assignment,
     _write_standards_library,
 )
-from tests.test_review_scores import _write_manifest, _write_review
-from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID, _review
+from tests.review_test_support import _write_manifest, _write_review
+from tests.review_test_support import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID, _review
 
 
 def _pdf_text(path: Path) -> str:

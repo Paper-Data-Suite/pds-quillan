@@ -18,7 +18,7 @@ from quillan.class_summary_export import (
     class_summary_export_path,
     export_class_review_summary,
 )
-from tests.test_review_tags import (
+from tests.review_test_support import (
     ASSIGNMENT_ID,
     CLASS_ID,
     _manifest,

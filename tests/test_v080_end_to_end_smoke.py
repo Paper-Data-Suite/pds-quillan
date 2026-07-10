@@ -31,16 +31,7 @@ CLASS_ID = "english12_p3_v080"
 ASSIGNMENT_ID = "argument_essay_v080"
 STUDENT_ID = "stu_0001"
 SECOND_STUDENT_ID = "stu_0002"
-BANK_ID = "general_writing_synthetic"
-COMMENT_ID = "focus_is_clear"
 STANDARD_ID = "njsls-ela:W.AW.11-12.1"
-
-EXAMPLE_BANK_PATH = (
-    Path(__file__).parents[1]
-    / "examples"
-    / "comment_banks"
-    / f"{BANK_ID}.json"
-)
 
 @pytest.fixture
 def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -51,8 +42,6 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     _write_roster(tmp_path)
     _write_assignment(tmp_path)
     _write_standards_library(tmp_path)
-    _write_comment_bank(tmp_path)
-
     return tmp_path
 
 
@@ -171,14 +160,6 @@ def _write_standards_library(root: Path) -> None:
                 ),
             ),
         ),
-    )
-
-def _write_comment_bank(root: Path) -> None:
-    bank_path = root / "shared" / "comment_banks" / f"{BANK_ID}.json"
-    bank_path.parent.mkdir(parents=True, exist_ok=True)
-    bank_path.write_text(
-        EXAMPLE_BANK_PATH.read_text(encoding="utf-8"),
-        encoding="utf-8",
     )
 
 def _response_payload(*, student_id: str = STUDENT_ID, page: int = 1) -> str:

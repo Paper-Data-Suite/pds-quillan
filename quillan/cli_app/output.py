@@ -13,7 +13,6 @@ from quillan.class_summary_export import ExportedClassSummary
 from quillan.evidence_filing import EvidenceFilingError, RoutedEvidenceFile
 from quillan.feedback_export import ExportedFeedback, ExportedFeedbackPdf
 from quillan.focus_standard_comments import SavedReusableFocusStandardComment
-from quillan.review_comments import AddedReviewComment
 from quillan.review_feedback import (
     AddedFeedbackComment,
     CompletedFeedbackComposition,
@@ -30,8 +29,6 @@ from quillan.review_ratings import (
     CompletedOverallStandardRatings,
     UpdatedOverallStandardRating,
 )
-from quillan.review_scores import UpdatedReviewScore
-from quillan.review_tags import AddedReviewTag
 from quillan.route_planning import RouteFailure
 from quillan.routing_review import RoutingReviewRecord
 from quillan.standards_summary_export import ExportedStandardsSummary
@@ -81,49 +78,6 @@ def print_added_review_note(added: AddedReviewNote) -> None:
     print(f"Note: {added.note_id}")
     print(f"Review state: {added.review_state}")
     print(f"Review record: {added.review_record_relative_path}")
-
-
-def print_added_review_tag(added: AddedReviewTag) -> None:
-    """Print a concise teacher-facing tag summary."""
-    print("Added review tag:")
-    print(f"Class: {added.class_id}")
-    print(f"Assignment: {added.assignment_id}")
-    print(f"Student: {added.student_id}")
-    print(f"Tag: {added.tag_id}")
-    print(f"Polarity: {added.polarity}")
-    print(f"Review state: {added.review_state}")
-    print(f"Review record: {added.review_record_relative_path}")
-
-
-def print_added_review_comment(added: AddedReviewComment) -> None:
-    """Print a concise teacher-facing selected-comment summary."""
-    print("Selected review comment:")
-    print(f"Class: {added.class_id}")
-    print(f"Assignment: {added.assignment_id}")
-    print(f"Student: {added.student_id}")
-    print(f"Bank: {added.bank_id}")
-    print(f"Source comment: {added.comment_id}")
-    print(f"Review comment: {added.comment_record_id}")
-    print(f"Include in feedback: {format_bool(added.include_in_feedback)}")
-    print(f"Review state: {added.review_state}")
-    print(f"Review record: {added.review_record_relative_path}")
-
-
-def print_updated_review_score(updated: UpdatedReviewScore) -> None:
-    """Print a concise teacher-facing criterion-score summary."""
-    print("Set review score:")
-    print(f"Class: {updated.class_id}")
-    print(f"Assignment: {updated.assignment_id}")
-    print(f"Student: {updated.student_id}")
-    print(f"Criterion: {updated.criterion_id}")
-    print(
-        f"Score: {format_number(updated.score)} / "
-        f"{format_number(updated.max_score)}"
-    )
-    print(f"Score record: {updated.score_id}")
-    print(f"Action: {'created' if updated.was_created else 'updated'}")
-    print(f"Review state: {updated.review_state}")
-    print(f"Review record: {updated.review_record_relative_path}")
 
 
 def print_updated_review_units(updated: UpdatedReviewUnits) -> None:

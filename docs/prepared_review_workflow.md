@@ -12,9 +12,8 @@ student evidence -> review unit -> Focus Standard -> teacher judgment -> feedbac
 Quillan helps organize review decisions. It does not read student work,
 generate feedback, score automatically, infer mastery, run OCR, or use AI.
 
-This document replaces the old prepared-review sequence centered on generic
-comment banks, tag banks, and rubrics. Those contracts may remain as legacy or
-compatibility material, but they are not the active v0.8.6 teacher workflow.
+This document replaces the removed generic tag, comment-bank, rubric, and
+criterion-score workflow.
 
 ## Subject-Agnostic Design
 
@@ -162,9 +161,15 @@ standards review.
 Assignment-local summaries are also derived artifacts:
 
 ```text
+classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 ```
+
+Student Performance Summary is the compact teacher-facing student-by-standard
+report. Comprehensive Class Summary (`class_summary.csv`) is the
+audit/troubleshooting report. Standards Summary is the Focus Standard
+aggregate report.
 
 The class summary reports submission/review status, minimum-requirement
 outcomes, returned-without-full-review status, overall Focus Standard ratings,
@@ -184,6 +189,7 @@ classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submissi
 classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
 classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
 classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 shared/focus_standard_comments/<comment_set_id>.json

@@ -1146,6 +1146,7 @@ Warnings may include:
 
 Warnings should be included in:
 
+* `student_performance_summary.csv`, where relevant;
 * `class_summary.csv`;
 * `standards_summary.csv`, where relevant;
 * `assignment_results_manifest.json`; and
@@ -1314,6 +1315,7 @@ Quillan's responsibility ends at assignment-local summaries and assignment-local
 Legacy runtime exports produced:
 
 ```text
+classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 ```

@@ -40,6 +40,7 @@ Derived exports and reports:
 ```text
 submissions/<student_id>/exports/feedback.pdf
 submissions/<student_id>/exports/feedback.md
+exports/student_performance_summary.csv
 exports/class_summary.csv
 exports/standards_summary.csv
 ```
@@ -150,7 +151,9 @@ comments.
 
 Reports summarize teacher-reviewed records for one assignment.
 
-The class summary reports submission status, review status,
+The Student Performance Summary is the compact ordinary teacher-facing
+student-by-standard table. The Comprehensive Class Summary at
+`class_summary.csv` reports submission status, review status,
 minimum-requirement outcomes, returned-without-full-review state, overall
 Focus Standard ratings, feedback PDF/Markdown status, and warnings.
 
@@ -168,9 +171,8 @@ The old schema version `1` model centered on top-level `notes`, `tags`,
 `add-tag`, `add-comment`, and `set-score` are historical/compatibility
 material only and are not the active v0.8.6 review path.
 
-Legacy generic comment banks, tag banks, and rubrics may remain in historical
-contract docs or compatibility modules. Active docs, examples, and tests
-should not present them as the current teacher workflow.
+The generic tag, comment-bank, rubric, and criterion-score runtime modules,
+examples, and contracts have been removed.
 
 ## Review Readiness
 
