@@ -66,7 +66,9 @@ quillan open-submission <class_id> <assignment_id> <student_id> [--page N]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan export-feedback <class_id> <assignment_id> <student_id> [--format markdown|pdf|both] [--overwrite]
+quillan export-student-performance-summary <class_id> <assignment_id> [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
+quillan export-comprehensive-class-summary <class_id> <assignment_id> [--overwrite]
 quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
 quillan workspace show
 quillan workspace set <path>
@@ -377,9 +379,9 @@ menu provides:
 ```text
 1. Select student/submission
 2. Assemble routed submissions
-3. Export class review summary
-4. Export standards summary
-5. Refresh submission status
+3. Export Comprehensive Class Summary
+4. Export Standards Summary
+5. Export Student Performance Summary
 6. Back
 ```
 
@@ -464,17 +466,9 @@ quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 ```
 
-The legacy `Add structured tag`, `Select reusable comment`, and
-`Set criterion score` actions have been removed from the active selected-student
-review menu. The matching direct CLI write commands `add-tag`, `add-comment`,
-and `set-score` are also removed from argparse and cannot write v1 review tags,
-comments, or scores.
-
-When reusable comments or tags include pds-core `standard_id` references,
-review-time menus may resolve readable metadata through pds-core read-only
-selection helpers. Unresolved standards fall back to durable IDs with metadata
-unavailable. Quillan does not create, import, edit, retire, reactivate, or
-authoritatively validate pds-core standards from review mode.
+The generic structured-tag, comment-bank, rubric, and criterion-score runtime
+workflows have been removed. Quillan does not create, import, edit, retire,
+reactivate, or authoritatively validate pds-core standards from review mode.
 
 `Update submission review state` displays the allowed states with
 teacher-facing descriptions and requires confirmation before saving. This is
@@ -486,7 +480,9 @@ commands:
 
 ```powershell
 quillan export-feedback <class_id> <assignment_id> <student_id> [--overwrite]
+quillan export-student-performance-summary <class_id> <assignment_id> [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
+quillan export-comprehensive-class-summary <class_id> <assignment_id> [--overwrite]
 quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
 ```
 
@@ -504,13 +500,6 @@ workspace preferences, or pds-core route/standards files.
 The Review Student Work menu does not automatically assemble submissions,
 route scans, run OCR, parse evidence contents, score work automatically, infer
 mastery, generate AI feedback, or perform AI work.
-
-#### Removed Legacy Review Materials
-
-The active Review Student Work menu no longer exposes generic Comment Bank,
-Tag Bank, Rubric / Scoring Profile, or Starter Material management workflows.
-The direct legacy menu shell reports that those workflows are disabled while
-the standards-based review redesign is underway.
 
 Selected Student Review includes Manage Submission Pages. Teachers can exclude
 a page from active review, restore an excluded page, or mark a page as needing

@@ -10,8 +10,7 @@ calculate grades, generate feedback, or replace teacher judgment.
 
 Quillan is subject-agnostic. It can support written response review in English
 / ELA, history / social studies, science, computer science, technical writing,
-world languages, arts/humanities, and interdisciplinary writing tasks. NJ ELA
-starter material is one optional starter pack, not the identity of the project.
+world languages, arts/humanities, and interdisciplinary writing tasks.
 
 ## Current Status
 
@@ -40,13 +39,12 @@ Quillan currently supports:
 * Focus Standard feedback composition;
 * reusable Focus Standard comments in `shared/focus_standard_comments/`;
 * student feedback export to Markdown, PDF, or both;
-* assignment-local class summary export; and
+* assignment-local Student Performance Summary export;
+* assignment-local Comprehensive Class Summary export; and
 * assignment-local Focus Standard summary export.
 
-Legacy generic structured tags, generic comment banks, and generic
-rubric/criterion scores are not the active v0.8.6 review workflow. Historical
-contracts and compatibility modules may remain in the repository, but they are
-not advertised as the current teacher review path.
+The old generic tag, comment-bank, rubric, and criterion-score workflow has
+been removed. Quillan has no runtime compatibility path for that model.
 
 Canonical active records and exports live at:
 
@@ -59,6 +57,7 @@ classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submissi
 classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
 classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
 classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 shared/focus_standard_comments/<comment_set_id>.json
@@ -66,10 +65,6 @@ shared/standards/library.json
 scans/source/YYYY-MM-DD/
 scans/review/
 ```
-
-Legacy `shared/comment_banks/`, `shared/tag_banks/`, and `shared/rubrics/`
-folders may appear in historical examples or compatibility docs. They are not
-part of the active v0.8.6 standards-based review path.
 
 ## Teacher-Facing Menu
 
@@ -130,9 +125,9 @@ After selecting a class and assignment, the assignment-level menu is:
 ```text
 1. Select student/submission
 2. Assemble routed submissions
-3. Export assignment-local class summary
-4. Export assignment-local Focus Standard summary
-5. Refresh submission status
+3. Export Comprehensive Class Summary
+4. Export Standards Summary
+5. Export Student Performance Summary
 6. Back
 ```
 
@@ -194,12 +189,17 @@ classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/
 classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
-Class and Focus Standard summaries are assignment-local CSV exports:
+The three assignment-local CSV reports are:
 
 ```text
+classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 ```
+
+Student Performance Summary is the compact ordinary teacher-facing table.
+Comprehensive Class Summary (`class_summary.csv`) is audit/troubleshooting
+oriented. Standards Summary aggregates assignment Focus Standards.
 
 Exports are derived artifacts. They do not mutate assignment records,
 submission manifests, review records, routed evidence, rosters, standards, or
@@ -225,7 +225,9 @@ quillan open-submission <class_id> <assignment_id> <student_id> [--page N]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan export-feedback <class_id> <assignment_id> <student_id> [--format markdown|pdf|both] [--overwrite]
+quillan export-student-performance-summary <class_id> <assignment_id> [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
+quillan export-comprehensive-class-summary <class_id> <assignment_id> [--overwrite]
 quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
 quillan workspace show
 quillan workspace set <path>

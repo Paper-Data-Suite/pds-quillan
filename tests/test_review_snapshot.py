@@ -8,7 +8,7 @@ from typing import Any
 from quillan.review_record import build_empty_review_record
 from quillan.review_record_paths import review_record_path, write_review_record
 from quillan.review_snapshot import current_review_details_text
-from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID
+from tests.review_test_support import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID
 
 TIMESTAMP = "2026-06-22T12:00:00+00:00"
 

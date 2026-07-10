@@ -10,7 +10,7 @@ import pytest
 from quillan.cli import main
 import quillan.cli_app.handlers.exports as cli_exports
 from quillan.standards_summary_export import standards_summary_export_path
-from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID
+from tests.review_test_support import ASSIGNMENT_ID, CLASS_ID
 from tests.test_class_summary_export import STANDARD_A, _write_assignment
 from tests.test_standards_summary_export import _rating, _write_review
 

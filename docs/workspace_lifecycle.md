@@ -20,9 +20,8 @@ well as the active scan source-retention and routing-review layout.
 Quillan-specific files remain inside those shared routes.
 
 Quillan is subject-agnostic. The workspace layout supports written-response
-review across disciplines; optional NJ ELA starter materials are one
-installable starter pack, not a separate workspace model. For the
-prepared-review sequence and subject-neutral storage map, see
+review across disciplines. For the prepared-review sequence and
+subject-neutral storage map, see
 [`prepared_review_workflow.md`](prepared_review_workflow.md).
 
 ## Workspace vs. Installation
@@ -62,13 +61,12 @@ The expected current and reserved layout is:
           submissions/
             <student_id>/
               submission.json
-              submission.txt
-              requirements.json
               review.json
               exports/
                 feedback.pdf
                 feedback.md
           exports/
+            student_performance_summary.csv
             class_summary.csv
             standards_summary.csv
           debug/
@@ -79,10 +77,6 @@ Reusable Focus Standard comments live outside individual assignments:
 ```text
 <PDS workspace root>/shared/focus_standard_comments/<comment_set_id>.json
 ```
-
-Legacy `shared/comment_banks/`, `shared/tag_banks/`, and `shared/rubrics/`
-folders may remain as historical or compatibility material, but they are not
-the active v0.8.6 standards-based review workflow.
 
 The active scan paths, assignment directory, `assignment.json`,
 `submissions/`, and each student's submission directory follow shared PDS
@@ -184,20 +178,6 @@ and creates missing manifests; it does not merge into existing manifests or
 choose among ambiguous duplicates. `set-review-state` provides an explicit,
 metadata-only teacher-controlled state update.
 
-### `submissions/<student_id>/submission.txt`
-
-The student-produced writing evidence in plain text. It remains separate from
-requirements results, Focus Standard ratings, feedback, and reports so the
-source evidence is not rewritten as teacher judgment is added.
-
-### `submissions/<student_id>/requirements.json`
-
-A reserved historical requirements-check location. The active v0.8.6 workflow
-stores teacher-entered minimum-requirement data in
-`review.json.minimum_requirement_checks` and
-`review.json.minimum_requirement_outcome`, not in a sibling `requirements.json`.
-Requirement checks are teacher-review support artifacts, not scores.
-
 ### `submissions/<student_id>/review.json`
 
 The canonical active schema version `2` teacher-review record for one
@@ -227,7 +207,9 @@ overwrite is explicitly requested.
 ### `exports/`
 
 The assignment-local location for derived teacher-facing reports. Implemented
-report names are `class_summary.csv` and `standards_summary.csv`. Reports
+reports are Student Performance Summary
+(`student_performance_summary.csv`), Comprehensive Class Summary
+(`class_summary.csv`), and Standards Summary (`standards_summary.csv`). Reports
 summarize records; they do not replace the underlying source evidence or
 teacher-review artifacts.
 
@@ -259,11 +241,9 @@ Quillan keeps three record categories distinct.
 Source evidence is the student-produced work and the manifest needed to
 identify routed artifacts and their retained-source provenance:
 
-* `submission.txt`
 * `submission.json`
 
-`submission.txt` remains an optional text-oriented evidence artifact for
-workflows that use it. The manifest is part of the evidentiary record because
+The manifest is part of the evidentiary record because
 it establishes identity, provenance, page state, and teacher-controlled
 submission-management state. It does not contain the teacher's notes, score,
 Focus Standard ratings, feedback composition, or feedback export.
@@ -288,6 +268,7 @@ Derived outputs are generated from teacher-reviewed records:
 
 * `submissions/<student_id>/exports/feedback.pdf`
 * `submissions/<student_id>/exports/feedback.md`
+* `exports/student_performance_summary.csv`
 * `exports/class_summary.csv`
 * `exports/standards_summary.csv`
 

@@ -6,7 +6,6 @@ import argparse
 from collections.abc import Callable
 from typing import cast
 
-from quillan.cli_app.arguments import ScoreArgumentError
 from quillan.cli_app.handlers.workspace import launch_default_menu
 from quillan.cli_app.parser import build_parser
 
@@ -14,11 +13,7 @@ from quillan.cli_app.parser import build_parser
 def main(argv: list[str] | None = None) -> int:
     """Run the Quillan command-line interface."""
     parser = build_parser()
-    try:
-        args = parser.parse_args(argv)
-    except ScoreArgumentError as error:
-        print(f"Error: could not set review score: {error}")
-        return 1
+    args = parser.parse_args(argv)
 
     handler = getattr(args, "handler", None)
     if handler is not None:

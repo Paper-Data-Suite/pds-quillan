@@ -9,9 +9,8 @@ The active v0.8.6 review model is standards-based:
 student evidence -> review unit -> Focus Standard -> teacher judgment -> feedback/reporting
 ```
 
-This index distinguishes active v0.8.6 runtime contracts from legacy or
-compatibility material. Legacy comment banks, tag banks, and rubrics may remain
-documented for history, but they are not the current teacher review workflow.
+The old generic tag, comment-bank, rubric, and criterion-score runtime model
+has been removed. This index documents the active v0.8.6 contracts.
 
 ## Active Contracts
 
@@ -117,6 +116,7 @@ and unselected comments.
 Assignment-level reports are derived artifacts:
 
 ```text
+classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
 classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 ```
@@ -124,7 +124,9 @@ classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
 The reporting contract is defined in
 [`assignment_reporting_contract.md`](assignment_reporting_contract.md).
 
-The class summary reports submission/review status, minimum-requirement
+The Student Performance Summary is the compact ordinary teacher-facing
+student-by-standard table. The Comprehensive Class Summary at
+`class_summary.csv` reports submission/review status, minimum-requirement
 outcomes, returned-without-full-review status, overall Focus Standard ratings,
 feedback PDF/Markdown status, and validation warnings.
 
@@ -180,22 +182,6 @@ The active workflow and review philosophy are documented in:
 * [`teacher_review_model.md`](teacher_review_model.md)
 * [`cli_contract.md`](cli_contract.md)
 * [`workspace_lifecycle.md`](workspace_lifecycle.md)
-
-## Legacy And Compatibility Docs
-
-The following documents describe historical or compatibility material, not the
-active v0.8.6 standards-based review workflow:
-
-* [`comment_bank_contract.md`](comment_bank_contract.md)
-* [`tag_bank_contract.md`](tag_bank_contract.md)
-* [`rubric_contract.md`](rubric_contract.md)
-* [`starter_materials.md`](starter_materials.md)
-* [`nj_ela_starter_materials.md`](nj_ela_starter_materials.md)
-
-Legacy files may remain if they are clearly historical, inactive, disabled, or
-compatibility-only. Active docs and examples should not instruct teachers to
-use generic comment banks, tag banks, rubric criteria, old direct write
-commands, or schema version `1` top-level review fields as the current path.
 
 ## Synthetic Data Policy
 

@@ -11,7 +11,7 @@ from quillan.class_summary_export import class_summary_export_path
 from quillan.cli import main
 import quillan.cli_app.handlers.exports as cli_exports
 from tests.test_class_summary_export import _student_dir, _write_assignment, _write_records
-from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID
+from tests.review_test_support import ASSIGNMENT_ID, CLASS_ID
 
 
 def test_cli_exports_ready_and_non_ready_rows_and_prints_summary(

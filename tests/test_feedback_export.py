@@ -23,13 +23,14 @@ from quillan.feedback_export import (
 )
 from quillan.review_record_paths import review_record_path, write_review_record
 from quillan.submission_manifest_paths import submission_manifest_path, write_submission_manifest
-from tests.test_review_scores import _write_manifest, _write_review
-from tests.test_review_tags import (
+from tests.review_test_support import (
     ASSIGNMENT_ID,
     CLASS_ID,
     STUDENT_ID,
     _manifest,
     _review,
+    _write_manifest,
+    _write_review,
 )
 
 TIMESTAMP = "2026-06-23T12:30:00+00:00"

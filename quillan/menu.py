@@ -516,13 +516,6 @@ def launch_review_student_work_menu() -> None:
     launch()
 
 
-def launch_review_materials_menu() -> None:
-    """Launch the teacher-facing review materials preparation menu."""
-    from quillan.review_materials_menu import launch_review_materials_menu as launch
-
-    launch()
-
-
 def launch_workspace_menu(
     workspace_show: WorkspaceShowHandler,
     workspace_set: WorkspaceSetHandler,

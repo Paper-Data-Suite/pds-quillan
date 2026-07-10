@@ -1252,7 +1252,10 @@ Reusable comments should likely be local workspace artifacts at first. Later ver
 
 ### How should standards-based ratings interact with grades?
 
-This redesign defines standards ratings, not gradebook grades. Future work may decide whether and how standards ratings can be converted into grades, summaries, or reports.
+This redesign defines assignment-local standards ratings and reports, not
+gradebook grades or longitudinal analytics. Cross-assignment, cross-module,
+marking-period, growth, dashboard, and gradebook reporting belongs to a future
+Paper Data Suite reporting module, not Quillan.
 
 ### How should old records be handled?
 

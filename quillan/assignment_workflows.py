@@ -26,7 +26,6 @@ from quillan.assignments import (
     validate_assignment_config,
 )
 from quillan.assignment_picker import prompt_assignment_choice
-from quillan.rubrics import RubricError, load_rubric, rubric_path
 from quillan.storage import assignment_config_path
 
 _NUMERIC_REQUIREMENTS = (
@@ -237,20 +236,6 @@ def format_assignment_summary(
     policy = assignment["minimum_requirement_policy"]
     lines.append(f"Minimum requirement policy: {dict(policy)}")
     return "\n".join(lines)
-
-
-def resolve_assignment_rubric(
-    workspace_root: str | Path,
-    assignment: Mapping[str, Any],
-) -> dict[str, Any] | None:
-    """Load a valid shared rubric for an assignment, if one resolves."""
-    rubric_id = assignment.get("rubric_id")
-    if not isinstance(rubric_id, str) or not rubric_id.strip():
-        return None
-    try:
-        return load_rubric(rubric_path(workspace_root, rubric_id))
-    except (OSError, RubricError):
-        return None
 
 
 def _workspace_root() -> Path | None:
