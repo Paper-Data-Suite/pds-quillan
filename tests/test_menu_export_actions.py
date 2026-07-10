@@ -370,7 +370,9 @@ def test_menu_export_student_feedback_creates_feedback_file(
     assert feedback_path.is_file()
 
     feedback_text = feedback_path.read_text(encoding="utf-8")
-    assert "- njsls-ela:W.1: 3 - Good work." in feedback_text
+    assert "### njsls-ela:W.1" in feedback_text
+    assert "Rating: 3" in feedback_text
+    assert "Rationale:\nGood work." in feedback_text
     assert "- Good work." in feedback_text
     assert "This should not appear in student feedback." not in feedback_text
     assert manifest_path.read_bytes() == manifest_before

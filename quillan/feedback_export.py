@@ -12,11 +12,17 @@ from typing import Any, cast
 
 from pds_core.classes import load_class_roster
 from pds_core.rosters import RosterError, student_display_name
+from pds_core.standards import StandardsValidationError, find_standard_definition
+from pds_core.standards_selection import (
+    load_standards_for_selection,
+    resolve_standard_selection,
+)
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import (
+    HRFlowable,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -103,7 +109,24 @@ class _StudentFeedback:
     ratings: list[dict[str, Any]]
     comments: list[dict[str, Any]]
     observations: list[dict[str, Any]]
+    standard_sections: list[_FocusStandardFeedbackSection]
     returned_work: dict[str, Any] | None
+
+
+@dataclass(frozen=True, slots=True)
+class _StandardDisplay:
+    standard_id: str
+    code: str | None
+    short_name: str | None
+    description: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class _FocusStandardFeedbackSection:
+    display: _StandardDisplay
+    rating: dict[str, Any] | None
+    comments: list[dict[str, Any]]
+    observations: list[dict[str, Any]]
 
 
 def feedback_export_path(
@@ -372,6 +395,7 @@ def _assemble_student_feedback(context: dict[str, Any]) -> _StudentFeedback:
         comments = _included_feedback_comments(review)
         observations = _included_review_unit_observations(review)
         returned_work = None
+    ratings_with_labels = _with_rating_labels(ratings, assignment)
     return _StudentFeedback(
         class_id=class_id,
         assignment_id=assignment_id,
@@ -380,11 +404,78 @@ def _assemble_student_feedback(context: dict[str, Any]) -> _StudentFeedback:
         assignment_title=_assignment_title(assignment, assignment_id),
         class_display=class_id,
         created_at=context["created_at"],
-        ratings=_with_rating_labels(ratings, assignment),
+        ratings=ratings_with_labels,
         comments=comments,
         observations=observations,
+        standard_sections=_focus_standard_sections(
+            context["workspace_root"],
+            assignment,
+            ratings_with_labels,
+            comments,
+            observations,
+        ),
         returned_work=returned_work,
     )
+
+
+def _focus_standard_sections(
+    workspace_root: Path,
+    assignment: dict[str, Any] | None,
+    ratings: list[dict[str, Any]],
+    comments: list[dict[str, Any]],
+    observations: list[dict[str, Any]],
+) -> list[_FocusStandardFeedbackSection]:
+    ordered_ids = list(assignment.get("focus_standard_ids", [])) if assignment else []
+    selected_ids = [
+        str(item["standard_id"])
+        for items in (ratings, comments, observations)
+        for item in items
+    ]
+    for standard_id in selected_ids:
+        if standard_id not in ordered_ids:
+            ordered_ids.append(standard_id)
+    displays = _standard_display_map(workspace_root, ordered_ids)
+    ratings_by_id = {str(item["standard_id"]): item for item in ratings}
+    return [
+        _FocusStandardFeedbackSection(
+            display=displays[standard_id],
+            rating=ratings_by_id.get(standard_id),
+            comments=[item for item in comments if item["standard_id"] == standard_id],
+            observations=[
+                item for item in observations if item["standard_id"] == standard_id
+            ],
+        )
+        for standard_id in ordered_ids
+        if standard_id in selected_ids
+    ]
+
+
+def _standard_display_map(
+    workspace_root: Path, standard_ids: list[str]
+) -> dict[str, _StandardDisplay]:
+    fallback = {
+        standard_id: _StandardDisplay(standard_id, None, None, None)
+        for standard_id in standard_ids
+    }
+    try:
+        library = load_standards_for_selection(workspace_root)
+    except (OSError, StandardsValidationError, ValueError):
+        return fallback
+    for standard_id in standard_ids:
+        try:
+            item = resolve_standard_selection(library, standard_id)
+        except (StandardsValidationError, ValueError):
+            continue
+        definition = find_standard_definition(library, standard_id)
+        fallback[standard_id] = _StandardDisplay(
+            standard_id=standard_id,
+            code=_non_empty(item.code),
+            short_name=_non_empty(item.short_name),
+            description=(
+                _non_empty(definition.description) if definition is not None else None
+            ),
+        )
+    return fallback
 
 
 def _render_feedback_markdown(feedback: _StudentFeedback) -> str:
@@ -402,9 +493,7 @@ def _render_feedback_markdown(feedback: _StudentFeedback) -> str:
         assignment_id=feedback.assignment_id,
         student_id=feedback.student_id,
         created_at=feedback.created_at,
-        ratings=feedback.ratings,
-        comments=feedback.comments,
-        observations=feedback.observations,
+        standard_sections=feedback.standard_sections,
     )
 
 
@@ -414,9 +503,7 @@ def _render_markdown(
     assignment_id: str,
     student_id: str,
     created_at: str,
-    ratings: list[dict[str, Any]],
-    comments: list[dict[str, Any]],
-    observations: list[dict[str, Any]],
+    standard_sections: list[_FocusStandardFeedbackSection],
 ) -> str:
     lines = [
         "# Feedback",
@@ -426,39 +513,51 @@ def _render_markdown(
         f"Student: {_plain_text(student_id)}",
         f"Generated: {_plain_text(created_at)}",
         "",
-        "## Standards Ratings",
+        "---",
+        "",
+        "## Focus Standard Feedback",
         "",
     ]
-    if ratings:
-        for rating in ratings:
-            rendered = (
-                f"- {_plain_text(rating['standard_id'])}: "
-                f"{_format_number(rating['rating'])}"
+    if not standard_sections:
+        lines.append("No Focus Standard feedback selected.")
+    for index, section in enumerate(standard_sections):
+        if index:
+            lines.extend(["", "---", ""])
+        lines.extend([f"### {_plain_text(_standard_heading(section.display))}", ""])
+        if section.display.description:
+            lines.extend(
+                ["Standard:", _plain_text(section.display.description), ""]
             )
-            if rating.get("rationale"):
-                rendered += f" - {_plain_text(rating['rationale'])}"
-            lines.append(rendered)
-    else:
-        lines.append("No standards ratings recorded.")
-
-    lines.extend(["", "## Feedback Comments", ""])
-    if comments:
-        lines.extend(f"- {_plain_text(comment['text'])}" for comment in comments)
-    else:
-        lines.append("No feedback comments selected.")
-    lines.extend(["", "## Review Unit Observations", ""])
-    if observations:
-        for observation in observations:
-            rendered = f"- {_plain_text(observation['standard_id'])}"
-            if observation.get("unit_label"):
-                rendered += f" ({_plain_text(observation['unit_label'])})"
-            if observation.get("rationale"):
-                rendered += f": {_plain_text(observation['rationale'])}"
-            lines.append(rendered)
-    else:
-        lines.append("No review-unit observations selected.")
+        if section.rating:
+            value = _format_number(section.rating["rating"])
+            label = section.rating.get("rating_label")
+            label_suffix = f" ({_plain_text(label)})" if label else ""
+            lines.extend([f"Rating: {value}{label_suffix}", ""])
+            if section.rating.get("rationale"):
+                lines.extend(
+                    ["Rationale:", _plain_text(section.rating["rationale"]), ""]
+                )
+        if section.comments:
+            lines.append("Feedback:")
+            lines.extend(f"- {_plain_text(item['text'])}" for item in section.comments)
+            lines.append("")
+        if section.observations:
+            lines.append("Review-unit observations:")
+            for observation in section.observations:
+                unit = observation.get("unit_label") or "Review unit"
+                rationale = _non_empty(observation.get("rationale"))
+                rendered = f"- {_plain_text(unit)}"
+                if rationale:
+                    rendered += f": {_plain_text(rationale)}"
+                lines.append(rendered)
     lines.append("")
     return "\n".join(lines)
+
+
+def _standard_heading(display: _StandardDisplay) -> str:
+    if display.code and display.short_name:
+        return f"{display.code} — {display.short_name}"
+    return display.code or display.standard_id
 
 
 def _render_returned_work_markdown(
@@ -754,59 +853,56 @@ def _append_standard_feedback_pdf(
     body_style: ParagraphStyle,
     feedback: _StudentFeedback,
 ) -> None:
-    story.append(Paragraph("Focus Standard Ratings", section_style))
-    if feedback.ratings:
-        for rating in feedback.ratings:
-            value = _format_number(rating["rating"])
-            label = rating.get("rating_label")
+    story.append(Paragraph("Focus Standard Feedback", section_style))
+    if not feedback.standard_sections:
+        story.append(Paragraph("No Focus Standard feedback selected.", body_style))
+    for index, section in enumerate(feedback.standard_sections):
+        if index:
+            story.append(Spacer(1, 0.08 * inch))
+            story.append(HRFlowable(width="100%", thickness=0.5, color=colors.grey))
+            story.append(Spacer(1, 0.04 * inch))
+        story.append(
+            Paragraph(
+                f"<b>{_escape_pdf_text(_standard_heading(section.display))}</b>",
+                section_style,
+            )
+        )
+        if section.display.description:
+            story.append(Paragraph("<b>Standard:</b>", body_style))
+            story.append(
+                Paragraph(_escape_pdf_text(section.display.description), body_style)
+            )
+        if section.rating:
+            value = _format_number(section.rating["rating"])
+            label = section.rating.get("rating_label")
             label_suffix = f" ({_plain_text(label)})" if label else ""
             story.append(
                 Paragraph(
-                    "<b>"
-                    f"{_escape_pdf_text(rating['standard_id'])}</b>: "
-                    f"{_escape_pdf_text(value + label_suffix)}",
+                    f"<b>Rating:</b> {_escape_pdf_text(value + label_suffix)}",
                     body_style,
                 )
             )
-            if rating.get("rationale"):
+            if section.rating.get("rationale"):
                 story.append(
                     Paragraph(
-                        f"Rationale: {_escape_pdf_text(rating['rationale'])}",
+                        f"<b>Rationale:</b> "
+                        f"{_escape_pdf_text(section.rating['rationale'])}",
                         body_style,
                     )
                 )
-    else:
-        story.append(Paragraph("No Focus Standard ratings selected.", body_style))
-
-    story.append(Paragraph("Feedback Comments", section_style))
-    if feedback.comments:
-        for comment in feedback.comments:
-            prefix = f"{comment.get('standard_id')}: " if comment.get("standard_id") else ""
+        if section.comments:
+            story.append(Paragraph("<b>Feedback:</b>", body_style))
+        for comment in section.comments:
             story.append(
-                Paragraph(
-                    f"{_escape_pdf_text(prefix)}{_escape_pdf_text(comment['text'])}",
-                    body_style,
-                )
+                Paragraph(f"• {_escape_pdf_text(comment['text'])}", body_style)
             )
-    else:
-        story.append(Paragraph("No feedback comments selected.", body_style))
-
-    if feedback.observations:
-        story.append(Paragraph("Review Unit Observations", section_style))
-        for observation in feedback.observations:
-            evidence = observation.get("evidence_present")
-            evidence_text = ""
-            if evidence is True:
-                evidence_text = " Evidence present: yes."
-            elif evidence is False:
-                evidence_text = " Evidence present: no."
+        if section.observations:
+            story.append(Paragraph("<b>Review-unit observations:</b>", body_style))
+        for observation in section.observations:
             unit = observation.get("unit_label") or "Review unit"
-            text = (
-                f"{unit} - {observation['standard_id']}."
-                f"{evidence_text}"
-            )
+            text = f"• {_plain_text(unit)}"
             if observation.get("rationale"):
-                text += f" {_plain_text(observation['rationale'])}"
+                text += f": {_plain_text(observation['rationale'])}"
             story.append(Paragraph(_escape_pdf_text(text), body_style))
 
 

@@ -226,7 +226,7 @@ Canonical pds-core workspace path:
 standards/library.json
 ```
 
-When available, the standards library may be used to resolve student-facing display labels for Focus Standards.
+When available, the standards library must be used to resolve student-facing display information for Focus Standards.
 
 The export may use:
 
@@ -236,16 +236,19 @@ The export may use:
 * subject;
 * course;
 * domain; and
-* description, if appropriate for student-facing display.
+* description.
 
 Durable references remain the pds-core `standard_id` values stored in Quillan records.
 
 Rules:
 
 * Quillan does not own, mutate, import, retire, reactivate, or authoritatively redefine standards during feedback export.
-* If a standard definition cannot be resolved, the export may fall back to the durable `standard_id`.
+* When the standards library provides a non-empty description for a Focus Standard, the student feedback export must display that full description under the standard heading.
+* The export must not summarize, rewrite, simplify, abbreviate, paraphrase, or omit an available description based on presentation judgment.
+* If a standard definition cannot be resolved, or its display metadata is empty, the export must fall back safely to the durable `standard_id`.
 * Missing display metadata must not block export when the teacher has already completed review data.
-* Missing display metadata must not cause Quillan to invent standard labels.
+* Missing display metadata must not cause Quillan to invent standard titles or descriptions.
+* The durable `standard_id` remains the stored reference in canonical assignment and review records; resolved display information is export-only presentation data.
 
 ## Teacher-Controlled Source Rules
 
@@ -382,6 +385,7 @@ assignment.json.focus_standard_ids
 Each Focus Standard section may include:
 
 * standard display code or title, when resolved from pds-core;
+* the full standard description, when the resolved record provides one;
 * durable `standard_id`, when useful;
 * overall Focus Standard rating, when selected for feedback;
 * rating label from the assignment rating scale;
@@ -405,6 +409,7 @@ Your evidence is relevant and usually well chosen. To improve, make sure each qu
 Rules:
 
 * Focus Standard sections should be student-readable.
+* A resolved non-empty standard description is required display content, not optional formatting polish.
 * Internal IDs such as `observation_id`, `unit_id`, `feedback_comment_id`, and `requirement_check_id` should not appear in ordinary student-facing output.
 * Durable `standard_id` may appear if needed for clarity, but teacher-facing display fields should be preferred when available.
 * A section should not imply that missing feedback equals failure.

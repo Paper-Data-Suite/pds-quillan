@@ -18,7 +18,12 @@ from quillan.feedback_export import (
     feedback_pdf_export_path,
 )
 from quillan.review_record_paths import review_record_path
-from tests.test_feedback_export import TIMESTAMP, _write_assignment
+from tests.test_feedback_export import (
+    STANDARD_DESCRIPTION,
+    TIMESTAMP,
+    _write_assignment,
+    _write_standards_library,
+)
 from tests.test_review_scores import _write_manifest, _write_review
 from tests.test_review_tags import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID, _review
 
@@ -192,6 +197,7 @@ def test_normal_pdf_export_creates_student_facing_pdf_and_metadata(
         "reusable_comment_id",
         "comment_set_id",
         "observation_id",
+        "unit_id",
         "review.json",
         "private_reusable_comment",
         "private_set",
@@ -214,6 +220,28 @@ def test_normal_pdf_export_creates_student_facing_pdf_and_metadata(
         "module_details": {},
     }
     assert review_after["exports"]["feedback_markdown"] is None
+
+
+def test_pdf_uses_resolved_standard_heading_and_full_description(tmp_path: Path) -> None:
+    _write_roster(tmp_path)
+    _write_manifest(tmp_path)
+    _write_assignment_with_rating_labels(tmp_path)
+    _write_standards_library(tmp_path)
+    _write_review(tmp_path, _feedback_ready_review())
+
+    result = export_student_feedback_pdf(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+    )
+    text = _pdf_text(result.feedback_pdf_path)
+
+    assert "RL.CR.9-10.1" in text
+    assert "Cite Textual Evidence" in text
+    assert STANDARD_DESCRIPTION in text
+    assert text.index("RL.CR.9-10.1") < text.index(STANDARD_DESCRIPTION)
+    assert text.index(STANDARD_DESCRIPTION) < text.index("Rating:")
+    assert text.index("Rating:") < text.index("Feedback:")
+    assert text.index("Feedback:") < text.index("Review-unit observations:")
+    assert "synthetic:W.A" not in text
 
 
 def test_pdf_export_falls_back_to_student_id_without_roster(tmp_path: Path) -> None:
