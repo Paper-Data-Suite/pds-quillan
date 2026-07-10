@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from pds_core.classes import list_class_folders, load_class_roster
 from pds_core.rosters import RosterError
@@ -2126,13 +2126,23 @@ def _menu_update_submission_review_state(
 
 
 def _prompt_yes_no_default_no(prompt: str) -> bool:
-    response = input(f"{prompt} (y/N): ").strip().casefold()
-    return response in {"y", "yes"}
+    while True:
+        response = input(f"{prompt} (y/N): ").strip().casefold()
+        if response in {"y", "yes"}:
+            return True
+        if response in {"", "n", "no"}:
+            return False
+        print("Invalid response. Enter y or n, or press Enter for the default.")
 
 
 def _prompt_yes_no_default_yes(prompt: str) -> bool:
-    response = input(f"{prompt} (Y/n): ").strip().casefold()
-    return response not in {"n", "no"}
+    while True:
+        response = input(f"{prompt} (Y/n): ").strip().casefold()
+        if response in {"", "y", "yes"}:
+            return True
+        if response in {"n", "no"}:
+            return False
+        print("Invalid response. Enter y or n, or press Enter for the default.")
 
 
 def _format_yes_no(value: bool) -> str:
@@ -3282,7 +3292,11 @@ def _menu_add_custom_focus_standard_feedback_comment(
         )
         print(f"Reusable comment label: {reusable_label}")
         print()
-        reusable_text = input("Reusable comment text:\n").strip() or text
+        reusable_text_result = _prompt_reusable_comment_text(text)
+        if reusable_text_result is _BACK:
+            print("Custom feedback comment canceled.")
+            return
+        reusable_text = cast(str, reusable_text_result)
         _print_feedback_action_header(
             "Save Reusable Focus Standard Comment",
             student_id,
@@ -3307,11 +3321,15 @@ def _menu_add_custom_focus_standard_feedback_comment(
         standard_id=standard_id,
     )
     print("Save this Focus Standard feedback comment?")
-    print(f"Comment: {_preview_text(text)}")
+    print("Student feedback comment:")
+    print(_preview_text(text))
     print(f"Include in feedback: {_format_yes_no(include_in_feedback)}")
     print(f"Save for reuse: {_format_yes_no(save_for_reuse)}")
     if reusable_label is not None:
         print(f"Reusable label: {reusable_label}")
+        print("Reusable text:")
+        print(_preview_text(cast(str, reusable_text)))
+        print(f"Reusable purpose: {purpose}")
     print()
     print("1. Save comment")
     print("2. Back")
@@ -4032,6 +4050,36 @@ def _prompt_reusable_comment_purpose() -> str:
     if selection in purposes:
         return selection
     return "general"
+
+
+def _prompt_reusable_comment_text(default_text: str) -> str | object:
+    while True:
+        print(
+            "Privacy reminder: remove student-specific details before saving "
+            "reusable Focus Standard comments."
+        )
+        print()
+        print("Reusable comment text currently defaults to:")
+        print(default_text)
+        print()
+        print("Use this text as the reusable comment?")
+        print("1. Use as-is")
+        print("2. Edit reusable text")
+        print("3. Back")
+        print()
+        selection = input("Select an option: ").strip()
+        if selection == "1":
+            return default_text
+        if selection == "2":
+            revised_text = input(
+                "Reusable comment text "
+                "(press Enter to keep the current/default text):\n"
+            ).strip()
+            return revised_text or default_text
+        if selection == "3":
+            return _BACK
+        print("Invalid response. Select 1, 2, or 3.")
+        print()
 
 
 def _current_overall_rating(record: dict[str, Any], standard_id: str) -> int | None:

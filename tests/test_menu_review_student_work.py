@@ -1307,6 +1307,114 @@ def test_review_menu_adds_custom_focus_standard_feedback_comment(
     assert not {"comments", "scores", "tags", "notes"} & review.keys()
 
 
+def test_review_menu_saves_default_custom_comment_text_for_reuse(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    review_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    review = _review_record()
+    review["feedback"]["standard_feedback"] = []
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+
+    _menu_input(
+        monkeypatch,
+        [
+            "2", "1", "1", "1", "1", "1", "6", "2", "1",
+            "Student-specific feedback text.",
+            "1", "",  # Reject invalid default-yes input, then accept its default.
+            "1", "y",  # Reject invalid default-no input, then choose yes.
+            "General feedback", "1", "", "1",
+            "", "5", "12", "6", "", "3", "6",
+        ],
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert output.count(
+        "Invalid response. Enter y or n, or press Enter for the default."
+    ) >= 2
+    assert "Reusable comment text currently defaults to:" in output
+    assert "Student-specific feedback text." in output
+    assert "Student feedback comment:" in output
+    assert "Reusable label: General feedback" in output
+    assert "Reusable text:" in output
+
+    saved_review = json.loads(review_path.read_text(encoding="utf-8"))
+    comment = saved_review["feedback"]["standard_feedback"][0]["comments"][0]
+    assert comment["text"] == "Student-specific feedback text."
+    comment_set_paths = list(
+        (workspace / "shared" / "focus_standard_comments").glob("*.json")
+    )
+    assert len(comment_set_paths) == 1
+    comment_set = json.loads(comment_set_paths[0].read_text(encoding="utf-8"))
+    assert comment_set["comments"][0]["text"] == "Student-specific feedback text."
+
+
+def test_review_menu_keeps_revised_reusable_text_separate(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    review_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    review = _review_record()
+    review["feedback"]["standard_feedback"] = []
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+
+    _menu_input(
+        monkeypatch,
+        [
+            "2", "1", "1", "1", "1", "1", "6", "2", "1",
+            "Avery, revise paragraph 2.", "", "y", "General revision", "2",
+            "Revise the relevant paragraph.", "", "1",
+            "", "5", "12", "6", "", "3", "6",
+        ],
+    )
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    assert "Privacy reminder:" in output
+    assert "Reusable text:" in output
+    assert "Revise the relevant paragraph." in output
+    saved_review = json.loads(review_path.read_text(encoding="utf-8"))
+    assert saved_review["feedback"]["standard_feedback"][0]["comments"][0][
+        "text"
+    ] == "Avery, revise paragraph 2."
+    comment_set_path = next(
+        (workspace / "shared" / "focus_standard_comments").glob("*.json")
+    )
+    comment_set = json.loads(comment_set_path.read_text(encoding="utf-8"))
+    assert comment_set["comments"][0]["text"] == "Revise the relevant paragraph."
+
+
+@pytest.mark.parametrize("back_at_text_step", [True, False])
+def test_review_menu_back_while_saving_reusable_comment_writes_nothing(
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    back_at_text_step: bool,
+) -> None:
+    review_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    review = _review_record()
+    review["feedback"]["standard_feedback"] = []
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+    original_review = review_path.read_bytes()
+    reusable_steps = ["Cancelable feedback.", "", "y", "Cancelable label"]
+    reusable_steps.extend(["3"] if back_at_text_step else ["1", "", "2"])
+
+    _menu_input(
+        monkeypatch,
+        [
+            "2", "1", "1", "1", "1", "1", "6", "2", "1",
+            *reusable_steps,
+            "", "5", "12", "6", "", "3", "6",
+        ],
+    )
+
+    assert main(["menu"]) == 0
+    assert review_path.read_bytes() == original_review
+    assert not (workspace / "shared" / "focus_standard_comments").exists()
+
+
 def test_review_menu_selects_reusable_focus_standard_feedback_comment(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
