@@ -171,6 +171,73 @@ def test_new_routed_file_for_manifest_student_is_unassembled(
     assert result.unassembled_routed_files == (path,)
 
 
+def test_unused_duplicates_for_represented_manifest_page_are_not_unassembled(
+    tmp_path: Path,
+) -> None:
+    manifest_path = _write_status_manifest(tmp_path)
+    original = manifest_path.read_bytes()
+    primary = _touch_routed(tmp_path, "response_00107_pg_001.pdf")
+    duplicate_1 = _touch_routed(
+        tmp_path, "response_00107_pg_001__dup_001.pdf"
+    )
+    duplicate_2 = _touch_routed(
+        tmp_path, "response_00107_pg_001__dup_002.pdf"
+    )
+
+    result = list_assignment_submission_status(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID
+    )
+
+    assert result.students_with_manifests == ("00107",)
+    assert result.students_without_manifests == ()
+    assert result.unassembled_routed_files == ()
+    assert result.unused_duplicate_routed_files == (duplicate_1, duplicate_2)
+    assert primary.exists()
+    assert duplicate_1.exists()
+    assert duplicate_2.exists()
+    assert manifest_path.read_bytes() == original
+
+
+def test_duplicate_for_manifest_page_without_evidence_remains_unassembled(
+    tmp_path: Path,
+) -> None:
+    _write_status_manifest(tmp_path)
+    path = _touch_routed(
+        tmp_path, "response_00107_pg_002__dup_001.pdf"
+    )
+
+    result = list_assignment_submission_status(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID
+    )
+
+    assert result.unassembled_routed_files == (path,)
+    assert result.unused_duplicate_routed_files == ()
+
+
+def test_cli_labels_unused_duplicate_files_separately(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_status_manifest(tmp_path)
+    _touch_routed(tmp_path, "response_00107_pg_001.pdf")
+    _touch_routed(tmp_path, "response_00107_pg_001__dup_001.pdf")
+    _touch_routed(tmp_path, "response_00107_pg_001__dup_002.pdf")
+    monkeypatch.setattr(
+        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+    )
+
+    assert main(["list-submissions", CLASS_ID, ASSIGNMENT_ID]) == 0
+
+    output = capsys.readouterr().out
+    assert "Students needing assembly: 0" in output
+    assert "Unassembled routed files: 0" in output
+    assert "Duplicate routed files not used: 2" in output
+    duplicate_section = output.split("Duplicate routed files not used:\n", 1)[1]
+    assert "response_00107_pg_001__dup_001.pdf" in duplicate_section
+    assert "response_00107_pg_001__dup_002.pdf" in duplicate_section
+
+
 def test_skipped_routed_files_are_reported_and_sorted(tmp_path: Path) -> None:
     _touch_routed(tmp_path, "response_00107_pg_zero.pdf")
     _touch_routed(tmp_path, "debug_page.png")

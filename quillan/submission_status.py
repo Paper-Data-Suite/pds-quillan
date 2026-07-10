@@ -54,6 +54,7 @@ class AssignmentSubmissionStatus:
     students_with_routed_evidence: tuple[str, ...]
     students_without_manifests: tuple[str, ...]
     unassembled_routed_files: tuple[Path, ...]
+    unused_duplicate_routed_files: tuple[Path, ...]
     skipped_routed_files: tuple[SkippedRoutedEvidenceFile, ...]
     student_statuses: tuple[StudentSubmissionStatus, ...]
 
@@ -91,19 +92,32 @@ def list_assignment_submission_status(
         for page in manifest["pages"]
         for item in page["evidence"]
     }
+    represented_evidence_pages = {
+        student_id: {
+            page["page_number"] for page in manifest["pages"] if page["evidence"]
+        }
+        for student_id, (_, manifest) in manifests.items()
+    }
+    unassembled: list[Path] = []
+    unused_duplicates: list[Path] = []
+    for student_id, items in discovery.evidence_by_student.items():
+        for item in items:
+            path = _resolved_evidence_path(root, item.routed_evidence_path)
+            if path in assembled_paths:
+                continue
+            if (
+                item.duplicate_number is not None
+                and item.page_number
+                in represented_evidence_pages.get(student_id, set())
+            ):
+                unused_duplicates.append(path)
+            else:
+                unassembled.append(path)
     unassembled_routed_files = tuple(
-        sorted(
-            (
-                _resolved_evidence_path(root, item.routed_evidence_path)
-                for items in discovery.evidence_by_student.values()
-                for item in items
-                if _resolved_evidence_path(
-                    root, item.routed_evidence_path
-                )
-                not in assembled_paths
-            ),
-            key=lambda path: str(path).casefold(),
-        )
+        sorted(unassembled, key=lambda path: str(path).casefold())
+    )
+    unused_duplicate_routed_files = tuple(
+        sorted(unused_duplicates, key=lambda path: str(path).casefold())
     )
 
     statuses = [
@@ -127,6 +141,7 @@ def list_assignment_submission_status(
         students_with_routed_evidence=routed_students,
         students_without_manifests=students_without_manifests,
         unassembled_routed_files=unassembled_routed_files,
+        unused_duplicate_routed_files=unused_duplicate_routed_files,
         skipped_routed_files=discovery.skipped_files,
         student_statuses=tuple(statuses),
     )

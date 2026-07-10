@@ -605,6 +605,9 @@ def _assemble_assignment(
     """Assemble routed evidence without replacing existing teacher records."""
     from quillan.cli_app.output import print_assignment_submission_assembly
 
+    _print_assignment_action_header(
+        "Assemble Routed Submissions", class_id, assignment_id
+    )
     try:
         result = assemble_assignment_submissions(
             workspace_root, class_id, assignment_id, overwrite=False
@@ -613,6 +616,20 @@ def _assemble_assignment(
         print(f"Error: could not assemble submissions: {error}")
         return
     print_assignment_submission_assembly(result, workspace_root)
+
+
+def _print_assignment_action_header(
+    title: str,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    from quillan.menu import clear_screen, print_menu_header
+
+    clear_screen()
+    print_menu_header(title)
+    print(f"Class: {class_id}")
+    print(f"Assignment: {assignment_id}")
+    print()
 
 
 def _print_review_action_header(

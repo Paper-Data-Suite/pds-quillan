@@ -209,6 +209,7 @@ def _assignment_status(
             student_id for student_id in routed if student_id not in manifests
         ),
         unassembled_routed_files=unassembled,
+        unused_duplicate_routed_files=(),
         skipped_routed_files=(),
         student_statuses=(),
     )
@@ -567,6 +568,7 @@ def test_post_route_multi_target_lists_status_labels(
             students_with_routed_evidence=(STUDENT_ID,),
             students_without_manifests=(),
             unassembled_routed_files=(),
+            unused_duplicate_routed_files=(),
             skipped_routed_files=(),
             student_statuses=(),
         )

@@ -60,7 +60,11 @@ def handle_list_submissions(args: argparse.Namespace) -> int:
         print(f"Error: could not list submission status: {error}")
         return 1
 
-    print_assignment_submission_status(result, workspace_root)
+    print_assignment_submission_status(
+        result,
+        workspace_root,
+        show_unused_duplicate_files=True,
+    )
     return 0
 
 
