@@ -2723,7 +2723,6 @@ def _menu_review_unit_observations(
             _menu_record_review_unit_observation(
                 workspace_root, class_id, assignment_id, student_id, assignment
             )
-            input("Press Enter to continue...")
         elif choice == "3":
             _menu_mark_observations_complete(
                 workspace_root, class_id, assignment_id, student_id
@@ -2796,28 +2795,49 @@ def _menu_record_review_unit_observation(
     student_id: str,
     assignment: dict[str, Any],
 ) -> None:
-    record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
-    if record is None or not record.get("review_units"):
+    while True:
+        record = _current_review_record(
+            workspace_root, class_id, assignment_id, student_id
+        )
+        if record is None or not record.get("review_units"):
+            _print_observation_entry_header(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+                step="Review unit selection",
+            )
+            print("Define review units before recording observations.")
+            input("Press Enter to continue...")
+            return
         _print_observation_entry_header(
             workspace_root,
             class_id,
             assignment_id,
             student_id,
-            step="Review unit selection",
+            step="Select review unit",
         )
-        print("Define review units before recording observations.")
-        return
-    _print_observation_entry_header(
-        workspace_root,
-        class_id,
-        assignment_id,
-        student_id,
-        step="Select review unit",
-    )
-    unit = _prompt_review_unit(record["review_units"])
-    if unit is None:
-        print("Observation entry canceled.")
-        return
+        unit = _prompt_review_unit(record["review_units"])
+        if unit is None:
+            return
+        _record_review_unit_observation(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            assignment,
+            unit,
+        )
+
+
+def _record_review_unit_observation(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    assignment: dict[str, Any],
+    unit: dict[str, Any],
+) -> None:
     _print_observation_entry_header(
         workspace_root,
         class_id,
@@ -2919,8 +2939,10 @@ def _menu_record_review_unit_observation(
         )
     except ReviewObservationError as error:
         print(f"Error: could not update observation: {error}")
+        input("Press Enter to continue...")
         return
     print_updated_review_unit_observation(updated)
+    input("Press Enter to continue...")
 
 
 def _menu_mark_observations_complete(

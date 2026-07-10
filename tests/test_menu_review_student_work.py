@@ -466,6 +466,7 @@ def test_review_menu_records_applicable_focus_standard_observation(
             "Clear evidence.",
             "1",
             "",
+            "B",
             "4",
             "12",
             "6",
@@ -482,6 +483,8 @@ def test_review_menu_records_applicable_focus_standard_observation(
     assert "Step: Save confirmation" in output
     assert "Updated Focus Standard observation:" in output
     assert "Action: created" in output
+    assert output.count("Step: Select review unit") == 2
+    assert "1. Paragraph 1 (1 observations)" in output
     assert "Rating:" not in output
     review = json.loads(
         review_record_path(
@@ -497,6 +500,83 @@ def test_review_menu_records_applicable_focus_standard_observation(
     assert observation["include_in_feedback"] is True
     assert review["overall_standard_ratings"] == []
     assert review["feedback"]["standard_feedback"] == []
+
+
+def test_observation_entry_records_multiple_units_without_parent_menu(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    review = _review_record()
+    review["review_units"] = [
+        {
+            "unit_id": f"paragraph_{sequence}",
+            "sequence": sequence,
+            "label": f"Paragraph {sequence}",
+            "unit_type": "paragraph",
+            "standard_observations": [],
+            "module_details": {},
+        }
+        for sequence in (1, 2)
+    ]
+    review_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+    assignment = {
+        "focus_standard_ids": ["njsls-ela:W.1"],
+    }
+    _menu_input(
+        monkeypatch,
+        [
+            "1", "1", "1", "", "", "Good evidence", "1", "",
+            "2", "1", "1", "", "", "Needs explanation", "1", "",
+            "B",
+        ],
+    )
+
+    review_menu._menu_record_review_unit_observation(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, assignment
+    )
+
+    output = capsys.readouterr().out
+    assert output.count("Step: Select review unit") == 3
+    assert "1. Paragraph 1 (1 observations)" in output
+    assert "2. Paragraph 2 (1 observations)" in output
+    updated = json.loads(review_path.read_text(encoding="utf-8"))
+    assert [len(unit["standard_observations"]) for unit in updated["review_units"]] == [
+        1,
+        1,
+    ]
+
+
+def test_observation_entry_back_before_save_does_not_write(
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    review = _review_record()
+    review["review_units"] = [
+        {
+            "unit_id": "paragraph_1",
+            "sequence": 1,
+            "label": "Paragraph 1",
+            "unit_type": "paragraph",
+            "standard_observations": [],
+            "module_details": {},
+        }
+    ]
+    review_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+    before = review_path.read_bytes()
+    _menu_input(monkeypatch, ["1", "1", "1", "", "", "Unsaved", "2", "B"])
+
+    review_menu._menu_record_review_unit_observation(
+        workspace,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        {"focus_standard_ids": ["njsls-ela:W.1"]},
+    )
+
+    assert review_path.read_bytes() == before
 
 
 def test_review_menu_marks_observations_complete(
