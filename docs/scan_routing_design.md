@@ -28,8 +28,9 @@ review.
 
 Quillan now implements the first successful-write slice through
 `quillan.evidence_filing.file_routed_response_evidence()`. Given a readable
-source file and an existing successful `RoutePlan`, it exclusively copies the
-source into `scans/source/YYYY-MM-DD/`, files the retained source or a
+source file and an existing successful `RoutePlan`, Quillan delegates canonical
+source retention to `pds-core`'s `retain_source_scan(...)` helper, then files
+the retained source or a
 caller-supplied page artifact into assignment `scans/`, preserves duplicates,
 and returns provenance. Quillan also implements metadata-only failure
 preservation through `quillan.routing_review`, writing shared failure records
@@ -85,8 +86,9 @@ follow the shared `pds-core` contract:
    source scan.
 
 `scans_inbox/` remains the shared teacher-facing intake/drop location. It is
-not the canonical retained source store. The exact retained-source naming,
-copying, and helper APIs belong to `pds-core`, not this Quillan design.
+not the canonical retained source store. Quillan uses `pds-core`'s
+`retain_source_scan(...)` helper for retained-source naming, copying,
+provenance, and safety instead of maintaining a parallel implementation.
 
 ## Assumed Quillan Routing Input
 

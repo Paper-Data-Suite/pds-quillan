@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import replace
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
+from pds_core.scan_retention import RetainedSourceScan
 from pds_core.scan_routes import build_retained_source_filename
 
+import quillan.evidence_filing as evidence_filing
 from quillan.evidence_filing import (
     EvidenceFilingError,
     file_routed_response_evidence,
@@ -112,6 +114,57 @@ def test_files_retained_source_and_routed_evidence_with_provenance(
     assert source_file.read_bytes() == original_bytes
 
 
+def test_delegates_source_retention_to_core_helper(
+    workspace: Path,
+    route_plan: RoutePlan,
+    source_file: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    retained_path = workspace / "scans" / "source" / "retained.pdf"
+    retained_path.parent.mkdir(parents=True)
+    retained_path.write_bytes(b"retained by core")
+    retained = RetainedSourceScan(
+        source_scan_id="scan_delegated",
+        source_filename=source_file.name,
+        source_sha256="a" * 64,
+        retained_source_path=retained_path,
+        retained_source_relative_path="scans/source/retained.pdf",
+        intake_timestamp=INTAKE_TIMESTAMP,
+        intake_date=date(2026, 6, 19),
+    )
+    calls: list[tuple[object, object, object, object]] = []
+
+    def fake_retain_source_scan(
+        root: object,
+        source: object,
+        *,
+        intake_timestamp: object,
+        intake_date: object,
+    ) -> RetainedSourceScan:
+        calls.append((root, source, intake_timestamp, intake_date))
+        return retained
+
+    monkeypatch.setattr(
+        evidence_filing,
+        "retain_source_scan",
+        fake_retain_source_scan,
+    )
+
+    result = file_routed_response_evidence(
+        workspace,
+        route_plan=route_plan,
+        source_file_path=source_file,
+        intake_timestamp=INTAKE_TIMESTAMP,
+        intake_date="2026-06-18",
+    )
+
+    assert calls == [
+        (workspace.resolve(), source_file, INTAKE_TIMESTAMP, "2026-06-18")
+    ]
+    assert result.retained_source is retained
+    assert result.routed_evidence_path.read_bytes() == b"retained by core"
+
+
 def test_intake_date_defaults_to_utc_date(
     workspace: Path,
     route_plan: RoutePlan,
@@ -198,7 +251,7 @@ def test_missing_source_fails_without_creating_scan_dirs(
     route_plan: RoutePlan,
     tmp_path: Path,
 ) -> None:
-    with pytest.raises(EvidenceFilingError, match="existing regular file"):
+    with pytest.raises(EvidenceFilingError, match="does not exist"):
         file_routed_response_evidence(
             workspace,
             route_plan=route_plan,
@@ -215,7 +268,7 @@ def test_directory_source_fails(
     route_plan: RoutePlan,
     tmp_path: Path,
 ) -> None:
-    with pytest.raises(EvidenceFilingError, match="existing regular file"):
+    with pytest.raises(EvidenceFilingError, match="not a regular file"):
         file_routed_response_evidence(
             workspace,
             route_plan=route_plan,
