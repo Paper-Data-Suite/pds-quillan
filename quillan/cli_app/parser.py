@@ -17,6 +17,10 @@ from quillan.cli_app.handlers.review import (
     handle_add_note,
 )
 from quillan.cli_app.handlers.routing import handle_route_scan
+from quillan.cli_app.handlers.scan_review import (
+    handle_list_scan_review,
+    handle_resolve_scan_review,
+)
 from quillan.cli_app.handlers.submissions import (
     handle_assemble_submissions,
     handle_list_submissions,
@@ -86,6 +90,69 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     route_scan_parser.set_defaults(handler=handle_route_scan)
+
+    list_scan_review_parser = subparsers.add_parser(
+        "list-scan-review",
+        help="List unresolved and deferred Quillan scan review items.",
+        description=(
+            "List valid Quillan routing-review records. Resolved records are "
+            "hidden unless --include-resolved is supplied."
+        ),
+    )
+    list_scan_review_parser.add_argument(
+        "--include-resolved",
+        action="store_true",
+        help="Include review items whose latest resolution is resolved.",
+    )
+    list_scan_review_parser.add_argument(
+        "--limit",
+        type=positive_integer,
+        help="Show at most this many matching review items.",
+    )
+    list_scan_review_parser.add_argument("--class-id", help="Filter by class ID.")
+    list_scan_review_parser.add_argument(
+        "--assignment-id", help="Filter by assignment ID."
+    )
+    list_scan_review_parser.add_argument(
+        "--failure-category", help="Filter by shared failure category."
+    )
+    list_scan_review_parser.set_defaults(handler=handle_list_scan_review)
+
+    resolve_scan_review_parser = subparsers.add_parser(
+        "resolve-scan-review",
+        help="Resolve or defer one Quillan scan review item.",
+        description=(
+            "Write a new immutable shared resolution record for one valid "
+            "Quillan routing-review failure."
+        ),
+    )
+    resolve_scan_review_parser.add_argument("failure_id", help="Failure identifier.")
+    resolve_scan_review_parser.add_argument(
+        "--action",
+        required=True,
+        choices=(
+            "rescan_needed",
+            "cannot_route",
+            "mixed_assignment",
+            "evidence_filed",
+            "dismissed_duplicate",
+            "other",
+            "defer",
+        ),
+        help="Teacher-selected resolution action.",
+    )
+    resolve_scan_review_parser.add_argument(
+        "--message",
+        help="Teacher message. Required for action 'other'; defaults otherwise.",
+    )
+    resolve_scan_review_parser.add_argument(
+        "--evidence-path",
+        help=(
+            "Optional workspace-relative evidence path for evidence_filed; "
+            "the file is not copied or required to exist."
+        ),
+    )
+    resolve_scan_review_parser.set_defaults(handler=handle_resolve_scan_review)
 
     decode_scan_parser = subparsers.add_parser(
         "decode-scan",

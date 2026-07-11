@@ -323,6 +323,30 @@ identity. Retained-source provenance is recorded only when available, and a
 supplied review artifact path is recorded only as workspace-relative metadata;
 the helper does not copy that artifact.
 
+## Scan Review Resolution
+
+Quillan discovers its valid routing-review records under `scans/review/` by
+their `quillan_route_review` stage. Malformed records and records owned by
+other modules are not presented as resolvable Quillan items. Teachers can list
+active items with `quillan list-scan-review` and resolve or defer one with
+`quillan resolve-scan-review` or the **Resolve Scan Review Items** menu path.
+
+Each decision is written through Core `ScanResolutionMetadata` under
+`scans/review/resolutions/`. The supported Quillan actions are
+`rescan_needed`, `cannot_route`, `mixed_assignment`, `evidence_filed`,
+`dismissed_duplicate`, `other`, and `defer`. Deferred items remain in the
+default active list. Items whose latest valid resolution is `resolved` are
+hidden by default but can be shown with `--include-resolved`. Older resolution
+records remain as an audit trail.
+
+Resolution is metadata-only. Existing failure JSON and retained source scans
+remain immutable and in place. An optional workspace-relative evidence path
+records teacher-supplied context for `evidence_filed`; Quillan does not copy or
+require that file. Resolving a routing problem does not mark student writing as
+reviewed, change a submission manifest or review record, generate feedback, or
+assign a rating. Quillan submission review state remains a separate,
+teacher-controlled workflow.
+
 ## Relationship to Reviewable Evidence and Submissions
 
 A routed scan page is evidence derived or copied from a retained source scan,
