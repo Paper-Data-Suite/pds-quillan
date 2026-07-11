@@ -59,6 +59,8 @@ quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
 quillan route-scan <source-image> --decode-qr
 quillan route-scan <source-pdf> --decode-qr
 quillan route-scan <source-folder> --decode-qr
+quillan list-scan-review [--include-resolved] [--limit N]
+quillan resolve-scan-review <failure_id> --action <action> [--message "..."] [--evidence-path <workspace-relative-path>]
 quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 quillan open-evidence <workspace-relative-evidence-path>
@@ -710,6 +712,28 @@ QR-aware intake path.
 
 QR-aware scan intake does not assemble submissions, create review records, run
 OCR, or identify a student from raw scan content without a valid payload.
+
+## Scan Review Resolution
+
+`quillan list-scan-review` lists valid unresolved and deferred Quillan routing
+review records from the active workspace. `--include-resolved` also shows items
+whose latest valid resolution is resolved; `--limit`, `--class-id`,
+`--assignment-id`, and `--failure-category` narrow the display. Malformed or
+unreadable metadata is skipped with a warning count instead of making the
+entire listing fail.
+
+`quillan resolve-scan-review <failure_id> --action <action>` accepts
+`rescan_needed`, `cannot_route`, `mixed_assignment`, `evidence_filed`,
+`dismissed_duplicate`, `other`, or `defer`. Common actions have safe default
+messages; `other` requires `--message`. `--evidence-path` is accepted only with
+`evidence_filed` and must be workspace-relative.
+
+The command writes a new exclusive-create Core resolution record under
+`scans/review/resolutions/`. It does not change the referenced failure record,
+retained scan, submission manifest, submission review state, or teacher review
+record. The interactive **Review Student Work > Resolve Scan Review Items**
+path provides the same decisions with compact list, detail, action, note, and
+result screens.
 
 ## Submission Assembly and Status
 

@@ -155,6 +155,7 @@ def launch_review_student_work_menu() -> int:
             print_menu_header("Review Student Work")
             print("1. Assignment Review Actions")
             print("2. Scan Intake / Route Paper Responses")
+            print("R. Resolve Scan Review Items")
             print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
@@ -172,6 +173,14 @@ def launch_review_student_work_menu() -> int:
                 from quillan.menu import launch_scan_intake_workflow
 
                 launch_scan_intake_workflow()
+            elif choice.casefold() == "r":
+                workspace_root = _workspace_root()
+                if workspace_root is not None:
+                    from quillan.scan_review_menu import (
+                        launch_scan_review_resolution_menu,
+                    )
+
+                    launch_scan_review_resolution_menu(workspace_root)
             else:
                 print(f"Invalid selection. {navigation_hint()}")
                 print()
