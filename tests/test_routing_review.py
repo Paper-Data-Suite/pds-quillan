@@ -303,6 +303,8 @@ def test_route_failure_adapter_accepts_retained_source_provenance(
         retained_source_relative_path=(
             "scans/source/2026-06-19/retained.pdf"
         ),
+        intake_timestamp=CREATED_AT,
+        intake_date=CREATED_AT.date(),
     )
 
     record = preserve_route_failure_for_review(

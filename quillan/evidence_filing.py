@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-import hashlib
 import shutil
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from pathlib import Path
 from typing import Final
 
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
-from pds_core.scan_routes import (
-    ScanRouteError,
-    build_retained_source_filename,
-    retained_source_scan_path,
+from pds_core.scan_retention import (
+    RetainedSourceScan as RetainedSourceScan,
+    SourceRetentionError,
+    retain_source_scan,
 )
 
 from quillan.route_planning import RoutePlan
@@ -28,17 +27,6 @@ _SUPPORTED_EXTENSIONS: Final[frozenset[str]] = frozenset(
 
 class EvidenceFilingError(RuntimeError):
     """Raised when retained source or routed evidence cannot be filed safely."""
-
-
-@dataclass(frozen=True, slots=True)
-class RetainedSourceScan:
-    """Provenance for one canonical retained source intake event."""
-
-    source_scan_id: str
-    source_filename: str
-    source_sha256: str
-    retained_source_path: Path
-    retained_source_relative_path: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,7 +60,6 @@ def file_routed_response_evidence(
     """
     root = _resolved_workspace_root(workspace_root)
     routed_dir, page_number = _validated_route_plan(root, route_plan)
-    source_path = _readable_regular_file(source_file_path, "source_file_path")
     routed_input = (
         _readable_regular_file(
             routed_source_file_path,
@@ -81,67 +68,29 @@ def file_routed_response_evidence(
         if routed_source_file_path is not None
         else None
     )
+    if routed_extension is not None:
+        extension = _normalized_extension(routed_extension)
+    elif routed_input is not None:
+        extension = _normalized_extension(routed_input.suffix)
+    else:
+        extension = None
 
-    source_sha256 = _sha256_file(source_path, "source_file_path")
     try:
-        retained_filename = build_retained_source_filename(
-            intake_timestamp=intake_timestamp,
-            original_filename=source_path.name,
-            sha256_hex=source_sha256,
-        )
-        source_date = (
-            intake_timestamp.astimezone(timezone.utc).date()
-            if intake_date is None
-            else intake_date
-        )
-        retained_path = retained_source_scan_path(
+        retained_source = retain_source_scan(
             root,
-            intake_date=source_date,
-            retained_filename=retained_filename,
-        ).resolve(strict=False)
-    except (ScanRouteError, OSError, ValueError) as error:
-        raise EvidenceFilingError(f"Invalid retained source route: {error}") from error
-
-    routed_input_for_extension = (
-        source_path if routed_input is None else routed_input
-    )
-    extension = _normalized_extension(
-        routed_extension
-        if routed_extension is not None
-        else routed_input_for_extension.suffix
-    )
-
-    retained_dir = retained_path.parent
-    _require_contained(retained_path, retained_dir, "retained source path")
-    _require_contained(retained_dir, root, "retained source directory")
-    _create_directory(retained_dir, root, "retained source directory")
-
-    try:
-        copied_sha256 = _copy_exclusive_with_sha256(source_path, retained_path)
-    except FileExistsError as error:
-        raise EvidenceFilingError(
-            f"Retained source destination already exists: {retained_path}"
-        ) from error
-    except OSError as error:
-        raise EvidenceFilingError(
-            f"Could not copy retained source to {retained_path}: {error}"
-        ) from error
-    if copied_sha256 != source_sha256:
-        _remove_incomplete_copy(retained_path)
-        raise EvidenceFilingError(
-            "Source file changed while it was being retained; no retained copy "
-            "was kept."
+            source_file_path,
+            intake_timestamp=intake_timestamp,
+            intake_date=intake_date,
         )
+    except SourceRetentionError as error:
+        raise EvidenceFilingError(f"Could not retain source scan: {error}") from error
 
-    retained_source = RetainedSourceScan(
-        source_scan_id=f"scan_{retained_path.stem}",
-        source_filename=source_path.name,
-        source_sha256=source_sha256,
-        retained_source_path=retained_path,
-        retained_source_relative_path=_workspace_relative(retained_path, root),
+    if extension is None:
+        extension = _normalized_extension(retained_source.retained_source_path.suffix)
+
+    routed_input = (
+        retained_source.retained_source_path if routed_input is None else routed_input
     )
-
-    routed_input = retained_path if routed_input is None else routed_input
     _create_directory(routed_dir, root, "routed evidence directory")
     routed_path, duplicate_number = _copy_routed_evidence(
         routed_input,
@@ -230,36 +179,6 @@ def _readable_regular_file(value: str | Path, field_name: str) -> Path:
         raise
     except (OSError, TypeError, ValueError) as error:
         raise EvidenceFilingError(f"Could not read {field_name}: {error}") from error
-
-
-def _sha256_file(path: Path, field_name: str) -> str:
-    digest = hashlib.sha256()
-    try:
-        with path.open("rb") as source:
-            while chunk := source.read(_COPY_BUFFER_SIZE):
-                digest.update(chunk)
-    except OSError as error:
-        raise EvidenceFilingError(f"Could not read {field_name}: {error}") from error
-    return digest.hexdigest()
-
-
-def _copy_exclusive_with_sha256(source: Path, destination: Path) -> str:
-    digest = hashlib.sha256()
-    destination_created = False
-    try:
-        with source.open("rb") as source_file:
-            with destination.open("xb") as destination_file:
-                destination_created = True
-                while chunk := source_file.read(_COPY_BUFFER_SIZE):
-                    destination_file.write(chunk)
-                    digest.update(chunk)
-    except FileExistsError:
-        raise
-    except OSError:
-        if destination_created:
-            _remove_incomplete_copy(destination)
-        raise
-    return digest.hexdigest()
 
 
 def _copy_exclusive(source: Path, destination: Path) -> None:
