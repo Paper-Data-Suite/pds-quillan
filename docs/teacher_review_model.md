@@ -197,3 +197,11 @@ feedback, or exports.
 * [`feedback_export_contract.md`](feedback_export_contract.md)
 * [`assignment_reporting_contract.md`](assignment_reporting_contract.md)
 * [`workspace_lifecycle.md`](workspace_lifecycle.md)
+
+## Plain-paper evidence under teacher control
+
+Quillan can initialize the standards-based review model for work written on
+plain paper outside Quillan. The submission has no digital pages; the teacher
+retains and reviews the physical paper, then records judgments through the
+same review units, Focus Standards, feedback, private notes, and workflow
+states used for scanned submissions.

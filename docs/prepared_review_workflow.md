@@ -232,3 +232,12 @@ notes, feedback, exports, or personally identifiable information.
 * [`assignment_reporting_contract.md`](assignment_reporting_contract.md)
 * [`teacher_review_model.md`](teacher_review_model.md)
 * [`workspace_lifecycle.md`](workspace_lifecycle.md)
+
+## Work completed on plain paper
+
+For a roster student with neither routed evidence nor a manifest, the selected
+student review screen can create a plain-paper manual submission after teacher
+confirmation. This creates only `submission.json` and `review.json`; it does
+not route scans, attach images, run OCR, or invent evidence paths. Continue
+with the existing minimum-requirement, review-unit, Focus Standard, feedback,
+note, state, and export actions while reviewing the physical paper.

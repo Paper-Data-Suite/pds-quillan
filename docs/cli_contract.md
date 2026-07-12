@@ -1052,3 +1052,12 @@ explicitly outside the current end-to-end foundation:
 
 Their presence in design documents or Python modules does not add them to the
 CLI contract.
+
+## Selected-student plain-paper action
+
+When a roster student has no routed evidence and no submission manifest, the
+interactive selected-student review menu offers creation of a plain-paper
+manual submission. It requires `y` or `yes` confirmation. Existing manifests,
+existing orphan review records, and routed-evidence-only students are not
+converted. Opening evidence for a manual submission reports that no digital
+evidence is attached instead of invoking an evidence opener.

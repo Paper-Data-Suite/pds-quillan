@@ -1155,7 +1155,7 @@ def test_review_menu_reports_missing_openable_evidence(
 ) -> None:
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "2", "1", "", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "2", "1", "n", "", "b", "b", "b", "q"],
     )
 
     assert main(["menu"]) == 0
@@ -1163,9 +1163,42 @@ def test_review_menu_reports_missing_openable_evidence(
     output = capsys.readouterr().out
     assert f"Student: Mina Patel ({SECOND_STUDENT_ID})" in output
     assert "Submission: not assembled" in output
-    assert "No routed evidence has been found for this student yet." in output
+    assert "No digital submission evidence has been found" in output
+    assert "1. Create plain-paper submission for this student" in output
+    assert "Plain-paper submission creation canceled." in output
     assert "1. Assemble this assignment now" not in output
     assert not list(workspace.rglob("review.json"))
+
+
+def test_review_menu_creates_plain_paper_submission_and_shows_review_actions(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _menu_input(
+        monkeypatch,
+        ["2", "1", "1", "1", "1", "2", "1", "yes", "", "12", "6", "b", "q"],
+    )
+
+    assert main(["menu"]) == 0
+
+    output = capsys.readouterr().out
+    assert "Plain-paper submission created for Mina Patel" in output
+    assert "1. Open submission evidence" in output
+    assert "5. Overall Focus Standard ratings" in output
+    student_dir = (
+        workspace
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "submissions"
+        / SECOND_STUDENT_ID
+    )
+    assert {path.name for path in student_dir.iterdir()} == {
+        "submission.json",
+        "review.json",
+    }
 
 
 

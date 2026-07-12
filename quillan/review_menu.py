@@ -140,6 +140,11 @@ from quillan.menu_navigation import (
     parse_navigation_choice,
     print_navigation_options,
 )
+from quillan.plain_paper_submission import (
+    PlainPaperSubmissionError,
+    create_plain_paper_submission,
+    is_plain_paper_submission,
+)
 
 _BACK = object()
 _CANCEL = object()
@@ -325,6 +330,13 @@ def _student_status_label(status: StudentSubmissionStatus | None) -> str:
         return "no manifest; no routed evidence"
     if status.manifest_path is None:
         return "routed evidence exists; no manifest"
+    try:
+        if is_plain_paper_submission(
+            load_submission_manifest(status.manifest_path)
+        ):
+            return "plain-paper manual submission; no digital evidence"
+    except (OSError, SubmissionManifestError):
+        pass
     evidence_count = sum(page.evidence_count for page in status.pages)
     return (
         f"{status.submission_state}; manifest exists; "
@@ -353,24 +365,27 @@ def _launch_selected_student_review(
         status = _load_submission_status(workspace_root, class_id, assignment_id)
         student_status = _student_submission_status(status, student_id)
         if student_status is None:
-            print("No routed evidence has been found for this student yet.")
-            print(
-                "Route a scan for this assignment, then assemble submissions "
-                "before review."
-            )
+            print("No digital submission evidence has been found for this student.")
             print()
-            print("1. View routed evidence status")
-            print("2. Refresh summary")
+            print("1. Create plain-paper submission for this student")
+            print("2. View routed evidence status")
+            print("3. Refresh summary")
             print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
             navigation = parse_navigation_choice(choice)
             print()
-            if choice in {"", "3"} or navigation is NavigationChoice.BACK:
+            if choice in {"", "4"} or navigation is NavigationChoice.BACK:
                 return 0
-            if choice in {"1", "2"}:
+            if choice == "1":
+                _create_plain_paper_submission_menu(
+                    workspace_root, class_id, assignment_id, student_id
+                )
+                input("Press Enter to continue...")
                 continue
-            print("Invalid selection. Please enter a number from 1 to 3.")
+            if choice in {"2", "3"}:
+                continue
+            print("Invalid selection. Please enter a number from 1 to 4.")
             input("Press Enter to continue...")
             continue
         if student_status.manifest_path is None:
@@ -1195,6 +1210,24 @@ def _open_submission_evidence(
     assignment_id: str,
     student_id: str,
 ) -> None:
+    try:
+        manifest = load_submission_manifest(
+            submission_manifest_path(
+                workspace_root, class_id, assignment_id, student_id
+            )
+        )
+        if is_plain_paper_submission(manifest):
+            print(
+                "This is a plain-paper manual submission. "
+                "No digital evidence is attached."
+            )
+            print(
+                "Review the physical paper, then use Quillan's review actions "
+                "to record your judgment."
+            )
+            return
+    except (OSError, SubmissionManifestError, SubmissionManifestPathError):
+        pass
     page_number = _choose_submission_evidence_page(
         workspace_root,
         class_id,
@@ -1219,6 +1252,50 @@ def _open_submission_evidence(
         return
 
     print_opened_submission_review(opened)
+
+
+def _create_plain_paper_submission_menu(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    _print_review_action_header(
+        "Create Plain-Paper Submission", class_id, assignment_id, student_id
+    )
+    print("Use this only when the student completed the assignment on paper outside")
+    print("Quillan and you want to review the physical paper manually.")
+    print()
+    print("This will create:")
+    print("- submission.json")
+    print("- review.json")
+    print()
+    print(
+        "It will not create scan evidence, PDFs, images, OCR output, "
+        "or generated feedback."
+    )
+    print()
+    confirmation = input("Create plain-paper submission? (y/yes): ").strip().casefold()
+    if confirmation not in {"y", "yes"}:
+        print("Plain-paper submission creation canceled.")
+        return
+    try:
+        create_plain_paper_submission(
+            workspace_root, class_id, assignment_id, student_id
+        )
+    except Exception as error:
+        if isinstance(error, PlainPaperSubmissionError):
+            print(str(error))
+        else:
+            print(f"Error: plain-paper submission was not created: {error}")
+        return
+    student_label = student_review_label(workspace_root, class_id, student_id)
+    print(f"Plain-paper submission created for {student_label}.")
+    print()
+    print(
+        "You can now review minimum requirements, review units, Focus Standard "
+        "observations, overall Focus Standard ratings, feedback, and private notes."
+    )
 
 
 def _choose_submission_evidence_page(

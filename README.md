@@ -353,3 +353,14 @@ Recommended pull request workflow:
 ## License
 
 MIT
+
+### Plain-paper manual submissions
+
+When a student writes on paper outside Quillan, select that roster student in
+Review Student Work and choose **Create plain-paper submission for this
+student**. Quillan creates a review-ready `submission.json` and `review.json`
+without routing a scan, running OCR, or fabricating digital evidence. The
+physical paper remains under the teacher's control, and the normal
+standards-based review and export actions apply after setup. This does not
+change printable QR/PDS1 response pages. Never commit real student data or
+workspace artifacts.
