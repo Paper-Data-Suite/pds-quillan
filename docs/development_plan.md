@@ -634,3 +634,12 @@ Future enhancements may include:
 * optional desktop packaging.
 
 These should not distract from the MVP.
+
+## Plain-paper manual submission entry
+
+Quillan supports a focused teacher-facing setup path for students who wrote on
+plain paper when printable response pages were unavailable. The path creates
+the existing submission and review contracts without scans, OCR, placeholder
+files, fake evidence, bulk creation, or changes to QR/PDS1 printing. Subsequent
+work remains in the active standards-based review and assignment-local export
+model.

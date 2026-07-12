@@ -1438,3 +1438,11 @@ This contract does not implement:
 * report visualization.
 
 The record describes teacher-entered or teacher-confirmed judgment only.
+
+## Plain-paper entry
+
+The plain-paper workflow immediately creates a normal schema-version-2 empty
+review record pointing to the canonical submission manifest. Its
+`module_details` contains `review_entry_method: "plain_paper_manual"` and
+`created_by_workflow: "plain_paper_submission"`. It does not add top-level
+fields or prefill checks, units, observations, ratings, feedback, or notes.

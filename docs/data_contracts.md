@@ -194,3 +194,12 @@ other personally identifiable student information.
 
 Reusable comments and reporting examples must avoid student-identifying details
 and private classroom context, even when the example is synthetic.
+
+## Plain-paper manual submissions
+
+An evidence-less manual submission uses submission-manifest schema version 1
+with `expected_pages: null`, `pages: []`, and `submission_state: "unreviewed"`.
+Its `module_details` records `submission_entry_method: "plain_paper_manual"`,
+`physical_evidence_status: "teacher_has_external_plain_paper"`, and
+`created_by_workflow: "plain_paper_submission"`. No routed evidence path or
+digital artifact is created; the physical paper remains outside Quillan.
