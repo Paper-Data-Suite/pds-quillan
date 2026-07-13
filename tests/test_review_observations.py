@@ -381,6 +381,50 @@ def test_observation_requires_existing_unit_and_assignment_focus_standard(
         )
 
 
+def test_observation_rating_uses_assignment_scale_and_remains_optional(
+    tmp_path: Path,
+) -> None:
+    _write_workspace(tmp_path)
+    set_review_units(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        [{"sequence": 1}],
+        updated_at=FIRST_TIMESTAMP,
+    )
+    record_path = review_record_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    before = record_path.read_bytes()
+    with pytest.raises(ReviewObservationError, match="Allowed values"):
+        set_review_unit_observation(
+            tmp_path,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            unit_id="paragraph_1",
+            standard_id="njsls-ela:W.1",
+            applicable=True,
+            evidence_present=True,
+            rating=99,
+            updated_at=SECOND_TIMESTAMP,
+        )
+    assert record_path.read_bytes() == before
+
+    updated = set_review_unit_observation(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        unit_id="paragraph_1",
+        standard_id="njsls-ela:W.1",
+        applicable=True,
+        evidence_present=True,
+        rating=2,
+        updated_at=SECOND_TIMESTAMP,
+    )
+    assert updated.rating == 2
+    assert updated.rating_label == "Secure"
+
 def test_mark_observations_complete_sets_state_without_creating_ratings(
     tmp_path: Path,
 ) -> None:

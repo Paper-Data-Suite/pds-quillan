@@ -68,6 +68,9 @@ class UpdatedReviewUnitObservation:
     observation_id: str
     applicable: bool
     evidence_present: bool | None
+    rating: int | None
+    rating_label: str | None
+    rationale: str | None
     include_in_feedback: bool
     was_created: bool
     updated_at: str
@@ -221,8 +224,17 @@ def set_review_unit_observation(
     context = _load_context(workspace_root, class_id, assignment_id, student_id)
     assignment = context["assignment"]
     if normalized_standard_id not in assignment["focus_standard_ids"]:
+        valid = ", ".join(assignment["focus_standard_ids"])
         raise ReviewObservationError(
-            f"standard_id {normalized_standard_id!r} is not a Focus Standard for this assignment."
+            f"standard_id {normalized_standard_id!r} is not a Focus Standard for this "
+            f"assignment. Valid Focus Standard IDs: {valid}."
+        )
+    rating_labels = _rating_labels_by_value(assignment)
+    if normalized_rating is not None and normalized_rating not in rating_labels:
+        allowed = ", ".join(str(value) for value in rating_labels)
+        raise ReviewObservationError(
+            f"rating {normalized_rating!r} is not in the assignment rating scale. "
+            f"Allowed values: {allowed}."
         )
 
     review = _load_existing_review(context)
@@ -234,7 +246,10 @@ def set_review_unit_observation(
         None,
     )
     if unit is None:
-        raise ReviewObservationError(f"Review unit not found: {normalized_unit_id}")
+        valid = ", ".join(candidate["unit_id"] for candidate in review["review_units"])
+        raise ReviewObservationError(
+            f"Review unit not found: {normalized_unit_id}. Valid unit IDs: {valid}."
+        )
 
     if applicable:
         if not isinstance(evidence_present, bool):
@@ -300,6 +315,11 @@ def set_review_unit_observation(
         observation_id=observation_id,
         applicable=applicable,
         evidence_present=normalized_evidence_present,
+        rating=normalized_rating,
+        rating_label=(
+            rating_labels[normalized_rating] if normalized_rating is not None else None
+        ),
+        rationale=normalized_rationale,
         include_in_feedback=normalized_include,
         was_created=was_created,
         updated_at=normalized_updated_at,
@@ -499,6 +519,13 @@ def _normalize_rating(value: Any) -> int | None:
     if isinstance(value, bool) or not isinstance(value, int):
         raise ReviewObservationError("rating must be an integer or null.")
     return value
+
+
+def _rating_labels_by_value(assignment: dict[str, Any]) -> dict[int, str]:
+    return {
+        level["value"]: level["label"]
+        for level in assignment["rating_scale"]["levels"]
+    }
 
 
 def _normalize_required_string(value: Any, field: str) -> str:

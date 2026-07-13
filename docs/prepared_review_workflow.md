@@ -125,6 +125,26 @@ their stale feedback references are removed. These commands never inspect
 evidence content, run OCR or AI, or infer segmentation, labels, observations,
 ratings, feedback, grades, or scores.
 
+Teachers may likewise inspect or record unit-standard observations through
+the direct, non-interactive `quillan observations list` and `quillan
+observations set` commands. Listing shows the complete active matrix in unit
+sequence and assignment Focus Standard order and never writes. Setting
+requires an existing unit, an assignment Focus Standard, explicit
+applicability, and explicit evidence presence for applicable observations.
+Applicable unit ratings remain optional and, when supplied, are validated
+against the assignment rating scale. Not-applicable observations store null
+evidence presence and rating. Updates replace editable values while preserving
+the observation ID. Feedback eligibility does not compose feedback or change
+included-observation lists, and observation writes never create or alter
+overall Focus Standard ratings.
+
+Both observation commands require an assembled canonical submission manifest.
+Only `set` writes, and it may change only the canonical `review.json`. Returned
+without-full-review records can be listed but cannot be changed until the
+minimum-requirements outcome changes. These commands do not inspect evidence,
+run OCR, handwriting recognition, or AI, infer judgments, calculate ratings,
+grades, or scores, mark observations complete, or generate feedback.
+
 ## Overall Focus Standard Ratings
 
 Overall ratings are stored in:

@@ -565,9 +565,9 @@ Field rules:
 * `applicable` is a boolean.
 * `evidence_present` is a boolean when `applicable` is `true`.
 * `evidence_present` may be `null` only when `applicable` is `false`.
-* `rating` must be a value from the assignment's `rating_scale.levels` when
-  `applicable` is `true`.
-* `rating` may be `null` only when `applicable` is `false`.
+* when `applicable` is `true`, `rating` is either `null` or a value from the
+  assignment's `rating_scale.levels`;
+* when `applicable` is `false`, `rating` must be `null`.
 * `rationale` is either `null` or a non-empty string.
 * `include_in_feedback` is a boolean.
 * `updated_at` is the most recent teacher update timestamp for the observation.

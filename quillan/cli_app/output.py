@@ -117,10 +117,19 @@ def print_updated_review_unit_observation(
     if updated.evidence_present is not None:
         evidence = format_bool(updated.evidence_present)
     print(f"Evidence present: {evidence}")
+    if not updated.applicable:
+        rating = "not applicable"
+    elif updated.rating is None:
+        rating = "none"
+    else:
+        rating = f"{updated.rating} ({updated.rating_label})"
+    print(f"Unit-level rating: {rating}")
+    print(f"Rationale: {'present' if updated.rationale is not None else 'none'}")
     print(f"Include in feedback: {format_bool(updated.include_in_feedback)}")
     print(f"Action: {'created' if updated.was_created else 'updated'}")
     print(f"Review state: {updated.review_state}")
     print(f"Review record: {updated.review_record_relative_path}")
+    print(f"Updated: {updated.updated_at}")
 
 
 def print_completed_review_unit_observations(
