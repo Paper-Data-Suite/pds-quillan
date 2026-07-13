@@ -46,15 +46,26 @@ class CreatedPlainPaperSubmission:
     created_at: str
 
 
-def create_plain_paper_submission(
+@dataclass(frozen=True, slots=True)
+class PlainPaperSubmissionPlan:
+    """Validated target paths for a plain-paper submission."""
+
+    class_id: str
+    assignment_id: str
+    student_id: str
+    submission_manifest_path: Path
+    submission_manifest_relative_path: str
+    review_record_path: Path
+    review_record_relative_path: str
+
+
+def plan_plain_paper_submission(
     workspace_root: str | Path,
     class_id: str,
     assignment_id: str,
     student_id: str,
-    *,
-    created_at: datetime | str | None = None,
-) -> CreatedPlainPaperSubmission:
-    """Create an evidence-less manifest and empty v2 review record safely."""
+) -> PlainPaperSubmissionPlan:
+    """Validate a plain-paper submission request without writing files."""
     root = Path(workspace_root).resolve(strict=False)
     for value, field in (
         (class_id, "class_id"),
@@ -95,6 +106,30 @@ def create_plain_paper_submission(
             "submission before continuing."
         )
 
+    return PlainPaperSubmissionPlan(
+        class_id=class_id,
+        assignment_id=assignment_id,
+        student_id=student_id,
+        submission_manifest_path=manifest_path,
+        submission_manifest_relative_path=manifest_path.relative_to(root).as_posix(),
+        review_record_path=review_path,
+        review_record_relative_path=review_path.relative_to(root).as_posix(),
+    )
+
+
+def create_plain_paper_submission(
+    workspace_root: str | Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    created_at: datetime | str | None = None,
+) -> CreatedPlainPaperSubmission:
+    """Create an evidence-less manifest and empty v2 review record safely."""
+    plan = plan_plain_paper_submission(
+        workspace_root, class_id, assignment_id, student_id
+    )
+
     timestamp = _timestamp(created_at)
     manifest: dict[str, Any] = {
         "schema_version": "1",
@@ -127,22 +162,22 @@ def create_plain_paper_submission(
     validate_submission_manifest(manifest)
     validate_review_record(review)
 
-    write_submission_manifest(manifest_path, manifest)
+    write_submission_manifest(plan.submission_manifest_path, manifest)
     try:
-        write_review_record(review_path, review)
+        write_review_record(plan.review_record_path, review)
     except Exception:
         # Restore the original no-record state if the paired write cannot finish.
-        manifest_path.unlink(missing_ok=True)
+        plan.submission_manifest_path.unlink(missing_ok=True)
         raise
 
     return CreatedPlainPaperSubmission(
         class_id=class_id,
         assignment_id=assignment_id,
         student_id=student_id,
-        submission_manifest_path=manifest_path,
-        submission_manifest_relative_path=manifest_path.relative_to(root).as_posix(),
-        review_record_path=review_path,
-        review_record_relative_path=review_path.relative_to(root).as_posix(),
+        submission_manifest_path=plan.submission_manifest_path,
+        submission_manifest_relative_path=plan.submission_manifest_relative_path,
+        review_record_path=plan.review_record_path,
+        review_record_relative_path=plan.review_record_relative_path,
         created_at=timestamp,
     )
 

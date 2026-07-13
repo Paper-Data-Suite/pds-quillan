@@ -16,6 +16,10 @@ from quillan.cli_app.output import (
     print_updated_submission_review_state,
 )
 from quillan.evidence_opening import EvidenceOpeningError, open_workspace_evidence
+from quillan.plain_paper_submission import (
+    create_plain_paper_submission,
+    plan_plain_paper_submission,
+)
 from quillan.submission_review_opening import (
     SubmissionReviewOpeningError,
     open_student_submission_for_review,
@@ -25,6 +29,49 @@ from quillan.submission_review_state import (
     update_submission_review_state,
 )
 from quillan.submission_status import list_assignment_submission_status
+
+
+def handle_create_plain_paper_submission(args: argparse.Namespace) -> int:
+    """Validate or create one evidence-less plain-paper submission."""
+    if not args.yes and not args.dry_run:
+        print("Error: creating a plain-paper submission requires --yes or --dry-run.")
+        return 1
+
+    try:
+        workspace_root = resolve_workspace_root()
+        if args.dry_run:
+            plan = plan_plain_paper_submission(
+                workspace_root, args.class_id, args.assignment_id, args.student_id
+            )
+        else:
+            created = create_plain_paper_submission(
+                workspace_root, args.class_id, args.assignment_id, args.student_id
+            )
+    except Exception as error:
+        action = "dry run failed" if args.dry_run else "was not created"
+        print(f"Error: plain-paper submission {action}: {error}")
+        return 1
+
+    if args.dry_run:
+        print("Plain-paper submission dry run:")
+        print(f"Class: {plan.class_id}")
+        print(f"Assignment: {plan.assignment_id}")
+        print(f"Student: {plan.student_id}")
+        print(
+            "Would create submission manifest: "
+            f"{plan.submission_manifest_relative_path}"
+        )
+        print(f"Would create review record: {plan.review_record_relative_path}")
+        print("No files were written.")
+    else:
+        print("Created plain-paper submission:")
+        print(f"Class: {created.class_id}")
+        print(f"Assignment: {created.assignment_id}")
+        print(f"Student: {created.student_id}")
+        print(f"Submission manifest: {created.submission_manifest_relative_path}")
+        print(f"Review record: {created.review_record_relative_path}")
+        print(f"Created at: {created.created_at}")
+    return 0
 
 
 def handle_assemble_submissions(args: argparse.Namespace) -> int:

@@ -757,6 +757,23 @@ files, and skipped filenames without creating or modifying records.
 These commands do not open evidence, update review state, create review
 records, score work, tag work, generate feedback, run OCR, or perform AI work.
 
+## Plain-Paper Manual Submission
+
+```powershell
+quillan create-plain-paper-submission <class_id> <assignment_id> <student_id> --yes
+quillan create-plain-paper-submission <class_id> <assignment_id> <student_id> --dry-run
+```
+
+This command is for student work completed on physical plain paper when no
+digital, QR, or scanned evidence exists. It creates only the canonical
+evidence-less `submission.json` and paired empty `review.json`; it does not
+create scans, routed evidence, OCR output, PDFs, images, or feedback.
+
+`--yes` is required to write without an interactive prompt. `--dry-run` runs
+the same identity, assignment, roster, and existing-record validation and
+reports the workspace-relative target paths without writing files. The flags
+are mutually exclusive.
+
 ## Evidence and Submission Opening
 
 ```powershell
