@@ -23,6 +23,7 @@ from quillan.cli_app.handlers.scan_review import (
 )
 from quillan.cli_app.handlers.submissions import (
     handle_assemble_submissions,
+    handle_create_plain_paper_submission,
     handle_list_submissions,
     handle_open_evidence,
     handle_open_submission,
@@ -201,6 +202,28 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     assemble_parser.set_defaults(handler=handle_assemble_submissions)
+
+    plain_paper_parser = subparsers.add_parser(
+        "create-plain-paper-submission",
+        help="Create a review-ready submission for physical plain-paper work.",
+        description=(
+            "Validate and create an evidence-less submission manifest and empty "
+            "review record for work completed on physical plain paper."
+        ),
+    )
+    _add_submission_identity_arguments(plain_paper_parser)
+    confirmation_group = plain_paper_parser.add_mutually_exclusive_group()
+    confirmation_group.add_argument(
+        "--yes",
+        action="store_true",
+        help="Confirm creation without an interactive prompt.",
+    )
+    confirmation_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate and report target paths without writing files.",
+    )
+    plain_paper_parser.set_defaults(handler=handle_create_plain_paper_submission)
 
     status_parser = subparsers.add_parser(
         "list-submissions",

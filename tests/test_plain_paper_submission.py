@@ -6,6 +6,9 @@ from pathlib import Path
 
 import pytest
 
+from quillan.cli_app import parser as cli_parser
+from quillan.cli_app.handlers import submissions as cli_submissions
+from quillan.cli_app.main import main
 from quillan.plain_paper_submission import (
     PlainPaperSubmissionError,
     create_plain_paper_submission,
@@ -175,3 +178,247 @@ def test_status_and_evidence_opening_are_teacher_friendly(
     output = capsys.readouterr().out
     assert "No digital evidence is attached" in output
     assert "Review the physical paper" in output
+
+
+def test_cli_help_lists_plain_paper_command_and_arguments(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit, match="0"):
+        main(["--help"])
+    assert "create-plain-paper-submission" in capsys.readouterr().out
+
+    with pytest.raises(SystemExit, match="0"):
+        main(["create-plain-paper-submission", "--help"])
+    output = capsys.readouterr().out
+    assert "class_id" in output
+    assert "assignment_id" in output
+    assert "student_id" in output
+    assert "--yes" in output
+    assert "--dry-run" in output
+
+
+@pytest.fixture
+def cli_workspace(
+    workspace: Path, monkeypatch: pytest.MonkeyPatch
+) -> Path:
+    monkeypatch.setattr(cli_submissions, "resolve_workspace_root", lambda: workspace)
+    return workspace
+
+
+def test_cli_creates_plain_paper_submission(
+    cli_workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    result = main(
+        [
+            "create-plain-paper-submission",
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            "--yes",
+        ]
+    )
+
+    assert result == 0
+    student_dir = (
+        cli_workspace
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "submissions"
+        / STUDENT_ID
+    )
+    manifest = load_submission_manifest(student_dir / "submission.json")
+    review = load_review_record(student_dir / "review.json")
+    assert manifest["pages"] == []
+    assert manifest["expected_pages"] is None
+    assert manifest["module_details"]["submission_entry_method"] == (
+        "plain_paper_manual"
+    )
+    assert review["schema_version"] == "2"
+    assert review["module_details"]["review_entry_method"] == "plain_paper_manual"
+    assert {path.name for path in student_dir.iterdir()} == {
+        "submission.json",
+        "review.json",
+    }
+    output = capsys.readouterr().out
+    assert "Created plain-paper submission:" in output
+    assert f"Class: {CLASS_ID}" in output
+    assert f"Assignment: {ASSIGNMENT_ID}" in output
+    assert f"Student: {STUDENT_ID}" in output
+    assert "Submission manifest: classes/" in output
+    assert "Review record: classes/" in output
+
+
+def test_cli_dry_run_validates_without_writing(
+    cli_workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    result = main(
+        [
+            "create-plain-paper-submission",
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            "--dry-run",
+        ]
+    )
+
+    assert result == 0
+    assert not (cli_workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "submissions").exists()
+    output = capsys.readouterr().out
+    assert "Plain-paper submission dry run:" in output
+    assert "Would create submission manifest: classes/" in output
+    assert "Would create review record: classes/" in output
+    assert "No files were written." in output
+
+
+def test_cli_requires_confirmation_without_writing(
+    cli_workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    result = main(
+        ["create-plain-paper-submission", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]
+    )
+
+    assert result == 1
+    assert "requires --yes or --dry-run" in capsys.readouterr().out
+    assert not (cli_workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "submissions").exists()
+
+
+def test_cli_flags_are_mutually_exclusive() -> None:
+    parser = cli_parser.build_parser()
+    with pytest.raises(SystemExit, match="2"):
+        parser.parse_args(
+            [
+                "create-plain-paper-submission",
+                CLASS_ID,
+                ASSIGNMENT_ID,
+                STUDENT_ID,
+                "--yes",
+                "--dry-run",
+            ]
+        )
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_cli_rejects_invalid_student(
+    cli_workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    dry_run: bool,
+) -> None:
+    flag = "--dry-run" if dry_run else "--yes"
+    result = main(
+        [
+            "create-plain-paper-submission",
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            "stu_999",
+            flag,
+        ]
+    )
+
+    assert result == 1
+    assert "not in the roster" in capsys.readouterr().out
+    assert not (cli_workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "submissions").exists()
+
+
+def test_cli_refuses_existing_manifest_without_changing_it(
+    cli_workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    created = create_plain_paper_submission(
+        cli_workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+    )
+    original = created.submission_manifest_path.read_bytes()
+
+    assert main(
+        [
+            "create-plain-paper-submission",
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            "--yes",
+        ]
+    ) == 1
+    assert created.submission_manifest_path.read_bytes() == original
+    assert "already exists" in capsys.readouterr().out
+
+
+def test_cli_refuses_orphan_review_without_changing_it(
+    cli_workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    student_dir = cli_workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "submissions" / STUDENT_ID
+    student_dir.mkdir(parents=True)
+    review_path = student_dir / "review.json"
+    review_path.write_bytes(b"existing review")
+
+    assert main(
+        [
+            "create-plain-paper-submission",
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            "--yes",
+        ]
+    ) == 1
+    assert review_path.read_bytes() == b"existing review"
+    assert not (student_dir / "submission.json").exists()
+    assert "without a submission manifest" in capsys.readouterr().out
+
+
+def test_cli_workspace_error_is_reported_without_traceback(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fail_workspace() -> Path:
+        raise RuntimeError("workspace unavailable")
+
+    monkeypatch.setattr(cli_submissions, "resolve_workspace_root", fail_workspace)
+    result = main(
+        [
+            "create-plain-paper-submission",
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            "--yes",
+        ]
+    )
+
+    assert result == 1
+    assert capsys.readouterr().out == (
+        "Error: plain-paper submission was not created: workspace unavailable\n"
+    )
+
+
+def test_cli_rejects_class_not_in_assignment(
+    cli_workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assignment_path = (
+        cli_workspace
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "assignment.json"
+    )
+    assignment = json.loads(assignment_path.read_text(encoding="utf-8"))
+    assignment["class_ids"] = ["english10_p3"]
+    assignment_path.write_text(json.dumps(assignment), encoding="utf-8")
+
+    result = main(
+        [
+            "create-plain-paper-submission",
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            "--yes",
+        ]
+    )
+
+    assert result == 1
+    assert "is not included in assignment" in capsys.readouterr().out
+    assert not (
+        cli_workspace
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "submissions"
+    ).exists()
