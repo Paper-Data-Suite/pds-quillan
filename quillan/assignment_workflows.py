@@ -6,6 +6,7 @@ import json
 import re
 import unicodedata
 from collections.abc import Mapping, Sequence
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -132,6 +133,7 @@ def build_assignment_config(
     minimum_requirement_policy: Mapping[str, Any],
     class_ids: Sequence[str] | None = None,
     class_id: str | None = None,
+    created_at: datetime | str | None = None,
 ) -> dict[str, Any]:
     """Build and validate a v2 assignment config."""
     if class_ids is None:
@@ -142,6 +144,13 @@ def build_assignment_config(
         raise ValueError("Pass either class_ids or class_id, not both.")
     else:
         selected_class_ids = list(class_ids)
+
+    if isinstance(created_at, datetime):
+        timestamp = created_at.isoformat()
+    elif created_at is None:
+        timestamp = datetime.now(timezone.utc).isoformat()
+    else:
+        timestamp = created_at
 
     assignment: dict[str, Any] = {
         "schema_version": "2",
@@ -158,6 +167,9 @@ def build_assignment_config(
         "rating_scale": dict(rating_scale),
         "basic_requirements": dict(basic_requirements),
         "minimum_requirement_policy": dict(minimum_requirement_policy),
+        "created_at": timestamp,
+        "updated_at": timestamp,
+        "module_details": {},
     }
     validate_assignment_config(assignment)
     return assignment

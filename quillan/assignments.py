@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -70,6 +71,9 @@ def validate_assignment_config(assignment: dict[str, Any]) -> None:
         "rating_scale",
         "basic_requirements",
         "minimum_requirement_policy",
+        "created_at",
+        "updated_at",
+        "module_details",
     ]
 
     for field in required_fields:
@@ -95,6 +99,28 @@ def validate_assignment_config(assignment: dict[str, Any]) -> None:
     _validate_rating_scale(assignment["rating_scale"])
     _validate_basic_requirements(assignment["basic_requirements"])
     _validate_minimum_requirement_policy(assignment["minimum_requirement_policy"])
+    _validate_timezone_aware_iso_timestamp(assignment["created_at"], "created_at")
+    _validate_timezone_aware_iso_timestamp(assignment["updated_at"], "updated_at")
+    if not isinstance(assignment["module_details"], dict):
+        raise AssignmentConfigError("Field 'module_details' must be an object.")
+
+
+def _validate_timezone_aware_iso_timestamp(value: Any, field: str) -> None:
+    """Validate an ISO 8601 string that includes usable timezone information."""
+    if not isinstance(value, str):
+        raise AssignmentConfigError(
+            f"Field '{field}' must be a timezone-aware ISO 8601 string."
+        )
+    try:
+        timestamp = datetime.fromisoformat(value)
+    except ValueError as error:
+        raise AssignmentConfigError(
+            f"Field '{field}' must be a timezone-aware ISO 8601 string."
+        ) from error
+    if timestamp.tzinfo is None or timestamp.utcoffset() is None:
+        raise AssignmentConfigError(
+            f"Field '{field}' must be a timezone-aware ISO 8601 string."
+        )
 
 
 def validate_assignment_standards_selection(

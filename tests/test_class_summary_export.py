@@ -86,6 +86,9 @@ def _write_assignment(workspace: Path) -> Path:
             "minimum_requirement_policy": {
                 "allow_return_without_full_review": True
             },
+            "created_at": TIMESTAMP,
+            "updated_at": TIMESTAMP,
+            "module_details": {},
         },
     )
 

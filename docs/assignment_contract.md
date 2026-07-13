@@ -34,9 +34,11 @@ This is the active assignment contract for the v0.8.6 standards-based workflow r
 
 It supersedes the old tag/comment/rubric-centered assignment shape that used `tagging_mode`, `focus_standards`, and `rubric_id` as central fields.
 
-Runtime validation, assignment creation, assignment discovery, and tests now
-use this schema version `2` shape. Future migration helpers may still be added
-if legacy classroom data ever needs conversion.
+Runtime validation, assignment creation, assignment discovery, and tests use
+this schema version `2` shape. Validation is strict: Quillan does not silently
+add missing fields or rewrite older assignment files during load, show, or
+validation. Future migration helpers may still be added if legacy classroom
+data ever needs conversion.
 
 ## Canonical Path
 
@@ -778,22 +780,14 @@ rubric_id
 
 Those fields are superseded by the standards-based assignment shape.
 
-Because Quillan is still pre-pilot and no production classroom data is expected to depend on the old assignment contract, v0.8.6 may treat this as a breaking cleanup with no production-data migration.
+Quillan rejects older assignment records and schema-version-2 records missing
+required contract fields. Ordinary load, show, discovery, and validation
+operations do not normalize or mutate those files. No production-data
+migration is provided by this contract.
 
-Later implementation work must decide one of the following:
+## Assignment Creation
 
-1. reject old assignment records with clear guidance;
-2. read old assignment records as legacy records but prevent new review workflows from using them;
-3. provide a migration helper from old assignment records to schema version `2`; or
-4. support a temporary compatibility layer while the redesign is implemented.
-
-The target architecture is schema version `2`.
-
-The old assignment shape should not remain the long-term active contract.
-
-## Assignment Creation Implications
-
-Later assignment-creation workflows should ask for or confirm:
+Assignment-creation workflows ask for or confirm:
 
 1. class or classes using the assignment;
 2. assignment title;
@@ -822,6 +816,10 @@ Assignment summaries should display:
 * assignment path.
 
 Assignment creation should not require teachers to choose generic tag banks, comment banks, or rubrics as central assignment setup steps.
+
+Menu and direct CLI creation automatically add `created_at`, `updated_at`, and
+`module_details`. Both timestamps initially use one timezone-aware UTC ISO 8601
+value, and `module_details` initially uses an empty object.
 
 ## Teacher-Facing Review Implications
 
@@ -919,19 +917,14 @@ The assignment contract provides the Focus Standards, review-unit labels, and ra
 
 ## Non-Goals
 
-This contract does not implement assignment creation.
-
-This contract does not implement validators.
-
-This contract does not update menu workflows.
-
 This contract does not define the new review record schema.
 
 This contract does not define feedback export schemas.
 
 This contract does not define standards-report schemas.
 
-This contract does not migrate old assignment records.
+This contract does not migrate old assignment records, and runtime validation
+does not repair them implicitly.
 
 This contract does not authorize automatic scoring, OCR-based review, AI feedback, or automatic standards detection.
 

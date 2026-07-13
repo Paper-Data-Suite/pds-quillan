@@ -65,6 +65,9 @@ def _valid_assignment_config() -> dict[str, Any]:
         "minimum_requirement_policy": {
             "allow_return_without_full_review": True,
         },
+        "created_at": "2026-07-13T00:00:00+00:00",
+        "updated_at": "2026-07-13T00:00:00+00:00",
+        "module_details": {},
     }
 
 
@@ -123,11 +126,9 @@ def test_validate_assignment_config_rejects_duplicate_class_ids(tmp_path: Path) 
         load_assignment_config(_write_assignment(tmp_path, assignment))
 
 
-def test_optional_metadata_fields_do_not_break_validation(tmp_path: Path) -> None:
+def test_populated_module_details_do_not_break_validation(tmp_path: Path) -> None:
     assignment = _valid_assignment_config()
-    assignment["created_at"] = "2026-07-02T00:00:00+00:00"
-    assignment["updated_at"] = "2026-07-02T00:00:00+00:00"
-    assignment["module_details"] = {}
+    assignment["module_details"] = {"extension": {"enabled": True}}
 
     assert load_assignment_config(_write_assignment(tmp_path, assignment)) == assignment
 
@@ -149,6 +150,9 @@ def test_optional_metadata_fields_do_not_break_validation(tmp_path: Path) -> Non
         "rating_scale",
         "basic_requirements",
         "minimum_requirement_policy",
+        "created_at",
+        "updated_at",
+        "module_details",
     ],
 )
 def test_missing_required_field_raises_error(tmp_path: Path, field: str) -> None:
@@ -176,6 +180,9 @@ def test_missing_required_field_raises_error(tmp_path: Path, field: str) -> None
         ("rating_scale", []),
         ("basic_requirements", []),
         ("minimum_requirement_policy", []),
+        ("created_at", "2026-07-13T00:00:00"),
+        ("updated_at", "not-a-timestamp"),
+        ("module_details", []),
     ],
 )
 def test_invalid_required_field_raises_error(
@@ -186,6 +193,25 @@ def test_invalid_required_field_raises_error(
 
     with pytest.raises(AssignmentConfigError, match=field):
         load_assignment_config(_write_assignment(tmp_path, assignment))
+
+
+@pytest.mark.parametrize("field", ["created_at", "updated_at"])
+@pytest.mark.parametrize(
+    "value",
+    [
+        "2026-07-13T00:00:00",
+        "not-a-timestamp",
+        123,
+    ],
+)
+def test_timestamps_must_be_timezone_aware_iso_strings(
+    field: str, value: object
+) -> None:
+    assignment = _valid_assignment_config()
+    assignment[field] = value
+
+    with pytest.raises(AssignmentConfigError, match=field):
+        validate_assignment_config(assignment)
 
 
 def test_legacy_assignment_config_is_rejected_clearly(tmp_path: Path) -> None:

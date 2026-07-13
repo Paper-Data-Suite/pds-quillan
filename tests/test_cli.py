@@ -151,6 +151,9 @@ def test_cli_validates_assignment_config(
         "minimum_requirement_policy": {
             "allow_return_without_full_review": True,
         },
+        "created_at": "2026-07-13T00:00:00+00:00",
+        "updated_at": "2026-07-13T00:00:00+00:00",
+        "module_details": {},
     }
     assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
 
@@ -159,6 +162,13 @@ def test_cli_validates_assignment_config(
     captured = capsys.readouterr()
 
     assert "Valid assignment config: villainy_final_essay_synthetic" in captured.out
+
+    for field in ("created_at", "updated_at", "module_details"):
+        assignment_data.pop(field)
+    assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="created_at"):
+        main(["validate-assignment", str(assignment_path)])
 
 
 def test_cli_reports_invalid_assignment_config(tmp_path: Path) -> None:

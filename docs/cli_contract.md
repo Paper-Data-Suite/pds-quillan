@@ -174,6 +174,10 @@ require `--yes`; replacing an existing config requires both `--overwrite` and
 `--yes`. `--dry-run` validates and reports the canonical path without creating
 an assignment directory or writing files.
 
+New menu and CLI assignments include equal initial `created_at` and `updated_at`
+values as timezone-aware UTC ISO 8601 strings and include an empty
+`module_details` object.
+
 The prompt may be supplied inline with `--prompt` or read as UTF-8 text with
 `--prompt-file`. Basic paragraph, word-count, and required-element options are
 optional. Review-unit labels and the four-level standards rating scale default
@@ -182,7 +186,9 @@ to the same values used by the menu.
 `assignment show` loads the canonical workspace config, validates its structure
 and path identity, and prints the shared assignment summary. `assignment
 validate` additionally validates the standards profile and every Focus Standard
-against the active workspace library. Both commands are read-only.
+against the active workspace library. Both commands are read-only. They reject
+older records missing required schema-version-2 fields and do not normalize or
+rewrite them.
 
 These commands write or inspect only
 `classes/<class_id>/assignments/<assignment_id>/assignment.json`; they do not
@@ -198,7 +204,10 @@ Loads a UTF-8 JSON assignment configuration and applies Quillan's current
 structural assignment validation rules. Cross-file validation against the
 shared `pds-core` workspace standards library is available through Quillan's
 assignment standards-selection helper, but this CLI command does not currently
-load the workspace standards library.
+load the workspace standards library. The structural rules require
+timezone-aware ISO 8601 `created_at` and `updated_at` strings and an object-valued
+`module_details` field. Missing legacy fields are rejected without changing the
+input file.
 
 On success, it writes this form to standard output:
 

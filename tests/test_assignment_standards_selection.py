@@ -49,6 +49,9 @@ def _valid_assignment_config() -> dict[str, object]:
         "minimum_requirement_policy": {
             "allow_return_without_full_review": True,
         },
+        "created_at": "2026-07-13T00:00:00+00:00",
+        "updated_at": "2026-07-13T00:00:00+00:00",
+        "module_details": {},
         "schema_version": "2",
         "module": "quillan",
         "record_type": "assignment",
