@@ -52,6 +52,9 @@ def _assignment(
         "minimum_requirement_policy": {
             "allow_return_without_full_review": True,
         },
+        "created_at": "2026-07-13T00:00:00+00:00",
+        "updated_at": "2026-07-13T00:00:00+00:00",
+        "module_details": {},
     }
 
 

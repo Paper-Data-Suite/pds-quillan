@@ -134,6 +134,9 @@ def _write_workspace(root: Path) -> None:
         "minimum_requirement_policy": {
             "allow_return_without_full_review": True,
         },
+        "created_at": TIMESTAMP,
+        "updated_at": TIMESTAMP,
+        "module_details": {},
     }
     (assignment_dir / "assignment.json").write_text(
         json.dumps(assignment), encoding="utf-8"

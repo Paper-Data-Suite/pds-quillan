@@ -59,6 +59,9 @@ def _assignment() -> dict[str, Any]:
         "minimum_requirement_policy": {
             "allow_return_without_full_review": True,
         },
+        "created_at": ORIGINAL_TIMESTAMP,
+        "updated_at": ORIGINAL_TIMESTAMP,
+        "module_details": {},
     }
 
 

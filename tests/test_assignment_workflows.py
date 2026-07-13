@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import datetime, timezone
 from pathlib import Path
 
 from pds_core.classes import write_class_roster
@@ -32,6 +33,7 @@ def _assignment(
     assignment_id: str = "literary_analysis_essay",
     class_id: str = "english_12_p3",
     class_ids: list[str] | None = None,
+    created_at: datetime | str | None = None,
 ) -> dict[str, object]:
     return workflows.build_assignment_config(
         assignment_id=assignment_id,
@@ -73,6 +75,7 @@ def _assignment(
         minimum_requirement_policy={
             "allow_return_without_full_review": True,
         },
+        created_at=created_at,
     )
 
 
@@ -179,8 +182,23 @@ def test_build_assignment_config_has_required_v2_fields_and_validates() -> None:
         "rating_scale",
         "basic_requirements",
         "minimum_requirement_policy",
+        "created_at",
+        "updated_at",
+        "module_details",
     ]
+    assert assignment["created_at"] == assignment["updated_at"]
+    assert datetime.fromisoformat(str(assignment["created_at"])).utcoffset() is not None
+    assert assignment["module_details"] == {}
     validate_assignment_config(assignment)
+
+
+def test_build_assignment_config_accepts_deterministic_creation_timestamp() -> None:
+    created_at = datetime(2026, 7, 13, tzinfo=timezone.utc)
+
+    assignment = _assignment(created_at=created_at)
+
+    assert assignment["created_at"] == "2026-07-13T00:00:00+00:00"
+    assert assignment["updated_at"] == assignment["created_at"]
 
 
 def test_build_assignment_config_accepts_multiple_class_ids() -> None:
@@ -372,6 +390,9 @@ def test_prompt_create_assignment_writes_valid_v2_config(
     )
     assignment = load_assignment_config(path)
     assert assignment["schema_version"] == "2"
+    assert assignment["created_at"] == assignment["updated_at"]
+    assert datetime.fromisoformat(str(assignment["created_at"])).utcoffset() is not None
+    assert assignment["module_details"] == {}
     assert assignment["writing_type"] == "literary_analysis"
     assert assignment["student_prompt"] == (
         "Analyze how the author develops a central idea."

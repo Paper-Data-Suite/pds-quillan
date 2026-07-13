@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 from pds_core.classes import write_class_roster
@@ -110,6 +111,9 @@ def test_create_show_validate_and_overwrite_safety(
     assert assignment["class_ids"] == ["english10_p2"]
     assert assignment["writing_type"] == "literary_analysis"
     assert assignment["basic_requirements"] == {"paragraphs_min": 4}
+    assert assignment["created_at"] == assignment["updated_at"]
+    assert datetime.fromisoformat(assignment["created_at"]).utcoffset() is not None
+    assert assignment["module_details"] == {}
     assert len(assignment["rating_scale"]["levels"]) == 4
     original = path.read_bytes()
     assert main(_args("--yes")) == 1
@@ -154,3 +158,17 @@ def test_invalid_standards_and_path_identity_fail_cleanly(
     path.write_text(json.dumps(data), encoding="utf-8")
     assert main(["assignment", "validate", "english10_p2", "literary_analysis"]) == 1
     assert "Path assignment_id" in capsys.readouterr().out
+
+
+def test_canonical_validate_rejects_assignment_missing_contract_metadata(
+    workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(_args("--yes")) == 0
+    path = workspace / "classes/english10_p2/assignments/literary_analysis/assignment.json"
+    assignment = json.loads(path.read_text(encoding="utf-8"))
+    for field in ("created_at", "updated_at", "module_details"):
+        assignment.pop(field)
+    path.write_text(json.dumps(assignment), encoding="utf-8")
+
+    assert main(["assignment", "validate", "english10_p2", "literary_analysis"]) == 1
+    assert "Missing required field 'created_at'" in capsys.readouterr().out
