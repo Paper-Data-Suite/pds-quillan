@@ -14,6 +14,15 @@ has been removed. This index documents the active v0.8.6 contracts.
 
 ## Active Contracts
 
+### Assignment Review Dashboard
+
+The live assignment review dashboard is an immutable derived read model, not a
+stored workspace record. Its versioned JSON representation and exact read-only
+boundary are defined in
+[`review_dashboard_contract.md`](review_dashboard_contract.md). It does not
+change the assignment, submission, review, feedback-export, or scan-review
+schemas.
+
 ### Assignment
 
 Active assignments use schema version `2` and live at:

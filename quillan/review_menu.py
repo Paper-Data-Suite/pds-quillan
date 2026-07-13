@@ -1,4 +1,4 @@
-﻿"""Teacher-facing review navigation menu skeleton."""
+"""Teacher-facing review navigation menu skeleton."""
 
 from __future__ import annotations
 
@@ -24,7 +24,6 @@ from quillan.class_summary_export import (
 )
 from quillan.cli_app.output import (
     print_added_review_note,
-    print_assignment_submission_status,
     print_exported_class_summary,
     print_exported_feedback,
     print_exported_feedback_pdf,
@@ -106,6 +105,13 @@ from quillan.review_record_paths import (
     review_record_path,
     write_review_record,
 )
+from quillan.review_dashboard import (
+    AssignmentReviewDashboard,
+    DashboardStudentStatus,
+    ReviewDashboardError,
+    build_assignment_review_dashboard,
+    format_assignment_review_dashboard,
+)
 from quillan.review_status_display import (
     feedback_export_status,
     review_progress_status,
@@ -124,7 +130,10 @@ from quillan.submission_review_opening import (
     open_student_submission_for_review,
     selected_submission_evidence_pages,
 )
-from quillan.submission_manifest import SubmissionManifestError, load_submission_manifest
+from quillan.submission_manifest import (
+    SubmissionManifestError,
+    load_submission_manifest,
+)
 from quillan.submission_manifest_paths import (
     SubmissionManifestPathError,
     submission_manifest_path,
@@ -258,11 +267,25 @@ def _load_submission_status(
         return None
 
 
+def _load_review_dashboard(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> AssignmentReviewDashboard | None:
+    try:
+        return build_assignment_review_dashboard(
+            workspace_root, class_id, assignment_id
+        )
+    except (ReviewDashboardError, OSError) as error:
+        print(f"Error: could not build assignment review dashboard: {error}")
+        return None
+
+
 def _prompt_student_id(
     workspace_root: Path,
     class_id: str,
     assignment_id: str,
-    status: AssignmentSubmissionStatus,
+    status: AssignmentSubmissionStatus | AssignmentReviewDashboard,
 ) -> str | None:
     from quillan.menu import clear_screen, print_menu_header
 
@@ -277,10 +300,12 @@ def _prompt_student_id(
     print(f"Assignment: {assignment_id}")
     print()
 
-    status_by_student = {
-        student_status.student_id: student_status
-        for student_status in status.student_statuses
-    }
+    status_items = (
+        status.students
+        if isinstance(status, AssignmentReviewDashboard)
+        else status.student_statuses
+    )
+    status_by_student = {item.student_id: item for item in status_items}
     student_labels = student_display_lookup(workspace_root, class_id)
     print("Select student/submission:")
     for index, student_id in enumerate(student_ids, start=1):
@@ -310,7 +335,7 @@ def _prompt_student_id(
 def _student_choices(
     workspace_root: Path,
     class_id: str,
-    status: AssignmentSubmissionStatus,
+    status: AssignmentSubmissionStatus | AssignmentReviewDashboard,
 ) -> tuple[str, ...]:
     ordered: list[str] = []
     seen: set[str] = set()
@@ -324,7 +349,12 @@ def _student_choices(
             ordered.append(student.student_id)
             seen.add(student.student_id)
 
-    for student_status in status.student_statuses:
+    status_items = (
+        status.students
+        if isinstance(status, AssignmentReviewDashboard)
+        else status.student_statuses
+    )
+    for student_status in status_items:
         if student_status.student_id not in seen:
             ordered.append(student_status.student_id)
             seen.add(student_status.student_id)
@@ -332,22 +362,36 @@ def _student_choices(
     return tuple(ordered)
 
 
-def _student_status_label(status: StudentSubmissionStatus | None) -> str:
+def _student_status_label(
+    status: StudentSubmissionStatus | DashboardStudentStatus | None,
+) -> str:
     if status is None:
         return "no manifest; no routed evidence"
+    if isinstance(status, DashboardStudentStatus):
+        if status.submission_status != "valid":
+            if status.submission_status == "missing" and not status.routed_evidence_present:
+                return "no manifest; no routed evidence"
+            return (
+                "routed evidence exists; no manifest"
+                if status.needs_assembly
+                else status.submission_status.replace("_", " ")
+            )
+        if status.plain_paper:
+            return "plain-paper manual submission; no digital evidence"
+        return (
+            f"{status.submission_state}; manifest exists; "
+            f"evidence files={status.evidence_file_count}"
+        )
     if status.manifest_path is None:
         return "routed evidence exists; no manifest"
     try:
-        if is_plain_paper_submission(
-            load_submission_manifest(status.manifest_path)
-        ):
+        if is_plain_paper_submission(load_submission_manifest(status.manifest_path)):
             return "plain-paper manual submission; no digital evidence"
     except (OSError, SubmissionManifestError):
         pass
     evidence_count = sum(page.evidence_count for page in status.pages)
     return (
-        f"{status.submission_state}; manifest exists; "
-        f"evidence files={evidence_count}"
+        f"{status.submission_state}; manifest exists; evidence files={evidence_count}"
     )
 
 
@@ -401,8 +445,7 @@ def _launch_selected_student_review(
                 "submission record has not been assembled yet."
             )
             print(
-                "Assemble submissions before reviewing, tagging, scoring, "
-                "or exporting."
+                "Assemble submissions before reviewing, tagging, scoring, or exporting."
             )
             print()
             print("1. Assemble this assignment now")
@@ -602,7 +645,9 @@ def _menu_view_current_review_details(
     _print_review_action_header(
         "Current Review Details", class_id, assignment_id, student_id
     )
-    print(current_review_details_text(workspace_root, class_id, assignment_id, student_id))
+    print(
+        current_review_details_text(workspace_root, class_id, assignment_id, student_id)
+    )
 
 
 def _format_secondary_id(value: object) -> str:
@@ -856,12 +901,15 @@ def _count_included_review_unit_observations(record: dict[str, Any]) -> int:
         return 0
     total = 0
     for unit in units:
-        observations = unit.get("standard_observations") if isinstance(unit, dict) else None
+        observations = (
+            unit.get("standard_observations") if isinstance(unit, dict) else None
+        )
         if isinstance(observations, list):
             total += sum(
                 1
                 for observation in observations
-                if isinstance(observation, dict) and observation.get("include_in_feedback")
+                if isinstance(observation, dict)
+                and observation.get("include_in_feedback")
             )
     return total
 
@@ -923,9 +971,13 @@ def _print_observation_entry_header(
     if unit is not None:
         print(f"Review unit: {unit['label']}")
     if standard_id is not None:
-        print(f"Focus Standard: {_format_standard_display(workspace_root, standard_id)}")
+        print(
+            f"Focus Standard: {_format_standard_display(workspace_root, standard_id)}"
+        )
     if current_observation is not None:
-        status = "applicable" if current_observation.get("applicable") else "not applicable"
+        status = (
+            "applicable" if current_observation.get("applicable") else "not applicable"
+        )
         print(f"Current observation: {status}")
         evidence_present = current_observation.get("evidence_present")
         if evidence_present is not None:
@@ -947,7 +999,10 @@ def _unit_standard_observation(
     if not isinstance(observations, list):
         return None
     for observation in observations:
-        if isinstance(observation, dict) and observation.get("standard_id") == standard_id:
+        if (
+            isinstance(observation, dict)
+            and observation.get("standard_id") == standard_id
+        ):
             return observation
     return None
 
@@ -967,7 +1022,9 @@ def _print_rating_entry_header(
     )
     print(f"Step: {step}")
     if standard_id is not None:
-        print(f"Focus Standard: {_format_standard_display(workspace_root, standard_id)}")
+        print(
+            f"Focus Standard: {_format_standard_display(workspace_root, standard_id)}"
+        )
     if current_rating is not None:
         print(f"Current rating: {current_rating['rating']}")
         print(
@@ -1021,10 +1078,7 @@ def _print_review_summary(
     print()
     print(f"Class: {class_id}")
     print(f"Assignment: {assignment_id}")
-    print(
-        f"Student: "
-        f"{student_review_label(workspace_root, class_id, student_id)}"
-    )
+    print(f"Student: {student_review_label(workspace_root, class_id, student_id)}")
 
     status = _load_submission_status(workspace_root, class_id, assignment_id)
     student_status = None
@@ -1109,7 +1163,9 @@ def _print_review_record_summary(
         workspace_root,
         class_id,
         assignment_id,
-        _current_requirement_checks(workspace_root, class_id, assignment_id, student_id),
+        _current_requirement_checks(
+            workspace_root, class_id, assignment_id, student_id
+        ),
         record["minimum_requirement_outcome"],
     )
 
@@ -1137,7 +1193,9 @@ def _count_review_unit_observations(record: dict[str, Any]) -> int:
         return 0
     total = 0
     for unit in units:
-        observations = unit.get("standard_observations") if isinstance(unit, dict) else None
+        observations = (
+            unit.get("standard_observations") if isinstance(unit, dict) else None
+        )
         if isinstance(observations, list):
             total += len(observations)
     return total
@@ -1145,7 +1203,9 @@ def _count_review_unit_observations(record: dict[str, Any]) -> int:
 
 def _count_feedback_comments(record: dict[str, Any]) -> int:
     feedback = record.get("feedback")
-    standard_feedback = feedback.get("standard_feedback") if isinstance(feedback, dict) else None
+    standard_feedback = (
+        feedback.get("standard_feedback") if isinstance(feedback, dict) else None
+    )
     if not isinstance(standard_feedback, list):
         return 0
     total = 0
@@ -1165,9 +1225,7 @@ def _print_requirement_check_summary(
 ) -> None:
     assignment = _load_assignment_for_summary(workspace_root, class_id, assignment_id)
     requirements = (
-        _requirement_items_from_assignment(assignment)
-        if assignment is not None
-        else []
+        _requirement_items_from_assignment(assignment) if assignment is not None else []
     )
     if not requirements:
         print("Minimum requirements: none configured")
@@ -1339,8 +1397,7 @@ def _choose_submission_evidence_page(
     print("Selected evidence pages:")
     for index, page in enumerate(pages, start=1):
         print(
-            f"{index}. Page {page.page_number} - {page.page_state} - "
-            f"{page.evidence_id}"
+            f"{index}. Page {page.page_number} - {page.page_state} - {page.evidence_id}"
         )
     print_navigation_options(all_items=True)
     print()
@@ -1422,7 +1479,9 @@ def _menu_define_review_units(
     review_unit = assignment["review_unit"]
     unit_type = str(review_unit["type"])
     plural_label = str(review_unit["plural_label"])
-    existing = _current_review_record(workspace_root, class_id, assignment_id, student_id)
+    existing = _current_review_record(
+        workspace_root, class_id, assignment_id, student_id
+    )
     existing_units = existing.get("review_units", []) if existing is not None else []
     print(f"Assignment review unit type: {unit_type}")
     print(f"Focus Standards: {len(assignment['focus_standard_ids'])}")
@@ -1525,7 +1584,9 @@ def _record_review_unit_observation(
         step="Select Focus Standard",
         unit=unit,
     )
-    standard_id = _prompt_focus_standard(workspace_root, assignment["focus_standard_ids"])
+    standard_id = _prompt_focus_standard(
+        workspace_root, assignment["focus_standard_ids"]
+    )
     if standard_id is None:
         print("Observation entry canceled.")
         return
@@ -1634,7 +1695,9 @@ def _menu_mark_observations_complete(
     if record is None or not record.get("review_units"):
         print("Define review units before marking observations complete.")
         return
-    print("Observations may be marked complete without observing every unit-standard pair.")
+    print(
+        "Observations may be marked complete without observing every unit-standard pair."
+    )
     print("1. Mark observations complete")
     print("2. Back")
     print()
@@ -1650,8 +1713,7 @@ def _menu_mark_observations_complete(
         return
     if completed.missing_focus_standard_pairs:
         print(
-            "Unobserved unit-standard pairs: "
-            f"{completed.missing_focus_standard_pairs}"
+            f"Unobserved unit-standard pairs: {completed.missing_focus_standard_pairs}"
         )
     print_completed_review_unit_observations(completed)
 
@@ -1675,7 +1737,9 @@ def _menu_overall_focus_standard_ratings(
         if assignment is None:
             input("Press Enter to continue...")
             return
-        record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
+        record = _current_review_record(
+            workspace_root, class_id, assignment_id, student_id
+        )
         _print_overall_rating_status(assignment, record)
         _print_overall_rating_warnings(record)
         print()
@@ -1727,7 +1791,9 @@ def _menu_compose_focus_standard_feedback(
         if assignment is None:
             input("Press Enter to continue...")
             return
-        record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
+        record = _current_review_record(
+            workspace_root, class_id, assignment_id, student_id
+        )
         _print_feedback_composer_status(
             workspace_root, class_id, assignment_id, student_id, assignment, record
         )
@@ -1920,7 +1986,9 @@ def _menu_add_custom_focus_standard_feedback_comment(
     )
     print(f"Comment: {_preview_text(text)}")
     print()
-    include_in_feedback = _prompt_yes_no_default_yes("Include this comment in feedback?")
+    include_in_feedback = _prompt_yes_no_default_yes(
+        "Include this comment in feedback?"
+    )
     _print_feedback_action_header(
         "Add Focus Standard Feedback Comment",
         student_id,
@@ -2111,7 +2179,9 @@ def _menu_select_reusable_focus_standard_feedback_comment(
     print()
     print(selected.text)
     print()
-    include_in_feedback = _prompt_yes_no_default_yes("Include this comment in feedback?")
+    include_in_feedback = _prompt_yes_no_default_yes(
+        "Include this comment in feedback?"
+    )
     _print_feedback_action_header(
         "Reusable Focus Standard Comment",
         student_id,
@@ -2381,7 +2451,9 @@ def _record_overall_focus_standard_rating(
         standard_id=standard_id,
         current_rating=current_rating,
     )
-    include_in_feedback = _prompt_yes_no_default_yes("Include rating/rationale in feedback?")
+    include_in_feedback = _prompt_yes_no_default_yes(
+        "Include rating/rationale in feedback?"
+    )
     _print_rating_entry_header(
         workspace_root,
         class_id,
@@ -2568,7 +2640,9 @@ def _print_feedback_action_header(
     print_menu_header(title)
     print(f"Student: {student_id}")
     if workspace_root is not None and standard_id is not None:
-        print(f"Focus Standard: {_format_standard_display(workspace_root, standard_id)}")
+        print(
+            f"Focus Standard: {_format_standard_display(workspace_root, standard_id)}"
+        )
     print()
 
 
@@ -2619,7 +2693,9 @@ def _print_feedback_comment_context(
     print(f"Included comments: {included_comments}")
 
 
-def _print_current_rating_and_rationale(record: dict[str, Any], standard_id: str) -> None:
+def _print_current_rating_and_rationale(
+    record: dict[str, Any], standard_id: str
+) -> None:
     rating = next(
         (
             item
@@ -2662,8 +2738,7 @@ def _prompt_observation_id_selection(observations: list[dict[str, Any]]) -> list
     if not observations:
         return []
     raw = input(
-        "Select observations to include by number, comma-separated "
-        "(blank for none): "
+        "Select observations to include by number, comma-separated (blank for none): "
     ).strip()
     if not raw:
         return []
@@ -2853,9 +2928,7 @@ def _print_rating_scale(assignment: dict[str, Any]) -> None:
 
 
 def _prompt_rating_value(assignment: dict[str, Any]) -> int | None:
-    valid_values = {
-        level["value"] for level in assignment["rating_scale"]["levels"]
-    }
+    valid_values = {level["value"] for level in assignment["rating_scale"]["levels"]}
     response = input("Enter rating value: ").strip()
     if not response:
         return None
@@ -3056,9 +3129,9 @@ def _menu_finalize_minimum_requirement_outcome(
     if status == "returned_without_full_review":
         teacher_note = input("Return note for student: ").strip()
     else:
-        teacher_note = input(
-            "Outcome note (leave blank if not applicable): "
-        ).strip() or None
+        teacher_note = (
+            input("Outcome note (leave blank if not applicable): ").strip() or None
+        )
     try:
         updated = set_configured_minimum_requirement_outcome(
             workspace_root,
@@ -3114,9 +3187,9 @@ def _prompt_and_set_requirement_check(
         print("Invalid status. Enter 1 for met or 2 for not met.")
         return None
 
-    teacher_note = input(
-        "Teacher note (leave blank if not applicable): "
-    ).strip() or None
+    teacher_note = (
+        input("Teacher note (leave blank if not applicable): ").strip() or None
+    )
     try:
         result = set_configured_requirement_check(
             workspace_root,
@@ -3242,14 +3315,9 @@ def _print_minimum_requirement_summary(
         return
     print(f"Outcome status: {outcome.get('status', 'not_checked')}")
     returned = outcome.get("returned_without_full_review") is True
-    print(
-        "Returned without full standards review: "
-        f"{_format_yes_no(returned)}"
-    )
+    print(f"Returned without full standards review: {_format_yes_no(returned)}")
     if returned:
-        print(
-            "Minimum-requirements outcome: returned without full standards review"
-        )
+        print("Minimum-requirements outcome: returned without full standards review")
     if note := _non_empty(outcome.get("teacher_note")):
         print(f"Outcome teacher note: {note}")
     else:
@@ -3569,8 +3637,12 @@ def _menu_export_student_feedback(
         print("Export canceled.")
         return
 
-    pdf_path = feedback_pdf_export_path(workspace_root, class_id, assignment_id, student_id)
-    markdown_path = feedback_export_path(workspace_root, class_id, assignment_id, student_id)
+    pdf_path = feedback_pdf_export_path(
+        workspace_root, class_id, assignment_id, student_id
+    )
+    markdown_path = feedback_export_path(
+        workspace_root, class_id, assignment_id, student_id
+    )
     selected_paths = {
         "1": [pdf_path],
         "2": [markdown_path],
@@ -3724,16 +3796,20 @@ def _launch_assignment_review_actions(
         clear_screen()
         print_menu_header("Assignment Review Actions")
 
-        status = _load_submission_status(
+        dashboard = _load_review_dashboard(
             workspace_root,
             class_id,
             assignment_id,
         )
-        if status is None:
+        if dashboard is None:
             input("Press Enter to continue...")
             return 1
 
-        print_assignment_submission_status(status, workspace_root)
+        print(
+            format_assignment_review_dashboard(
+                dashboard, show_unused_duplicate_files=False
+            )
+        )
         print()
 
         print("1. Select student/submission")
@@ -3752,7 +3828,7 @@ def _launch_assignment_review_actions(
             return 0
         elif choice == "1":
             student_id = _prompt_student_id(
-                workspace_root, class_id, assignment_id, status
+                workspace_root, class_id, assignment_id, dashboard
             )
             if student_id is not None:
                 _launch_selected_student_review(

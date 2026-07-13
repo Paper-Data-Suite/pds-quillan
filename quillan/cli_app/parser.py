@@ -12,6 +12,7 @@ from quillan.cli_app.handlers.comments import (
     handle_comments_list,
     handle_comments_show,
 )
+from quillan.cli_app.handlers.dashboard import handle_review_dashboard
 from quillan.cli_app.handlers.exports import (
     handle_export_class_summary,
     handle_export_feedback,
@@ -97,6 +98,23 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=APP_DESCRIPTION)
     subparsers = parser.add_subparsers(dest="command")
 
+    dashboard_parser = subparsers.add_parser(
+        "review-dashboard",
+        help="Show a read-only assignment review dashboard.",
+        description=(
+            "Combine roster, submission, page, review, feedback-export, routed-"
+            "evidence, and scan-review status without creating or modifying files."
+        ),
+    )
+    _add_assignment_identity_arguments(dashboard_parser)
+    dashboard_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Standard-output representation (default: text).",
+    )
+    dashboard_parser.set_defaults(handler=handle_review_dashboard)
+
     assignment_parser = subparsers.add_parser(
         "assignment", help="Create, show, and validate canonical assignments."
     )
@@ -115,7 +133,9 @@ def build_parser() -> argparse.ArgumentParser:
     assignment_create_parser.add_argument("--review-unit-type", default="paragraph")
     assignment_create_parser.add_argument("--review-unit-singular", default="paragraph")
     assignment_create_parser.add_argument("--review-unit-plural", default="paragraphs")
-    assignment_create_parser.add_argument("--rating-scale", choices=("default",), default="default")
+    assignment_create_parser.add_argument(
+        "--rating-scale", choices=("default",), default="default"
+    )
     assignment_create_parser.add_argument("--paragraphs-min", type=nonnegative_integer)
     assignment_create_parser.add_argument("--paragraphs-max", type=nonnegative_integer)
     assignment_create_parser.add_argument("--word-count-min", type=nonnegative_integer)
@@ -139,7 +159,9 @@ def build_parser() -> argparse.ArgumentParser:
         "validate", help="Validate a canonical assignment and workspace standards."
     )
     _add_assignment_identity_arguments(assignment_validate_parser)
-    assignment_validate_parser.set_defaults(handler=handle_canonical_assignment_validate)
+    assignment_validate_parser.set_defaults(
+        handler=handle_canonical_assignment_validate
+    )
 
     requirements_parser = subparsers.add_parser(
         "requirements",
@@ -380,10 +402,16 @@ def build_parser() -> argparse.ArgumentParser:
     _add_submission_identity_arguments(feedback_options_parser)
     feedback_options_parser.add_argument("--standard-id", required=True)
     feedback_options_parser.add_argument(
-        "--include-overall-rating", required=True, type=_true_false, metavar="true|false"
+        "--include-overall-rating",
+        required=True,
+        type=_true_false,
+        metavar="true|false",
     )
     feedback_options_parser.add_argument(
-        "--include-overall-rationale", required=True, type=_true_false, metavar="true|false"
+        "--include-overall-rationale",
+        required=True,
+        type=_true_false,
+        metavar="true|false",
     )
     feedback_options_parser.add_argument(
         "--observation-ids",
@@ -392,7 +420,8 @@ def build_parser() -> argparse.ArgumentParser:
     feedback_options_parser.set_defaults(handler=handle_feedback_set_options)
 
     feedback_comment_parser = feedback_subparsers.add_parser(
-        "add-comment", help="Add one exact teacher-authored feedback comment.",
+        "add-comment",
+        help="Add one exact teacher-authored feedback comment.",
         description=(
             "Add exact teacher-authored text. When saving for reuse, remove all "
             "student-specific details from the separately approved reusable text."
@@ -433,7 +462,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_submission_identity_arguments(feedback_complete_parser)
     feedback_complete_parser.add_argument(
-        "--yes", action="store_true", help="Explicitly confirm completion without prompting."
+        "--yes",
+        action="store_true",
+        help="Explicitly confirm completion without prompting.",
     )
     feedback_complete_parser.set_defaults(handler=handle_feedback_mark_composed)
 
@@ -558,9 +589,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Path to the selected source scan file, or a folder with --decode-qr.",
     )
-    payload_group = route_scan_parser.add_mutually_exclusive_group(
-        required=True
-    )
+    payload_group = route_scan_parser.add_mutually_exclusive_group(required=True)
     payload_group.add_argument(
         "--payload",
         help="Already-decoded canonical PDS1 payload text.",
@@ -822,9 +851,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_submission_identity_arguments(review_state_parser)
     review_state_parser.add_argument(
         "state",
-        help=(
-            "Review state: unreviewed, in_progress, needs_rescan, or reviewed."
-        ),
+        help=("Review state: unreviewed, in_progress, needs_rescan, or reviewed."),
     )
     review_state_parser.set_defaults(handler=handle_set_review_state)
 
@@ -979,9 +1006,7 @@ def build_parser() -> argparse.ArgumentParser:
         "workspace",
         help="Manage the shared Paper Data Suite workspace.",
     )
-    workspace_subparsers = workspace_parser.add_subparsers(
-        dest="workspace_command"
-    )
+    workspace_subparsers = workspace_parser.add_subparsers(dest="workspace_command")
     workspace_show_parser = workspace_subparsers.add_parser(
         "show",
         help="Show the active Paper Data Suite workspace status.",
@@ -1024,7 +1049,9 @@ def _add_assignment_identity_arguments(
     parser.add_argument("assignment_id", help="Assignment identifier.")
 
 
-def _print_parser_help(parser: argparse.ArgumentParser, _args: argparse.Namespace) -> int:
+def _print_parser_help(
+    parser: argparse.ArgumentParser, _args: argparse.Namespace
+) -> int:
     parser.print_help()
     return 0
 

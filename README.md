@@ -31,7 +31,7 @@ Quillan currently supports:
 * basic requirements and minimum-requirement return policy;
 * printable QR paper response packets;
 * QR/paper routing and submission assembly;
-* read-only submission status listing;
+* read-only submission status listing and assignment review dashboards;
 * workspace-safe evidence opening and selected-evidence opening;
 * minimum-requirements review with explicit teacher-entered outcomes;
 * review-unit Focus Standard observations;
@@ -206,6 +206,19 @@ submission manifests, review records, routed evidence, rosters, standards, or
 reusable comments.
 
 ## Direct CLI Commands
+
+The assignment-level review dashboard is available in concise teacher text or
+stable schema-version-1 JSON. Both forms are non-interactive and strictly
+read-only:
+
+```powershell
+quillan review-dashboard <class_id> <assignment_id> [--format text|json]
+```
+
+It combines roster coverage, submissions, routed evidence, page states, review
+workflow, minimum-requirement outcomes, feedback freshness, and assignment-
+filtered scan-review attention. It does not inspect evidence, infer judgments,
+assemble submissions, or write exports or reports.
 
 The direct command surface exposed through argparse is:
 
