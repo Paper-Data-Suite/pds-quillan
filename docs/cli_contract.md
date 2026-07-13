@@ -47,6 +47,26 @@ quillan [command] [arguments]
 Calling `quillan.cli.main()` from Python is useful for tests, but it is not a
 separate public Python API contract.
 
+## Assignment Review Dashboard
+
+```powershell
+quillan review-dashboard <class_id> <assignment_id> [--format text|json]
+```
+
+`text` is the default. `json` writes exactly one JSON document to standard
+output using dashboard schema version `1`; it never names or creates an output
+file. The command is direct, non-interactive, deterministic for unchanged
+workspace data, and read-only. It shares its immutable dashboard service and
+text formatter with Assignment Review Actions. See
+[`review_dashboard_contract.md`](review_dashboard_contract.md) for population,
+warning, ordering, read-boundary, and JSON details.
+
+Missing work, malformed student records, stale exports, roster unavailability,
+and active scan-review items are successful diagnostic results. Invalid
+identifiers or assignment configuration, assignment identity/class mismatch,
+unrecoverable routed discovery, and unsafe serialization are fatal and return
+nonzero without a traceback.
+
 ## Direct Reusable Focus Standard Comments
 
 The non-interactive `comments` namespace manages teacher-authored shared
