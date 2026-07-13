@@ -30,6 +30,11 @@ from quillan.cli_app.handlers.observations import (
     handle_observations_list,
     handle_observations_set,
 )
+from quillan.cli_app.handlers.ratings import (
+    handle_ratings_list,
+    handle_ratings_mark_complete,
+    handle_ratings_set,
+)
 from quillan.cli_app.handlers.rosters import (
     handle_roster_add_student,
     handle_roster_create,
@@ -277,6 +282,60 @@ def build_parser() -> argparse.ArgumentParser:
         "--include-in-feedback", type=_true_false, metavar="true|false"
     )
     observations_set_parser.set_defaults(handler=handle_observations_set)
+
+    ratings_parser = subparsers.add_parser(
+        "ratings",
+        help="List, record, and complete overall Focus Standard ratings.",
+        description=(
+            "Display or record explicit teacher-entered overall Focus Standard "
+            "ratings without inspecting evidence or inferring judgments."
+        ),
+    )
+    ratings_parser.set_defaults(handler=partial(_print_parser_help, ratings_parser))
+    ratings_subparsers = ratings_parser.add_subparsers(dest="ratings_command")
+
+    ratings_list_parser = ratings_subparsers.add_parser(
+        "list", help="List assignment Focus Standards and current overall ratings."
+    )
+    _add_submission_identity_arguments(ratings_list_parser)
+    ratings_list_parser.set_defaults(handler=handle_ratings_list)
+
+    ratings_set_parser = ratings_subparsers.add_parser(
+        "set", help="Create or replace one teacher-entered overall rating."
+    )
+    _add_submission_identity_arguments(ratings_set_parser)
+    ratings_set_parser.add_argument("--standard-id", required=True)
+    ratings_set_parser.add_argument(
+        "--rating",
+        required=True,
+        type=int,
+        help="Integer value from the assignment-owned rating scale.",
+    )
+    ratings_set_parser.add_argument(
+        "--rationale",
+        help="Optional teacher rationale; omission or blank text clears it.",
+    )
+    ratings_set_parser.add_argument(
+        "--include-in-feedback",
+        required=True,
+        type=_true_false,
+        metavar="true|false",
+        help="Required explicit teacher choice: true or false.",
+    )
+    ratings_set_parser.set_defaults(handler=handle_ratings_set)
+
+    ratings_complete_parser = ratings_subparsers.add_parser(
+        "mark-complete",
+        help="Explicitly mark overall ratings complete, including when ratings are missing.",
+    )
+    _add_submission_identity_arguments(ratings_complete_parser)
+    ratings_complete_parser.add_argument(
+        "--yes",
+        required=True,
+        action="store_true",
+        help="Explicitly confirm completion without prompting.",
+    )
+    ratings_complete_parser.set_defaults(handler=handle_ratings_mark_complete)
 
     roster_parser = subparsers.add_parser(
         "roster",

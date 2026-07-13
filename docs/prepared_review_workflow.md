@@ -158,7 +158,13 @@ assignment `rating_scale`. Ratings are teacher-entered and are not inferred
 from review-unit observations, requirement checks, notes, exports, or evidence
 metadata.
 
-Marking ratings complete is an explicit teacher action.
+Teachers may list, create, replace, and explicitly complete these ratings with
+the direct, non-interactive `quillan ratings` commands. The assignment's Focus
+Standards and rating scale are authoritative. Missing or incomplete
+observations are warnings only and never cause a rating to be inferred.
+`ratings mark-complete --yes` may complete the phase with all, some, or no
+Focus Standards rated; it reports missing ratings and never fills them.
+Marking ratings complete is always a separate explicit teacher action.
 
 ## Focus Standard Feedback
 

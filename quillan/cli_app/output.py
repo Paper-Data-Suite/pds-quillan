@@ -157,10 +157,12 @@ def print_updated_overall_standard_rating(
     print(f"Student: {updated.student_id}")
     print(f"Standard: {updated.standard_id}")
     print(f"Rating: {updated.rating} - {updated.rating_label}")
+    print(f"Rationale: {'present' if updated.rationale is not None else 'none'}")
     print(f"Include in feedback: {format_bool(updated.include_in_feedback)}")
     print(f"Action: {'created' if updated.was_created else 'updated'}")
     print(f"Review state: {updated.review_state}")
     print(f"Review record: {updated.review_record_relative_path}")
+    print(f"Updated: {updated.updated_at}")
 
 
 def print_completed_overall_standard_ratings(
@@ -176,6 +178,7 @@ def print_completed_overall_standard_ratings(
     print(f"Missing ratings: {completed.missing_rating_count}")
     print(f"Review state: {completed.review_state}")
     print(f"Review record: {completed.review_record_relative_path}")
+    print(f"Updated: {completed.updated_at}")
 
 
 def print_updated_standard_feedback_options(

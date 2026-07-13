@@ -635,6 +635,13 @@ calculate them automatically from review-unit observations. The teacher may
 use the review-unit observation summary as evidence, but the overall rating is
 not an average, weighted score, percentage, grade, or mastery calculation.
 
+Completing the overall-rating phase is an explicit teacher action and is
+permitted when configured Focus Standards are still unrated. Completion
+reports the current configured rating count and missing count; it does not
+create placeholders, copy observation ratings, or otherwise fill missing
+ratings. Ratings for standards no longer configured by the assignment remain
+auditable but do not count toward current assignment completion.
+
 Old generic criterion scores are superseded by overall Focus Standard ratings.
 
 ## Feedback Composition

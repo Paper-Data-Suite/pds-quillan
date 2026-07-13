@@ -111,6 +111,9 @@ quillan review-units set <class_id> <assignment_id> <student_id> --count <positi
 quillan review-units set <class_id> <assignment_id> <student_id> --units <units.json>
 quillan observations list <class_id> <assignment_id> <student_id>
 quillan observations set <class_id> <assignment_id> <student_id> --unit-id <unit_id> --standard-id <standard_id> --applicable true|false [--evidence-present true|false] [--rating <integer>] [--rationale <text>] [--include-in-feedback true|false]
+quillan ratings list <class_id> <assignment_id> <student_id>
+quillan ratings set <class_id> <assignment_id> <student_id> --standard-id <standard_id> --rating <integer> [--rationale <text>] --include-in-feedback true|false
+quillan ratings mark-complete <class_id> <assignment_id> <student_id> --yes
 quillan roster create <class_id> --input <roster.csv> [--school-year YYYY-YYYY] [--overwrite] (--yes | --dry-run)
 quillan roster show <class_id>
 quillan roster validate <class_id>
@@ -155,6 +158,9 @@ and exits successfully without resolving or inspecting the workspace.
 
 Running `quillan observations` without a subcommand prints observation help
 and exits successfully without resolving or inspecting the workspace.
+
+Running `quillan ratings` without a subcommand prints ratings help and exits
+successfully without resolving or inspecting the workspace.
 
 ### `review-units` commands
 
@@ -241,6 +247,62 @@ parses PDFs or images, runs OCR, handwriting recognition, or AI, infers any
 teacher judgment, calculates overall ratings, grades, or scores, marks review
 complete, composes feedback, or modifies assignments, submissions, rosters,
 evidence, exports, reports, Core data, or ScoreForm data.
+
+### `ratings` commands
+
+The `ratings` namespace exposes teacher-entered overall Focus Standard ratings
+as direct, non-interactive commands. All commands require a valid canonical
+assignment and assembled `submission.json`; routed evidence is not assembled
+automatically. Plain-paper manual and valid unrostered submissions are
+accepted. An existing malformed, mismatched, unsupported, or noncanonical
+`review.json` is an error rather than an empty review.
+
+`ratings list` is strictly read-only. It reports canonical paths, review and
+completion states, every assignment-owned rating-scale level, rating and
+missing counts, and every assignment Focus Standard in configured order. Each
+standard shows its current overall value and assignment label or `not rated`,
+rationale, feedback-inclusion choice, update timestamp, and advisory
+observation counts. With no review it reports `not_started`, zero ratings,
+zero observations, and creates nothing. Stored ratings no longer configured by
+the assignment appear separately for audit and do not count toward completion.
+Returned-without-full-review records remain listable, with ratings identified
+as not applicable to that completed workflow state.
+
+`ratings set` requires an existing review and completely replaces one
+configured standard's rating, optional rationale, feedback-inclusion choice,
+timestamp, and rating-level module details. It prevents duplicates and reports
+`created` or `updated`. `--standard-id` must occur in the assignment's current
+`focus_standard_ids`; existence in a shared standards library is insufficient.
+`--rating` must be an exact integer value from the assignment-owned scale, so
+zero, negative, gapped, and non-1-to-4 scales remain valid. Supplied rationale
+is trimmed; omission or blank text stores `null` and clears an earlier value.
+The direct CLI requires `--include-in-feedback true|false` and has no default.
+That choice does not compose feedback or change feedback options.
+
+Observation summaries and warnings are advisory. Missing units, missing or
+incomplete observations, and unobserved pairs never block `ratings set` and
+never produce or infer a rating. The shared service owns state transitions:
+early states return to `observations_in_progress`, downstream composed/export
+states return to `ratings_complete`, and other documented rating states remain
+unchanged. Existing observations, feedback, exports, notes, requirement data,
+metadata, and the original creation timestamp are preserved.
+
+`ratings mark-complete` requires the explicit `--yes` flag and never prompts.
+It calls the shared completion service and may mark `ratings_complete` with all,
+some, or none of the assignment Focus Standards rated. Missing ratings are
+counted and warned about, but never filled from observations or placeholders.
+Observation readiness is not a completion gate. Both write commands reject a
+`returned_without_full_review` record until its minimum-requirements outcome
+changes.
+
+List writes nothing. Set and mark-complete may modify only canonical
+`classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json`
+through the validated atomic writer. They do not modify assignments,
+submission manifests, rosters, evidence, scans, observations, feedback
+composition, exports, reports, Core, or ScoreForm. They do not open evidence,
+parse PDFs or images, run OCR, handwriting recognition, or AI, infer or average
+ratings, calculate mastery, percentages, grades, or scores, generate feedback,
+or complete ratings automatically after a set operation.
 
 Both commands require a valid canonical `submission.json`, including for
 plain-paper submissions without digital evidence. They do not require current
@@ -1316,8 +1378,7 @@ explicitly outside the current end-to-end foundation:
   automatic production scan routing;
 * OCR or handwriting interpretation;
 * PDF text extraction;
-* a direct CLI command for review-unit observations, overall Focus Standard
-  ratings, or feedback composition;
+* a direct CLI command for feedback composition;
 * AI grading, scoring, tagging, or feedback;
 * automatic grading, mastery calculation, review-state decisions, or
   duplicate-evidence selection;
