@@ -10,6 +10,12 @@ from quillan.assignment_submission_assembly import (
     AssignmentSubmissionAssemblyResult,
 )
 from quillan.class_summary_export import ExportedClassSummary
+from quillan.comment_management import (
+    CreatedManualReusableComment,
+    ReusableCommentInventory,
+    ReusableCommentSetStatus,
+    ReusableCommentStatus,
+)
 from quillan.evidence_filing import EvidenceFilingError, RoutedEvidenceFile
 from quillan.feedback_export import ExportedFeedback, ExportedFeedbackPdf
 from quillan.focus_standard_comments import SavedReusableFocusStandardComment
@@ -38,6 +44,103 @@ from quillan.student_performance_summary_export import (
 from quillan.submission_review_opening import OpenedSubmissionReview
 from quillan.submission_review_state import UpdatedSubmissionReviewState
 from quillan.submission_status import AssignmentSubmissionStatus
+
+
+def print_reusable_comment_inventory(inventory: ReusableCommentInventory) -> None:
+    """Print deterministic reusable-comment list results and invalid files."""
+    if not inventory.comments:
+        print("No reusable Focus Standard comments matched.")
+    for index, comment in enumerate(inventory.comments, start=1):
+        if index > 1:
+            print()
+        print(f"Reusable comment {index}:")
+        _print_reusable_comment(comment, include_inspection_fields=False)
+    if inventory.invalid_files:
+        print("\nInvalid reusable Focus Standard comment sets:")
+        for invalid in inventory.invalid_files:
+            print(f"- {invalid.relative_path}: {invalid.error}")
+
+
+def print_reusable_comment_set(result: ReusableCommentSetStatus) -> None:
+    """Print one complete reusable-comment source set."""
+    print("Reusable Focus Standard comment set:")
+    print(f"Comment set ID: {result.comment_set_id}")
+    print(f"Title: {result.title}")
+    print(f"Description: {result.description}")
+    print(f"Standards profile ID: {result.standards_profile_id}")
+    print(f"Writing types: {_values(result.writing_types, 'all')}")
+    print(f"Grade band: {result.grade_band or 'none'}")
+    print(f"Comment count: {len(result.comments)}")
+    print(f"Created: {result.created_at}")
+    print(f"Updated: {result.updated_at}")
+    print(f"Path: {result.relative_path}")
+    print(f"Module details: {result.module_details}")
+    if not result.comments:
+        print("\nComments: none")
+    for index, comment in enumerate(result.comments, start=1):
+        print(f"\nComment {index}:")
+        _print_reusable_comment(comment, include_inspection_fields=True)
+
+
+def print_created_manual_reusable_comment(
+    result: CreatedManualReusableComment,
+) -> None:
+    """Print the result of creating one manual reusable comment."""
+    print("Created manual reusable Focus Standard comment:")
+    print(f"Comment set ID: {result.comment_set_id}")
+    print(f"Comment ID: {result.comment_id}")
+    print(f"Comment set: {'created' if result.set_was_created else 'already existed'}")
+    print(f"Standards profile ID: {result.standards_profile_id}")
+    print(f"Writing type: {result.writing_type}")
+    print(f"Standard ID: {result.standard_id}")
+    print(f"Label: {result.label}")
+    print(f"Purpose: {result.purpose}")
+    print(f"Rating values: {_values(result.rating_values, 'all')}")
+    print(f"Teacher tags: {_values(result.teacher_tags, 'none')}")
+    print(f"Active: {format_bool(result.active)}")
+    print(f"Student-facing: {format_bool(result.student_facing)}")
+    print(f"Usage count: {result.times_used}")
+    print(f"Path: {result.relative_path}")
+    print(f"Created: {result.created_at}")
+
+
+def _print_reusable_comment(
+    comment: ReusableCommentStatus, *, include_inspection_fields: bool
+) -> None:
+    print(f"Comment set ID: {comment.comment_set_id}")
+    print(f"Comment set title: {comment.comment_set_title}")
+    print(f"Standards profile ID: {comment.standards_profile_id}")
+    print(f"Comment ID: {comment.comment_id}")
+    print(f"Standard ID: {comment.standard_id}")
+    print(f"Label: {comment.label}")
+    print(f"Text: {comment.text}")
+    print(f"Purpose: {comment.purpose}")
+    print(f"Writing types: {_values(comment.writing_types, 'all')}")
+    print(f"Rating values: {_values(comment.rating_values, 'all')}")
+    print(f"Teacher tags: {_values(comment.teacher_tags, 'none')}")
+    print(f"Usage count: {comment.times_used}")
+    print(f"Last used: {comment.last_used_at or 'never'}")
+    print(f"Path: {comment.relative_path}")
+    if include_inspection_fields:
+        print(f"Student-facing: {format_bool(comment.student_facing)}")
+        print(f"Active: {format_bool(comment.active)}")
+        print(f"Source type: {comment.source.type}")
+        print(f"Source class ID: {comment.source.class_id or 'none'}")
+        print(f"Source assignment ID: {comment.source.assignment_id or 'none'}")
+        print(f"Source student ID: {comment.source.student_id or 'none'}")
+        print(f"Source review path: {comment.source.review_path or 'none'}")
+        print(
+            "Source feedback comment ID: "
+            f"{comment.source.feedback_comment_id or 'none'}"
+        )
+        print(f"Source saved: {comment.source.saved_at}")
+        print(f"Created: {comment.created_at}")
+        print(f"Updated: {comment.updated_at}")
+        print(f"Module details: {comment.module_details}")
+
+
+def _values(values: tuple[object, ...], empty: str) -> str:
+    return ", ".join(str(value) for value in values) if values else empty
 
 
 def print_opened_submission_review(opened: OpenedSubmissionReview) -> None:

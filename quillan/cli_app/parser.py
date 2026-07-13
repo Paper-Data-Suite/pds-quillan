@@ -7,6 +7,11 @@ from functools import partial
 from pathlib import Path
 
 from quillan.cli_app.arguments import nonnegative_integer, positive_integer
+from quillan.cli_app.handlers.comments import (
+    handle_comments_create,
+    handle_comments_list,
+    handle_comments_show,
+)
 from quillan.cli_app.handlers.exports import (
     handle_export_class_summary,
     handle_export_feedback,
@@ -76,6 +81,7 @@ from quillan.cli_app.handlers.workspace import (
     handle_workspace_show,
     handle_workspace_validate,
 )
+from quillan.focus_standard_comments import ALLOWED_PURPOSES
 
 APP_DESCRIPTION = "Quillan: standards-based writing evidence capture"
 
@@ -865,6 +871,52 @@ def build_parser() -> argparse.ArgumentParser:
     export_standards_summary_parser.set_defaults(
         handler=handle_export_standards_summary
     )
+
+    comments_parser = subparsers.add_parser(
+        "comments",
+        help="List, inspect, and create reusable Focus Standard comments.",
+        description=(
+            "Manage teacher-authored reusable Focus Standard comments without an "
+            "assignment or student context. Text is stored as supplied; do not include "
+            "student names, IDs, or assignment-specific private details."
+        ),
+    )
+    comments_parser.set_defaults(handler=partial(_print_parser_help, comments_parser))
+    comments_subparsers = comments_parser.add_subparsers(dest="comments_command")
+    comments_list_parser = comments_subparsers.add_parser(
+        "list", help="List active, student-facing reusable comments."
+    )
+    comments_list_parser.add_argument("--profile-id")
+    comments_list_parser.add_argument("--writing-type")
+    comments_list_parser.add_argument("--standard-id")
+    comments_list_parser.add_argument("--rating-value")
+    comments_list_parser.set_defaults(handler=handle_comments_list)
+    comments_show_parser = comments_subparsers.add_parser(
+        "show", help="Show every comment and all metadata in one comment set."
+    )
+    comments_show_parser.add_argument("comment_set_id")
+    comments_show_parser.set_defaults(handler=handle_comments_show)
+    comments_create_parser = comments_subparsers.add_parser(
+        "create",
+        help="Create one manually authored reusable comment.",
+        description=(
+            "Create one student-facing reusable comment. The text is preserved, not "
+            "generated or rewritten. Do not include student names, IDs, or private "
+            "assignment-specific details."
+        ),
+    )
+    comments_create_parser.add_argument("comment_set_id")
+    comments_create_parser.add_argument("--profile-id", required=True)
+    comments_create_parser.add_argument("--writing-type", required=True)
+    comments_create_parser.add_argument("--standard-id", required=True)
+    comments_create_parser.add_argument("--label", required=True)
+    comments_create_parser.add_argument("--text", required=True)
+    comments_create_parser.add_argument(
+        "--purpose", choices=sorted(ALLOWED_PURPOSES), default="general"
+    )
+    comments_create_parser.add_argument("--rating-values")
+    comments_create_parser.add_argument("--teacher-tags")
+    comments_create_parser.set_defaults(handler=handle_comments_create)
 
     workspace_parser = subparsers.add_parser(
         "workspace",

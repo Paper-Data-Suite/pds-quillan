@@ -47,6 +47,77 @@ quillan [command] [arguments]
 Calling `quillan.cli.main()` from Python is useful for tests, but it is not a
 separate public Python API contract.
 
+## Direct Reusable Focus Standard Comments
+
+The non-interactive `comments` namespace manages teacher-authored shared
+reusable source material without requiring a class, assignment, student,
+submission, review record, rating, or feedback-composition context:
+
+```powershell
+quillan comments list [--profile-id <profile_id>] [--writing-type <type>] [--standard-id <standard_id>] [--rating-value <number>]
+quillan comments show <comment_set_id>
+quillan comments create <comment_set_id> --profile-id <profile_id> --writing-type <type> --standard-id <standard_id> --label <label> --text <text> [--purpose <purpose>] [--rating-values <number,...>] [--teacher-tags <tag,...>]
+```
+
+Running `quillan comments` without a subcommand prints namespace help and
+returns success. It does not resolve the workspace, scan comment files, create
+directories, or write data.
+
+`comments list` reads every JSON file beneath
+`shared/focus_standard_comments` in case-insensitive filename order and keeps
+comment order within each set. It shows only active, student-facing comments.
+Optional filters are combined with logical AND: profile and standard IDs match
+exactly; a supplied writing type must satisfy both set-level and comment-level
+restrictions, where an empty array means all writing types; and a supplied
+finite numeric rating matches either an unrestricted empty array or an array
+containing that value. With no rating filter, rating-specific comments remain
+visible. Purpose and teacher tags never affect compatibility. Valid results
+are still printed when another file is invalid, followed by invalid-file
+diagnostics and a nonzero status. An absent directory or no matches is a
+successful empty result and creates nothing.
+
+`comments show` resolves only a canonical comment-set ID, never an arbitrary
+path. It displays complete set metadata and every stored comment in order,
+including inactive and teacher-only comments, source provenance, usage data,
+timestamps, and module details. Listing and showing are byte-for-byte
+read-only; showing a missing or invalid set fails rather than treating it as
+empty. The displayed file is current reusable source material, while existing
+student reviews retain their earlier copied snapshots.
+
+`comments create` creates one active, student-facing manual reusable comment
+through the same validated append and atomic-write service used by feedback
+composition. A missing set is created with schema version `1`, the supplied
+profile and writing type, a generated title, a source-neutral description,
+`grade_band: null`, and empty top-level module details. A compatible existing
+set is appended without rebuilding it; profile or writing-type incompatibility
+and malformed existing data fail before any replacement. The label supplies a
+generated ID, with `_2`, `_3`, and later suffixes used for collisions.
+
+Purpose defaults to `general` and accepts only `praise`, `next_step`,
+`clarification`, `evidence`, `reasoning`, `organization`, `style`,
+`conventions`, `revision`, and `general`. Rating values preserve order and may
+be integers, finite floats, zero, or negative; blank elements, duplicates,
+non-numbers, NaN, and infinities fail. Omission means all ratings. Teacher tags
+are trimmed and normalized to unique ASCII-safe lowercase snake case in first
+occurrence order; omission stores no required tag key. Tags remain display and
+organization metadata only.
+
+Manual source provenance uses `source.type: manual`, the creation timestamp as
+`saved_at`, and null class, assignment, student, review, and feedback-comment
+fields. Creation does not increment usage. Surrounding whitespace is trimmed
+from required teacher-facing strings, but internal text, capitalization,
+punctuation, and line structure are preserved exactly. Teachers must not put
+student names, student IDs, assignment-specific private details, or other
+identifying information in reusable text.
+
+The create write boundary is exactly one selected
+`shared/focus_standard_comments/<comment_set_id>.json` file. It does not touch
+assignments, submissions, reviews, rosters, evidence, scans, exports, reports,
+standards libraries, other reusable sets, legacy comment banks, Core, or
+ScoreForm. This namespace does not provide editing, activation, deactivation,
+deletion, migration, import, raw JSON patching, AI generation, inference,
+automatic selection, scoring, grading, or feedback export.
+
 ## Direct Minimum-Requirement Review
 
 The `requirements` namespace exposes the teacher-facing minimum-requirement
@@ -119,6 +190,9 @@ quillan feedback set-options <class_id> <assignment_id> <student_id> --standard-
 quillan feedback add-comment <class_id> <assignment_id> <student_id> --standard-id <standard_id> --text <text> --include-in-feedback true|false [--save-for-reuse --reusable-label <label> [--reusable-text <text>] [--purpose <purpose>] [--teacher-tags <tag,...>] [--tag-current-rating true|false]]
 quillan feedback use-reusable-comment <class_id> <assignment_id> <student_id> --standard-id <standard_id> --comment-set-id <comment_set_id> --comment-id <comment_id> --include-in-feedback true|false
 quillan feedback mark-composed <class_id> <assignment_id> <student_id> --yes
+quillan comments list [--profile-id <profile_id>] [--writing-type <type>] [--standard-id <standard_id>] [--rating-value <number>]
+quillan comments show <comment_set_id>
+quillan comments create <comment_set_id> --profile-id <profile_id> --writing-type <type> --standard-id <standard_id> --label <label> --text <text> [--purpose <purpose>] [--rating-values <number,...>] [--teacher-tags <tag,...>]
 quillan roster create <class_id> --input <roster.csv> [--school-year YYYY-YYYY] [--overwrite] (--yes | --dry-run)
 quillan roster show <class_id>
 quillan roster validate <class_id>

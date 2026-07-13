@@ -171,7 +171,7 @@ def load_comment_set(path: str | Path) -> dict[str, Any]:
         raise FocusStandardCommentError(
             f"Focus Standard comment set not found: {comment_set_path}"
         ) from error
-    except json.JSONDecodeError as error:
+    except (json.JSONDecodeError, UnicodeError) as error:
         raise FocusStandardCommentError(
             f"Focus Standard comment set is not valid JSON: {comment_set_path}"
         ) from error
@@ -253,14 +253,11 @@ def lookup_comments(
         comment_set = file.comment_set
         if comment_set is None:
             continue
-        if comment_set["standards_profile_id"] != standards_profile_id:
-            continue
-        set_writing_types = comment_set["writing_types"]
-        if set_writing_types and writing_type not in set_writing_types:
-            continue
         for comment in comment_set["comments"]:
-            if not _comment_matches(
+            if not comment_matches_compatibility(
+                comment_set,
                 comment,
+                standards_profile_id=standards_profile_id,
                 standard_id=standard_id,
                 writing_type=writing_type,
                 rating_value=rating_value,
@@ -299,10 +296,15 @@ def append_saved_comment(
 ) -> SavedReusableFocusStandardComment:
     """Append a teacher-approved reusable comment, creating a default set if needed."""
     normalized_created_at = _normalize_timestamp(created_at)
+    normalized_profile_id = _normalize_required_string(
+        standards_profile_id, "standards_profile_id"
+    )
+    normalized_writing_type = _normalize_required_string(writing_type, "writing_type")
+    normalized_standard_id = _normalize_required_string(standard_id, "standard_id")
     normalized_set_id = (
         _validate_identifier(comment_set_id, "comment_set_id")
         if comment_set_id is not None
-        else _default_comment_set_id(standards_profile_id, writing_type)
+        else _default_comment_set_id(normalized_profile_id, normalized_writing_type)
     )
     normalized_comment_id = (
         _validate_identifier(comment_id, "comment_id")
@@ -319,21 +321,24 @@ def append_saved_comment(
     path = focus_standard_comment_set_path(workspace_root, normalized_set_id)
     if path.exists():
         comment_set = load_comment_set(path)
-        if comment_set["standards_profile_id"] != standards_profile_id:
+        if comment_set["standards_profile_id"] != normalized_profile_id:
             raise FocusStandardCommentError(
                 "Existing Focus Standard comment set standards_profile_id does not "
-                f"match {standards_profile_id!r}."
+                f"match {normalized_profile_id!r}."
             )
-        if comment_set["writing_types"] and writing_type not in comment_set["writing_types"]:
+        if (
+            comment_set["writing_types"]
+            and normalized_writing_type not in comment_set["writing_types"]
+        ):
             raise FocusStandardCommentError(
                 "Existing Focus Standard comment set does not include writing_type "
-                f"{writing_type!r}."
+                f"{normalized_writing_type!r}."
             )
     else:
         comment_set = _build_default_comment_set(
             comment_set_id=normalized_set_id,
-            standards_profile_id=standards_profile_id,
-            writing_type=writing_type,
+            standards_profile_id=normalized_profile_id,
+            writing_type=normalized_writing_type,
             created_at=normalized_created_at,
         )
 
@@ -341,8 +346,8 @@ def append_saved_comment(
     normalized_comment_id = _unique_identifier(normalized_comment_id, existing_ids)
     comment = {
         "comment_id": normalized_comment_id,
-        "standard_id": _normalize_required_string(standard_id, "standard_id"),
-        "writing_types": [writing_type],
+        "standard_id": normalized_standard_id,
+        "writing_types": [normalized_writing_type],
         "rating_values": normalized_rating_values,
         "label": normalized_label,
         "text": normalized_text,
@@ -361,16 +366,16 @@ def append_saved_comment(
     }
     comment_set["comments"].append(comment)
     if not comment_set["writing_types"]:
-        comment_set["writing_types"] = [writing_type]
-    elif writing_type not in comment_set["writing_types"]:
-        comment_set["writing_types"].append(writing_type)
+        comment_set["writing_types"] = [normalized_writing_type]
+    elif normalized_writing_type not in comment_set["writing_types"]:
+        comment_set["writing_types"].append(normalized_writing_type)
     comment_set["updated_at"] = normalized_created_at
     write_comment_set(workspace_root, comment_set, overwrite=path.exists())
     return SavedReusableFocusStandardComment(
         comment_set_id=normalized_set_id,
         comment_id=normalized_comment_id,
         path=path,
-        standard_id=standard_id,
+        standard_id=normalized_standard_id,
         label=normalized_label,
         text=normalized_text,
         purpose=normalized_purpose,
@@ -509,19 +514,30 @@ def _comment_sets_dir(workspace_root: str | Path) -> Path:
     return Path(workspace_root) / "shared" / "focus_standard_comments"
 
 
-def _comment_matches(
+def comment_matches_compatibility(
+    comment_set: dict[str, Any],
     comment: dict[str, Any],
     *,
-    standard_id: str,
-    writing_type: str,
-    rating_value: int | float | None,
+    standards_profile_id: str | None = None,
+    standard_id: str | None = None,
+    writing_type: str | None = None,
+    rating_value: int | float | None = None,
 ) -> bool:
-    if comment["standard_id"] != standard_id:
+    """Return whether a validated comment satisfies shared compatibility filters."""
+    if (
+        standards_profile_id is not None
+        and comment_set["standards_profile_id"] != standards_profile_id
+    ):
+        return False
+    if standard_id is not None and comment["standard_id"] != standard_id:
         return False
     if not comment["active"] or not comment["student_facing"]:
         return False
-    if comment["writing_types"] and writing_type not in comment["writing_types"]:
-        return False
+    if writing_type is not None:
+        if comment_set["writing_types"] and writing_type not in comment_set["writing_types"]:
+            return False
+        if comment["writing_types"] and writing_type not in comment["writing_types"]:
+            return False
     if rating_value is not None and comment["rating_values"]:
         return rating_value in comment["rating_values"]
     return True
@@ -621,10 +637,7 @@ def _build_default_comment_set(
         "record_type": "focus_standard_comment_set",
         "comment_set_id": comment_set_id,
         "title": title,
-        "description": (
-            "Reusable teacher-authored Focus Standard comments saved from "
-            "Quillan feedback composition."
-        ),
+        "description": "Reusable teacher-authored Focus Standard comments managed by Quillan.",
         "standards_profile_id": standards_profile_id,
         "writing_types": [writing_type],
         "grade_band": None,
