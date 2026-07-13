@@ -42,6 +42,12 @@ from quillan.cli_app.handlers.observations import (
     handle_observations_list,
     handle_observations_set,
 )
+from quillan.cli_app.handlers.pages import (
+    handle_pages_exclude,
+    handle_pages_list,
+    handle_pages_mark_needs_rescan,
+    handle_pages_restore,
+)
 from quillan.cli_app.handlers.ratings import (
     handle_ratings_list,
     handle_ratings_mark_complete,
@@ -701,6 +707,57 @@ def build_parser() -> argparse.ArgumentParser:
         help="Validate and report target paths without writing files.",
     )
     plain_paper_parser.set_defaults(handler=handle_create_plain_paper_submission)
+
+    pages_parser = subparsers.add_parser(
+        "pages",
+        help="Inspect or change one student's canonical submission pages.",
+        description=(
+            "List or explicitly change page-management state in one canonical "
+            "submission manifest. Evidence files and review data are not changed."
+        ),
+    )
+    pages_parser.set_defaults(handler=partial(_print_parser_help, pages_parser))
+    pages_subparsers = pages_parser.add_subparsers(dest="pages_command")
+
+    pages_list_parser = pages_subparsers.add_parser(
+        "list", help="List manifest page and evidence state without writing."
+    )
+    _add_submission_identity_arguments(pages_list_parser)
+    pages_list_parser.set_defaults(handler=handle_pages_list)
+
+    page_mutations = (
+        (
+            "exclude",
+            "Exclude a page from active review without deleting evidence.",
+            handle_pages_exclude,
+        ),
+        (
+            "restore",
+            "Restore an excluded page using preserved state or safe fallback.",
+            handle_pages_restore,
+        ),
+        (
+            "mark-needs-rescan",
+            "Mark a page as requiring corrected evidence.",
+            handle_pages_mark_needs_rescan,
+        ),
+    )
+    for command, help_text, handler in page_mutations:
+        mutation_parser = pages_subparsers.add_parser(command, help=help_text)
+        _add_submission_identity_arguments(mutation_parser)
+        mutation_parser.add_argument(
+            "--page",
+            required=True,
+            type=positive_integer,
+            help="Positive logical page number in the current manifest.",
+        )
+        mutation_parser.add_argument(
+            "--yes",
+            required=True,
+            action="store_true",
+            help="Explicitly confirm this manifest-only page change.",
+        )
+        mutation_parser.set_defaults(handler=handler)
 
     status_parser = subparsers.add_parser(
         "list-submissions",

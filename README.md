@@ -220,6 +220,10 @@ quillan route-scan <source-folder> --decode-qr
 quillan decode-scan <source-file> [--hide-payload]
 quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
+quillan pages list <class_id> <assignment_id> <student_id>
+quillan pages exclude <class_id> <assignment_id> <student_id> --page N --yes
+quillan pages restore <class_id> <assignment_id> <student_id> --page N --yes
+quillan pages mark-needs-rescan <class_id> <assignment_id> <student_id> --page N --yes
 quillan open-evidence <workspace-relative-evidence-path>
 quillan open-submission <class_id> <assignment_id> <student_id> [--page N]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>

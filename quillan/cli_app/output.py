@@ -43,6 +43,10 @@ from quillan.student_performance_summary_export import (
 )
 from quillan.submission_review_opening import OpenedSubmissionReview
 from quillan.submission_review_state import UpdatedSubmissionReviewState
+from quillan.submission_page_management import (
+    ManagedSubmissionPage,
+    SubmissionPageContext,
+)
 from quillan.submission_status import AssignmentSubmissionStatus
 
 
@@ -170,6 +174,104 @@ def print_updated_submission_review_state(
     print(f"Previous state: {updated.previous_state}")
     print(f"New state: {updated.new_state}")
     print(f"Manifest: {updated.manifest_relative_path}")
+
+
+def print_submission_page_context(context: SubmissionPageContext) -> None:
+    """Print manifest-only status for one selected student's pages."""
+    print("Submission pages:")
+    print(f"Class: {context.class_id}")
+    print(f"Assignment: {context.assignment_id}")
+    print(f"Student: {context.student_id}")
+    print(f"Manifest: {context.manifest_relative_path}")
+    print(f"Submission state: {context.submission_state}")
+    print(
+        "Expected pages: "
+        f"{context.expected_pages if context.expected_pages is not None else 'not specified'}"
+    )
+    print(f"Plain-paper submission: {format_bool(context.plain_paper)}")
+    if context.plain_paper:
+        print(f"Entry method: {context.plain_paper_entry_method or 'plain-paper manual'}")
+        print("Physical paper remains outside Quillan; there are zero digital pages.")
+    print(f"Total pages: {len(context.pages)}")
+    print(f"Present pages: {context.present_count}")
+    print(f"Missing pages: {context.missing_count}")
+    print(f"Duplicate pages: {context.duplicate_count}")
+    print(f"Needs-rescan pages: {context.needs_rescan_count}")
+    print(f"Excluded pages: {context.excluded_count}")
+    print(
+        "Pages lacking selected evidence: "
+        f"{format_page_numbers(context.pages_without_selected_evidence) or 'none'}"
+    )
+    print(f"Created: {context.created_at}")
+    print(f"Updated: {context.updated_at}")
+    if not context.pages:
+        print("Digital pages: none")
+        return
+    for page in context.pages:
+        print()
+        print(f"Page {page.page_number}:")
+        print(f"  State: {_teacher_page_state(page.page_state)}")
+        print(f"  Selected evidence: {page.selected_evidence_id or 'none'}")
+        print(f"  Evidence count: {len(page.evidence)}")
+        for evidence in page.evidence:
+            print(f"  Evidence {evidence.evidence_id}:")
+            print(f"    Role: {evidence.evidence_role}")
+            print(f"    State: {evidence.evidence_state}")
+            print(f"    Routed path: {evidence.routed_evidence_path}")
+            print(
+                "    Duplicate number: "
+                f"{evidence.duplicate_number if evidence.duplicate_number is not None else 'none'}"
+            )
+            print(
+                "    Retained source present: "
+                f"{format_bool(evidence.retained_source_present)}"
+            )
+            if (
+                evidence.pre_exclusion_role is not None
+                or evidence.pre_exclusion_state is not None
+            ):
+                print(
+                    "    Pre-exclusion role: "
+                    f"{evidence.pre_exclusion_role or 'none'}"
+                )
+                print(
+                    "    Pre-exclusion state: "
+                    f"{evidence.pre_exclusion_state or 'none'}"
+                )
+
+
+def print_managed_submission_page(
+    result: ManagedSubmissionPage, workspace_root: Path
+) -> None:
+    """Print one successful page-management mutation."""
+    print("Submission page updated:")
+    print(f"Class: {result.class_id}")
+    print(f"Assignment: {result.assignment_id}")
+    print(f"Student: {result.student_id}")
+    print(f"Action: {result.action}")
+    print(f"Page: {result.page_number}")
+    print(f"Previous state: {_teacher_page_state(result.previous_page_state)}")
+    print(f"Resulting state: {_teacher_page_state(result.page_state)}")
+    print(
+        "Previous selected evidence: "
+        f"{result.previous_selected_evidence_id or 'none'}"
+    )
+    print(f"Resulting selected evidence: {result.selected_evidence_id or 'none'}")
+    print(f"Evidence records preserved: {result.evidence_count}")
+    if result.restore_source is not None:
+        print(f"Restore source: {result.restore_source}")
+    print(
+        "Manifest: "
+        f"{workspace_relative_display(result.manifest_path, workspace_root)}"
+    )
+    print(f"Updated: {result.updated_at}")
+
+
+def _teacher_page_state(state: str) -> str:
+    return {
+        "excluded": "excluded from active review",
+        "needs_rescan": "needs rescan",
+    }.get(state, state)
 
 
 def print_added_review_note(added: AddedReviewNote) -> None:
