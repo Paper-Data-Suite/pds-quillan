@@ -196,9 +196,14 @@ def print_updated_standard_feedback_options(
         f"{format_bool(updated.include_overall_rationale)}"
     )
     print(f"Included observations: {updated.included_observation_count}")
+    print(
+        "Include review-unit observations: "
+        f"{format_bool(updated.include_review_unit_observations)}"
+    )
     print(f"Action: {'created' if updated.was_created else 'updated'}")
     print(f"Review state: {updated.review_state}")
     print(f"Review record: {updated.review_record_relative_path}")
+    print(f"Updated: {updated.updated_at}")
 
 
 def print_added_feedback_comment(added: AddedFeedbackComment) -> None:
@@ -215,6 +220,7 @@ def print_added_feedback_comment(added: AddedFeedbackComment) -> None:
     print(f"Review record: {added.review_record_relative_path}")
     if added.saved_reusable_comment is not None:
         print_saved_reusable_focus_standard_comment(added.saved_reusable_comment)
+    print(f"Created: {added.created_at}")
 
 
 def print_selected_reusable_feedback_comment(
@@ -232,6 +238,7 @@ def print_selected_reusable_feedback_comment(
     print(f"Include in feedback: {format_bool(selected.include_in_feedback)}")
     print(f"Review state: {selected.review_state}")
     print(f"Review record: {selected.review_record_relative_path}")
+    print(f"Created: {selected.created_at}")
 
 
 def print_completed_feedback_composition(
@@ -245,9 +252,13 @@ def print_completed_feedback_composition(
     print(f"Focus Standards: {completed.focus_standard_count}")
     print(f"Standards with feedback: {completed.standard_feedback_count}")
     print(f"Missing feedback records: {completed.missing_standard_feedback_count}")
+    print(f"Ratings recorded: {completed.rating_count}")
+    print(f"Missing ratings: {completed.missing_rating_count}")
+    print(f"Selected observations: {completed.selected_observation_count}")
     print(f"Included comments: {completed.included_comment_count}")
     print(f"Review state: {completed.review_state}")
     print(f"Review record: {completed.review_record_relative_path}")
+    print(f"Updated: {completed.updated_at}")
 
 
 def print_saved_reusable_focus_standard_comment(
