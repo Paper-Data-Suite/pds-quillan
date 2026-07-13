@@ -114,6 +114,17 @@ observation should be considered for student feedback.
 Ratings on review-unit observations are optional. Overall Focus Standard
 ratings are entered separately.
 
+Teachers may define or inspect units through the interactive menu or the
+direct, non-interactive `quillan review-units` commands. `show` performs no
+writes. `set --count N` creates assignment-derived sequences `1..N`, while
+`set --units units.json` permits explicit sequences, custom labels, and
+optional manifest-backed page/evidence references. Both paths require an
+assembled canonical submission manifest and use the same atomic review-unit
+service. Stable unit IDs preserve observations; removed-unit observations and
+their stale feedback references are removed. These commands never inspect
+evidence content, run OCR or AI, or infer segmentation, labels, observations,
+ratings, feedback, grades, or scores.
+
 ## Overall Focus Standard Ratings
 
 Overall ratings are stored in:

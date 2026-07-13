@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from quillan.assignments import AssignmentConfigError, load_assignment_config
 from quillan.review_record import (
     ReviewRecordError,
     build_empty_review_record,
@@ -18,18 +17,12 @@ from quillan.review_record import (
 )
 from quillan.review_record_paths import (
     ReviewRecordPathError,
-    review_record_path,
     write_review_record,
 )
-from quillan.storage import assignment_config_path
-from quillan.submission_guidance import missing_submission_guidance
-from quillan.submission_manifest import (
-    SubmissionManifestError,
-    load_submission_manifest,
-)
-from quillan.submission_manifest_paths import (
-    SubmissionManifestPathError,
-    submission_manifest_path,
+from quillan.review_unit_management import (
+    ReviewUnitManagementError,
+    load_review_unit_context,
+    validate_review_unit_definitions,
 )
 
 _SEQUENTIAL_OBSERVATION_ID = re.compile(r"^observation_(\d{4})$")
@@ -46,10 +39,16 @@ class UpdatedReviewUnits:
     class_id: str
     assignment_id: str
     student_id: str
+    unit_type: str
     review_record_path: Path
     review_record_relative_path: str
     review_state: str
+    previous_unit_count: int
     unit_count: int
+    observations_preserved: int
+    observations_removed: int
+    empty_units_added: int
+    stale_feedback_references_removed: int
     updated_at: str
 
 
@@ -106,6 +105,22 @@ def set_review_units(
     review = _load_or_create_review(context, normalized_updated_at)
     _guard_returned_without_full_review(review)
 
+    try:
+        units = validate_review_unit_definitions(units, context["manifest"])
+    except ReviewUnitManagementError as error:
+        raise ReviewObservationError(str(error)) from error
+
+    previous_unit_count = len(review["review_units"])
+    previous_observation_ids = {
+        observation["observation_id"]
+        for unit in review["review_units"]
+        for observation in unit["standard_observations"]
+    }
+    previous_feedback_reference_count = sum(
+        len(item["included_observation_ids"])
+        for item in review["feedback"]["standard_feedback"]
+    )
+
     existing_by_id = {
         unit["unit_id"]: unit
         for unit in review["review_units"]
@@ -146,17 +161,36 @@ def set_review_units(
     review["review_state"] = _observations_in_progress_state(review["review_state"])
     review["updated_at"] = normalized_updated_at
 
+    resulting_observation_ids = {
+        observation["observation_id"]
+        for unit in review["review_units"]
+        for observation in unit["standard_observations"]
+    }
+    resulting_feedback_reference_count = sum(
+        len(item["included_observation_ids"])
+        for item in review["feedback"]["standard_feedback"]
+    )
     _write_review(context, review)
     return UpdatedReviewUnits(
         class_id=class_id,
         assignment_id=assignment_id,
         student_id=student_id,
+        unit_type=unit_type,
         review_record_path=context["record_path"],
         review_record_relative_path=_workspace_relative_path(
             context["record_path"], context["workspace_root"], "review record"
         ),
         review_state=review["review_state"],
+        previous_unit_count=previous_unit_count,
         unit_count=len(canonical_units),
+        observations_preserved=len(previous_observation_ids & resulting_observation_ids),
+        observations_removed=len(previous_observation_ids - resulting_observation_ids),
+        empty_units_added=sum(
+            unit["unit_id"] not in existing_by_id for unit in canonical_units
+        ),
+        stale_feedback_references_removed=(
+            previous_feedback_reference_count - resulting_feedback_reference_count
+        ),
         updated_at=normalized_updated_at,
     )
 
@@ -319,53 +353,18 @@ def _load_context(
     student_id: str,
 ) -> dict[str, Any]:
     try:
-        resolved_root = Path(workspace_root).resolve(strict=False)
-        manifest_path = submission_manifest_path(
-            resolved_root, class_id, assignment_id, student_id
+        loaded = load_review_unit_context(
+            workspace_root, class_id, assignment_id, student_id
         )
-        record_path = review_record_path(
-            resolved_root, class_id, assignment_id, student_id
-        )
-        assignment_path = assignment_config_path(resolved_root, class_id, assignment_id)
-    except (
-        OSError,
-        RuntimeError,
-        SubmissionManifestPathError,
-        ReviewRecordPathError,
-    ) as error:
+    except ReviewUnitManagementError as error:
         raise ReviewObservationError(str(error)) from error
-
-    if not manifest_path.exists():
-        raise ReviewObservationError(missing_submission_guidance())
-
-    try:
-        manifest = load_submission_manifest(manifest_path)
-        assignment = load_assignment_config(assignment_path)
-    except (OSError, SubmissionManifestError, AssignmentConfigError) as error:
-        raise ReviewObservationError(str(error)) from error
-
-    _validate_identity(
-        manifest,
-        record_name="Submission manifest",
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
-    )
-    if class_id not in assignment["class_ids"]:
-        raise ReviewObservationError(
-            f"Assignment config class_ids does not include {class_id!r}."
-        )
-    if assignment["assignment_id"] != assignment_id:
-        raise ReviewObservationError(
-            f"Assignment config assignment_id is {assignment['assignment_id']!r}, expected {assignment_id!r}."
-        )
-
     return {
-        "workspace_root": resolved_root,
-        "manifest_path": manifest_path,
-        "record_path": record_path,
-        "assignment_path": assignment_path,
-        "assignment": assignment,
+        "workspace_root": loaded.workspace_root,
+        "manifest_path": loaded.submission_manifest_path,
+        "record_path": loaded.review_record_path,
+        "assignment_path": loaded.assignment_path,
+        "assignment": loaded.assignment,
+        "manifest": loaded.manifest,
         "class_id": class_id,
         "assignment_id": assignment_id,
         "student_id": student_id,

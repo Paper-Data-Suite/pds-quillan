@@ -86,9 +86,19 @@ def print_updated_review_units(updated: UpdatedReviewUnits) -> None:
     print(f"Class: {updated.class_id}")
     print(f"Assignment: {updated.assignment_id}")
     print(f"Student: {updated.student_id}")
-    print(f"Units: {updated.unit_count}")
+    print(f"Review-unit type: {updated.unit_type}")
+    print(f"Previous unit count: {updated.previous_unit_count}")
+    print(f"Resulting unit count: {updated.unit_count}")
+    print(f"Observations preserved: {updated.observations_preserved}")
+    print(f"Observations removed: {updated.observations_removed}")
+    print(f"Newly empty units added: {updated.empty_units_added}")
+    print(
+        "Stale feedback observation references removed: "
+        f"{updated.stale_feedback_references_removed}"
+    )
     print(f"Review state: {updated.review_state}")
     print(f"Review record: {updated.review_record_relative_path}")
+    print(f"Updated: {updated.updated_at}")
 
 
 def print_updated_review_unit_observation(
