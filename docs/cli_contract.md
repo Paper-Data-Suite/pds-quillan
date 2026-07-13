@@ -54,6 +54,9 @@ The implemented command surface currently exposed through argparse is:
 ```powershell
 quillan
 quillan --help
+quillan assignment create <class_id> <assignment_id> --title <title> --writing-type <type> (--prompt <text> | --prompt-file <path>) --standards-profile-id <profile_id> --focus-standard-ids <id,...> (--yes | --dry-run)
+quillan assignment show <class_id> <assignment_id>
+quillan assignment validate <class_id> <assignment_id>
 quillan validate-assignment <path>
 quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
 quillan route-scan <source-image> --decode-qr
@@ -92,6 +95,36 @@ quillan menu
 
 Bare `quillan` and the explicit `menu` command launch the same interactive
 menu. The other commands remain direct and non-interactive.
+
+### `assignment create`, `show`, and `validate`
+
+```powershell
+quillan assignment create <class_id> <assignment_id> ...
+quillan assignment show <class_id> <assignment_id>
+quillan assignment validate <class_id> <assignment_id>
+```
+
+`assignment create` builds the same schema-version-2 shape and uses the same
+defaults and structural validation as menu assignment creation. It requires an
+existing canonical class roster and validates the selected profile and Focus
+Standards against the active workspace's PDS Core standards library. New writes
+require `--yes`; replacing an existing config requires both `--overwrite` and
+`--yes`. `--dry-run` validates and reports the canonical path without creating
+an assignment directory or writing files.
+
+The prompt may be supplied inline with `--prompt` or read as UTF-8 text with
+`--prompt-file`. Basic paragraph, word-count, and required-element options are
+optional. Review-unit labels and the four-level standards rating scale default
+to the same values used by the menu.
+
+`assignment show` loads the canonical workspace config, validates its structure
+and path identity, and prints the shared assignment summary. `assignment
+validate` additionally validates the standards profile and every Focus Standard
+against the active workspace library. Both commands are read-only.
+
+These commands write or inspect only
+`classes/<class_id>/assignments/<assignment_id>/assignment.json`; they do not
+create submission, review, evidence, scan, export, Core, or ScoreForm data.
 
 ### `validate-assignment`
 
