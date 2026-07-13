@@ -3,7 +3,8 @@
 ## Purpose and Boundary
 
 Reusable Focus Standard comments are teacher-authored feedback language for
-Quillan's v0.8.6 standards-based review workflow.
+Quillan's v0.8.6 standards-based review workflow. They may be authored
+directly as shared material or saved from feedback composition.
 
 They replace generic prebuilt comment banks as the active reusable feedback
 model for standards-based review.
@@ -37,6 +38,21 @@ no rating restriction. `feedback use-reusable-comment` applies the existing
 profile, writing-type, standard, rating, active, and student-facing lookup
 rules, then increments `times_used` and updates `last_used_at` exactly once
 after a successful selection.
+
+The direct `comments create` workflow accepts reusable metadata explicitly and
+uses the same schema validation, ID generation, append logic, compatibility
+checks, and atomic writer. It has no assignment or student context and creates
+manual provenance with all student and review fields null. Generated comment
+set descriptions are therefore source-neutral:
+
+```text
+Reusable teacher-authored Focus Standard comments managed by Quillan.
+```
+
+The management CLI also lists active student-facing comments and inspects full
+sets. These read operations do not rewrite invalid files. This management
+surface does not add editing, deletion, activation, deactivation, migration,
+or any other lifecycle policy.
 
 ## Status
 
@@ -590,6 +606,11 @@ Development` to `scene_development`. Tags are optional; consumers must tolerate
 their absence, and existing schema version `1` comments with empty
 `module_details` remain valid. Consumers must not require teacher tags for
 lookup or automatic selection.
+
+Direct management accepts comma-separated tags and delegates normalization to
+the shared service. Tags remain noncompatibility metadata: they do not affect
+profile, writing-type, standard, or rating matching; automatic selection;
+usage; scoring; or reporting.
 
 ## Source and Provenance
 
