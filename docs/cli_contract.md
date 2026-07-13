@@ -47,6 +47,52 @@ quillan [command] [arguments]
 Calling `quillan.cli.main()` from Python is useful for tests, but it is not a
 separate public Python API contract.
 
+## Direct Minimum-Requirement Review
+
+The `requirements` namespace exposes the teacher-facing minimum-requirement
+workflow as direct, non-interactive commands. Running `quillan requirements`
+prints namespace help and exits successfully without resolving a workspace or
+loading any records.
+
+All three subcommands require a valid canonical assignment and an existing,
+valid canonical `submission.json` for the requested class, assignment, and
+student. Routed evidence alone is not review-ready; teachers must assemble the
+submission first. Evidence-less plain-paper manifests are valid, and a valid
+historical or unrostered submission does not require a current roster entry.
+
+`requirements list` prints configured requirements, current checks, summary
+counts, review state, and outcome in teacher-facing text. It is strictly
+read-only. When `review.json` is absent it reports `not_started`, shows each
+requirement as `not checked`, reports outcome `not_checked`, and creates
+nothing. Stale checks whose keys are no longer configured are excluded from
+configured completion counts.
+
+`requirements set-check` accepts only a key currently derived from the
+assignment's `basic_requirements`. Numeric keys are `paragraphs_min`,
+`paragraphs_max`, `word_count_min`, and `word_count_max`; required-element keys
+use `required_elements:<element>`. Labels and expected values come from the
+assignment and cannot be supplied by the caller. `--met` becomes a boolean. A
+supplied note is trimmed and stored; omission clears an earlier note. Updating
+a key retains its check ID and does not infer or recalculate the outcome.
+
+`requirements set-outcome` accepts exactly `met`, `unmet_continue_review`, or
+`returned_without_full_review`. `met` requires every configured requirement to
+be checked and met. `unmet_continue_review` requires at least one configured
+unmet check; unchecked requirements may remain. Returning without full review
+also requires a configured unmet check, an explicit nonblank note, and
+`minimum_requirement_policy.allow_return_without_full_review: true` in the
+assignment. No CLI flag overrides that policy.
+
+These commands record teacher judgments only. They do not open evidence, count
+words or paragraphs, detect required elements, run OCR or AI, infer outcomes,
+grade, score, create observations or ratings, or compose feedback. The list
+command writes nothing. The two set commands may create or replace only the
+canonical
+`classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json`,
+through the validated atomic review-record writer. They do not modify the
+assignment, submission manifest, roster, evidence, scans, exports, reports, or
+other suite data.
+
 ## Current Command Surface
 
 The implemented command surface currently exposed through argparse is:
@@ -57,6 +103,9 @@ quillan --help
 quillan assignment create <class_id> <assignment_id> --title <title> --writing-type <type> (--prompt <text> | --prompt-file <path>) --standards-profile-id <profile_id> --focus-standard-ids <id,...> (--yes | --dry-run)
 quillan assignment show <class_id> <assignment_id>
 quillan assignment validate <class_id> <assignment_id>
+quillan requirements list <class_id> <assignment_id> <student_id>
+quillan requirements set-check <class_id> <assignment_id> <student_id> --requirement-key <key> --met true|false [--note <text>]
+quillan requirements set-outcome <class_id> <assignment_id> <student_id> --outcome met|unmet_continue_review|returned_without_full_review [--note <text>]
 quillan roster create <class_id> --input <roster.csv> [--school-year YYYY-YYYY] [--overwrite] (--yes | --dry-run)
 quillan roster show <class_id>
 quillan roster validate <class_id>

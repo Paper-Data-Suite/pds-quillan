@@ -80,6 +80,14 @@ Supported outcome statuses are `met`, `unmet_continue_review`, and
 `returned_without_full_review`. Returning work without full standards review
 requires a teacher note when the assignment policy permits that path.
 
+Teachers may use either the interactive review menu or the direct,
+non-interactive `quillan requirements list`, `set-check`, and `set-outcome`
+commands. Both paths share assignment-derived requirement definitions and
+outcome eligibility rules. Direct commands require an assembled canonical
+`submission.json`; they never assemble submissions, inspect writing, count
+text, run OCR or AI, or infer a teacher judgment. Listing is read-only, while
+the set commands may change only the submission's canonical `review.json`.
+
 Minimum-requirement checks do not count words, count paragraphs, parse writing,
 run OCR, use AI, change ratings, or calculate grades.
 

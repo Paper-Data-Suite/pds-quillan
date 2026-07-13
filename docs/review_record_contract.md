@@ -385,6 +385,14 @@ note, updates top-level `updated_at`, and preserves unrelated review data.
 `minimum_requirement_outcome` records the teacher's decision after minimum
 requirement checks.
 
+The direct `quillan requirements` commands use the same assignment-aware
+services as the teacher menu. Configured keys, labels, expected values, and
+outcome eligibility derive from the current assignment. Arbitrary or stale
+keys cannot be written or used to satisfy outcome eligibility. These commands
+require an existing canonical submission manifest and preserve every unrelated
+section of an existing schema-version-2 review. They do not inspect evidence or
+infer checks, outcomes, ratings, or feedback.
+
 Example:
 
 ```json

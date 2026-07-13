@@ -17,6 +17,11 @@ from quillan.cli_app.handlers.decoding import handle_decode_scan
 from quillan.cli_app.handlers.review import (
     handle_add_note,
 )
+from quillan.cli_app.handlers.requirements import (
+    handle_requirements_list,
+    handle_requirements_set_check,
+    handle_requirements_set_outcome,
+)
 from quillan.cli_app.handlers.rosters import (
     handle_roster_add_student,
     handle_roster_create,
@@ -103,6 +108,87 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_assignment_identity_arguments(assignment_validate_parser)
     assignment_validate_parser.set_defaults(handler=handle_canonical_assignment_validate)
+
+    requirements_parser = subparsers.add_parser(
+        "requirements",
+        help="Review assignment minimum requirements for one assembled submission.",
+        description=(
+            "List and record teacher-entered minimum-requirement judgments for "
+            "one canonical assembled submission. These commands do not inspect "
+            "student writing or infer checks or outcomes."
+        ),
+    )
+    requirements_parser.set_defaults(
+        handler=partial(_print_parser_help, requirements_parser)
+    )
+    requirements_subparsers = requirements_parser.add_subparsers(
+        dest="requirements_command"
+    )
+    requirements_list_parser = requirements_subparsers.add_parser(
+        "list",
+        help="List configured requirements and current teacher-entered status.",
+        description=(
+            "Read the canonical assignment, assembled submission manifest, and "
+            "optional review record without writing any files."
+        ),
+    )
+    _add_submission_identity_arguments(requirements_list_parser)
+    requirements_list_parser.set_defaults(handler=handle_requirements_list)
+
+    requirements_check_parser = requirements_subparsers.add_parser(
+        "set-check",
+        help="Create or update one configured teacher-entered check.",
+        description=(
+            "Resolve a requirement key from the canonical assignment and record "
+            "the teacher's explicit met/not-met judgment in canonical review.json."
+        ),
+    )
+    _add_submission_identity_arguments(requirements_check_parser)
+    requirements_check_parser.add_argument(
+        "--requirement-key",
+        required=True,
+        help="Configured key, such as paragraphs_min or required_elements:thesis.",
+    )
+    requirements_check_parser.add_argument(
+        "--met",
+        required=True,
+        type=_boolean,
+        metavar="true|false",
+        help="Explicit teacher judgment: true or false.",
+    )
+    requirements_check_parser.add_argument(
+        "--note",
+        help="Optional nonblank teacher note; omission clears an earlier note.",
+    )
+    requirements_check_parser.set_defaults(handler=handle_requirements_set_check)
+
+    requirements_outcome_parser = requirements_subparsers.add_parser(
+        "set-outcome",
+        help="Set an eligible teacher-selected overall outcome.",
+        description=(
+            "Set met, unmet_continue_review, or returned_without_full_review "
+            "after validating configured checks and canonical assignment policy."
+        ),
+    )
+    _add_submission_identity_arguments(requirements_outcome_parser)
+    requirements_outcome_parser.add_argument(
+        "--outcome",
+        required=True,
+        choices=(
+            "met",
+            "unmet_continue_review",
+            "returned_without_full_review",
+        ),
+        help="Explicit teacher-selected outcome.",
+    )
+    requirements_outcome_parser.add_argument(
+        "--note",
+        help=(
+            "Optional nonblank teacher note; required when returning without "
+            "full standards review."
+        ),
+    )
+    requirements_outcome_parser.set_defaults(handler=handle_requirements_set_outcome)
 
     roster_parser = subparsers.add_parser(
         "roster",
