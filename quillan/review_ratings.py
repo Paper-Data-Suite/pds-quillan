@@ -73,6 +73,7 @@ class UpdatedOverallStandardRating:
     standard_id: str
     rating: int
     rating_label: str
+    rationale: str | None
     include_in_feedback: bool
     was_created: bool
     updated_at: str
@@ -190,8 +191,10 @@ def set_overall_standard_rating(
     context = _load_context(workspace_root, class_id, assignment_id, student_id)
     assignment = context["assignment"]
     if normalized_standard_id not in assignment["focus_standard_ids"]:
+        allowed = ", ".join(assignment["focus_standard_ids"])
         raise ReviewRatingError(
-            f"standard_id {normalized_standard_id!r} is not a Focus Standard for this assignment."
+            f"standard_id {normalized_standard_id!r} is not a Focus Standard for this "
+            f"assignment. Valid Focus Standard IDs: {allowed}."
         )
     rating_labels = _rating_labels_by_value(assignment)
     if normalized_rating not in rating_labels:
@@ -242,6 +245,7 @@ def set_overall_standard_rating(
         standard_id=normalized_standard_id,
         rating=normalized_rating,
         rating_label=rating_labels[normalized_rating],
+        rationale=normalized_rationale,
         include_in_feedback=include_in_feedback,
         was_created=was_created,
         updated_at=normalized_updated_at,

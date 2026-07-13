@@ -374,6 +374,18 @@ def test_set_overall_rating_validates_assignment_scale_and_standard(
             include_in_feedback=1,  # type: ignore[arg-type]
             updated_at=FIRST_TIMESTAMP,
         )
+    with pytest.raises(ReviewRatingError, match="rating must be an integer"):
+        set_overall_standard_rating(
+            tmp_path,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            standard_id="njsls-ela:W.1",
+            rating=True,
+            rationale=None,
+            include_in_feedback=True,
+            updated_at=FIRST_TIMESTAMP,
+        )
 
 
 def test_focus_standard_summary_groups_counts_and_current_rating(
