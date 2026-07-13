@@ -114,6 +114,11 @@ quillan observations set <class_id> <assignment_id> <student_id> --unit-id <unit
 quillan ratings list <class_id> <assignment_id> <student_id>
 quillan ratings set <class_id> <assignment_id> <student_id> --standard-id <standard_id> --rating <integer> [--rationale <text>] --include-in-feedback true|false
 quillan ratings mark-complete <class_id> <assignment_id> <student_id> --yes
+quillan feedback show <class_id> <assignment_id> <student_id>
+quillan feedback set-options <class_id> <assignment_id> <student_id> --standard-id <standard_id> --include-overall-rating true|false --include-overall-rationale true|false [--observation-ids <id,...>]
+quillan feedback add-comment <class_id> <assignment_id> <student_id> --standard-id <standard_id> --text <text> --include-in-feedback true|false [--save-for-reuse --reusable-label <label> [--reusable-text <text>] [--purpose <purpose>] [--teacher-tags <tag,...>] [--tag-current-rating true|false]]
+quillan feedback use-reusable-comment <class_id> <assignment_id> <student_id> --standard-id <standard_id> --comment-set-id <comment_set_id> --comment-id <comment_id> --include-in-feedback true|false
+quillan feedback mark-composed <class_id> <assignment_id> <student_id> --yes
 quillan roster create <class_id> --input <roster.csv> [--school-year YYYY-YYYY] [--overwrite] (--yes | --dry-run)
 quillan roster show <class_id>
 quillan roster validate <class_id>
@@ -158,6 +163,72 @@ and exits successfully without resolving or inspecting the workspace.
 
 Running `quillan observations` without a subcommand prints observation help
 and exits successfully without resolving or inspecting the workspace.
+
+## Direct Focus Standard Feedback Composition
+
+The `feedback` namespace exposes the menu's composition model through five
+direct, non-interactive commands. Bare `quillan feedback` prints namespace
+help without resolving a workspace. Every subcommand requires a valid
+canonical assignment and assembled `submission.json`; write commands also
+require an existing valid `review.json`. A valid historical, unrostered, or
+plain-paper submission remains usable. Routed evidence without a manifest
+produces assembly guidance and is never assembled automatically.
+
+`feedback show` is strictly read-only. It reports canonical paths, review and
+completion state, global flags and counts, then lists assignment Focus
+Standards in configured order. Each standard shows its current rating and
+rationale, feedback options, selected observations, eligible candidate
+observations, stored comment snapshots, and compatible reusable comments with
+the set/comment IDs needed for selection. A missing review is reported as
+`not_started` with empty choices; malformed reviews fail. Returned reviews are
+displayable for audit but clearly unavailable for full composition.
+
+`feedback set-options` replaces one configured Focus Standard's complete
+rating/rationale choices and selected-observation list. Both booleans are
+required. Omission of `--observation-ids` clears the list; comma order is
+preserved and blanks or duplicates fail. An observation must exist, belong to
+the same standard, and already have `include_in_feedback: true`; the command
+never enables it. The shared service creates a missing standard-feedback
+record or updates the existing record while preserving comments and module
+metadata, and recomputes the global observation-inclusion flag.
+
+`feedback add-comment` copies the teacher's text after outer whitespace
+trimming without rewriting its internal content. Inclusion is explicit and no
+export occurs. `--save-for-reuse` requires a nonblank label. Separately
+approved `--reusable-text` is stored when supplied; otherwise the custom text
+is reused. Teachers must remove student-specific details from reusable text.
+Purposes are `praise`, `next_step`, `clarification`, `evidence`, `reasoning`,
+`organization`, `style`, `conventions`, `revision`, and `general` (the
+default). Teacher tags use the shared lowercase snake-case normalization.
+`--tag-current-rating true` stores the current rating restriction when a
+rating exists; omission or `false` stores no rating restriction.
+
+`feedback use-reusable-comment` accepts only an active, student-facing comment
+compatible through the shared lookup rules with the assignment standards
+profile, writing type, Focus Standard, and current rating. Selection copies
+the exact reusable text into the review as a stable snapshot, assigns the next
+review-wide sequential feedback-comment ID, and increments source usage once.
+Later source edits do not change that snapshot.
+
+Every standard-specific command validates against the assignment's configured
+Focus Standards, not merely the shared standards library. Feedback edits move
+`feedback_composed`, `ready_for_export`, and `exported` back to
+`ratings_complete`; earlier states remain unchanged and export metadata and
+files are preserved. `mark-composed` requires `--yes`. Missing ratings,
+feedback records, selected observations, or included comments produce summary
+warnings but do not block this explicit action. Returned-without-full-review
+records reject all four write commands.
+
+Write boundaries are exact: show writes nothing; set-options, ordinary
+add-comment, and mark-composed modify only canonical `review.json`; saving for
+reuse modifies that review and its service-selected comment set; reusable
+selection modifies that review and the explicitly selected comment set's
+usage metadata. Assignment and submission records, evidence, scans, rosters,
+unrelated comment sets, exports, reports, Core, and ScoreForm are unchanged.
+Composition is separate from export. These commands never inspect evidence,
+run OCR or handwriting recognition, invoke AI, generate or rewrite language,
+infer observations or ratings, grade, score, auto-select, auto-complete, or
+auto-export.
 
 Running `quillan ratings` without a subcommand prints ratings help and exits
 successfully without resolving or inspecting the workspace.

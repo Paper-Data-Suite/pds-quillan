@@ -54,6 +54,7 @@ class UpdatedStandardFeedbackOptions:
     include_overall_rating: bool
     include_overall_rationale: bool
     included_observation_count: int
+    include_review_unit_observations: bool
     was_created: bool
     updated_at: str
 
@@ -107,7 +108,11 @@ class CompletedFeedbackComposition:
     focus_standard_count: int
     standard_feedback_count: int
     missing_standard_feedback_count: int
+    rating_count: int
+    missing_rating_count: int
+    selected_observation_count: int
     included_comment_count: int
+    student_facing_content_count: int
     updated_at: str
 
 
@@ -207,6 +212,9 @@ def set_standard_feedback_options(
         include_overall_rating=include_overall_rating,
         include_overall_rationale=include_overall_rationale,
         included_observation_count=len(included_observation_ids),
+        include_review_unit_observations=review["feedback"][
+            "include_review_unit_observations"
+        ],
         was_created=was_created,
         updated_at=normalized_updated_at,
     )
@@ -446,6 +454,28 @@ def mark_feedback_composed(
         for comment in item["comments"]
         if comment["include_in_feedback"]
     )
+    rating_count = sum(
+        item["standard_id"] in focus_standard_ids
+        for item in review["overall_standard_ratings"]
+    )
+    selected_observation_count = sum(
+        len(item["included_observation_ids"])
+        for item in review["feedback"]["standard_feedback"]
+        if item["standard_id"] in focus_standard_ids
+    )
+    ratings_by_standard = {
+        item["standard_id"]: item for item in review["overall_standard_ratings"]
+    }
+    student_facing_rating_count = 0
+    student_facing_rationale_count = 0
+    for item in review["feedback"]["standard_feedback"]:
+        rating = ratings_by_standard.get(item["standard_id"])
+        if rating is None or item["standard_id"] not in focus_standard_ids:
+            continue
+        student_facing_rating_count += item["include_overall_rating"]
+        student_facing_rationale_count += bool(
+            item["include_overall_rationale"] and rating["rationale"]
+        )
     review["review_state"] = "feedback_composed"
     review["updated_at"] = normalized_updated_at
     _write_review(context, review)
@@ -463,7 +493,16 @@ def mark_feedback_composed(
         missing_standard_feedback_count=max(
             len(focus_standard_ids) - len(standards_with_feedback), 0
         ),
+        rating_count=rating_count,
+        missing_rating_count=len(focus_standard_ids) - rating_count,
+        selected_observation_count=selected_observation_count,
         included_comment_count=included_comment_count,
+        student_facing_content_count=(
+            student_facing_rating_count
+            + student_facing_rationale_count
+            + selected_observation_count
+            + included_comment_count
+        ),
         updated_at=normalized_updated_at,
     )
 
@@ -490,16 +529,23 @@ def _load_context(
         ReviewRecordPathError,
     ) as error:
         raise ReviewFeedbackError(str(error)) from error
+    try:
+        assignment = load_assignment_config(assignment_path)
+    except (OSError, AssignmentConfigError) as error:
+        raise ReviewFeedbackError(str(error)) from error
+    if assignment["assignment_id"] != assignment_id:
+        raise ReviewFeedbackError(
+            f"Assignment config assignment_id is {assignment['assignment_id']!r}, expected {assignment_id!r}."
+        )
+    if class_id not in assignment["class_ids"]:
+        raise ReviewFeedbackError(
+            f"Assignment config class_ids does not include {class_id!r}."
+        )
     if not manifest_path.exists():
         raise ReviewFeedbackError(missing_submission_guidance())
-    if not record_path.exists():
-        raise ReviewFeedbackError(
-            "A review record must exist before composing feedback."
-        )
     try:
         manifest = load_submission_manifest(manifest_path)
-        assignment = load_assignment_config(assignment_path)
-    except (OSError, SubmissionManifestError, AssignmentConfigError) as error:
+    except (OSError, SubmissionManifestError) as error:
         raise ReviewFeedbackError(str(error)) from error
     _validate_identity(
         manifest,
@@ -508,13 +554,9 @@ def _load_context(
         assignment_id=assignment_id,
         student_id=student_id,
     )
-    if class_id not in assignment["class_ids"]:
+    if not record_path.exists():
         raise ReviewFeedbackError(
-            f"Assignment config class_ids does not include {class_id!r}."
-        )
-    if assignment["assignment_id"] != assignment_id:
-        raise ReviewFeedbackError(
-            f"Assignment config assignment_id is {assignment['assignment_id']!r}, expected {assignment_id!r}."
+            "A review record must exist before composing feedback."
         )
     return {
         "workspace_root": resolved_root,
@@ -567,8 +609,10 @@ def _guard_returned_without_full_review(review: dict[str, Any]) -> None:
 
 def _validate_focus_standard(assignment: dict[str, Any], standard_id: str) -> None:
     if standard_id not in assignment["focus_standard_ids"]:
+        valid = ", ".join(assignment["focus_standard_ids"])
         raise ReviewFeedbackError(
-            f"standard_id {standard_id!r} is not a Focus Standard for this assignment."
+            f"standard_id {standard_id!r} is not a Focus Standard for this assignment. "
+            f"Valid Focus Standard IDs: {valid}."
         )
 
 
@@ -598,6 +642,11 @@ def _validate_observation_ids_for_standard(
         if observation["standard_id"] != standard_id:
             raise ReviewFeedbackError(
                 f"observation_id {normalized_id!r} does not belong to standard_id {standard_id!r}."
+            )
+        if not observation["include_in_feedback"]:
+            raise ReviewFeedbackError(
+                f"observation_id {normalized_id!r} is excluded from feedback eligibility. "
+                "Update the observation before selecting it."
             )
 
 

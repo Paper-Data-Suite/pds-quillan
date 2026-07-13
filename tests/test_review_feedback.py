@@ -194,6 +194,22 @@ def test_feedback_options_validate_standard_and_observations(
         )
 
 
+def test_feedback_options_reject_observation_excluded_from_feedback(tmp_path: Path) -> None:
+    _write_fresh_workspace(tmp_path)
+    with pytest.raises(ReviewFeedbackError, match="excluded from feedback eligibility"):
+        set_standard_feedback_options(
+            tmp_path,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            standard_id="njsls-ela:W.1",
+            include_overall_rating=True,
+            include_overall_rationale=True,
+            included_observation_ids=["observation_0003"],
+            updated_at=FIRST_TIMESTAMP,
+        )
+
+
 def test_returned_without_full_review_rejects_feedback_composition(
     tmp_path: Path,
 ) -> None:

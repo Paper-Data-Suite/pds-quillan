@@ -709,8 +709,11 @@ Field rules:
 * Each Focus Standard may appear at most once in `standard_feedback`.
 * `include_overall_rating` is a boolean.
 * `include_overall_rationale` is a boolean.
-* `included_observation_ids` is an array of `observation_id` values from the
-  same review record.
+* `included_observation_ids` is an ordered array of unique `observation_id`
+  values from the same review record. Each selected observation must belong to
+  this record's `standard_id` and must itself have `include_in_feedback: true`.
+  Excluded observations must be changed through the observation workflow
+  before they can be selected.
 * `comments` is an array of feedback comment records.
 * `module_details` is an object.
 
@@ -742,6 +745,13 @@ Field rules:
 
 Feedback comments are teacher-authored or teacher-selected. Quillan must not
 generate feedback automatically.
+
+Direct composition uses the same shared services as the teacher-facing menu.
+Options replace a standard's full selection while preserving comments;
+custom and reusable selections append review-wide sequential comment IDs.
+Reusable text is copied as a stable snapshot and successful selection updates
+source usage metadata. Explicit composition completion may proceed with
+missing ratings, records, observations, or comments and never exports output.
 
 If a teacher writes a new custom comment and sets `save_for_reuse` to `true`,
 a later reusable-comment workflow may offer to save that language into a

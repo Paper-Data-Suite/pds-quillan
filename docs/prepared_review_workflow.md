@@ -191,6 +191,14 @@ exports use the copied text, not a live lookup into the reusable source file.
 Generic legacy comment banks are not used by the active v0.8.6 feedback
 composition workflow.
 
+The same workflow is available non-interactively through `quillan feedback
+show`, `set-options`, `add-comment`, `use-reusable-comment`, and
+`mark-composed --yes`. The assignment's ordered Focus Standards remain the
+source of truth. Selected observations must already be eligible for feedback.
+Reusable language must be teacher-approved and free of student-specific
+details; selection stores a stable snapshot and increments source usage.
+Composition does not inspect evidence, generate language, or export feedback.
+
 ## Exports And Reports
 
 Student feedback exports are derived artifacts:

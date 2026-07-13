@@ -30,6 +30,14 @@ When selected for a student review, reusable comment text is copied into
 `review.json` as a stable snapshot. Later edits to the reusable source must not
 silently change prior student review records or previously generated feedback.
 
+The direct `feedback add-comment --save-for-reuse` workflow uses the canonical
+purposes and shared teacher-tag normalization defined here. Current-rating
+tagging is opt-in; without `--tag-current-rating true`, the saved comment has
+no rating restriction. `feedback use-reusable-comment` applies the existing
+profile, writing-type, standard, rating, active, and student-facing lookup
+rules, then increments `times_used` and updates `last_used_at` exactly once
+after a successful selection.
+
 ## Status
 
 This is the active reusable Focus Standard comment contract for the v0.8.6

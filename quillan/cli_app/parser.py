@@ -13,6 +13,13 @@ from quillan.cli_app.handlers.exports import (
     handle_export_student_performance_summary,
     handle_export_standards_summary,
 )
+from quillan.cli_app.handlers.feedback import (
+    handle_feedback_add_comment,
+    handle_feedback_mark_composed,
+    handle_feedback_set_options,
+    handle_feedback_show,
+    handle_feedback_use_reusable_comment,
+)
 from quillan.cli_app.handlers.decoding import handle_decode_scan
 from quillan.cli_app.handlers.review import (
     handle_add_note,
@@ -336,6 +343,87 @@ def build_parser() -> argparse.ArgumentParser:
         help="Explicitly confirm completion without prompting.",
     )
     ratings_complete_parser.set_defaults(handler=handle_ratings_mark_complete)
+
+    feedback_parser = subparsers.add_parser(
+        "feedback",
+        help="Display and compose student-facing Focus Standard feedback.",
+        description=(
+            "Display or explicitly compose Focus Standard feedback for one "
+            "assembled submission. Composition does not inspect evidence, generate "
+            "language, or export feedback."
+        ),
+    )
+    feedback_parser.set_defaults(handler=partial(_print_parser_help, feedback_parser))
+    feedback_subparsers = feedback_parser.add_subparsers(dest="feedback_command")
+
+    feedback_show_parser = feedback_subparsers.add_parser(
+        "show", help="Display current feedback choices without writing files."
+    )
+    _add_submission_identity_arguments(feedback_show_parser)
+    feedback_show_parser.set_defaults(handler=handle_feedback_show)
+
+    feedback_options_parser = feedback_subparsers.add_parser(
+        "set-options", help="Replace feedback options for one Focus Standard."
+    )
+    _add_submission_identity_arguments(feedback_options_parser)
+    feedback_options_parser.add_argument("--standard-id", required=True)
+    feedback_options_parser.add_argument(
+        "--include-overall-rating", required=True, type=_true_false, metavar="true|false"
+    )
+    feedback_options_parser.add_argument(
+        "--include-overall-rationale", required=True, type=_true_false, metavar="true|false"
+    )
+    feedback_options_parser.add_argument(
+        "--observation-ids",
+        help="Comma-separated eligible observation IDs; omission clears the selection.",
+    )
+    feedback_options_parser.set_defaults(handler=handle_feedback_set_options)
+
+    feedback_comment_parser = feedback_subparsers.add_parser(
+        "add-comment", help="Add one exact teacher-authored feedback comment.",
+        description=(
+            "Add exact teacher-authored text. When saving for reuse, remove all "
+            "student-specific details from the separately approved reusable text."
+        ),
+    )
+    _add_submission_identity_arguments(feedback_comment_parser)
+    feedback_comment_parser.add_argument("--standard-id", required=True)
+    feedback_comment_parser.add_argument("--text", required=True)
+    feedback_comment_parser.add_argument(
+        "--include-in-feedback", required=True, type=_true_false, metavar="true|false"
+    )
+    feedback_comment_parser.add_argument("--save-for-reuse", action="store_true")
+    feedback_comment_parser.add_argument("--reusable-label")
+    feedback_comment_parser.add_argument("--reusable-text")
+    feedback_comment_parser.add_argument("--purpose")
+    feedback_comment_parser.add_argument("--teacher-tags")
+    feedback_comment_parser.add_argument(
+        "--tag-current-rating", type=_true_false, metavar="true|false"
+    )
+    feedback_comment_parser.set_defaults(handler=handle_feedback_add_comment)
+
+    feedback_reusable_parser = feedback_subparsers.add_parser(
+        "use-reusable-comment",
+        help="Copy one compatible reusable comment as a stable review snapshot.",
+    )
+    _add_submission_identity_arguments(feedback_reusable_parser)
+    feedback_reusable_parser.add_argument("--standard-id", required=True)
+    feedback_reusable_parser.add_argument("--comment-set-id", required=True)
+    feedback_reusable_parser.add_argument("--comment-id", required=True)
+    feedback_reusable_parser.add_argument(
+        "--include-in-feedback", required=True, type=_true_false, metavar="true|false"
+    )
+    feedback_reusable_parser.set_defaults(handler=handle_feedback_use_reusable_comment)
+
+    feedback_complete_parser = feedback_subparsers.add_parser(
+        "mark-composed",
+        help="Explicitly mark feedback composed; missing content produces warnings.",
+    )
+    _add_submission_identity_arguments(feedback_complete_parser)
+    feedback_complete_parser.add_argument(
+        "--yes", action="store_true", help="Explicitly confirm completion without prompting."
+    )
+    feedback_complete_parser.set_defaults(handler=handle_feedback_mark_composed)
 
     roster_parser = subparsers.add_parser(
         "roster",
