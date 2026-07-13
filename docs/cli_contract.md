@@ -57,6 +57,12 @@ quillan --help
 quillan assignment create <class_id> <assignment_id> --title <title> --writing-type <type> (--prompt <text> | --prompt-file <path>) --standards-profile-id <profile_id> --focus-standard-ids <id,...> (--yes | --dry-run)
 quillan assignment show <class_id> <assignment_id>
 quillan assignment validate <class_id> <assignment_id>
+quillan roster create <class_id> --input <roster.csv> [--school-year YYYY-YYYY] [--overwrite] (--yes | --dry-run)
+quillan roster show <class_id>
+quillan roster validate <class_id>
+quillan roster add-student <class_id> --student-id <student_id> --last-name <name> --first-name <name> --period <period> [--field <column=value> ...] (--yes | --dry-run)
+quillan roster update-student <class_id> <student_id> [--last-name <name>] [--first-name <name>] [--period <period>] [--field <column=value> ...] (--yes | --dry-run)
+quillan roster remove-student <class_id> <student_id> (--yes | --dry-run)
 quillan validate-assignment <path>
 quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
 quillan route-scan <source-image> --decode-qr
@@ -87,6 +93,9 @@ Running `quillan` without a command launches the teacher-facing terminal menu.
 Running `quillan workspace` without a subcommand prints top-level help and
 exits successfully; it does not inspect or modify the workspace.
 
+Running `quillan roster` without a subcommand prints roster help and exits
+successfully without resolving or inspecting the workspace.
+
 The teacher-facing menu may also be launched explicitly:
 
 ```powershell
@@ -95,6 +104,59 @@ quillan menu
 
 Bare `quillan` and the explicit `menu` command launch the same interactive
 menu. The other commands remain direct and non-interactive.
+
+### `roster` commands
+
+The `roster` namespace manages canonical shared roster artifacts under
+`classes/<class_id>/`. All commands resolve the active Paper Data Suite
+workspace through PDS Core; Quillan has no separate roster workspace setting.
+Direct roster commands never enter the menu or prompt with `input()`.
+
+`roster create` loads `--input` through the shared roster CSV loader. The CSV
+must contain `class_id`, `student_id`, `last_name`, `first_name`, and `period`,
+with at least one valid row. Its class ID must exactly match the positional
+class ID. The validated roster is written through the shared canonical writer,
+not copied byte-for-byte. Student IDs remain strings, so leading zeros are
+preserved. Optional columns, their order, blank values, and row order are also
+preserved.
+
+Creation uses an explicit valid `--school-year` when supplied, otherwise the
+workspace's active school year. If neither exists, creation fails with guidance
+and writes nothing. A confirmed creation writes exactly the paired canonical
+artifacts `classes/<class_id>/roster.csv` and
+`classes/<class_id>/class.json`. If either target already exists, replacement
+requires both `--overwrite` and `--yes`; the paired plan is fully validated
+before writing. A failed new paired write removes artifacts newly created by
+that operation.
+
+`roster show` and `roster validate` are read-only. Both load the canonical CSV
+through PDS Core. Show displays every required and optional column, the student
+count, paths, and the class school year when valid metadata exists. Missing
+metadata is reported as `not set`; malformed metadata is reported without a
+traceback. Validate also checks canonical folder identity and any existing
+metadata. Missing metadata remains valid for older class folders, while invalid
+existing metadata makes validation fail.
+
+`add-student`, `update-student`, and `remove-student` construct a new immutable
+roster through shared PDS Core mutation functions and replace only
+`classes/<class_id>/roster.csv` after `--yes`. They never modify `class.json`.
+Add appends a student; update preserves both row position and the positional
+student ID as stable identity; remove affects only the active roster and cannot
+remove its final student.
+
+Optional values use repeatable `--field column=value` arguments. Only columns
+already present in the roster's optional schema are allowed. Required columns,
+unknown columns, and duplicate keys fail. Add fills omitted optional values
+with blank strings. Update retains omitted values, while `--field name=` clears
+that value. These commands cannot add CSV columns.
+
+Every roster write requires exactly one of `--yes` or `--dry-run`. Omitting
+both fails without prompting or writing. Dry runs perform normal validation,
+show the target and resulting count, and create no directories or files.
+Active-roster removal does not traverse or delete class metadata, assignments,
+submission manifests, reviews, scans, printable PDFs, evidence, notes,
+observations, ratings, feedback, exports, reports, historical results, or other
+module data.
 
 ### `assignment create`, `show`, and `validate`
 

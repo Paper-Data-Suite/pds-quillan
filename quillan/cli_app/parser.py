@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from functools import partial
 from pathlib import Path
 
 from quillan.cli_app.arguments import nonnegative_integer, positive_integer
@@ -15,6 +16,14 @@ from quillan.cli_app.handlers.exports import (
 from quillan.cli_app.handlers.decoding import handle_decode_scan
 from quillan.cli_app.handlers.review import (
     handle_add_note,
+)
+from quillan.cli_app.handlers.rosters import (
+    handle_roster_add_student,
+    handle_roster_create,
+    handle_roster_remove_student,
+    handle_roster_show,
+    handle_roster_update_student,
+    handle_roster_validate,
 )
 from quillan.cli_app.handlers.routing import handle_route_scan
 from quillan.cli_app.handlers.scan_review import (
@@ -94,6 +103,98 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_assignment_identity_arguments(assignment_validate_parser)
     assignment_validate_parser.set_defaults(handler=handle_canonical_assignment_validate)
+
+    roster_parser = subparsers.add_parser(
+        "roster",
+        help="Create, show, validate, and modify canonical class rosters.",
+        description=(
+            "Manage canonical shared class rosters non-interactively. Student IDs "
+            "are strings and leading zeros are preserved."
+        ),
+    )
+    roster_parser.set_defaults(handler=partial(_print_parser_help, roster_parser))
+    roster_subparsers = roster_parser.add_subparsers(dest="roster_command")
+
+    roster_create_parser = roster_subparsers.add_parser(
+        "create",
+        help="Create a canonical roster and class metadata from a validated CSV.",
+    )
+    roster_create_parser.add_argument("class_id", help="Canonical class identifier.")
+    roster_create_parser.add_argument(
+        "--input", type=Path, required=True, help="Source roster CSV path."
+    )
+    roster_create_parser.add_argument(
+        "--school-year",
+        help="Consecutive school year (YYYY-YYYY); defaults to the active year.",
+    )
+    roster_create_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace both existing roster.csv and class.json; requires --yes.",
+    )
+    _add_write_confirmation(roster_create_parser)
+    roster_create_parser.set_defaults(handler=handle_roster_create)
+
+    roster_show_parser = roster_subparsers.add_parser(
+        "show", help="Display every canonical roster column without writing."
+    )
+    roster_show_parser.add_argument("class_id", help="Canonical class identifier.")
+    roster_show_parser.set_defaults(handler=handle_roster_show)
+
+    roster_validate_parser = roster_subparsers.add_parser(
+        "validate", help="Validate canonical roster.csv and existing class.json."
+    )
+    roster_validate_parser.add_argument("class_id", help="Canonical class identifier.")
+    roster_validate_parser.set_defaults(handler=handle_roster_validate)
+
+    roster_add_parser = roster_subparsers.add_parser(
+        "add-student",
+        help="Append one string-ID student; leading zeros are preserved.",
+    )
+    roster_add_parser.add_argument("class_id", help="Canonical class identifier.")
+    roster_add_parser.add_argument(
+        "--student-id", required=True, help="String student ID; leading zeros remain."
+    )
+    roster_add_parser.add_argument("--last-name", required=True)
+    roster_add_parser.add_argument("--first-name", required=True)
+    roster_add_parser.add_argument("--period", required=True)
+    _add_optional_roster_fields(roster_add_parser)
+    _add_write_confirmation(roster_add_parser)
+    roster_add_parser.set_defaults(handler=handle_roster_add_student)
+
+    roster_update_parser = roster_subparsers.add_parser(
+        "update-student",
+        help="Update one student while preserving its stable string student_id.",
+        description=(
+            "Update an active-roster student. The positional student_id is stable "
+            "and cannot be changed."
+        ),
+    )
+    roster_update_parser.add_argument("class_id", help="Canonical class identifier.")
+    roster_update_parser.add_argument(
+        "student_id", help="Stable string student ID; leading zeros remain."
+    )
+    roster_update_parser.add_argument("--last-name")
+    roster_update_parser.add_argument("--first-name")
+    roster_update_parser.add_argument("--period")
+    _add_optional_roster_fields(roster_update_parser)
+    _add_write_confirmation(roster_update_parser)
+    roster_update_parser.set_defaults(handler=handle_roster_update_student)
+
+    roster_remove_parser = roster_subparsers.add_parser(
+        "remove-student",
+        help="Remove one student only from the active roster.csv.",
+        description=(
+            "Remove a student only from the active roster. Historical evidence and "
+            "all other class/module data are retained."
+        ),
+    )
+    roster_remove_parser.add_argument("class_id", help="Canonical class identifier.")
+    roster_remove_parser.add_argument(
+        "student_id", help="Exact string student ID; leading zeros remain."
+    )
+    _add_write_confirmation(roster_remove_parser)
+    roster_remove_parser.set_defaults(handler=handle_roster_remove_student)
 
     validate_assignment_parser = subparsers.add_parser(
         "validate-assignment",
@@ -491,6 +592,34 @@ def _add_assignment_identity_arguments(
 ) -> None:
     parser.add_argument("class_id", help="Class identifier.")
     parser.add_argument("assignment_id", help="Assignment identifier.")
+
+
+def _print_parser_help(parser: argparse.ArgumentParser, _args: argparse.Namespace) -> int:
+    parser.print_help()
+    return 0
+
+
+def _add_write_confirmation(parser: argparse.ArgumentParser) -> None:
+    confirmation = parser.add_mutually_exclusive_group()
+    confirmation.add_argument(
+        "--yes", action="store_true", help="Confirm the validated write."
+    )
+    confirmation.add_argument(
+        "--dry-run", action="store_true", help="Validate and report without writing."
+    )
+
+
+def _add_optional_roster_fields(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--field",
+        action="append",
+        default=[],
+        metavar="COLUMN=VALUE",
+        help=(
+            "Set an existing optional roster column; repeat for multiple columns. "
+            "This cannot add columns or set required fields."
+        ),
+    )
 
 
 def _boolean(value: str) -> bool:

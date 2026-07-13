@@ -5,16 +5,13 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timezone
 from pathlib import Path
 
 from pds_core.class_metadata import (
     ClassMetadata,
     ClassMetadataError,
     class_metadata_path,
-    create_class_metadata,
     load_class_metadata_for_class,
-    write_class_metadata_for_class,
 )
 from pds_core.classes import (
     ClassFolder,
@@ -24,16 +21,11 @@ from pds_core.classes import (
 )
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
 from pds_core.rosters import (
-    ROSTER_REQUIRED_COLUMNS,
     Roster,
     RosterError,
     RosterValidationError,
     StudentRecord,
-    add_student_record,
-    create_roster,
     load_roster,
-    remove_student_record,
-    replace_student_record,
 )
 from pds_core.routes import class_roster_path
 from pds_core.school_years import (
@@ -44,14 +36,22 @@ from pds_core.school_years import (
 )
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
+from quillan.roster_management import (
+    add_student_to_roster,
+    optional_roster_columns as managed_optional_roster_columns,
+    plan_roster_creation_from_values,
+    remove_student_from_roster,
+    student_record_from_values as managed_student_record_from_values,
+    update_student_in_roster,
+    write_roster_creation,
+)
+
 _REQUIRED_STUDENT_FIELDS = ("student_id", "last_name", "first_name", "period")
 
 
 def optional_roster_columns(roster: Roster) -> tuple[str, ...]:
     """Return existing optional columns in their shared-roster order."""
-    return tuple(
-        column for column in roster.columns if column not in ROSTER_REQUIRED_COLUMNS
-    )
+    return managed_optional_roster_columns(roster)
 
 
 def shared_roster_period(roster: Roster) -> str | None:
@@ -137,17 +137,7 @@ def student_record_from_values(
     values: Mapping[str, str],
 ) -> StudentRecord:
     """Build a student record while preserving the roster's optional schema."""
-    return StudentRecord(
-        class_id=roster.class_id,
-        student_id=student_id.strip(),
-        last_name=values["last_name"].strip(),
-        first_name=values["first_name"].strip(),
-        period=values["period"].strip(),
-        extra_fields={
-            column: values.get(column, "").strip()
-            for column in optional_roster_columns(roster)
-        },
-    )
+    return managed_student_record_from_values(roster, student_id, values)
 
 
 def create_class_roster(
@@ -159,19 +149,11 @@ def create_class_roster(
     overwrite: bool = False,
 ) -> tuple[Roster, Path, ClassMetadata, Path]:
     """Create and write validated roster and metadata artifacts."""
-    roster = create_roster(class_id, students)
-    metadata = create_class_metadata(
-        class_id,
-        school_year,
-        created_at=datetime.now(timezone.utc),
+    plan = plan_roster_creation_from_values(
+        workspace_root, class_id, students, school_year=school_year
     )
-    path = write_class_roster(workspace_root, roster, overwrite=overwrite)
-    metadata_path = write_class_metadata_for_class(
-        workspace_root,
-        metadata,
-        overwrite=overwrite,
-    )
-    return roster, path, metadata, metadata_path
+    path, metadata_path = write_roster_creation(plan, overwrite=overwrite)
+    return plan.roster, path, plan.metadata, metadata_path
 
 
 def validate_roster_file(path: str | Path) -> Roster:
@@ -331,7 +313,7 @@ def prompt_add_student_to_roster(roster: Roster) -> Roster:
     for column in optional_roster_columns(roster):
         values[column] = input(f"  {column} (optional): ").strip()
     student = student_record_from_values(roster, values["student_id"], values)
-    return add_student_record(roster, student)
+    return add_student_to_roster(roster, student)
 
 
 def prompt_edit_student_in_roster(roster: Roster) -> Roster:
@@ -354,7 +336,7 @@ def prompt_edit_student_in_roster(roster: Roster) -> Roster:
         entered = input(f"  {column} [{current}]: ").strip()
         values[column] = entered or current
     replacement = student_record_from_values(roster, student.student_id, values)
-    return replace_student_record(roster, replacement)
+    return update_student_in_roster(roster, replacement)
 
 
 def prompt_remove_student_from_roster(roster: Roster) -> Roster:
@@ -379,7 +361,7 @@ def prompt_remove_student_from_roster(roster: Roster) -> Roster:
     if confirmation != "REMOVE":
         print("Canceled: removal not confirmed.")
         return roster
-    return remove_student_record(roster, student.student_id)
+    return remove_student_from_roster(roster, student.student_id)
 
 
 def _print_roster_action_header(title: str) -> None:
