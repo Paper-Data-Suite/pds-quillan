@@ -13,6 +13,7 @@ from quillan.cli_app.handlers.comments import (
     handle_comments_show,
 )
 from quillan.cli_app.handlers.dashboard import handle_review_dashboard
+from quillan.cli_app.handlers.review_status import handle_review_status
 from quillan.cli_app.handlers.exports import (
     handle_export_class_summary,
     handle_export_feedback,
@@ -114,6 +115,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="Standard-output representation (default: text).",
     )
     dashboard_parser.set_defaults(handler=handle_review_dashboard)
+
+    review_status_parser = subparsers.add_parser(
+        "review-status",
+        help="Show compact read-only review status for one student.",
+        description=(
+            "Inspect one student's assignment, roster, routed evidence, submission, "
+            "review workflow, artifact counts, and feedback-export freshness without writing files."
+        ),
+    )
+    _add_submission_identity_arguments(review_status_parser)
+    review_status_parser.add_argument(
+        "--format", choices=("text", "json"), default="text",
+        help="Standard-output representation (default: text).",
+    )
+    review_status_parser.set_defaults(handler=handle_review_status)
 
     assignment_parser = subparsers.add_parser(
         "assignment", help="Create, show, and validate canonical assignments."

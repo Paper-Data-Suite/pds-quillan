@@ -1,5 +1,10 @@
 # Quillan Teacher-Review Model
 
+The direct `review-status` command is a compact conditions-and-counts view. It
+does not replace Current Review Details, which remains the content-oriented view
+of teacher-entered review details, or `review-dashboard`, which remains the
+assignment-wide overview. See [`review_status_contract.md`](review_status_contract.md).
+
 ## Overview
 
 Quillan's review model is teacher-controlled. It preserves student evidence,

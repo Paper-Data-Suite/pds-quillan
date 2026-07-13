@@ -1,5 +1,9 @@
 # Quillan
 
+For a compact, read-only diagnostic of one student's submission and review
+workflow, use `quillan review-status <class_id> <assignment_id> <student_id>`;
+add `--format json` for the stable versioned structured contract.
+
 Quillan is a local-first, teacher-controlled review tool for written student
 work. It helps a teacher move from student evidence to review units, Focus
 Standards, teacher judgment, feedback, and assignment-local reporting.

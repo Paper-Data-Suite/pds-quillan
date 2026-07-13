@@ -1,5 +1,21 @@
 # Quillan CLI Contract
 
+## Direct Student Review Status
+
+`quillan review-status <class_id> <assignment_id> <student_id> [--format text|json]`
+prints compact record conditions, workflow state, aggregate review counts, and
+feedback-export freshness for one student. Text is the default; JSON follows
+the versioned [student review status contract](review_status_contract.md).
+Missing, invalid, identity-mismatched, and orphaned selected records are
+successful diagnostics. Plain-paper manifests are valid zero-digital-page
+submissions. Fatal assignment/workspace errors are concise and nonzero.
+
+This command is strictly read-only and performs no automated judgment. It does
+not inspect evidence or student writing, assemble submissions, create reviews,
+mutate workflow, or generate exports. It excludes teacher-entered and student
+prose. Current Review Details remains the content-oriented teacher view;
+`review-dashboard` remains the assignment-wide overview.
+
 ## Purpose and Status
 
 This document defines Quillan's command-line contract during pre-1.0
