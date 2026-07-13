@@ -1,5 +1,10 @@
 # Quillan Data Contracts
 
+The versioned, read-only selected-student diagnostic is defined separately in
+[`review_status_contract.md`](review_status_contract.md). It composes canonical
+assignment, submission-manifest, and review-record data without changing any of
+those source schemas.
+
 Quillan stores structured evidence and teacher review data in local files under
 the teacher-selected Paper Data Suite workspace.
 
