@@ -109,6 +109,8 @@ quillan requirements set-outcome <class_id> <assignment_id> <student_id> --outco
 quillan review-units show <class_id> <assignment_id> <student_id>
 quillan review-units set <class_id> <assignment_id> <student_id> --count <positive_integer>
 quillan review-units set <class_id> <assignment_id> <student_id> --units <units.json>
+quillan observations list <class_id> <assignment_id> <student_id>
+quillan observations set <class_id> <assignment_id> <student_id> --unit-id <unit_id> --standard-id <standard_id> --applicable true|false [--evidence-present true|false] [--rating <integer>] [--rationale <text>] [--include-in-feedback true|false]
 quillan roster create <class_id> --input <roster.csv> [--school-year YYYY-YYYY] [--overwrite] (--yes | --dry-run)
 quillan roster show <class_id>
 quillan roster validate <class_id>
@@ -151,6 +153,9 @@ successfully without resolving or inspecting the workspace.
 Running `quillan review-units` without a subcommand prints review-unit help
 and exits successfully without resolving or inspecting the workspace.
 
+Running `quillan observations` without a subcommand prints observation help
+and exits successfully without resolving or inspecting the workspace.
+
 ### `review-units` commands
 
 `review-units show` loads the canonical assignment and assembled submission
@@ -178,6 +183,64 @@ metadata change. Removed IDs remove their observations, and stale feedback
 observation references are cleaned while feedback records, ratings, minimum
 requirements, exports, private notes, metadata, and surviving observations
 remain intact.
+
+### `observations` commands
+
+The `observations` namespace exposes review-unit Focus Standard observations
+as direct, non-interactive commands. Both commands validate the canonical
+assignment, require an existing valid canonical `submission.json`, and validate
+an existing `review.json` rather than treating a malformed or mismatched record
+as empty. Routed evidence is not assembled automatically. A valid plain-paper
+manual submission and a valid unrostered historical submission are accepted.
+
+`observations list` is strictly read-only. It reports canonical paths, review
+state, review-unit and Focus Standard totals, expected/recorded/unrecorded pair
+counts, applicability, evidence, unit-rating and feedback-inclusion counts, and
+the assignment rating scale. It then displays every active unit-standard pair,
+with units ordered by `sequence` and standards ordered by the assignment's
+`focus_standard_ids`. Recorded rows include the observation ID, applicability,
+evidence presence, optional unit-level rating and assignment label, rationale,
+feedback eligibility, and timestamp. Unit-level ratings are clearly separate
+from overall Focus Standard ratings. When no review or no units exist, list
+reports zero units and explains that units must be defined first; it returns
+success and creates nothing. A `returned_without_full_review` record remains
+readable.
+
+`observations set` requires an existing review with defined units. `--unit-id`
+must match an active unit and `--standard-id` must match an assignment Focus
+Standard. The command completely replaces the editable values for that pair;
+it is not a sparse patch. A new pair receives the next globally unique
+`observation_NNNN` ID. Updating a pair preserves its observation ID and clears
+an earlier rating or rationale when the corresponding optional argument is
+omitted.
+
+`--applicable` accepts exactly `true` or `false`. Applicable observations
+require an explicit `--evidence-present true|false`; this records only whether
+the teacher found related evidence and does not imply mastery. `--rating` is
+optional for applicable observations. When present it must be an integer value
+from the current assignment's `rating_scale.levels`; when omitted the stored
+rating is `null`. Not-applicable observations reject `--evidence-present` and
+`--rating`, and store both fields as `null`. Rationale text is trimmed; omission
+or blank text stores `null`. Omitted `--include-in-feedback` defaults to `true`
+for applicable observations and `false` for not-applicable observations, while
+either default may be explicitly overridden.
+
+Feedback eligibility belongs to the observation. Setting it does not compose
+feedback or add/remove IDs in `feedback.standard_feedback`. Observation writes
+do not create or alter `overall_standard_ratings`. They preserve unrelated
+units, observations, minimum-requirement data, feedback records and comments,
+exports, notes, top-level metadata, and the original creation timestamp. The
+shared observation service performs review-state transitions and refuses to
+modify `returned_without_full_review` records until the minimum-requirements
+outcome changes.
+
+List writes nothing. Set may modify only
+`classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json`
+through the shared validated atomic writer. Neither command opens evidence,
+parses PDFs or images, runs OCR, handwriting recognition, or AI, infers any
+teacher judgment, calculates overall ratings, grades, or scores, marks review
+complete, composes feedback, or modifies assignments, submissions, rosters,
+evidence, exports, reports, Core data, or ScoreForm data.
 
 Both commands require a valid canonical `submission.json`, including for
 plain-paper submissions without digital evidence. They do not require current

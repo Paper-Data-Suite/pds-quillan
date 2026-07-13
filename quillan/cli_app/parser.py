@@ -26,6 +26,10 @@ from quillan.cli_app.handlers.review_units import (
     handle_review_units_set,
     handle_review_units_show,
 )
+from quillan.cli_app.handlers.observations import (
+    handle_observations_list,
+    handle_observations_set,
+)
 from quillan.cli_app.handlers.rosters import (
     handle_roster_add_student,
     handle_roster_create,
@@ -232,6 +236,47 @@ def build_parser() -> argparse.ArgumentParser:
         help="UTF-8 JSON file containing constrained review-unit definitions.",
     )
     review_units_set_parser.set_defaults(handler=handle_review_units_set)
+
+    observations_parser = subparsers.add_parser(
+        "observations",
+        help="List and record review-unit Focus Standard observations.",
+        description=(
+            "List or record explicit teacher-entered Focus Standard observations "
+            "without inspecting evidence or inferring judgments."
+        ),
+    )
+    observations_parser.set_defaults(
+        handler=partial(_print_parser_help, observations_parser)
+    )
+    observations_subparsers = observations_parser.add_subparsers(
+        dest="observations_command"
+    )
+    observations_list_parser = observations_subparsers.add_parser(
+        "list", help="List all current unit-standard observation pairs."
+    )
+    _add_submission_identity_arguments(observations_list_parser)
+    observations_list_parser.set_defaults(handler=handle_observations_list)
+
+    observations_set_parser = observations_subparsers.add_parser(
+        "set", help="Create or replace one teacher-entered observation."
+    )
+    _add_submission_identity_arguments(observations_set_parser)
+    observations_set_parser.add_argument("--unit-id", required=True)
+    observations_set_parser.add_argument("--standard-id", required=True)
+    observations_set_parser.add_argument(
+        "--applicable", required=True, type=_true_false, metavar="true|false"
+    )
+    observations_set_parser.add_argument(
+        "--evidence-present", type=_true_false, metavar="true|false"
+    )
+    observations_set_parser.add_argument(
+        "--rating", type=int, help="Optional assignment-scale unit-level rating."
+    )
+    observations_set_parser.add_argument("--rationale")
+    observations_set_parser.add_argument(
+        "--include-in-feedback", type=_true_false, metavar="true|false"
+    )
+    observations_set_parser.set_defaults(handler=handle_observations_set)
 
     roster_parser = subparsers.add_parser(
         "roster",
@@ -756,6 +801,15 @@ def _boolean(value: str) -> bool:
     if normalized in {"true", "yes", "1"}:
         return True
     if normalized in {"false", "no", "0"}:
+        return False
+    raise argparse.ArgumentTypeError("expected true or false")
+
+
+def _true_false(value: str) -> bool:
+    normalized = value.strip().lower()
+    if normalized == "true":
+        return True
+    if normalized == "false":
         return False
     raise argparse.ArgumentTypeError("expected true or false")
 
