@@ -208,6 +208,10 @@ quillan list-scan-review [--include-resolved] [--limit N]
 quillan resolve-scan-review <failure_id> --action <action> [--message "..."] [--evidence-path <workspace-relative-path>]
 quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
+quillan pages list <class_id> <assignment_id> <student_id>
+quillan pages exclude <class_id> <assignment_id> <student_id> --page N --yes
+quillan pages restore <class_id> <assignment_id> <student_id> --page N --yes
+quillan pages mark-needs-rescan <class_id> <assignment_id> <student_id> --page N --yes
 quillan open-evidence <workspace-relative-evidence-path>
 quillan open-submission <class_id> <assignment_id> <student_id> [--page N]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
@@ -237,6 +241,59 @@ and exits successfully without resolving or inspecting the workspace.
 
 Running `quillan observations` without a subcommand prints observation help
 and exits successfully without resolving or inspecting the workspace.
+
+## Direct Submission Page Management
+
+The `pages` namespace exposes the same shared submission-page services used by
+Manage Submission Pages in the teacher menu. Bare `quillan pages` prints
+namespace help and succeeds without resolving a workspace, loading a manifest,
+inspecting routed evidence, creating directories, or writing files.
+
+`pages list` loads only the requested student's canonical
+`submissions/<student_id>/submission.json`. It does not scan sibling students,
+the roster, assignment configuration, or routed evidence. It reports canonical
+identity and path, lightweight submission state, expected page count, manifest
+timestamps, page-state counts, pages lacking selected evidence, and page and
+evidence summaries. Pages are displayed by ascending logical `page_number`;
+evidence remains in stored order. A null selection is displayed as `none` and
+is never inferred or repaired. Listing never opens or stats evidence files and
+does not normalize or rewrite the manifest.
+
+The mutation commands require `--page` with a positive logical page number
+that exists in the manifest and the explicit non-interactive confirmation
+`--yes`. Omission is an argument error; no prompt or implicit confirmation is
+used. These commands do not accept arbitrary manifest paths.
+
+Exclusion retains the page and every evidence record, clears selection, saves
+each evidence record's current role and state as temporary pre-exclusion
+metadata, and marks it excluded from active review. It does not delete files.
+Restore uses that preserved role and state, including a valid prior lack of
+selection. For legacy excluded records without preservation metadata, zero,
+one, and multiple evidence records safely restore to missing, uniquely selected
+present, and unselected duplicate states respectively. No duplicate candidate
+is chosen automatically.
+
+Marking needs rescan retains every evidence record, clears selection, and makes
+the records candidates needing rescan; an empty page remains evidence-less.
+Changing an excluded page to needs rescan removes obsolete exclusion-transition
+metadata so a later exclude/restore cycle returns to the current rescan state.
+Page state and top-level `submission_state` are distinct: page management never
+changes the latter.
+
+A valid plain-paper manual manifest lists successfully as zero digital pages;
+the physical paper remains outside Quillan. Page mutations fail because no
+digital page exists. A missing manifest is not treated as plain paper: every
+command fails with submission-assembly guidance and never assembles or creates
+a manifest or review record.
+
+The sole write boundary is the selected student's canonical `submission.json`,
+validated in full and atomically replaced. Created timestamps, evidence paths,
+retained-source provenance, and unrelated module metadata are preserved;
+successful changes update only the manifest update timestamp and page-management
+metadata. Review records, assignments, rosters, routed and retained files,
+ratings, observations, feedback, exports, and reports remain untouched. These
+commands perform no evidence inspection, OCR, handwriting recognition, AI,
+grading, scoring, feedback composition, or export work.
 
 ## Direct Focus Standard Feedback Composition
 

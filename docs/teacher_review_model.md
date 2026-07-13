@@ -188,6 +188,14 @@ Updating submission review state is an explicit workflow status change.
 Quillan does not infer review state from observations, ratings, notes,
 feedback, or exports.
 
+Submission page management is an evidence-metadata workflow separate from
+teacher judgment. The menu and direct `pages` commands share one service for
+listing, excluding, restoring, and marking pages as needing rescan. Excluded
+pages and their routed evidence are retained, not deleted. Restoration recovers
+preserved evidence roles and states when available and uses a conservative
+legacy fallback otherwise. These changes do not update top-level submission
+state or mutate review records, ratings, observations, feedback, or exports.
+
 ## Related Docs
 
 * [`data_contracts.md`](data_contracts.md)

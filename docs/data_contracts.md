@@ -49,6 +49,15 @@ They describe routed evidence, retained-source provenance, page state, selected
 evidence, duplicate/missing evidence conditions, and lightweight submission
 state. They do not store teacher ratings, comments, feedback, or reports.
 
+Page-management transitions retain excluded pages and evidence rather than
+deleting them. Exclusion temporarily preserves each evidence role and state so
+restoration can recover the prior selection (including no selection); older
+excluded records use a conservative legacy fallback. Page state is independent
+of top-level lightweight `submission_state`, which page management preserves.
+A plain-paper manual manifest has `expected_pages: null` and no digital page
+records because the physical evidence remains outside Quillan. Both the direct
+`pages` CLI and teacher menu use the same shared page-management service.
+
 ### Review Record
 
 The active teacher-review artifact is schema version `2` `review.json`:
