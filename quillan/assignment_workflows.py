@@ -746,7 +746,8 @@ def _prompt_writing_type() -> str:
     return normalized
 
 
-def _default_review_unit() -> dict[str, str]:
+def default_review_unit() -> dict[str, str]:
+    """Return a fresh copy of the menu's default review-unit config."""
     return dict(_DEFAULT_REVIEW_UNIT)
 
 
@@ -756,7 +757,7 @@ def _prompt_review_unit() -> dict[str, str]:
         "later."
     )
     if _prompt_yes_no("Use default paragraph review units? [Y/n]: ", default=True):
-        return _default_review_unit()
+        return default_review_unit()
     return {
         "type": _required_input("Review-unit type: ", "review-unit type"),
         "singular_label": _required_input(
@@ -770,7 +771,8 @@ def _prompt_review_unit() -> dict[str, str]:
     }
 
 
-def _default_rating_scale() -> dict[str, Any]:
+def default_rating_scale() -> dict[str, Any]:
+    """Return a fresh copy of the menu's four-level standards scale."""
     levels = _DEFAULT_RATING_SCALE["levels"]
     assert isinstance(levels, list)
     return {
@@ -782,7 +784,7 @@ def _default_rating_scale() -> dict[str, Any]:
 def _prompt_rating_scale() -> dict[str, Any]:
     print("Rating scale for standards-based review:")
     if _prompt_yes_no("Use default four-level standards scale? [Y/n]: ", default=True):
-        return _default_rating_scale()
+        return default_rating_scale()
 
     scale_id = _required_input("Rating scale ID: ", "rating scale ID")
     level_count = parse_optional_nonnegative_int(

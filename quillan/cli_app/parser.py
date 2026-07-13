@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from quillan.cli_app.arguments import positive_integer
+from quillan.cli_app.arguments import nonnegative_integer, positive_integer
 from quillan.cli_app.handlers.exports import (
     handle_export_class_summary,
     handle_export_feedback,
@@ -30,6 +30,11 @@ from quillan.cli_app.handlers.submissions import (
     handle_set_review_state,
 )
 from quillan.cli_app.handlers.validation import handle_validate_assignment
+from quillan.cli_app.handlers.assignments import (
+    handle_assignment_create,
+    handle_assignment_show,
+    handle_assignment_validate as handle_canonical_assignment_validate,
+)
 from quillan.cli_app.handlers.workspace import (
     handle_menu,
     handle_workspace_reset,
@@ -45,6 +50,50 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the top-level argument parser and register command handlers."""
     parser = argparse.ArgumentParser(description=APP_DESCRIPTION)
     subparsers = parser.add_subparsers(dest="command")
+
+    assignment_parser = subparsers.add_parser(
+        "assignment", help="Create, show, and validate canonical assignments."
+    )
+    assignment_subparsers = assignment_parser.add_subparsers(dest="assignment_command")
+    assignment_create_parser = assignment_subparsers.add_parser(
+        "create", help="Create a canonical workspace assignment config."
+    )
+    _add_assignment_identity_arguments(assignment_create_parser)
+    assignment_create_parser.add_argument("--title", required=True)
+    assignment_create_parser.add_argument("--writing-type", required=True)
+    prompt_group = assignment_create_parser.add_mutually_exclusive_group(required=True)
+    prompt_group.add_argument("--prompt")
+    prompt_group.add_argument("--prompt-file", type=Path)
+    assignment_create_parser.add_argument("--standards-profile-id", required=True)
+    assignment_create_parser.add_argument("--focus-standard-ids", required=True)
+    assignment_create_parser.add_argument("--review-unit-type", default="paragraph")
+    assignment_create_parser.add_argument("--review-unit-singular", default="paragraph")
+    assignment_create_parser.add_argument("--review-unit-plural", default="paragraphs")
+    assignment_create_parser.add_argument("--rating-scale", choices=("default",), default="default")
+    assignment_create_parser.add_argument("--paragraphs-min", type=nonnegative_integer)
+    assignment_create_parser.add_argument("--paragraphs-max", type=nonnegative_integer)
+    assignment_create_parser.add_argument("--word-count-min", type=nonnegative_integer)
+    assignment_create_parser.add_argument("--word-count-max", type=nonnegative_integer)
+    assignment_create_parser.add_argument("--required-elements")
+    assignment_create_parser.add_argument(
+        "--allow-return-without-full-review", type=_boolean, default=True
+    )
+    assignment_create_parser.add_argument("--overwrite", action="store_true")
+    confirmation = assignment_create_parser.add_mutually_exclusive_group()
+    confirmation.add_argument("--yes", action="store_true")
+    confirmation.add_argument("--dry-run", action="store_true")
+    assignment_create_parser.set_defaults(handler=handle_assignment_create)
+
+    assignment_show_parser = assignment_subparsers.add_parser(
+        "show", help="Show a canonical workspace assignment config."
+    )
+    _add_assignment_identity_arguments(assignment_show_parser)
+    assignment_show_parser.set_defaults(handler=handle_assignment_show)
+    assignment_validate_parser = assignment_subparsers.add_parser(
+        "validate", help="Validate a canonical assignment and workspace standards."
+    )
+    _add_assignment_identity_arguments(assignment_validate_parser)
+    assignment_validate_parser.set_defaults(handler=handle_canonical_assignment_validate)
 
     validate_assignment_parser = subparsers.add_parser(
         "validate-assignment",
@@ -442,6 +491,15 @@ def _add_assignment_identity_arguments(
 ) -> None:
     parser.add_argument("class_id", help="Class identifier.")
     parser.add_argument("assignment_id", help="Assignment identifier.")
+
+
+def _boolean(value: str) -> bool:
+    normalized = value.strip().lower()
+    if normalized in {"true", "yes", "1"}:
+        return True
+    if normalized in {"false", "no", "0"}:
+        return False
+    raise argparse.ArgumentTypeError("expected true or false")
 
 
 def _add_submission_identity_arguments(
