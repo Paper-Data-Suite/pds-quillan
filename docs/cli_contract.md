@@ -106,6 +106,9 @@ quillan assignment validate <class_id> <assignment_id>
 quillan requirements list <class_id> <assignment_id> <student_id>
 quillan requirements set-check <class_id> <assignment_id> <student_id> --requirement-key <key> --met true|false [--note <text>]
 quillan requirements set-outcome <class_id> <assignment_id> <student_id> --outcome met|unmet_continue_review|returned_without_full_review [--note <text>]
+quillan review-units show <class_id> <assignment_id> <student_id>
+quillan review-units set <class_id> <assignment_id> <student_id> --count <positive_integer>
+quillan review-units set <class_id> <assignment_id> <student_id> --units <units.json>
 quillan roster create <class_id> --input <roster.csv> [--school-year YYYY-YYYY] [--overwrite] (--yes | --dry-run)
 quillan roster show <class_id>
 quillan roster validate <class_id>
@@ -144,6 +147,46 @@ exits successfully; it does not inspect or modify the workspace.
 
 Running `quillan roster` without a subcommand prints roster help and exits
 successfully without resolving or inspecting the workspace.
+
+Running `quillan review-units` without a subcommand prints review-unit help
+and exits successfully without resolving or inspecting the workspace.
+
+### `review-units` commands
+
+`review-units show` loads the canonical assignment and assembled submission
+manifest, plus `review.json` when it exists. It reports assignment-derived
+unit labels, canonical paths, review state, units, and observation counts. If
+there is no review record it reports `not_started`, zero units, and zero
+observations without creating a file or directory.
+
+`review-units set` is an immediate, non-interactive replacement operation.
+Exactly one of `--count` and `--units` is required. Count mode generates
+sequences `1..N`. JSON mode reads a non-empty UTF-8 JSON array whose objects
+may contain only `sequence`, `label`, `page_number`, and `evidence_id`.
+`sequence` is explicit, unique, positive, non-boolean, and sorted ascending
+before writing; it need not be contiguous. Labels must be nonblank. Page and
+evidence references are validated only against submission-manifest metadata,
+including page/evidence membership. Unknown fields and raw record fields such
+as `unit_id`, `unit_type`, `standard_observations`, and `module_details` are
+rejected.
+
+The assignment supplies `review_unit.type` and its singular and plural labels.
+Canonical IDs are `<type>_<sequence>` and omitted labels become the title-cased
+singular label plus the sequence, such as `paragraph_2` / `Paragraph 2`.
+Stable canonical IDs preserve their observations when labels or evidence
+metadata change. Removed IDs remove their observations, and stale feedback
+observation references are cleaned while feedback records, ratings, minimum
+requirements, exports, private notes, metadata, and surviving observations
+remain intact.
+
+Both commands require a valid canonical `submission.json`, including for
+plain-paper submissions without digital evidence. They do not require current
+roster membership and never assemble a submission automatically. `show` is
+read-only and remains available for returned submissions. `set` may create or
+atomically update only the canonical `review.json` and rejects a
+`returned_without_full_review` record. Neither command opens evidence files,
+parses PDFs or images, runs OCR or AI, counts or segments writing, or creates
+observations, ratings, feedback, or grades.
 
 The teacher-facing menu may also be launched explicitly:
 
@@ -1210,8 +1253,8 @@ explicitly outside the current end-to-end foundation:
   automatic production scan routing;
 * OCR or handwriting interpretation;
 * PDF text extraction;
-* a direct CLI command for requirements review, review-unit observations,
-  overall Focus Standard ratings, or feedback composition;
+* a direct CLI command for review-unit observations, overall Focus Standard
+  ratings, or feedback composition;
 * AI grading, scoring, tagging, or feedback;
 * automatic grading, mastery calculation, review-state decisions, or
   duplicate-evidence selection;

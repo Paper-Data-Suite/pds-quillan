@@ -22,6 +22,10 @@ from quillan.cli_app.handlers.requirements import (
     handle_requirements_set_check,
     handle_requirements_set_outcome,
 )
+from quillan.cli_app.handlers.review_units import (
+    handle_review_units_set,
+    handle_review_units_show,
+)
 from quillan.cli_app.handlers.rosters import (
     handle_roster_add_student,
     handle_roster_create,
@@ -189,6 +193,45 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     requirements_outcome_parser.set_defaults(handler=handle_requirements_set_outcome)
+
+    review_units_parser = subparsers.add_parser(
+        "review-units",
+        help="Display or replace review units for one assembled submission.",
+        description=(
+            "Display or explicitly replace canonical review units without inspecting "
+            "student evidence or inferring unit boundaries."
+        ),
+    )
+    review_units_parser.set_defaults(
+        handler=partial(_print_parser_help, review_units_parser)
+    )
+    review_units_subparsers = review_units_parser.add_subparsers(
+        dest="review_units_command"
+    )
+    review_units_show_parser = review_units_subparsers.add_parser(
+        "show", help="Display current review units without writing files."
+    )
+    _add_submission_identity_arguments(review_units_show_parser)
+    review_units_show_parser.set_defaults(handler=handle_review_units_show)
+
+    review_units_set_parser = review_units_subparsers.add_parser(
+        "set", help="Replace all review units from a count or JSON file."
+    )
+    _add_submission_identity_arguments(review_units_set_parser)
+    review_units_source = review_units_set_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    review_units_source.add_argument(
+        "--count",
+        type=positive_integer,
+        help="Create canonical units with sequences 1 through COUNT.",
+    )
+    review_units_source.add_argument(
+        "--units",
+        type=Path,
+        help="UTF-8 JSON file containing constrained review-unit definitions.",
+    )
+    review_units_set_parser.set_defaults(handler=handle_review_units_set)
 
     roster_parser = subparsers.add_parser(
         "roster",

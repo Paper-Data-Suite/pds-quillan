@@ -499,6 +499,17 @@ Review units are teacher-created or teacher-confirmed. Quillan must not parse
 student writing, run OCR, or automatically infer how many review units a
 student wrote.
 
+The direct `review-units set` command replaces the complete array through the
+shared review-unit service. It accepts either an explicit count or constrained
+JSON definitions containing only `sequence`, `label`, `page_number`, and
+`evidence_id`. The assignment always supplies `unit_type`; `unit_id` is always
+`<unit_type>_<sequence>`. Matching IDs preserve observations. Removed IDs
+remove their observations and any stale feedback observation references,
+while unrelated review data and the original `created_at` remain unchanged.
+Page and evidence references are checked against the canonical submission
+manifest without opening evidence files. This does not change schema version
+`2`.
+
 For an assignment whose review unit is paragraphs, a teacher-facing prompt
 should use the assignment's configured plural label:
 
