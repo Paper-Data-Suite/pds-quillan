@@ -236,6 +236,7 @@ quillan roster validate <class_id>
 quillan roster add-student <class_id> --student-id <student_id> --last-name <name> --first-name <name> --period <period> [--field <column=value> ...] (--yes | --dry-run)
 quillan roster update-student <class_id> <student_id> [--last-name <name>] [--first-name <name>] [--period <period>] [--field <column=value> ...] (--yes | --dry-run)
 quillan roster remove-student <class_id> <student_id> (--yes | --dry-run)
+quillan printable-responses generate <class_id> <assignment_id> [--pages-per-student N] [--overwrite] (--yes | --dry-run)
 quillan validate-assignment <path>
 quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
 quillan route-scan <source-image> --decode-qr
@@ -273,11 +274,49 @@ exits successfully; it does not inspect or modify the workspace.
 Running `quillan roster` without a subcommand prints roster help and exits
 successfully without resolving or inspecting the workspace.
 
+Running `quillan printable-responses` without a subcommand prints namespace
+help and exits successfully without resolving the workspace, loading an
+assignment or roster, checking an output target, or creating directories.
+
 Running `quillan review-units` without a subcommand prints review-unit help
 and exits successfully without resolving or inspecting the workspace.
 
 Running `quillan observations` without a subcommand prints observation help
 and exits successfully without resolving or inspecting the workspace.
+
+## Direct Printable Response Packet Generation
+
+`printable-responses generate` creates the same one-file class packet available
+through Assignment Management's Printable Response Pages workflow. It requires
+the requested canonical `assignment.json` and shared class `roster.csv`, keeps
+students in stored roster order, and defaults to one numbered response page per
+student. The command reports aggregate student, per-student page, and total PDF
+page counts; it does not list student identities.
+
+Exactly one of `--yes` and `--dry-run` is required. Dry-run validates identifier
+syntax, assignment schema and path identity, assignment class membership,
+roster structure and class identity, a nonempty student collection, the page
+count, canonical output route, and existing-target state. It does not call the
+renderer, create `templates/`, generate QR images or temporary files, touch an
+existing PDF, or write any file. `--overwrite` requires `--yes`; an existing
+packet otherwise fails unchanged with guidance to use `--overwrite --yes`.
+
+Actual generation may create the selected assignment's `templates/` directory
+and create or replace only:
+
+```text
+classes/<class_id>/assignments/<assignment_id>/templates/printable_response_pages.pdf
+```
+
+All displayed paths are workspace-relative POSIX paths. The direct command
+does not accept alternate output paths or filenames and does not open the PDF
+or its folder. It uses the shared application planning/generation service also
+used by the menu, whose low-level renderer remains
+`generate_printable_responses_for_roster(...)`. Assignment, roster, class,
+submission, review, evidence, scan, reusable-comment, feedback, and report data
+remain unchanged. Generation performs no scan processing, QR decoding, OCR,
+handwriting recognition, AI, inference, assembly, review, grading, feedback,
+or export work.
 
 ## Direct Submission Page Management
 

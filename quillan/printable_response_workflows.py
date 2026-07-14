@@ -12,14 +12,16 @@ from pds_core.routes import class_assignments_dir
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
 from quillan.assignments import AssignmentConfigError, load_assignment_config
+from quillan.cli_app.output import print_generated_printable_response_packet
 from quillan.generated_output_opening import (
     GeneratedOutputOpeningError,
     open_generated_output_file,
     open_generated_output_folder,
 )
-from quillan.printable_response import (
-    PRINTABLE_RESPONSE_FILENAME,
-    generate_printable_responses_for_roster,
+from quillan.printable_response import PRINTABLE_RESPONSE_FILENAME
+from quillan.printable_response_packet import (
+    generate_printable_response_packet,
+    plan_printable_response_packet,
 )
 from quillan.storage import assignment_templates_dir
 
@@ -266,42 +268,41 @@ def prompt_generate_class_packet() -> int:
         print(f"Error: {error}")
         return 1
 
-    output_path = expected_printable_packet_path(
-        workspace_root,
-        class_folder.class_id,
-        assignment.assignment_id,
-    )
-    if output_path.exists():
-        print(f"Printable response packet already exists:\n{output_path}")
+    try:
+        plan = plan_printable_response_packet(
+            workspace_root,
+            class_folder.class_id,
+            assignment.assignment_id,
+            pages_per_student=pages_per_student,
+        )
+    except (AssignmentConfigError, RosterError, OSError, ValueError) as error:
+        print(f"Error: {error}")
+        return 1
+
+    overwrite = False
+    if plan.target_exists:
+        print(f"Printable response packet already exists:\n{plan.output_path}")
         confirmation = input(
             "Type OVERWRITE to replace the existing printable response packet: "
         ).strip()
         if confirmation != "OVERWRITE":
             print("Canceled: existing printable response packet was not changed.")
             return 1
+        overwrite = True
 
     print("Output mode: one class packet PDF")
     try:
-        generated_path = generate_printable_responses_for_roster(
-            workspace_root,
-            assignment_path=assignment.path,
-            roster_path=class_folder.roster_path,
-            pages_per_student=pages_per_student,
-            class_label=class_folder.class_id,
+        generated = generate_printable_response_packet(
+            plan,
+            overwrite=overwrite,
         )
     except (AssignmentConfigError, RosterError, OSError, ValueError) as error:
         print(f"Error: {error}")
         return 1
 
-    assignment_label = assignment.assignment_id
-    if assignment.title:
-        assignment_label = f"{assignment.assignment_id} - {assignment.title}"
-    print("Generated printable response packet:")
-    print(generated_path)
-    print(f"Class: {class_folder.class_id}")
-    print(f"Assignment: {assignment_label}")
-    print(f"Pages per student: {pages_per_student}")
-    _prompt_open_generated_packet(workspace_root, generated_path)
+    print_generated_printable_response_packet(generated)
+    print(f"Saved at: {generated.output_path}")
+    _prompt_open_generated_packet(workspace_root, generated.output_path)
     return 0
 
 

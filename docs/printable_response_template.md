@@ -196,7 +196,13 @@ without inspecting PDF drawing coordinates.
 `generate_printable_responses_for_roster()` loads shared `pds-core` roster
 records with `class_id`, `student_id`, `last_name`, `first_name`, and `period`.
 Student IDs remain strings so leading zeros are preserved. This API support
-is complemented by a teacher-facing Roster Management menu.
+is used through one shared packet planning and generation service by both the
+teacher-facing Printable Response Pages menu and the direct
+`quillan printable-responses generate` command. The shared service validates
+canonical assignment and roster inputs and enforces overwrite policy; the
+low-level renderer remains `generate_printable_responses_for_roster()`.
+The CLI adds no alternate layout and does not change this page or PDS1 payload
+contract.
 
 ## Privacy and Synthetic Data
 
@@ -251,8 +257,7 @@ This contract does not implement or define:
 * teacher scoring areas;
 * assignment, submission, or standards model redesign;
 * requirements checking, tagging, scoring, feedback, or reporting;
-* AI tagging, scoring, feedback, or automatic grading; or
-* a dedicated printable-response CLI or menu workflow;
+* AI tagging, scoring, feedback, or automatic grading;
 * assignment creation workflows; or
 * workspace configuration workflows.
 
