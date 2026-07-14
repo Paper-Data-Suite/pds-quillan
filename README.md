@@ -107,6 +107,18 @@ Assignment creation requires an existing roster and writes:
 <workspace_root>/classes/<class_id>/assignments/<assignment_id>/assignment.json
 ```
 
+Printable response packets can also be generated non-interactively:
+
+```powershell
+quillan printable-responses generate <class_id> <assignment_id> --dry-run
+quillan printable-responses generate <class_id> <assignment_id> --pages-per-student 2 --yes
+```
+
+The CLI and menu share the same canonical assignment/roster planning and packet
+generation service. The CLI writes only the assignment-local
+`templates/printable_response_pages.pdf`, protects existing packets unless
+`--overwrite --yes` is supplied, and never opens the generated file.
+
 The v0.8.6 creation workflow prompts for class, title, assignment ID, writing
 type, student prompt, pds-core standards profile, Focus Standards, review-unit
 settings, rating scale, basic requirements, and minimum-requirement policy.

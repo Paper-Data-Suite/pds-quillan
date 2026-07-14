@@ -125,14 +125,16 @@ generation.
 ### `templates/`
 
 A shared assignment-local directory for generated or teacher-facing printable
-materials. The Python API and Printable Response Pages menu create
+materials. The Python API, Printable Response Pages menu, and direct
+`quillan printable-responses generate` command create
 `templates/printable_response_pages.pdf` as one combined class packet of
-roster-aware writing-response pages. The menu requires an existing canonical
-roster and assignment config and protects replacement with exact `OVERWRITE`
-confirmation. Generation does not rewrite either source file. Generated PDFs
-are local workspace artifacts and should not be committed. A dedicated
-printable-response CLI is not implemented. The response-page contract is
-defined in
+roster-aware writing-response pages. Both entry points share packet planning
+and generation services and require an existing canonical roster and assignment
+config. The menu protects replacement with exact `OVERWRITE` confirmation; the
+non-interactive CLI requires `--overwrite --yes`. CLI dry-run performs full
+preflight validation without creating the directory or PDF. Generation does
+not rewrite either source file. Generated PDFs are local workspace artifacts
+and should not be committed. The response-page contract is defined in
 [`printable_response_template.md`](printable_response_template.md).
 
 ### Workspace `scans/source/YYYY-MM-DD/`

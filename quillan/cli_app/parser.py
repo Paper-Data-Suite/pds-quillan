@@ -52,6 +52,9 @@ from quillan.cli_app.handlers.pages import (
     handle_pages_mark_needs_rescan,
     handle_pages_restore,
 )
+from quillan.cli_app.handlers.printable_responses import (
+    handle_printable_responses_generate,
+)
 from quillan.cli_app.handlers.ratings import (
     handle_ratings_list,
     handle_ratings_mark_complete,
@@ -220,6 +223,48 @@ def build_parser() -> argparse.ArgumentParser:
     _add_assignment_identity_arguments(assignment_validate_parser)
     assignment_validate_parser.set_defaults(
         handler=handle_canonical_assignment_validate
+    )
+
+    printable_responses_parser = subparsers.add_parser(
+        "printable-responses",
+        help="Generate canonical printable response class packets.",
+    )
+    printable_responses_parser.set_defaults(
+        handler=partial(_print_parser_help, printable_responses_parser)
+    )
+    printable_responses_subparsers = printable_responses_parser.add_subparsers(
+        dest="printable_responses_command"
+    )
+    printable_responses_generate_parser = printable_responses_subparsers.add_parser(
+        "generate",
+        help="Generate one combined packet from a canonical assignment and roster.",
+    )
+    _add_assignment_identity_arguments(printable_responses_generate_parser)
+    printable_responses_generate_parser.add_argument(
+        "--pages-per-student",
+        type=positive_integer,
+        default=1,
+        metavar="N",
+        help="Number of numbered response pages per roster student (default: 1).",
+    )
+    printable_responses_generate_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace the existing canonical packet; requires --yes.",
+    )
+    printable_confirmation = (
+        printable_responses_generate_parser.add_mutually_exclusive_group(required=True)
+    )
+    printable_confirmation.add_argument(
+        "--yes", action="store_true", help="Confirm PDF generation."
+    )
+    printable_confirmation.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate and report without writing files.",
+    )
+    printable_responses_generate_parser.set_defaults(
+        handler=handle_printable_responses_generate
     )
 
     requirements_parser = subparsers.add_parser(
