@@ -980,7 +980,7 @@ def _update_export_metadata(
             feedback_pdf_path, context["workspace_root"], "feedback PDF"
         ),
         "generated_at": created_at,
-        "source_review_updated_at": context["review"]["updated_at"],
+        "source_review_updated_at": created_at,
         "module_details": {},
     }
     if feedback_markdown_path is not None:
@@ -989,7 +989,7 @@ def _update_export_metadata(
                 feedback_markdown_path, context["workspace_root"], "feedback Markdown"
             ),
             "generated_at": created_at,
-            "source_review_updated_at": context["review"]["updated_at"],
+            "source_review_updated_at": created_at,
             "module_details": {},
         }
     # Returned work remains a distinct terminal workflow state under the v2
