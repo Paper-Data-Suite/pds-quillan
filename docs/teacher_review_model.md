@@ -82,6 +82,19 @@ associated `assignment.json` remains the source of truth for student prompt,
 writing type, standards profile, Focus Standards, review-unit labels, rating
 scale, basic requirements, and minimum-requirement policy.
 
+## Two State Models
+
+`submission.json.submission_state` is the lightweight submission state used to
+manage evidence readiness (`unreviewed`, `in_progress`, `needs_rescan`, or
+`reviewed`). `review.json.review_state` is the nine-value standards-based review
+workflow state. They are independent and are not synchronized automatically.
+
+Teachers may explicitly override the review workflow state through the shared
+menu/service or `quillan review-workflow set-state ... --state ... --yes`.
+That override changes only `review_state` and `updated_at`; it does not infer or
+create observations, ratings, feedback, or exports. Returned-without-full-review
+entry and exit remain coupled to the minimum-requirement outcome workflow.
+
 ## Minimum Requirements
 
 Minimum-requirement checks document teacher-entered decisions about basic

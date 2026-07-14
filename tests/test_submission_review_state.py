@@ -392,13 +392,13 @@ def test_cli_success_prints_teacher_context(
         == 0
     )
     assert capsys.readouterr().out == (
-        "Updated submission review state:\n"
+        "Updated lightweight submission state:\n"
         f"Class: {CLASS_ID}\n"
         f"Assignment: {ASSIGNMENT_ID}\n"
         f"Student: {STUDENT_ID}\n"
-        "Previous state: unreviewed\n"
-        "New state: in_progress\n"
-        f"Manifest: {relative_path}\n"
+        "Previous submission state: unreviewed\n"
+        "New submission state: in_progress\n"
+        f"Submission manifest: {relative_path}\n"
     )
 
 
@@ -431,6 +431,6 @@ def test_cli_failure_returns_one(
         == 1
     )
     assert capsys.readouterr().out == (
-        "Error: could not update submission review state: "
+        "Error: could not update lightweight submission state: "
         "manifest is unavailable\n"
     )

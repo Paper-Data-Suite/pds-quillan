@@ -146,7 +146,7 @@ The selected-student review menu is:
 6. Compose Focus Standard feedback
 7. Manage submission pages
 8. Add teacher note
-9. Update submission review state
+9. Update review workflow state
 10. Export student feedback
 11. Refresh summary
 12. Back
@@ -244,6 +244,7 @@ quillan pages mark-needs-rescan <class_id> <assignment_id> <student_id> --page N
 quillan open-evidence <workspace-relative-evidence-path>
 quillan open-submission <class_id> <assignment_id> <student_id> [--page N]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
+quillan review-workflow set-state <class_id> <assignment_id> <student_id> --state <state> --yes
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan export-feedback <class_id> <assignment_id> <student_id> [--format markdown|pdf|both] [--overwrite]
 quillan export-student-performance-summary <class_id> <assignment_id> [--overwrite]
