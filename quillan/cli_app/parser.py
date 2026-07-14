@@ -42,6 +42,7 @@ from quillan.cli_app.handlers.review_units import (
 )
 from quillan.cli_app.handlers.observations import (
     handle_observations_list,
+    handle_observations_mark_complete,
     handle_observations_set,
 )
 from quillan.cli_app.handlers.pages import (
@@ -301,10 +302,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     observations_parser = subparsers.add_parser(
         "observations",
-        help="List and record review-unit Focus Standard observations.",
+        help="List, record, and complete review-unit Focus Standard observations.",
         description=(
-            "List or record explicit teacher-entered Focus Standard observations "
-            "without inspecting evidence or inferring judgments."
+            "List, record, or explicitly complete teacher-entered Focus Standard "
+            "observations without inspecting evidence or inferring judgments."
         ),
     )
     observations_parser.set_defaults(
@@ -339,6 +340,27 @@ def build_parser() -> argparse.ArgumentParser:
         "--include-in-feedback", type=_true_false, metavar="true|false"
     )
     observations_set_parser.set_defaults(handler=handle_observations_set)
+
+    observations_complete_parser = observations_subparsers.add_parser(
+        "mark-complete",
+        help="Explicitly complete observations, including when pairs are unobserved.",
+        description=(
+            "Explicitly mark the observation phase complete for an existing review "
+            "with defined units. Missing observations do not block completion and "
+            "none are created automatically; only canonical review workflow state "
+            "is changed."
+        ),
+    )
+    _add_submission_identity_arguments(observations_complete_parser)
+    observations_complete_parser.add_argument(
+        "--yes",
+        required=True,
+        action="store_true",
+        help="Explicitly confirm completion without prompting.",
+    )
+    observations_complete_parser.set_defaults(
+        handler=handle_observations_mark_complete
+    )
 
     ratings_parser = subparsers.add_parser(
         "ratings",
