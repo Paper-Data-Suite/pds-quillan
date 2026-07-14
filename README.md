@@ -87,7 +87,7 @@ The top-level menu is:
 3. Roster Management
 4. Workspace Settings
 5. Help
-6. Exit
+Q. Quit
 ```
 
 ### Assignment Management
@@ -217,9 +217,15 @@ Student Performance Summary is the compact ordinary teacher-facing table.
 Comprehensive Class Summary (`class_summary.csv`) is audit/troubleshooting
 oriented. Standards Summary aggregates assignment Focus Standards.
 
-Exports are derived artifacts. They do not mutate assignment records,
-submission manifests, review records, routed evidence, rosters, standards, or
-reusable comments.
+Exports are derived artifacts. Markdown compatibility export writes only the
+Markdown artifact and does not add review export metadata. PDF export, including
+PDF with a Markdown companion, updates only the selected canonical `review.json`:
+it records export metadata, advances ordinary reviewed work to
+`review_state: exported`, and updates `updated_at`. Work returned without a full
+review keeps that distinct terminal state. Export does not change teacher
+judgments, ratings, rationales, comments, or observations, and it does not mutate
+assignment records, submission manifests, routed evidence, rosters, standards,
+reusable comments, or sibling review records.
 
 ## Direct CLI Commands
 
@@ -236,39 +242,27 @@ workflow, minimum-requirement outcomes, feedback freshness, and assignment-
 filtered scan-review attention. It does not inspect evidence, infer judgments,
 assemble submissions, or write exports or reports.
 
-The direct command surface exposed through argparse is:
+Common direct CLI entry points include:
 
 ```powershell
 quillan
 quillan --help
-quillan validate-assignment <path>
-quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
-quillan route-scan <source-image> --decode-qr
-quillan route-scan <source-pdf> --decode-qr
-quillan route-scan <source-folder> --decode-qr
-quillan decode-scan <source-file> [--hide-payload]
-quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
-quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
-quillan pages list <class_id> <assignment_id> <student_id>
-quillan pages exclude <class_id> <assignment_id> <student_id> --page N --yes
-quillan pages restore <class_id> <assignment_id> <student_id> --page N --yes
-quillan pages mark-needs-rescan <class_id> <assignment_id> <student_id> --page N --yes
-quillan open-evidence <workspace-relative-evidence-path>
-quillan open-submission <class_id> <assignment_id> <student_id> [--page N]
-quillan set-review-state <class_id> <assignment_id> <student_id> <state>
-quillan review-workflow set-state <class_id> <assignment_id> <student_id> --state <state> --yes
-quillan add-note <class_id> <assignment_id> <student_id> --text "..."
-quillan export-feedback <class_id> <assignment_id> <student_id> [--format markdown|pdf|both] [--overwrite]
-quillan export-student-performance-summary <class_id> <assignment_id> [--overwrite]
-quillan export-class-summary <class_id> <assignment_id> [--overwrite]
-quillan export-comprehensive-class-summary <class_id> <assignment_id> [--overwrite]
-quillan export-standards-summary <class_id> <assignment_id> [--overwrite]
-quillan workspace show
-quillan workspace set <path>
-quillan workspace validate
-quillan workspace reset
-quillan menu
+quillan review-dashboard <class_id> <assignment_id>
+quillan review-status <class_id> <assignment_id> <student_id> --format json
+quillan assignment --help
+quillan roster --help
+quillan printable-responses --help
+quillan requirements --help
+quillan review-units --help
+quillan observations --help
+quillan ratings --help
+quillan feedback --help
+quillan review-workflow --help
+quillan workspace --help
 ```
+
+See [`docs/cli_contract.md`](docs/cli_contract.md) for the authoritative,
+exhaustive implemented command surface and current option syntax.
 
 The removed legacy commands `add-tag`, `add-comment`, and `set-score` are not
 part of the active command surface.

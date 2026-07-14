@@ -207,9 +207,13 @@ The implemented command surface currently exposed through argparse is:
 ```powershell
 quillan
 quillan --help
-quillan assignment create <class_id> <assignment_id> --title <title> --writing-type <type> (--prompt <text> | --prompt-file <path>) --standards-profile-id <profile_id> --focus-standard-ids <id,...> (--yes | --dry-run)
+quillan review-dashboard <class_id> <assignment_id> [--format text|json]
+quillan review-status <class_id> <assignment_id> <student_id> [--format text|json]
+quillan review-workflow set-state <class_id> <assignment_id> <student_id> --state <state> --yes
+quillan assignment create <class_id> <assignment_id> --title <title> --writing-type <type> (--prompt <text> | --prompt-file <path>) --standards-profile-id <profile_id> --focus-standard-ids <id,...> [--review-unit-type <type>] [--review-unit-singular <label>] [--review-unit-plural <label>] [--rating-scale default] [--paragraphs-min N] [--paragraphs-max N] [--word-count-min N] [--word-count-max N] [--required-elements <items>] [--allow-return-without-full-review true|false] [--overwrite] [--yes | --dry-run]
 quillan assignment show <class_id> <assignment_id>
 quillan assignment validate <class_id> <assignment_id>
+quillan printable-responses generate <class_id> <assignment_id> [--pages-per-student N] [--overwrite] (--yes | --dry-run)
 quillan requirements list <class_id> <assignment_id> <student_id>
 quillan requirements set-check <class_id> <assignment_id> <student_id> --requirement-key <key> --met true|false [--note <text>]
 quillan requirements set-outcome <class_id> <assignment_id> <student_id> --outcome met|unmet_continue_review|returned_without_full_review [--note <text>]
@@ -242,9 +246,11 @@ quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
 quillan route-scan <source-image> --decode-qr
 quillan route-scan <source-pdf> --decode-qr
 quillan route-scan <source-folder> --decode-qr
-quillan list-scan-review [--include-resolved] [--limit N]
+quillan list-scan-review [--include-resolved] [--limit N] [--class-id <class_id>] [--assignment-id <assignment_id>] [--failure-category <category>]
 quillan resolve-scan-review <failure_id> --action <action> [--message "..."] [--evidence-path <workspace-relative-path>]
+quillan decode-scan <source-file> [--hide-payload]
 quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
+quillan create-plain-paper-submission <class_id> <assignment_id> <student_id> [--yes | --dry-run]
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 quillan pages list <class_id> <assignment_id> <student_id>
 quillan pages exclude <class_id> <assignment_id> <student_id> --page N --yes
@@ -283,6 +289,71 @@ and exits successfully without resolving or inspecting the workspace.
 
 Running `quillan observations` without a subcommand prints observation help
 and exits successfully without resolving or inspecting the workspace.
+
+The inventory above is authoritative and exhaustive for the implemented
+top-level argparse commands and aliases. `set-review-state` changes only the
+lightweight `submission.json.submission_state`; `review-workflow set-state`
+changes only the standards-based `review.json.review_state` and is an explicit
+manual override.
+
+## Direct Standards-Based Review Lifecycle
+
+After a canonical submission is available, a teacher can complete the ordinary
+review lifecycle without entering the menu. Every judgment and every piece of
+feedback below is teacher-entered, and phase completion is explicit:
+
+```powershell
+quillan requirements set-check `
+  <class_id> <assignment_id> <student_id> `
+  --requirement-key paragraphs_min --met true
+
+quillan requirements set-outcome `
+  <class_id> <assignment_id> <student_id> --outcome met
+
+quillan review-units set `
+  <class_id> <assignment_id> <student_id> --count 1
+
+quillan observations set `
+  <class_id> <assignment_id> <student_id> `
+  --unit-id paragraph_1 --standard-id <standard_id> `
+  --applicable true --evidence-present true --rating <rating> `
+  --rationale "Teacher-entered observation." --include-in-feedback true
+
+quillan observations mark-complete `
+  <class_id> <assignment_id> <student_id> --yes
+
+quillan ratings set `
+  <class_id> <assignment_id> <student_id> `
+  --standard-id <standard_id> --rating <rating> `
+  --rationale "Teacher-entered overall rationale." `
+  --include-in-feedback true
+
+quillan ratings mark-complete `
+  <class_id> <assignment_id> <student_id> --yes
+
+quillan feedback set-options `
+  <class_id> <assignment_id> <student_id> `
+  --standard-id <standard_id> --include-overall-rating true `
+  --include-overall-rationale true --observation-ids observation_0001
+
+quillan feedback add-comment `
+  <class_id> <assignment_id> <student_id> `
+  --standard-id <standard_id> --text "Teacher-authored feedback." `
+  --include-in-feedback true
+
+quillan feedback mark-composed `
+  <class_id> <assignment_id> <student_id> --yes
+
+quillan export-feedback `
+  <class_id> <assignment_id> <student_id> --format pdf
+
+quillan review-status `
+  <class_id> <assignment_id> <student_id> --format json
+```
+
+This sequence uses the dedicated commands rather than
+`review-workflow set-state` to simulate progress. Export and status inspection
+are separate operations; `review-status` is read-only.
 
 ## Direct Printable Response Packet Generation
 
@@ -823,7 +894,7 @@ The top-level menu provides:
 3. Roster Management
 4. Workspace Settings
 5. Help
-6. Exit
+Q. Quit
 ```
 
 Menu workflows should orchestrate reusable application functions. They should

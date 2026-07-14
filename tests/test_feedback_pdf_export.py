@@ -17,6 +17,8 @@ from quillan.feedback_export import (
     feedback_export_path,
     feedback_pdf_export_path,
 )
+from quillan.assignment_summary_context import feedback_status
+from quillan.review_notes import add_review_note
 from quillan.review_record_paths import review_record_path
 from tests.test_feedback_export import (
     STANDARD_DESCRIPTION,
@@ -138,7 +140,6 @@ def test_normal_pdf_export_creates_student_facing_pdf_and_metadata(
     _write_manifest(tmp_path)
     _write_assignment_with_rating_labels(tmp_path)
     review = _feedback_ready_review()
-    source_review_updated_at = review["updated_at"]
     review_path = _write_review(tmp_path, review)
 
     result = export_student_feedback_pdf(
@@ -216,10 +217,18 @@ def test_normal_pdf_export_creates_student_facing_pdf_and_metadata(
             f"{STUDENT_ID}/exports/feedback.pdf"
         ),
         "generated_at": TIMESTAMP,
-        "source_review_updated_at": source_review_updated_at,
+        "source_review_updated_at": TIMESTAMP,
         "module_details": {},
     }
     assert review_after["exports"]["feedback_markdown"] is None
+    assert review_after["updated_at"] == metadata["source_review_updated_at"]
+    _, status, stale, warnings = feedback_status(
+        tmp_path,
+        review_after,
+        "feedback_pdf",
+        expected_path,
+    )
+    assert (status, stale, warnings) == ("present", "false", ())
 
 
 def test_pdf_uses_resolved_standard_heading_and_full_description(tmp_path: Path) -> None:
@@ -308,6 +317,44 @@ def test_pdf_export_can_write_markdown_companion_and_metadata(tmp_path: Path) ->
     assert review_after["exports"]["feedback_markdown"]["path"].endswith(
         "/exports/feedback.md"
     )
+    for field, path in (
+        ("feedback_pdf", result.feedback_pdf_path),
+        ("feedback_markdown", result.feedback_markdown_path),
+    ):
+        metadata = review_after["exports"][field]
+        assert metadata["source_review_updated_at"] == review_after["updated_at"]
+        assert feedback_status(tmp_path, review_after, field, path)[1:] == (
+            "present",
+            "false",
+            (),
+        )
+
+
+def test_later_review_update_makes_unchanged_pdf_metadata_stale(tmp_path: Path) -> None:
+    _write_manifest(tmp_path)
+    _write_assignment_with_rating_labels(tmp_path)
+    review_path = _write_review(tmp_path, _feedback_ready_review())
+    result = export_student_feedback_pdf(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+    )
+    exported = json.loads(review_path.read_text(encoding="utf-8"))
+    metadata_before = exported["exports"]["feedback_pdf"].copy()
+
+    add_review_note(
+        tmp_path,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        "Later teacher edit.",
+        created_at="2026-07-03T12:00:00+00:00",
+    )
+
+    updated = json.loads(review_path.read_text(encoding="utf-8"))
+    assert updated["exports"]["feedback_pdf"] == metadata_before
+    assert updated["updated_at"] != metadata_before["source_review_updated_at"]
+    assert feedback_status(
+        tmp_path, updated, "feedback_pdf", result.feedback_pdf_path
+    )[1:] == ("stale", "true", ("feedback_pdf_stale",))
 
 
 def test_returned_work_pdf_export(tmp_path: Path) -> None:
