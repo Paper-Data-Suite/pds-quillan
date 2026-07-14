@@ -10,7 +10,10 @@ import pytest
 
 from quillan.cli import main
 from quillan.cli_app.handlers import observations as handlers
-from quillan.review_observations import set_review_units
+from quillan.review_observations import (
+    CompletedReviewUnitObservations,
+    set_review_units,
+)
 from quillan.review_record import build_empty_review_record
 from quillan.review_record_paths import review_record_path, write_review_record
 from quillan.submission_manifest_paths import (
@@ -108,6 +111,17 @@ def _set_args(*extra: str) -> list[str]:
     ]
 
 
+def _complete_args(*extra: str) -> list[str]:
+    return [
+        "observations",
+        "mark-complete",
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        *extra,
+    ]
+
+
 @pytest.mark.parametrize(
     "argv",
     [
@@ -115,6 +129,7 @@ def _set_args(*extra: str) -> list[str]:
         ["observations", "--help"],
         ["observations", "list", "--help"],
         ["observations", "set", "--help"],
+        ["observations", "mark-complete", "--help"],
     ],
 )
 def test_observation_help_exits_successfully(argv: list[str]) -> None:
@@ -132,7 +147,20 @@ def test_bare_namespace_prints_help_without_resolving_workspace(
         lambda: pytest.fail("bare namespace resolved the workspace"),
     )
     assert main(["observations"]) == 0
-    assert "{list,set}" in capsys.readouterr().out
+    assert "{list,set,mark-complete}" in capsys.readouterr().out
+
+
+def test_mark_complete_requires_yes_before_resolving_workspace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        handlers,
+        "resolve_workspace_root",
+        lambda: pytest.fail("missing --yes resolved the workspace"),
+    )
+    with pytest.raises(SystemExit) as error:
+        main(_complete_args())
+    assert error.value.code == 2
 
 
 def test_list_without_review_is_read_only_and_reports_setup_guidance(
@@ -337,4 +365,183 @@ def test_returned_review_can_be_listed_but_not_changed(
     assert "Review state: returned_without_full_review" in capsys.readouterr().out
     assert main(_set_args("--applicable", "true", "--evidence-present", "true")) == 1
     assert "Change the minimum-requirements outcome" in capsys.readouterr().out
+    assert record_path.read_bytes() == before
+
+    assert main(_complete_args("--yes")) == 1
+    assert "Change the minimum-requirements outcome" in capsys.readouterr().out
+    assert record_path.read_bytes() == before
+
+
+def test_mark_complete_reuses_service_result_and_warns_without_prompting(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    completed = CompletedReviewUnitObservations(
+        class_id=CLASS_ID,
+        assignment_id=ASSIGNMENT_ID,
+        student_id=STUDENT_ID,
+        review_record_path=tmp_path / "review.json",
+        review_record_relative_path="classes/example/review.json",
+        review_state="observations_complete",
+        unit_count=2,
+        observation_count=1,
+        missing_focus_standard_pairs=3,
+        updated_at=TIMESTAMP,
+    )
+    calls: list[tuple[Path, str, str, str]] = []
+
+    def complete(
+        root: Path, class_id: str, assignment_id: str, student_id: str
+    ) -> CompletedReviewUnitObservations:
+        calls.append((root, class_id, assignment_id, student_id))
+        return completed
+
+    monkeypatch.setattr(handlers, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(handlers, "mark_observations_complete", complete)
+    monkeypatch.setattr("builtins.input", lambda *_args: pytest.fail("CLI prompted"))
+
+    assert main(_complete_args("--yes")) == 0
+
+    output = capsys.readouterr().out
+    assert calls == [(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)]
+    assert "Unobserved unit-standard pairs: 3" in output
+    assert (
+        "Warning: Observations were marked complete with 3 unobserved "
+        "unit-standard pair(s); no observations were created."
+    ) in output
+
+
+def test_mark_complete_allows_zero_observations_and_preserves_review_content(
+    workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    set_review_units(
+        workspace,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        [{"sequence": 1, "label": "Opening"}],
+        updated_at=TIMESTAMP,
+    )
+    record_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    before = json.loads(record_path.read_text(encoding="utf-8"))
+    monkeypatch.setattr("builtins.input", lambda *_args: pytest.fail("CLI prompted"))
+
+    assert main(_complete_args("--yes")) == 0
+
+    after = json.loads(record_path.read_text(encoding="utf-8"))
+    output = capsys.readouterr().out
+    assert after["review_state"] == "observations_complete"
+    assert after["updated_at"] != before["updated_at"]
+    assert after["review_units"][0]["standard_observations"] == []
+    assert after["overall_standard_ratings"] == []
+    assert after["feedback"]["standard_feedback"] == []
+    assert {k: v for k, v in after.items() if k not in {"review_state", "updated_at"}} == {
+        k: v for k, v in before.items() if k not in {"review_state", "updated_at"}
+    }
+    assert "Observations: 0" in output
+    assert "Unobserved unit-standard pairs: 2" in output
+    assert "no observations were created" in output
+
+
+def test_mark_complete_with_partial_coverage_reports_service_count(
+    workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    set_review_units(
+        workspace,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        [{"sequence": 1}, {"sequence": 2}],
+        updated_at=TIMESTAMP,
+    )
+    assert main(
+        _set_args("--applicable", "true", "--evidence-present", "true")
+    ) == 0
+    capsys.readouterr()
+
+    assert main(_complete_args("--yes")) == 0
+
+    output = capsys.readouterr().out
+    review = json.loads(
+        review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(
+            encoding="utf-8"
+        )
+    )
+    assert review["review_state"] == "observations_complete"
+    assert len(review["review_units"][0]["standard_observations"]) == 1
+    assert all(
+        not unit["standard_observations"] for unit in review["review_units"][1:]
+    )
+    assert "Unobserved unit-standard pairs: 3" in output
+    assert "marked complete with 3 unobserved" in output
+
+
+def test_mark_complete_with_full_coverage_has_no_warning(
+    workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    set_review_units(
+        workspace,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        [{"sequence": 1}],
+        updated_at=TIMESTAMP,
+    )
+    for standard_id in ("W.1", "L.2"):
+        assert main(
+            [
+                "observations",
+                "set",
+                CLASS_ID,
+                ASSIGNMENT_ID,
+                STUDENT_ID,
+                "--unit-id",
+                "paragraph_1",
+                "--standard-id",
+                standard_id,
+                "--applicable",
+                "true",
+                "--evidence-present",
+                "true",
+            ]
+        ) == 0
+    capsys.readouterr()
+
+    assert main(_complete_args("--yes")) == 0
+
+    output = capsys.readouterr().out
+    assert "Unobserved unit-standard pairs: 0" in output
+    assert "Warning:" not in output
+
+
+def test_mark_complete_requires_existing_review_and_units_without_writing(
+    workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    record_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    manifest_path = submission_manifest_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
+    manifest_before = manifest_path.read_bytes()
+
+    assert main(_complete_args("--yes")) == 1
+    assert "Review units must be defined before recording observations" in capsys.readouterr().out
+    assert not record_path.exists()
+    assert manifest_path.read_bytes() == manifest_before
+
+    set_review_units(
+        workspace,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        [{"sequence": 1}],
+        updated_at=TIMESTAMP,
+    )
+    review = json.loads(record_path.read_text(encoding="utf-8"))
+    review["review_units"] = []
+    write_review_record(record_path, review, overwrite=True)
+    before = record_path.read_bytes()
+
+    assert main(_complete_args("--yes")) == 1
+    assert "Define review units before marking observations complete" in capsys.readouterr().out
     assert record_path.read_bytes() == before

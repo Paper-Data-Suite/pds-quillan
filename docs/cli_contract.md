@@ -218,6 +218,7 @@ quillan review-units set <class_id> <assignment_id> <student_id> --count <positi
 quillan review-units set <class_id> <assignment_id> <student_id> --units <units.json>
 quillan observations list <class_id> <assignment_id> <student_id>
 quillan observations set <class_id> <assignment_id> <student_id> --unit-id <unit_id> --standard-id <standard_id> --applicable true|false [--evidence-present true|false] [--rating <integer>] [--rationale <text>] [--include-in-feedback true|false]
+quillan observations mark-complete <class_id> <assignment_id> <student_id> --yes
 quillan ratings list <class_id> <assignment_id> <student_id>
 quillan ratings set <class_id> <assignment_id> <student_id> --standard-id <standard_id> --rating <integer> [--rationale <text>] --include-in-feedback true|false
 quillan ratings mark-complete <class_id> <assignment_id> <student_id> --yes
@@ -431,7 +432,7 @@ remain intact.
 ### `observations` commands
 
 The `observations` namespace exposes review-unit Focus Standard observations
-as direct, non-interactive commands. Both commands validate the canonical
+as direct, non-interactive commands. All commands validate the canonical
 assignment, require an existing valid canonical `submission.json`, and validate
 an existing `review.json` rather than treating a malformed or mismatched record
 as empty. Routed evidence is not assembled automatically. A valid plain-paper
@@ -478,13 +479,33 @@ shared observation service performs review-state transitions and refuses to
 modify `returned_without_full_review` records until the minimum-requirements
 outcome changes.
 
-List writes nothing. Set may modify only
+`observations mark-complete` is an explicit teacher-controlled phase transition.
+It requires `--yes`, never prompts, and calls the same shared completion service
+as the teacher menu. A valid existing review with at least one review unit is
+required. A missing review is not created, and missing units produce guidance to
+define review units first. The returned-without-full-review guard also applies;
+the minimum-requirement outcome must change before completion can proceed.
+
+Complete observation coverage is not required. Some, most, or every configured
+unit-standard pair may remain unobserved, including when the review has zero
+observations. The command still sets `review_state` to `observations_complete`
+and updates `updated_at`. It reports the exact missing-pair count returned by the
+shared service and, when that count is nonzero, warns that completion occurred
+with unobserved pairs and that no observations were created. It does not infer
+or fill applicability, evidence presence, ratings, rationales, or feedback
+choices.
+
+List writes nothing. Set and mark-complete may modify only
 `classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json`
-through the shared validated atomic writer. Neither command opens evidence,
-parses PDFs or images, runs OCR, handwriting recognition, or AI, infers any
-teacher judgment, calculates overall ratings, grades, or scores, marks review
-complete, composes feedback, or modifies assignments, submissions, rosters,
-evidence, exports, reports, Core data, or ScoreForm data.
+through the shared validated atomic writer. Completion changes only
+`review_state` and `updated_at`; it preserves units, observations, minimum-
+requirement data, overall ratings, feedback and comments, private notes, export
+metadata, module details, array ordering, and `created_at`. No observation
+command opens evidence, parses PDFs or images, decodes QR codes, runs OCR,
+handwriting recognition, or AI, infers any teacher judgment, calculates overall
+ratings, mastery, percentages, grades, or scores, assembles submissions, mutates
+pages, composes feedback, generates exports, or modifies assignments,
+submissions, rosters, evidence, reports, Core data, or ScoreForm data.
 
 ### `ratings` commands
 

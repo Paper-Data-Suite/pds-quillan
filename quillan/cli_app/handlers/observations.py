@@ -6,7 +6,10 @@ import argparse
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
-from quillan.cli_app.output import print_updated_review_unit_observation
+from quillan.cli_app.output import (
+    print_completed_review_unit_observations,
+    print_updated_review_unit_observation,
+)
 from quillan.observation_management import (
     ObservationContext,
     ObservationManagementError,
@@ -15,6 +18,7 @@ from quillan.observation_management import (
 )
 from quillan.review_observations import (
     ReviewObservationError,
+    mark_observations_complete,
     set_review_unit_observation,
 )
 
@@ -65,6 +69,27 @@ def handle_observations_set(args: argparse.Namespace) -> int:
             include_in_feedback=args.include_in_feedback,
         )
         print_updated_review_unit_observation(updated)
+        return 0
+    except (OSError, ValueError, WorkspaceRootError, ReviewObservationError) as error:
+        return _error(error)
+
+
+def handle_observations_mark_complete(args: argparse.Namespace) -> int:
+    """Explicitly mark review-unit observations complete without prompting."""
+    try:
+        completed = mark_observations_complete(
+            resolve_workspace_root(),
+            args.class_id,
+            args.assignment_id,
+            args.student_id,
+        )
+        print_completed_review_unit_observations(completed)
+        if completed.missing_focus_standard_pairs:
+            print(
+                "Warning: Observations were marked complete with "
+                f"{completed.missing_focus_standard_pairs} unobserved "
+                "unit-standard pair(s); no observations were created."
+            )
         return 0
     except (OSError, ValueError, WorkspaceRootError, ReviewObservationError) as error:
         return _error(error)
