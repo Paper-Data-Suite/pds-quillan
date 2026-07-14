@@ -72,6 +72,10 @@ A plain-paper manual manifest has `expected_pages: null` and no digital page
 records because the physical evidence remains outside Quillan. Both the direct
 `pages` CLI and teacher menu use the same shared page-management service.
 
+The lightweight submission state in `submission.json.submission_state` is
+separate from the standards-based review workflow state in
+`review.json.review_state`. Neither field is synchronized to the other.
+
 ### Review Record
 
 The active teacher-review artifact is schema version `2` `review.json`:

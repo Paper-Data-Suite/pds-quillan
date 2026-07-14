@@ -149,7 +149,7 @@ def handle_open_submission(args: argparse.Namespace) -> int:
 
 
 def handle_set_review_state(args: argparse.Namespace) -> int:
-    """Update one canonical submission's lightweight review state."""
+    """Update one canonical manifest's lightweight submission state."""
     try:
         workspace_root = resolve_workspace_root()
         updated = update_submission_review_state(
@@ -160,7 +160,7 @@ def handle_set_review_state(args: argparse.Namespace) -> int:
             args.state,
         )
     except (WorkspaceRootError, SubmissionReviewStateError) as error:
-        print(f"Error: could not update submission review state: {error}")
+        print(f"Error: could not update lightweight submission state: {error}")
         return 1
 
     print_updated_submission_review_state(updated)

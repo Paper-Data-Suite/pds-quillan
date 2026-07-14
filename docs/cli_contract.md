@@ -1000,7 +1000,7 @@ The selected-student review menu provides:
 6. Compose Focus Standard feedback
 7. Manage submission pages
 8. Add teacher note
-9. Update submission review state
+9. Update review workflow state
 10. Export student feedback
 11. Refresh summary
 12. Back
@@ -1046,13 +1046,14 @@ as the direct commands:
 ```powershell
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
+quillan review-workflow set-state <class_id> <assignment_id> <student_id> --state <state> --yes
 ```
 
 The generic structured-tag, comment-bank, rubric, and criterion-score runtime
 workflows have been removed. Quillan does not create, import, edit, retire,
 reactivate, or authoritatively validate pds-core standards from review mode.
 
-`Update submission review state` displays the allowed states with
+`Update review workflow state` displays the allowed states with
 teacher-facing descriptions and requires confirmation before saving. This is
 an explicit workflow status change, not a grade, and is not inferred from
 notes, tags, comments, scores, or exports.
@@ -1371,7 +1372,17 @@ Both commands are read-only. They do not inspect content, select evidence,
 score work, tag work, create review records, generate feedback, or update
 review state.
 
-## Submission Review State
+## Two State Models
+
+Quillan deliberately keeps two independent state fields. They are never
+automatically synchronized:
+
+* lightweight submission state is stored in `submission.json.submission_state`;
+* standards-based review workflow state is stored in `review.json.review_state`.
+
+Changing either field leaves the other record unchanged.
+
+## Lightweight Submission State
 
 ```powershell
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
@@ -1386,9 +1397,54 @@ needs_rescan
 reviewed
 ```
 
-This command updates only `submission_state` and `updated_at` in the validated
-manifest. It does not open or inspect evidence or make an automatic review
-decision.
+This compatibility command updates only `submission_state` and `updated_at` in
+the validated `submission.json`. It does not open or inspect evidence, make an
+automatic review decision, or change `review.json.review_state`.
+
+## Review Workflow State
+
+```powershell
+quillan review-workflow set-state <class_id> <assignment_id> <student_id> --state <state> --yes
+```
+
+Bare `quillan review-workflow` prints namespace help successfully without
+resolving a workspace or reading or creating records. The nine ordered workflow
+states are:
+
+```text
+not_started
+requirements_checked
+returned_without_full_review
+observations_in_progress
+observations_complete
+ratings_complete
+feedback_composed
+ready_for_export
+exported
+```
+
+`--yes` is mandatory and is parsed before workspace resolution. This is a
+manual teacher override: forward, backward, nonadjacent, and same-state updates
+are allowed, and same-state saves refresh `updated_at`. The command does not
+infer, require, remove, or create phase artifacts, feedback, ratings, exports,
+evidence, or submission assemblies.
+
+After validating the canonical assignment and submission, a missing
+`review.json` may be created as an empty schema-version-2 record for a
+non-returned state. This includes valid evidence-less plain-paper submissions
+and historical submissions for students no longer on the roster. Existing
+records preserve every field except `review_state` and `updated_at`.
+
+Returned-without-full-review status remains controlled by `requirements
+set-outcome`: the generic command cannot enter that state without a coherent
+returned outcome, and cannot leave a coherent returned outcome until the
+minimum-requirement outcome is changed. A legacy record whose workflow state is
+returned but whose outcome is not marked returned may be repaired by moving to
+a non-returned state.
+
+The exact write boundary is the selected canonical `review.json` only. The
+command never changes `submission.json.submission_state`, roster data,
+assignment data, evidence, sibling records, exports, or reports.
 
 ## Quick Teacher Notes
 

@@ -35,6 +35,8 @@ from quillan.review_ratings import (
     CompletedOverallStandardRatings,
     UpdatedOverallStandardRating,
 )
+from quillan.review_status_display import review_status_label
+from quillan.review_workflow_state import UpdatedReviewWorkflowState
 from quillan.route_planning import RouteFailure
 from quillan.routing_review import RoutingReviewRecord
 from quillan.standards_summary_export import ExportedStandardsSummary
@@ -166,14 +168,32 @@ def print_opened_submission_review(opened: OpenedSubmissionReview) -> None:
 def print_updated_submission_review_state(
     updated: UpdatedSubmissionReviewState,
 ) -> None:
-    """Print a concise teacher-facing review-state update."""
-    print("Updated submission review state:")
+    """Print a concise lightweight submission-state update."""
+    print("Updated lightweight submission state:")
     print(f"Class: {updated.class_id}")
     print(f"Assignment: {updated.assignment_id}")
     print(f"Student: {updated.student_id}")
-    print(f"Previous state: {updated.previous_state}")
-    print(f"New state: {updated.new_state}")
-    print(f"Manifest: {updated.manifest_relative_path}")
+    print(f"Previous submission state: {updated.previous_state}")
+    print(f"New submission state: {updated.new_state}")
+    print(f"Submission manifest: {updated.manifest_relative_path}")
+
+
+def print_updated_review_workflow_state(
+    updated: UpdatedReviewWorkflowState,
+) -> None:
+    """Print a stable teacher-facing review workflow state summary."""
+    print("Updated review workflow state:")
+    print(f"Class: {updated.class_id}")
+    print(f"Assignment: {updated.assignment_id}")
+    print(f"Student: {updated.student_id}")
+    action = "created review record" if updated.review_was_created else "updated existing review"
+    previous = updated.previous_state or "no review record"
+    print(f"Action: {action}")
+    print(f"Previous workflow state: {previous}")
+    print(f"New workflow state: {updated.new_state}")
+    print(f"Review: {review_status_label({'review_state': updated.new_state})}")
+    print(f"Review record: {updated.review_record_relative_path}")
+    print(f"Updated: {updated.updated_at}")
 
 
 def print_submission_page_context(context: SubmissionPageContext) -> None:

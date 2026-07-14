@@ -14,6 +14,7 @@ from quillan.cli_app.handlers.comments import (
 )
 from quillan.cli_app.handlers.dashboard import handle_review_dashboard
 from quillan.cli_app.handlers.review_status import handle_review_status
+from quillan.cli_app.handlers.review_workflow import handle_review_workflow_set_state
 from quillan.cli_app.handlers.exports import (
     handle_export_class_summary,
     handle_export_feedback,
@@ -91,6 +92,7 @@ from quillan.cli_app.handlers.workspace import (
     handle_workspace_validate,
 )
 from quillan.focus_standard_comments import ALLOWED_PURPOSES
+from quillan.review_workflow_state import REVIEW_WORKFLOW_STATES
 
 APP_DESCRIPTION = "Quillan: standards-based writing evidence capture"
 
@@ -131,6 +133,46 @@ def build_parser() -> argparse.ArgumentParser:
         help="Standard-output representation (default: text).",
     )
     review_status_parser.set_defaults(handler=handle_review_status)
+
+    review_workflow_parser = subparsers.add_parser(
+        "review-workflow",
+        help="Manage standards-based review workflow state in review.json.",
+        description=(
+            "Manage review.json.review_state. This is separate from the lightweight "
+            "submission.json.submission_state model."
+        ),
+    )
+    review_workflow_parser.set_defaults(
+        handler=partial(_print_parser_help, review_workflow_parser)
+    )
+    review_workflow_subparsers = review_workflow_parser.add_subparsers(
+        dest="review_workflow_command"
+    )
+    review_workflow_set_state_parser = review_workflow_subparsers.add_parser(
+        "set-state",
+        help="Manually override one student's review workflow state.",
+        description=(
+            "Manually override review.json.review_state without changing "
+            "submission.json.submission_state. This workflow-only change does not "
+            "infer or create review artifacts appropriate to the selected phase."
+        ),
+    )
+    _add_submission_identity_arguments(review_workflow_set_state_parser)
+    review_workflow_set_state_parser.add_argument(
+        "--state",
+        required=True,
+        choices=REVIEW_WORKFLOW_STATES,
+        help="Requested standards-based review workflow state.",
+    )
+    review_workflow_set_state_parser.add_argument(
+        "--yes",
+        required=True,
+        action="store_true",
+        help="Explicitly confirm this review.json workflow-state write.",
+    )
+    review_workflow_set_state_parser.set_defaults(
+        handler=handle_review_workflow_set_state
+    )
 
     assignment_parser = subparsers.add_parser(
         "assignment", help="Create, show, and validate canonical assignments."
@@ -880,16 +922,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     review_state_parser = subparsers.add_parser(
         "set-review-state",
-        help="Update one student submission's lightweight review state.",
+        help="Update one student's lightweight submission state.",
         description=(
-            "Update only submission_state and updated_at in one canonical "
-            "student submission manifest."
+            "Update only submission.json.submission_state and updated_at in one "
+            "canonical student submission manifest. This does not change "
+            "review.json.review_state."
         ),
     )
     _add_submission_identity_arguments(review_state_parser)
     review_state_parser.add_argument(
         "state",
-        help=("Review state: unreviewed, in_progress, needs_rescan, or reviewed."),
+        help=(
+            "Lightweight submission state stored in submission.json: unreviewed, "
+            "in_progress, needs_rescan, or reviewed."
+        ),
     )
     review_state_parser.set_defaults(handler=handle_set_review_state)
 

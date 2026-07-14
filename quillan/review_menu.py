@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, cast
 
@@ -39,6 +38,7 @@ from quillan.cli_app.output import (
     print_updated_overall_standard_rating,
     print_updated_review_unit_observation,
     print_updated_review_units,
+    print_updated_review_workflow_state,
 )
 from quillan.feedback_export import (
     FeedbackExportError,
@@ -94,16 +94,16 @@ from quillan.review_feedback import (
     summarize_standard_feedback,
 )
 from quillan.review_record import (
-    ALLOWED_REVIEW_STATES,
     ReviewRecordError,
-    build_empty_review_record,
     load_review_record,
-    validate_review_record,
 )
 from quillan.review_record_paths import (
-    ReviewRecordPathError,
     review_record_path,
-    write_review_record,
+)
+from quillan.review_workflow_state import (
+    REVIEW_WORKFLOW_STATES,
+    ReviewWorkflowStateError,
+    set_review_workflow_state,
 )
 from quillan.review_dashboard import (
     AssignmentReviewDashboard,
@@ -548,7 +548,7 @@ def _launch_selected_student_review(
             )
             input("Press Enter to continue...")
         elif choice == "9":
-            _menu_update_submission_review_state(
+            _menu_update_review_workflow_state(
                 workspace_root,
                 class_id,
                 assignment_id,
@@ -708,95 +708,79 @@ def _load_assignment_for_review(
         return None
 
 
-def _menu_update_submission_review_state(
+def _menu_update_review_workflow_state(
     workspace_root: Path,
     class_id: str,
     assignment_id: str,
     student_id: str,
 ) -> None:
     _print_review_action_header(
-        "Update Review State", class_id, assignment_id, student_id
+        "Update Review Workflow State", class_id, assignment_id, student_id
     )
     print("Use this to update the teacher-review workflow. This is not a grade.")
     print()
     path = review_record_path(workspace_root, class_id, assignment_id, student_id)
-    if not path.exists():
-        timestamp = datetime.now(timezone.utc).isoformat()
-        record = build_empty_review_record(
-            class_id=class_id,
-            assignment_id=assignment_id,
-            student_id=student_id,
-            created_at=timestamp,
-        )
-    else:
+    record = None
+    if path.exists():
         try:
             record = load_review_record(path)
         except (OSError, ReviewRecordError) as error:
             print(f"Error: could not load review record: {error}")
             return
-    current_state = str(record["review_state"])
-    print(f"Current state: {current_state}")
+    current_state = "not_started" if record is None else str(record["review_state"])
+    print(f"Current review workflow state: {current_state}")
     print()
-    states = (
-        "not_started",
-        "requirements_checked",
-        "returned_without_full_review",
-        "observations_in_progress",
-        "observations_complete",
-        "ratings_complete",
-        "feedback_composed",
-        "ready_for_export",
-        "exported",
-    )
     descriptions = {
         state: review_status_label({"review_state": state}).capitalize()
-        for state in states
+        for state in REVIEW_WORKFLOW_STATES
     }
-    for index, state_opt in enumerate(states, start=1):
+    for index, state_opt in enumerate(REVIEW_WORKFLOW_STATES, start=1):
         print(f"{index}. {state_opt} - {descriptions[state_opt]}")
     print("B. Back")
     print()
 
     selection = input("Select review workflow state: ").strip()
     if not selection or selection.casefold() == "b":
-        print("Update review state canceled.")
+        print("Update review workflow state canceled.")
         return
 
     selected_state: str | None = None
     if selection.isdigit():
         index = int(selection) - 1
-        selected_state = states[index] if 0 <= index < len(states) else None
+        selected_state = (
+            REVIEW_WORKFLOW_STATES[index]
+            if 0 <= index < len(REVIEW_WORKFLOW_STATES)
+            else None
+        )
     else:
         selected_state = selection
 
-    if selected_state not in ALLOWED_REVIEW_STATES:
+    if selected_state not in REVIEW_WORKFLOW_STATES:
         print(
-            "Update review state canceled. Invalid state selection. "
-            f"Allowed values: {', '.join(states)}."
+            "Update review workflow state canceled. Invalid state selection. "
+            f"Allowed values: {', '.join(REVIEW_WORKFLOW_STATES)}."
         )
         return
 
     print()
-    print(f"Change review state to {selected_state}?")
+    print(f"Change review workflow state to {selected_state}?")
     print()
     print("1. Save")
     print("2. Back")
     print()
     if input("Select an option: ").strip() != "1":
-        print("Update review state canceled.")
+        print("Update review workflow state canceled.")
         return
 
     try:
-        updated_record = dict(record)
-        updated_record["review_state"] = selected_state
-        updated_record["updated_at"] = datetime.now(timezone.utc).isoformat()
-        validate_review_record(updated_record)
-        write_review_record(path, updated_record, overwrite=True)
-    except (ReviewRecordError, ReviewRecordPathError, OSError) as error:
+        updated = set_review_workflow_state(
+            workspace_root, class_id, assignment_id, student_id, selected_state
+        )
+    except ReviewWorkflowStateError as error:
         print(f"Error: could not update review workflow state: {error}")
         return
 
-    print(f"Review: {review_status_label(updated_record)}")
+    print_updated_review_workflow_state(updated)
 
 
 def _prompt_yes_no_default_no(prompt: str) -> bool:

@@ -1,4 +1,4 @@
-"""Teacher-controlled lightweight submission review-state updates."""
+"""Teacher-controlled lightweight submission-state updates."""
 
 from __future__ import annotations
 
@@ -23,12 +23,12 @@ from quillan.submission_guidance import missing_submission_guidance
 
 
 class SubmissionReviewStateError(Exception):
-    """Raised when a submission review state cannot be updated safely."""
+    """Raised when a lightweight submission state cannot be updated safely."""
 
 
 @dataclass(frozen=True, slots=True)
 class UpdatedSubmissionReviewState:
-    """Information about a submission review-state update."""
+    """Information about a lightweight submission-state update."""
 
     class_id: str
     assignment_id: str
@@ -49,11 +49,11 @@ def update_submission_review_state(
     *,
     updated_at: datetime | str | None = None,
 ) -> UpdatedSubmissionReviewState:
-    """Update only the lightweight review state for one student submission."""
+    """Update only the lightweight state for one student submission."""
     if state not in ALLOWED_SUBMISSION_STATES:
         allowed = ", ".join(sorted(ALLOWED_SUBMISSION_STATES))
         raise SubmissionReviewStateError(
-            f"Invalid submission review state {state!r}. Allowed states: {allowed}."
+            f"Invalid lightweight submission state {state!r}. Allowed states: {allowed}."
         )
 
     try:
