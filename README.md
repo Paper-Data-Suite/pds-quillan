@@ -289,28 +289,38 @@ or compatibility documentation when explicitly labeled that way.
 
 ## Local Setup
 
-`pds-core` is required for local Paper Data Suite development. Check out
-`pds-core` and `pds-quillan` as sibling repositories:
-
-```text
-Paper-Data-Suite/
-  pds-core/
-  pds-quillan/
-```
-
-Create and activate a virtual environment:
+Create and activate a virtual environment, then install Quillan with its
+development extras:
 
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install "C:\path\to\pds_core-0.5.x-py3-none-any.whl"
+python -m pip install -e ".[dev]"
+python -m pip check
 ```
 
-Install development dependencies from inside `pds-quillan`:
+The configured package index did not provide a compatible PDS Core distribution
+during the Core 0.5 baseline validation, so install a verified compatible wheel
+first. Pip then confirms that wheel satisfies Quillan's declared
+`pds-core>=0.5,<0.6` runtime dependency. A sibling Core checkout is not required,
+and no neighboring Core source path is used. `requirements-dev.txt` is a
+convenience wrapper around `.[dev]` and may be used instead of the direct
+editable-install command.
+
+To validate clean editable and noneditable installations, run:
 
 ```powershell
-python -m pip install --upgrade pip
-python -m pip install -r requirements-dev.txt
+powershell -ExecutionPolicy Bypass `
+    -File .\scripts\validate_development_install.ps1 `
+    -Python .\.venv\Scripts\python.exe `
+    -PdsCoreWheel "C:\path\to\pds_core-0.5.x-py3-none-any.whl"
 ```
+
+The equivalent `PDS_CORE_WHEEL` environment variable may be used instead of
+`-PdsCoreWheel`; an explicit parameter takes precedence. The isolated validation checks package metadata, editable and noneditable installation, installed import origins, CLI availability, and workspace side effects. During the v0.8.9 migration, all active Quillan runtime surfaces are being converted to PDS2 and module-qualified storage.
+
 
 PDF scan intake uses `pdf2image` and requires Poppler installed on the user's
 machine.

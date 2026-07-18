@@ -1,2 +1,2 @@
--e ../pds-core
+# Development dependencies are authoritative in pyproject.toml.
 -e .[dev]
