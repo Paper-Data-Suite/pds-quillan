@@ -55,7 +55,8 @@ Canonical active records and exports live at:
 ```text
 classes/<class_id>/roster.csv
 classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
-classes/<class_id>/modules/quillan/work/<assignment_id>/response_pages/
+classes/<class_id>/modules/quillan/work/<assignment_id>/response_pages/issuances/<issuance_id>.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/response_pages/pages/<page_id>.json
 classes/<class_id>/modules/quillan/work/<assignment_id>/templates/printable_response_pages.pdf
 classes/<class_id>/modules/quillan/work/<assignment_id>/scans/
 classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/submission.json
@@ -76,9 +77,10 @@ class, and work ID. The class roster remains a shared Core-owned class record.
 Within Quillan work, `scans/` stores Quillan-routed evidence rather than Core's
 retained source scan, while `routes/` is reserved for Core-owned route
 registrations. Quillan supports only the module-qualified tree above: there is
-no unqualified assignment path, legacy migration, or fallback. This layout does
-not yet claim response-page persistence, PDS2 generation or routing, submission
-assembly, or completion of the CLI migration.
+no unqualified assignment path, legacy migration, or fallback. Immutable v1
+issuance and physical-page records are now defined and safely persisted. This
+does not yet claim PDS2 PDF generation, route registration, QR rendering,
+submission assembly, or completion of the CLI migration.
 
 ## Teacher-Facing Menu
 
@@ -409,6 +411,6 @@ Review Student Work and choose **Create plain-paper submission for this
 student**. Quillan creates a review-ready `submission.json` and `review.json`
 without routing a scan, running OCR, or fabricating digital evidence. The
 physical paper remains under the teacher's control, and the normal
-standards-based review and export actions apply after setup. This does not
-change printable QR/PDS1 response pages. Never commit real student data or
-workspace artifacts.
+standards-based review and export actions apply after setup. This plain-paper
+workflow does not create QR, route, page, scan, or digital-evidence records.
+Never commit real student data or workspace artifacts.

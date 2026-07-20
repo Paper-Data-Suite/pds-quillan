@@ -33,7 +33,7 @@ schemas.
 Active assignments use schema version `2` and live at:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/assignment.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
 ```
 
 The v0.8.6 assignment contract is defined in
@@ -56,7 +56,7 @@ not active schema version `2` fields.
 Submission manifests live at:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/submission.json
 ```
 
 They describe routed evidence, retained-source provenance, page state, selected
@@ -81,7 +81,7 @@ separate from the standards-based review workflow state in
 The active teacher-review artifact is schema version `2` `review.json`:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/review.json
 ```
 
 The contract is defined in
@@ -123,8 +123,8 @@ comment lookup.
 Student feedback exports are derived artifacts:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
 The export contract is defined in
@@ -143,9 +143,9 @@ and unselected comments.
 Assignment-level reports are derived artifacts:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/student_performance_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
 ```
 
 The reporting contract is defined in
@@ -164,23 +164,165 @@ coverage.
 Reports do not calculate grades, percentages, mastery, or cross-assignment
 results.
 
-### Printable Response Payloads
+### Immutable Printable-response Records
 
-Printable response pages use pds-core PDS1 payloads:
+Quillan owns a PDS2-only v1 identity contract for intended printable response
+pages. The identities are deliberately distinct:
+
+* a **generation** is one user-invoked generation operation and has a fresh
+  `gen_<32 lowercase hex>` identity;
+* an **artifact** is one intended PDF file and has a fresh
+  `art_<32 lowercase hex>` identity;
+* an **issuance** is one intended copy for one class, assignment, and student
+  and has a fresh `iss_<32 lowercase hex>` identity; and
+* a **page** is one intended physical page in an issuance and has a fresh
+  `pg_<32 lowercase hex>` identity.
+
+A future Core route is separate from all four. Issue #336 will register exactly
+one immutable Core route per page, targeted at:
 
 ```text
-PDS1|module=quillan|class=<class_id>|aid=<assignment_id>|sid=<student_id>|page=<page_number>|doc=response
+module_id:        quillan
+record_kind:      response_page
+record_id:        <page_id>
+contract_version: "1"
 ```
 
-Printable response generation embeds the payload as a QR code on each response
-page and writes:
+This contract creates no route ID, route registration, locator, QR payload, or
+PDF. It contains no PDS1 compatibility, legacy import, fallback loader, or
+unqualified-path lookup.
+
+#### Storage
+
+Only issuance and page records are persisted. There are no generation or
+artifact aggregate files, indexes, or latest/current pointers.
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/templates/printable_response_pages.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/
+  response_pages/
+    issuances/
+      <issuance_id>.json
+    pages/
+      <page_id>.json
 ```
 
-The printable response contract is documented in
-[`printable_response_template.md`](printable_response_template.md).
+Core alone owns `routes/`; Quillan response records never live there.
+
+#### Issuance schema version 1
+
+```json
+{
+  "schema_version": "1",
+  "issuance_id": "iss_0123456789abcdef0123456789abcdef",
+  "generation_id": "gen_0123456789abcdef0123456789abcdef",
+  "artifact_id": "art_0123456789abcdef0123456789abcdef",
+  "class_id": "english10_p2",
+  "assignment_id": "literary_analysis",
+  "student_id": "00107",
+  "generation_context": {
+    "output_kind": "class_packet_pdf",
+    "reason": "initial",
+    "predecessor_issuance_id": null
+  },
+  "class_label": "English 10 Period 2",
+  "assignment_snapshot": {
+    "schema_version": "2",
+    "title": "Coming-of-Age Literary Analysis",
+    "updated_at": "2026-07-19T18:00:00+00:00"
+  },
+  "student_snapshot": {
+    "display_name": "Sample Student",
+    "last_name": "Student",
+    "first_name": "Sample",
+    "period": "2"
+  },
+  "page_count": 2,
+  "page_ids": [
+    "pg_0123456789abcdef0123456789abcdef",
+    "pg_1123456789abcdef0123456789abcdef"
+  ],
+  "lifecycle": {
+    "status": "prepared",
+    "revision": 1,
+    "created_at": "2026-07-19T18:30:00+00:00",
+    "updated_at": "2026-07-19T18:30:00+00:00",
+    "issued_at": null,
+    "ended_at": null,
+    "reason": null,
+    "replacement_issuance_id": null
+  }
+}
+```
+
+The assignment snapshot is bounded to schema version, title, and update time.
+The student snapshot is bounded to the printed display name, first/last names,
+and period. Creation verifies both snapshots against the current canonical
+assignment and roster. Later loading does not consult those mutable sources;
+the immutable records remain the historical authority.
+
+#### Page schema and contract version 1
+
+```json
+{
+  "schema_version": "1",
+  "page_id": "pg_0123456789abcdef0123456789abcdef",
+  "issuance_id": "iss_0123456789abcdef0123456789abcdef",
+  "generation_id": "gen_0123456789abcdef0123456789abcdef",
+  "artifact_id": "art_0123456789abcdef0123456789abcdef",
+  "class_id": "english10_p2",
+  "assignment_id": "literary_analysis",
+  "student_id": "00107",
+  "logical_page": 1,
+  "total_pages": 2,
+  "page_role": "response_start",
+  "created_at": "2026-07-19T18:30:00+00:00"
+}
+```
+
+Page one is always `response_start`; every later logical page is
+`continuation`. The immutable page record—not QR text, a filename, scan order,
+source-page number, current packet settings, or a submission manifest—is the
+authority for student identity, issuance membership, logical page, total pages,
+and continuation meaning. `source_page_number` will identify a page in a
+retained scan file; `logical_page` identifies a page in the original student
+issuance. They are independent values.
+
+Page records are created exclusively, cannot be overwritten or updated, and
+cannot move between issuances. An issuance is written only after all member
+pages and acts as their aggregate commit marker. Its controlled lifecycle is:
+
+```text
+prepared -> issued
+prepared -> cancelled
+prepared -> invalidated
+issued   -> superseded
+issued   -> invalidated
+```
+
+Lifecycle writes require the expected revision and atomically replace only the
+issuance JSON. Page bytes never change. `cancelled`, `superseded`, and
+`invalidated` are terminal and require a reason; supersession also names a
+different, already-issued replacement for the same class, assignment, and
+student.
+
+Every additional physical copy receives fresh generation, artifact, issuance,
+and page IDs. An `additional_copy` has no predecessor. A `regeneration` names a
+persisted predecessor with the same class, assignment, and student, but does
+not mutate it. The predecessor may be explicitly superseded only after the
+replacement is issued.
+
+Because v1 deliberately has no generation or artifact index, issue #336 must
+generate fresh cryptographically random generation and artifact IDs for every
+additional copy; it must not infer reuse from equivalent content or paths.
+
+These generated-page records are not student submissions and do not prove that
+work was returned. Submission-manifest pages remain mutable, teacher-reviewed
+evidence state until issue #339 migrates that contract. Plain-paper submissions
+remain valid without a generation, issuance, page, route, scan, or evidence
+record.
+
+Issue #335 does not complete PDS2 PDF generation, route registration, QR
+rendering, scan intake, evidence filing, submission assembly, or CLI migration.
 
 ## Standards References
 
