@@ -25,6 +25,8 @@ from quillan.work_paths import (
     quillan_work_ref,
     relative_assignment_path,
     relative_submission_manifest_path,
+    response_page_issuance_path,
+    response_page_record_path,
     review_record_path,
     student_submission_dir,
     submission_manifest_path,
@@ -56,6 +58,8 @@ def test_work_reference_and_exact_layout_are_module_qualified(tmp_path: Path) ->
     assert paths.work_root == root
     assert paths.assignment_path == root / "assignment.json"
     assert paths.response_pages_dir == root / "response_pages"
+    assert paths.response_page_issuances_dir == root / "response_pages" / "issuances"
+    assert paths.response_page_records_dir == root / "response_pages" / "pages"
     assert paths.templates_dir == root / "templates"
     assert paths.scans_dir == root / "scans"
     assert paths.submissions_dir == root / "submissions"
@@ -69,11 +73,23 @@ def test_work_reference_and_exact_layout_are_module_qualified(tmp_path: Path) ->
     assert review_record_path(tmp_path, work_ref, STUDENT_ID) == (
         root / "submissions" / STUDENT_ID / "review.json"
     )
+    assert response_page_issuance_path(
+        tmp_path, work_ref, "iss_0123456789abcdef0123456789abcdef"
+    ) == root / "response_pages" / "issuances" / (
+        "iss_0123456789abcdef0123456789abcdef.json"
+    )
+    assert response_page_record_path(
+        tmp_path, work_ref, "pg_0123456789abcdef0123456789abcdef"
+    ) == root / "response_pages" / "pages" / (
+        "pg_0123456789abcdef0123456789abcdef.json"
+    )
     assert all(
         path.is_relative_to(root)
         for path in (
             paths.assignment_path,
             paths.response_pages_dir,
+            paths.response_page_issuances_dir,
+            paths.response_page_records_dir,
             paths.templates_dir,
             paths.scans_dir,
             paths.submissions_dir,
@@ -88,6 +104,8 @@ def test_work_reference_and_exact_layout_are_module_qualified(tmp_path: Path) ->
             paths.work_root,
             paths.assignment_path,
             paths.response_pages_dir,
+            paths.response_page_issuances_dir,
+            paths.response_page_records_dir,
             paths.templates_dir,
             paths.scans_dir,
             paths.submissions_dir,
@@ -118,6 +136,12 @@ def test_all_path_construction_is_side_effect_free(tmp_path: Path) -> None:
     student_submission_dir(workspace, work_ref, STUDENT_ID)
     submission_manifest_path(workspace, work_ref, STUDENT_ID)
     review_record_path(workspace, work_ref, STUDENT_ID)
+    response_page_issuance_path(
+        workspace, work_ref, "iss_0123456789abcdef0123456789abcdef"
+    )
+    response_page_record_path(
+        workspace, work_ref, "pg_0123456789abcdef0123456789abcdef"
+    )
 
     assert not workspace.exists()
 
@@ -198,6 +222,16 @@ def test_student_helpers_reject_other_modules_and_invalid_students(
         student_submission_dir(
             workspace, quillan_work_ref(CLASS_ID, ASSIGNMENT_ID), "../student"
         )
+    with pytest.raises(QuillanWorkPathError, match="module_id"):
+        response_page_issuance_path(
+            workspace,
+            other,
+            "iss_0123456789abcdef0123456789abcdef",
+        )
+    with pytest.raises(ValueError, match="page_id"):
+        response_page_record_path(
+            workspace, quillan_work_ref(CLASS_ID, ASSIGNMENT_ID), "../unsafe"
+        )
 
     assert module_work_dir(workspace, other) != quillan_work_paths(
         workspace, CLASS_ID, ASSIGNMENT_ID
@@ -223,6 +257,8 @@ def test_initializer_creates_only_static_layout_and_is_idempotent(
         "exports",
         "teacher-marker.txt",
     }
+    assert paths.response_page_issuances_dir.is_dir()
+    assert paths.response_page_records_dir.is_dir()
     assert not paths.assignment_path.exists()
     assert not (paths.work_root / "routes").exists()
     assert not list(paths.work_root.rglob("*.json"))
@@ -231,7 +267,16 @@ def test_initializer_creates_only_static_layout_and_is_idempotent(
 
 @pytest.mark.parametrize(
     "collision_name",
-    ["work_root", "response_pages_dir", "templates_dir", "scans_dir", "submissions_dir", "exports_dir"],
+    [
+        "work_root",
+        "response_pages_dir",
+        "response_page_issuances_dir",
+        "response_page_records_dir",
+        "templates_dir",
+        "scans_dir",
+        "submissions_dir",
+        "exports_dir",
+    ],
 )
 def test_initializer_preflights_all_wrong_type_collisions(
     tmp_path: Path, collision_name: str
@@ -252,7 +297,11 @@ def test_initializer_preflights_all_wrong_type_collisions(
         paths.submissions_dir,
         paths.exports_dir,
     ):
-        if required != collision and not required.is_relative_to(collision):
+        if (
+            required != collision
+            and not required.is_relative_to(collision)
+            and not collision.is_relative_to(required)
+        ):
             assert not required.exists()
 
 

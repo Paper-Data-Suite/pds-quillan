@@ -32,6 +32,8 @@ class QuillanWorkPaths:
     work_root: Path
     assignment_path: Path
     response_pages_dir: Path
+    response_page_issuances_dir: Path
+    response_page_records_dir: Path
     templates_dir: Path
     scans_dir: Path
     submissions_dir: Path
@@ -81,6 +83,12 @@ def quillan_work_paths(
         response_pages_dir=safe_module_work_descendant(
             workspace_root, work_ref, "response_pages"
         ),
+        response_page_issuances_dir=safe_module_work_descendant(
+            workspace_root, work_ref, Path("response_pages") / "issuances"
+        ),
+        response_page_records_dir=safe_module_work_descendant(
+            workspace_root, work_ref, Path("response_pages") / "pages"
+        ),
         templates_dir=safe_module_work_descendant(
             workspace_root, work_ref, "templates"
         ),
@@ -106,6 +114,40 @@ def student_submission_dir(
         workspace_root,
         validated_work,
         Path("submissions") / validated_student_id,
+    )
+
+
+def response_page_issuance_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    issuance_id: str,
+) -> Path:
+    """Return one exact immutable issuance path without filesystem access."""
+    from quillan.printable_response_records import validate_issuance_id
+
+    validated_work = _require_quillan_work_ref(work_ref)
+    validated_id = validate_issuance_id(issuance_id)
+    return safe_module_work_descendant(
+        workspace_root,
+        validated_work,
+        Path("response_pages") / "issuances" / f"{validated_id}.json",
+    )
+
+
+def response_page_record_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    page_id: str,
+) -> Path:
+    """Return one exact immutable response-page path without filesystem access."""
+    from quillan.printable_response_records import validate_page_id
+
+    validated_work = _require_quillan_work_ref(work_ref)
+    validated_id = validate_page_id(page_id)
+    return safe_module_work_descendant(
+        workspace_root,
+        validated_work,
+        Path("response_pages") / "pages" / f"{validated_id}.json",
     )
 
 
@@ -251,6 +293,8 @@ def _managed_directories(paths: QuillanWorkPaths) -> tuple[Path, ...]:
     return (
         paths.work_root,
         paths.response_pages_dir,
+        paths.response_page_issuances_dir,
+        paths.response_page_records_dir,
         paths.templates_dir,
         paths.scans_dir,
         paths.submissions_dir,
@@ -343,6 +387,8 @@ __all__ = [
     "quillan_work_ref",
     "relative_assignment_path",
     "relative_submission_manifest_path",
+    "response_page_issuance_path",
+    "response_page_record_path",
     "review_record_path",
     "student_submission_dir",
     "submission_manifest_path",
