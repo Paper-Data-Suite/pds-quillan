@@ -1,5 +1,26 @@
 # Quillan Data Contracts
 
+## Quillan response-page dispatch result
+
+`QuillanResponsePageDispatchResult` is a frozen, slotted runtime model. Its route ID
+comes from the resolved Core locator. Page, issuance, generation, artifact, class,
+assignment, student, logical-page, total-page, and page-role fields come from the
+immutable page and issuance context. Source scan ID, original filename, requested
+source page, retained path and relative path, SHA-256, intake timestamp, and intake
+date come from validated Core retained-source provenance.
+
+That provenance is one indivisible Core retention event. The aware intake timestamp,
+original filename, and SHA-256 generate the retained filename. The independently
+authoritative `intake_date` selects the `scans/source/YYYY-MM-DD/` bucket, including
+when Core receives an explicit date override. Quillan requires both values, the
+retained path, POSIX relative path, extension, and `scan_<retained stem>` identity to
+agree exactly. Original source filenames may contain no control or Unicode line- or
+paragraph-separator characters.
+
+The result is not persisted and contains no submission ID, routed-evidence path,
+display name, assignment title, or writable continuation flag. Continuation is
+derived from page role. Observation and submission persistence remain #339.
+
 The versioned, read-only selected-student diagnostic is defined separately in
 [`review_status_contract.md`](review_status_contract.md). It composes canonical
 assignment, submission-manifest, and review-record data without changing any of

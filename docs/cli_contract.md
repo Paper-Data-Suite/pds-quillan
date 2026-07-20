@@ -1,5 +1,14 @@
 # Quillan CLI Contract
 
+## Installed module availability
+
+The profile is discoverable as
+`paper_data_suite.modules: quillan = quillan.pds_module:get_module_profile` and is
+safe to load before a workspace or scan is selected. This does not migrate the
+teacher CLI or menu to PDS2 intake. QR extraction, mixed-module batch dispatch,
+retained-source orchestration, routed evidence, scan review, and submission assembly
+remain #338–#339 work.
+
 ## Direct Student Review Status
 
 `quillan review-status <class_id> <assignment_id> <student_id> [--format text|json]`
