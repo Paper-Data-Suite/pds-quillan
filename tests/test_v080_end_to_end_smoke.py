@@ -184,7 +184,9 @@ def test_v080_scan_review_export_end_to_end_smoke(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "assignment.json"
     )
@@ -208,7 +210,9 @@ def test_v080_scan_review_export_end_to_end_smoke(
             workspace
             / "classes"
             / CLASS_ID
-            / "assignments"
+            / "modules"
+            / "quillan"
+            / "work"
             / ASSIGNMENT_ID
             / "scans"
         ).glob("response_*.pdf")
@@ -314,7 +318,9 @@ def test_v080_scan_review_export_end_to_end_smoke(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -325,7 +331,9 @@ def test_v080_scan_review_export_end_to_end_smoke(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "exports"
         / "class_summary.csv"
@@ -334,7 +342,9 @@ def test_v080_scan_review_export_end_to_end_smoke(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "exports"
         / "standards_summary.csv"

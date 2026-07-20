@@ -36,7 +36,9 @@ def test_v06_synthetic_reviewable_evidence_workflow_is_non_destructive(
         tmp_path
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "scans"
     )
@@ -66,7 +68,9 @@ def test_v06_synthetic_reviewable_evidence_workflow_is_non_destructive(
         (
             Path("classes")
             / CLASS_ID
-            / "assignments"
+            / "modules"
+            / "quillan"
+            / "work"
             / ASSIGNMENT_ID
             / "submissions"
             / student_id

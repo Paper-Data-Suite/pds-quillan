@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -41,7 +42,9 @@ def test_review_record_paths_use_canonical_quillan_layout(tmp_path: Path) -> Non
         tmp_path
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -74,7 +77,8 @@ def test_review_record_paths_reject_invalid_identifiers(
     }
     identifiers[field] = value
 
-    with pytest.raises(ReviewRecordPathError, match=field):
+    expected_field = "work_id" if field == "assignment_id" else field
+    with pytest.raises(ReviewRecordPathError, match=expected_field):
         review_record_dir(tmp_path, **identifiers)
 
 
@@ -136,8 +140,23 @@ def test_parent_path_that_is_a_file_raises(tmp_path: Path) -> None:
 
     with pytest.raises(
         ReviewRecordPathError,
-        match="Could not create review record directory",
+        match="not a directory",
     ):
         write_review_record(path, _record())
 
     assert parent.read_text(encoding="utf-8") == "not a directory"
+
+
+def test_review_symlink_is_rejected_without_modifying_target(tmp_path: Path) -> None:
+    target = tmp_path / "outside.json"
+    target.write_text("original", encoding="utf-8")
+    path = tmp_path / "review.json"
+    try:
+        os.symlink(target, path)
+    except OSError as error:
+        pytest.skip(f"symlink creation is unavailable: {error}")
+
+    with pytest.raises(ReviewRecordPathError, match="symlink"):
+        write_review_record(path, _record(), overwrite=True)
+
+    assert target.read_text(encoding="utf-8") == "original"

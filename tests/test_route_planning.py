@@ -25,7 +25,7 @@ STUDENT_ID = "00107"
 @pytest.fixture
 def workspace(tmp_path: Path) -> Path:
     class_dir = tmp_path / "classes" / CLASS_ID
-    assignment_dir = class_dir / "assignments" / ASSIGNMENT_ID
+    assignment_dir = class_dir / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     assignment_dir.mkdir(parents=True)
 
     with (class_dir / "roster.csv").open(
@@ -131,7 +131,9 @@ def test_valid_decoded_page_returns_expected_route_plan(
             workspace
             / "classes"
             / CLASS_ID
-            / "assignments"
+            / "modules"
+            / "quillan"
+            / "work"
             / ASSIGNMENT_ID
             / "assignment.json"
         ),
@@ -140,7 +142,9 @@ def test_valid_decoded_page_returns_expected_route_plan(
             workspace
             / "classes"
             / CLASS_ID
-            / "assignments"
+            / "modules"
+            / "quillan"
+            / "work"
             / ASSIGNMENT_ID
             / "scans"
         ),
@@ -148,7 +152,9 @@ def test_valid_decoded_page_returns_expected_route_plan(
             workspace
             / "classes"
             / CLASS_ID
-            / "assignments"
+            / "modules"
+            / "quillan"
+            / "work"
             / ASSIGNMENT_ID
             / "submissions"
             / STUDENT_ID
@@ -243,7 +249,9 @@ def test_invalid_assignment_config_returns_processing_error(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "assignment.json"
     )
@@ -264,7 +272,9 @@ def test_assignment_class_mismatch_returns_route_mismatch(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "assignment.json"
     )
@@ -285,7 +295,9 @@ def test_assignment_id_mismatch_returns_route_mismatch(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "assignment.json"
     )

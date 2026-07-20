@@ -26,7 +26,7 @@ VALID_PAYLOAD = (
 @pytest.fixture
 def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     class_dir = tmp_path / "classes" / CLASS_ID
-    assignment_dir = class_dir / "assignments" / ASSIGNMENT_ID
+    assignment_dir = class_dir / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     assignment_dir.mkdir(parents=True)
 
     with (class_dir / "roster.csv").open(
@@ -130,7 +130,9 @@ def test_route_scan_successfully_files_retained_and_routed_evidence(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "scans"
         / "response_00107_pg_002.pdf"
@@ -164,7 +166,9 @@ def test_route_scan_preserves_duplicate_routed_evidence(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "scans"
         / "response_00107_pg_002__dup_001.pdf"

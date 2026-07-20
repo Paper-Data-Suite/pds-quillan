@@ -87,7 +87,7 @@ def test_dry_run_is_full_preflight_with_no_writes(
     assert "No files were written." in output
     assert str(tmp_path) not in output
     assert not (
-        tmp_path / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "templates"
+        tmp_path / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "templates"
     ).exists()
 
 
@@ -101,7 +101,9 @@ def test_dry_run_reports_existing_target_without_touching_it(
         tmp_path
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "templates"
         / "printable_response_pages.pdf"
@@ -143,7 +145,7 @@ def test_generation_is_noninteractive_and_uses_default_page_count(
     assert "Pages per student: 1" in output
     assert "Total packet pages: 2" in output
     assert "Action: created" in output
-    assert f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/templates/" in output
+    assert f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/templates/" in output
     assert str(tmp_path) not in output
 
 

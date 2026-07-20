@@ -44,7 +44,7 @@ def _manifest() -> dict[str, Any]:
                     {
                         "evidence_id": "evidence_001",
                         "routed_evidence_path": (
-                            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/"
+                            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/"
                             "scans/response_00107_pg_001.pdf"
                         ),
                         "evidence_role": "selected",
@@ -112,7 +112,7 @@ def test_creates_v2_review_record_with_private_note(tmp_path: Path) -> None:
     )
 
     expected_relative_path = (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
         f"{STUDENT_ID}/review.json"
     )
     assert result == AddedReviewNote(
@@ -255,11 +255,11 @@ def test_identity_mismatch_is_rejected_without_writing(
     else:
         review[field] = value
         review["submission_manifest_path"] = (
-            f"classes/{review['class_id']}/assignments/{review['assignment_id']}"
+            f"classes/{review['class_id']}/modules/quillan/work/{review['assignment_id']}"
             f"/submissions/{review['student_id']}/submission.json"
         )
         review["assignment_path"] = (
-            f"classes/{review['class_id']}/assignments/{review['assignment_id']}/assignment.json"
+            f"classes/{review['class_id']}/modules/quillan/work/{review['assignment_id']}/assignment.json"
         )
     _write_manifest(tmp_path, manifest)
     review_path = _write_review(tmp_path, review) if record_kind == "review" else None

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 import pytest
-from pds_core.routes import assignment_templates_dir
+from quillan.storage import assignment_templates_dir
 from pypdf import PdfReader
 
 import quillan.printable_response as printable_response

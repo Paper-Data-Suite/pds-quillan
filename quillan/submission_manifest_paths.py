@@ -8,9 +8,14 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from pds_core.identifiers import IdentifierValidationError, validate_identifier
-
 from quillan.submission_manifest import validate_submission_manifest
+from quillan.work_paths import (
+    QuillanWorkPathError,
+    _preflight_arbitrary_file_destination,
+    quillan_work_ref,
+    student_submission_dir,
+    submission_manifest_path as work_submission_manifest_path,
+)
 
 
 class SubmissionManifestPathError(ValueError):
@@ -24,18 +29,11 @@ def submission_dir(
     student_id: str,
 ) -> Path:
     """Return the canonical directory for one student's Quillan submission."""
-    _validate_identifier(class_id, "class_id")
-    _validate_identifier(assignment_id, "assignment_id")
-    _validate_identifier(student_id, "student_id")
-    return (
-        Path(workspace_root)
-        / "classes"
-        / class_id
-        / "assignments"
-        / assignment_id
-        / "submissions"
-        / student_id
-    )
+    try:
+        work_ref = quillan_work_ref(class_id, assignment_id)
+        return student_submission_dir(workspace_root, work_ref, student_id)
+    except ValueError as error:
+        raise SubmissionManifestPathError(str(error)) from error
 
 
 def submission_manifest_path(
@@ -45,10 +43,11 @@ def submission_manifest_path(
     student_id: str,
 ) -> Path:
     """Return the canonical submission.json path for one student."""
-    return (
-        submission_dir(workspace_root, class_id, assignment_id, student_id)
-        / "submission.json"
-    )
+    try:
+        work_ref = quillan_work_ref(class_id, assignment_id)
+        return work_submission_manifest_path(workspace_root, work_ref, student_id)
+    except ValueError as error:
+        raise SubmissionManifestPathError(str(error)) from error
 
 
 def write_submission_manifest(
@@ -60,6 +59,11 @@ def write_submission_manifest(
     """Validate and safely write a submission manifest as UTF-8 JSON."""
     validate_submission_manifest(manifest)
     manifest_path = Path(path)
+
+    try:
+        _preflight_arbitrary_file_destination(manifest_path)
+    except QuillanWorkPathError as error:
+        raise SubmissionManifestPathError(str(error)) from error
 
     if not overwrite and manifest_path.exists():
         raise SubmissionManifestPathError(
@@ -117,10 +121,3 @@ def write_submission_manifest(
                 pass
 
     return manifest_path
-
-
-def _validate_identifier(value: str, field: str) -> None:
-    try:
-        validate_identifier(value, field)
-    except IdentifierValidationError as error:
-        raise SubmissionManifestPathError(str(error)) from error

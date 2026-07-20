@@ -30,6 +30,7 @@ from quillan.submission_manifest_paths import (
     SubmissionManifestPathError,
     submission_manifest_path,
 )
+from quillan.work_paths import relative_assignment_path
 
 _SEQUENTIAL_REQUIREMENT_CHECK_ID = re.compile(r"^requirement_check_(\d{4})$")
 
@@ -159,9 +160,7 @@ def set_requirement_check(
             submission_manifest_path=_workspace_relative_path(
                 manifest_path, resolved_root, "submission manifest"
             ),
-            assignment_path=(
-                f"classes/{class_id}/assignments/{assignment_id}/assignment.json"
-            ),
+            assignment_path=relative_assignment_path(class_id, assignment_id),
             created_at=normalized_updated_at,
         )
         updated_review["review_state"] = "requirements_checked"
@@ -331,9 +330,7 @@ def set_minimum_requirement_outcome(
             submission_manifest_path=_workspace_relative_path(
                 manifest_path, resolved_root, "submission manifest"
             ),
-            assignment_path=(
-                f"classes/{class_id}/assignments/{assignment_id}/assignment.json"
-            ),
+            assignment_path=relative_assignment_path(class_id, assignment_id),
             created_at=normalized_updated_at,
         )
 

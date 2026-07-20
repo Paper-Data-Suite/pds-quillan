@@ -28,7 +28,7 @@ SOURCE_BYTES = b"%PDF-1.4\nsynthetic scan evidence\n%%EOF\n"
 @pytest.fixture
 def workspace(tmp_path: Path) -> Path:
     assignment_dir = (
-        tmp_path / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID
+        tmp_path / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     )
     assignment_dir.mkdir(parents=True)
     (assignment_dir / "assignment.json").write_text(
@@ -43,7 +43,7 @@ def workspace(tmp_path: Path) -> Path:
 @pytest.fixture
 def route_plan(workspace: Path) -> RoutePlan:
     assignment_dir = (
-        workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID
+        workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     )
     return RoutePlan(
         class_id=CLASS_ID,
@@ -101,7 +101,7 @@ def test_files_retained_source_and_routed_evidence_with_provenance(
     )
     assert result.routed_evidence_path == expected_routed_path
     assert result.routed_evidence_relative_path == (
-        "classes/english12_p3_synthetic/assignments/"
+        "classes/english12_p3_synthetic/modules/quillan/work/"
         "essay_01_synthetic/scans/response_00107_pg_002.pdf"
     )
     assert result.class_id == CLASS_ID
@@ -436,7 +436,9 @@ def test_mismatched_routed_evidence_dir_is_rejected_before_writes(
             workspace
             / "classes"
             / CLASS_ID
-            / "assignments"
+            / "modules"
+            / "quillan"
+            / "work"
             / "different_assignment"
             / "scans"
         ),

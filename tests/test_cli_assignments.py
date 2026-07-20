@@ -104,7 +104,7 @@ def test_create_show_validate_and_overwrite_safety(
     workspace: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main(_args("--yes", "--paragraphs-min", "4")) == 0
-    path = workspace / "classes/english10_p2/assignments/literary_analysis/assignment.json"
+    path = workspace / "classes/english10_p2/modules/quillan/work/literary_analysis/assignment.json"
     assignment = json.loads(path.read_text(encoding="utf-8"))
     assert assignment["schema_version"] == "2"
     assert assignment["module"] == "quillan"
@@ -131,7 +131,7 @@ def test_dry_run_and_prompt_file_preserve_content(
     workspace: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main(_args("--dry-run")) == 0
-    target = workspace / "classes/english10_p2/assignments/literary_analysis"
+    target = workspace / "classes/english10_p2/modules/quillan/work/literary_analysis"
     assert not target.exists()
     prompt_file = tmp_path / "prompt.txt"
     prompt_file.write_text("Line one.\nLine two.\n", encoding="utf-8")
@@ -152,7 +152,7 @@ def test_invalid_standards_and_path_identity_fail_cleanly(
     assert main(bad) == 1
     assert "assignment was not created" in capsys.readouterr().out
     assert main(_args("--yes")) == 0
-    path = workspace / "classes/english10_p2/assignments/literary_analysis/assignment.json"
+    path = workspace / "classes/english10_p2/modules/quillan/work/literary_analysis/assignment.json"
     data = json.loads(path.read_text(encoding="utf-8"))
     data["assignment_id"] = "different_id"
     path.write_text(json.dumps(data), encoding="utf-8")
@@ -164,7 +164,7 @@ def test_canonical_validate_rejects_assignment_missing_contract_metadata(
     workspace: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main(_args("--yes")) == 0
-    path = workspace / "classes/english10_p2/assignments/literary_analysis/assignment.json"
+    path = workspace / "classes/english10_p2/modules/quillan/work/literary_analysis/assignment.json"
     assignment = json.loads(path.read_text(encoding="utf-8"))
     for field in ("created_at", "updated_at", "module_details"):
         assignment.pop(field)

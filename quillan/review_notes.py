@@ -29,6 +29,7 @@ from quillan.submission_manifest_paths import (
     submission_manifest_path,
 )
 from quillan.submission_guidance import missing_submission_guidance
+from quillan.work_paths import relative_assignment_path
 
 _SEQUENTIAL_NOTE_ID = re.compile(r"^note_(\d{4})$")
 
@@ -127,9 +128,7 @@ def add_review_note(
             assignment_id=assignment_id,
             student_id=student_id,
             submission_manifest_path=manifest_relative_path,
-            assignment_path=(
-                f"classes/{class_id}/assignments/{assignment_id}/assignment.json"
-            ),
+            assignment_path=relative_assignment_path(class_id, assignment_id),
             created_at=normalized_created_at,
         )
 

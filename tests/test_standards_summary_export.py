@@ -124,7 +124,7 @@ def test_focus_standard_rows_follow_assignment_order_and_count_ratings(
     stale_pdf_path.write_bytes(b"%PDF")
     first_review["exports"]["feedback_pdf"] = {
         "path": (
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
             "00100/exports/feedback.pdf"
         ),
         "generated_at": TIMESTAMP,
@@ -135,7 +135,7 @@ def test_focus_standard_rows_follow_assignment_order_and_count_ratings(
     stale_review = json.loads(second_review_path.read_text(encoding="utf-8"))
     stale_review["exports"]["feedback_pdf"] = {
         "path": (
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
             "00200/exports/feedback.pdf"
         ),
         "generated_at": TIMESTAMP,
@@ -170,7 +170,7 @@ def test_focus_standard_rows_follow_assignment_order_and_count_ratings(
         assignment_id=ASSIGNMENT_ID,
         summary_path=expected_path,
         summary_relative_path=(
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/exports/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/exports/"
             "standards_summary.csv"
         ),
         row_count=2,

@@ -51,7 +51,7 @@ def test_cli_exports_standards_rows_and_prints_summary(
     assert "Identity mismatch: 0" in output
     assert "Overwrote existing: no" in output
     relative = (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/exports/"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/exports/"
         "standards_summary.csv"
     )
     assert f"Summary file: {relative}" in output

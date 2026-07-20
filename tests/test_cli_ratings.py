@@ -80,7 +80,9 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         tmp_path
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "assignment.json"
     )
@@ -156,7 +158,7 @@ def test_bare_namespace_prints_help_without_resolving_workspace(
 def test_list_without_review_is_ordered_and_strictly_read_only(
     workspace: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assignment_path = workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+    assignment_path = workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     manifest_path = submission_manifest_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
     before = assignment_path.read_bytes(), manifest_path.read_bytes()
 
@@ -182,7 +184,7 @@ def test_set_creates_then_replaces_without_inference_or_duplicate(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     path = _write_review(workspace)
-    assignment_path = workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+    assignment_path = workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     manifest_path = submission_manifest_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
     immutable = assignment_path.read_bytes(), manifest_path.read_bytes()
     monkeypatch.setattr("builtins.input", lambda *_args: pytest.fail("CLI prompted"))

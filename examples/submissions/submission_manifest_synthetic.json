@@ -15,7 +15,7 @@
       "evidence": [
         {
           "evidence_id": "evidence_001",
-          "routed_evidence_path": "classes/english12_p3_synthetic/assignments/essay_01_synthetic/scans/response_00107_pg_001.pdf",
+          "routed_evidence_path": "classes/english12_p3_synthetic/modules/quillan/work/essay_01_synthetic/scans/response_00107_pg_001.pdf",
           "evidence_role": "selected",
           "evidence_state": "active",
           "duplicate_number": null,
@@ -44,7 +44,7 @@
       "evidence": [
         {
           "evidence_id": "evidence_002",
-          "routed_evidence_path": "classes/english12_p3_synthetic/assignments/essay_01_synthetic/scans/response_00107_pg_003.pdf",
+          "routed_evidence_path": "classes/english12_p3_synthetic/modules/quillan/work/essay_01_synthetic/scans/response_00107_pg_003.pdf",
           "evidence_role": "candidate",
           "evidence_state": "active",
           "duplicate_number": null,
@@ -60,7 +60,7 @@
         },
         {
           "evidence_id": "evidence_003",
-          "routed_evidence_path": "classes/english12_p3_synthetic/assignments/essay_01_synthetic/scans/response_00107_pg_003__dup_001.pdf",
+          "routed_evidence_path": "classes/english12_p3_synthetic/modules/quillan/work/essay_01_synthetic/scans/response_00107_pg_003__dup_001.pdf",
           "evidence_role": "candidate",
           "evidence_state": "active",
           "duplicate_number": 1,

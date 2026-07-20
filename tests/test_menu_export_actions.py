@@ -66,7 +66,7 @@ def _exit_after_selected_student_action_to_main() -> list[str]:
 
 def _write_workspace(root: Path) -> None:
     class_dir = root / "classes" / CLASS_ID
-    assignment_dir = class_dir / "assignments" / ASSIGNMENT_ID
+    assignment_dir = class_dir / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     assignment_dir.mkdir(parents=True)
 
     with (class_dir / "roster.csv").open(
@@ -146,7 +146,9 @@ def _write_workspace(root: Path) -> None:
         root
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "scans"
         / "response_stu_0001_pg_001.pdf"
@@ -176,7 +178,7 @@ def _write_manifest(root: Path) -> Path:
                     {
                         "evidence_id": "evidence_001",
                         "routed_evidence_path": (
-                            f"classes/{CLASS_ID}/assignments/"
+                            f"classes/{CLASS_ID}/modules/quillan/work/"
                             f"{ASSIGNMENT_ID}/scans/"
                             "response_stu_0001_pg_001.pdf"
                         ),
@@ -317,7 +319,9 @@ def test_assignment_review_dashboard_hides_unused_duplicate_files(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "scans"
         / "response_stu_0001_pg_001__dup_001.pdf"
@@ -382,7 +386,9 @@ def test_menu_export_student_feedback_creates_feedback_file(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -439,7 +445,9 @@ def test_menu_export_student_feedback_pdf_creates_pdf_and_updates_metadata(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -480,7 +488,9 @@ def test_menu_export_class_summary_creates_summary_file(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "exports"
         / "class_summary.csv"
@@ -511,7 +521,9 @@ def test_menu_export_standards_summary_creates_summary_file(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "exports"
         / "standards_summary.csv"
@@ -542,7 +554,9 @@ def test_menu_export_feedback_invalid_overwrite_cancels_without_writing(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -573,7 +587,9 @@ def test_menu_export_feedback_reports_missing_review_record(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -606,7 +622,9 @@ def test_menu_export_feedback_requires_overwrite_when_existing(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -642,7 +660,9 @@ def test_menu_export_feedback_overwrites_existing_export(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -676,7 +696,9 @@ def test_menu_export_class_summary_requires_overwrite_when_existing(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "exports"
     )
@@ -708,7 +730,9 @@ def test_menu_export_class_summary_overwrites_existing_export(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "exports"
     )
@@ -739,7 +763,9 @@ def test_menu_export_class_summary_invalid_overwrite_cancels_without_writing(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "exports"
         / "class_summary.csv"
@@ -768,7 +794,9 @@ def test_menu_export_standards_summary_overwrites_existing_export(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "exports"
     )
@@ -800,7 +828,9 @@ def test_menu_export_standards_summary_requires_overwrite_when_existing(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "exports"
     )
@@ -831,7 +861,9 @@ def test_menu_export_standards_summary_invalid_overwrite_cancels_without_writing
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "exports"
         / "standards_summary.csv"

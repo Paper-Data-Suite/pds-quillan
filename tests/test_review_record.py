@@ -143,7 +143,7 @@ def _populated_record() -> dict[str, Any]:
     record["exports"] = {
         "feedback_pdf": {
             "path": (
-                f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+                f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
                 f"{STUDENT_ID}/feedback.pdf"
             ),
             "generated_at": LATER_TIMESTAMP,
@@ -185,7 +185,7 @@ def test_build_empty_review_record_returns_valid_v2_record() -> None:
     assert record["schema_version"] == "2"
     assert record["review_state"] == "not_started"
     assert record["assignment_path"] == (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/assignment.json"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/assignment.json"
     )
     assert record["minimum_requirement_outcome"] == {
         "status": "not_checked",
@@ -340,7 +340,7 @@ def test_invalid_identifier_is_rejected(field: str, value: str) -> None:
         ("submission_manifest_path", "submission.json"),
         ("submission_manifest_path", r"C:\workspace\submission.json"),
         ("assignment_path", "assignment.json"),
-        ("assignment_path", f"classes/{CLASS_ID}/assignments/../{ASSIGNMENT_ID}/assignment.json"),
+        ("assignment_path", f"classes/{CLASS_ID}/modules/quillan/work/../{ASSIGNMENT_ID}/assignment.json"),
     ],
 )
 def test_invalid_canonical_paths_are_rejected(field: str, value: str) -> None:

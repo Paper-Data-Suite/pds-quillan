@@ -54,7 +54,7 @@ def _manifest() -> dict[str, Any]:
                     {
                         "evidence_id": "evidence_001",
                         "routed_evidence_path": (
-                            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/"
+                            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/"
                             "scans/response_00107_pg_001.pdf"
                         ),
                         "evidence_role": "selected",
@@ -111,7 +111,7 @@ def test_success_updates_state_and_timestamp_only(tmp_path: Path) -> None:
     )
 
     expected_relative_path = (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
         f"{STUDENT_ID}/submission.json"
     )
     assert result == UpdatedSubmissionReviewState(
@@ -358,7 +358,7 @@ def test_cli_success_prints_teacher_context(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     relative_path = (
-        "classes/class/assignments/assignment/submissions/00107/submission.json"
+        "classes/class/modules/quillan/work/assignment/submissions/00107/submission.json"
     )
     updated = UpdatedSubmissionReviewState(
         class_id=CLASS_ID,

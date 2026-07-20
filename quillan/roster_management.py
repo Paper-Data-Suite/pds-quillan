@@ -243,11 +243,6 @@ def write_roster_creation(
 
 def _remove_new_empty_class_directories(plan: RosterCreationPlan) -> None:
     class_dir = plan.roster_path.parent
-    assignments_dir = class_dir / "assignments"
-    try:
-        assignments_dir.rmdir()
-    except OSError:
-        pass
     try:
         class_dir.rmdir()
     except OSError:

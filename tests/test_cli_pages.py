@@ -25,7 +25,7 @@ def _evidence(evidence_id: str, page_number: int, role: str) -> dict[str, Any]:
     return {
         "evidence_id": evidence_id,
         "routed_evidence_path": (
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/scans/"
             f"response_{STUDENT_ID}_pg_{page_number:03d}.pdf"
         ),
         "evidence_role": role,

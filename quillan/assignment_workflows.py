@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import unicodedata
 from collections.abc import Mapping, Sequence
@@ -28,6 +29,13 @@ from quillan.assignments import (
 )
 from quillan.assignment_picker import prompt_assignment_choice
 from quillan.storage import assignment_config_path
+from quillan.work_paths import (
+    QuillanWorkPathError,
+    initialize_managed_work_layout,
+    preflight_managed_work_layout,
+    preflight_work_file_destination,
+    quillan_work_paths,
+)
 
 _NUMERIC_REQUIREMENTS = (
     "paragraphs_min",
@@ -190,10 +198,20 @@ def write_assignment_config(
             "Assignment class_ids must include the selected class_id."
         )
     assignment_id = str(assignment_data["assignment_id"])
-    path = assignment_config_path(workspace_root, class_id, assignment_id)
-    if path.exists() and not overwrite:
+    paths = quillan_work_paths(workspace_root, class_id, assignment_id)
+    path = paths.assignment_path
+    if path.is_file() and not path.is_symlink() and not overwrite:
         raise FileExistsError(f"Assignment config already exists: {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        preflight_managed_work_layout(paths)
+        preflight_work_file_destination(
+            workspace_root, paths.work_ref, "assignment.json"
+        )
+    except QuillanWorkPathError as error:
+        raise AssignmentConfigError(str(error)) from error
+    if not overwrite and os.path.lexists(path):
+        raise FileExistsError(f"Assignment config already exists: {path}")
+    initialize_managed_work_layout(paths)
     path.write_text(
         json.dumps(assignment_data, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",

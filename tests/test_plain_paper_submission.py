@@ -27,7 +27,7 @@ TIMESTAMP = "2026-07-12T12:30:00-04:00"
 @pytest.fixture
 def workspace(tmp_path: Path) -> Path:
     class_dir = tmp_path / "classes" / CLASS_ID
-    assignment_dir = class_dir / "assignments" / ASSIGNMENT_ID
+    assignment_dir = class_dir / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     assignment_dir.mkdir(parents=True)
     with (class_dir / "roster.csv").open("w", encoding="utf-8", newline="") as file:
         writer = csv.DictWriter(
@@ -146,7 +146,9 @@ def test_rejects_orphan_review_without_writing_manifest(workspace: Path) -> None
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -226,7 +228,9 @@ def test_cli_creates_plain_paper_submission(
         cli_workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -267,7 +271,7 @@ def test_cli_dry_run_validates_without_writing(
     )
 
     assert result == 0
-    assert not (cli_workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "submissions").exists()
+    assert not (cli_workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "submissions").exists()
     output = capsys.readouterr().out
     assert "Plain-paper submission dry run:" in output
     assert "Would create submission manifest: classes/" in output
@@ -284,7 +288,7 @@ def test_cli_requires_confirmation_without_writing(
 
     assert result == 1
     assert "requires --yes or --dry-run" in capsys.readouterr().out
-    assert not (cli_workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "submissions").exists()
+    assert not (cli_workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "submissions").exists()
 
 
 def test_cli_flags_are_mutually_exclusive() -> None:
@@ -321,7 +325,7 @@ def test_cli_rejects_invalid_student(
 
     assert result == 1
     assert "not in the roster" in capsys.readouterr().out
-    assert not (cli_workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "submissions").exists()
+    assert not (cli_workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "submissions").exists()
 
 
 def test_cli_refuses_existing_manifest_without_changing_it(
@@ -348,7 +352,7 @@ def test_cli_refuses_existing_manifest_without_changing_it(
 def test_cli_refuses_orphan_review_without_changing_it(
     cli_workspace: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    student_dir = cli_workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "submissions" / STUDENT_ID
+    student_dir = cli_workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "submissions" / STUDENT_ID
     student_dir.mkdir(parents=True)
     review_path = student_dir / "review.json"
     review_path.write_bytes(b"existing review")
@@ -397,7 +401,9 @@ def test_cli_rejects_class_not_in_assignment(
         cli_workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "assignment.json"
     )
@@ -421,7 +427,9 @@ def test_cli_rejects_class_not_in_assignment(
         cli_workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
     ).exists()

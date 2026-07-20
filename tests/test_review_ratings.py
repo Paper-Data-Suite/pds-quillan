@@ -84,7 +84,7 @@ def _manifest() -> dict[str, Any]:
                     {
                         "evidence_id": "evidence_001",
                         "routed_evidence_path": (
-                            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/"
+                            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/"
                             "scans/response_00107_pg_001.pdf"
                         ),
                         "evidence_role": "selected",
@@ -104,7 +104,7 @@ def _manifest() -> dict[str, Any]:
 
 
 def _write_workspace(root: Path, review: dict[str, Any] | None = None) -> None:
-    assignment_dir = root / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID
+    assignment_dir = root / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     assignment_dir.mkdir(parents=True)
     (assignment_dir / "assignment.json").write_text(
         json.dumps(_assignment()),

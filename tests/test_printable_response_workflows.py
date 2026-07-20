@@ -111,7 +111,9 @@ def _write_assignment(
         workspace_root
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "assignment.json"
     )
@@ -121,6 +123,104 @@ def _write_assignment(
         encoding="utf-8",
     )
     return path
+
+
+def _write_discovered_assignment(
+    workspace_root: Path,
+    assignment_id: str,
+    assignment: dict[str, object] | None = None,
+) -> Path:
+    value = dict(assignment or _assignment())
+    if assignment is None:
+        value["assignment_id"] = assignment_id
+    path = (
+        workspace_root
+        / "classes"
+        / CLASS_ID
+        / "modules"
+        / "quillan"
+        / "work"
+        / assignment_id
+        / "assignment.json"
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value), encoding="utf-8")
+    return path
+
+
+def test_discovery_is_direct_deterministic_and_module_isolated(
+    tmp_path: Path,
+) -> None:
+    _write_discovered_assignment(tmp_path, "z_assignment")
+    _write_discovered_assignment(tmp_path, "A_assignment")
+    nested = (
+        tmp_path
+        / "classes"
+        / CLASS_ID
+        / "modules"
+        / "quillan"
+        / "work"
+        / "nested"
+        / "extra"
+        / "assignment.json"
+    )
+    nested.parent.mkdir(parents=True)
+    nested.write_text(json.dumps(_assignment()), encoding="utf-8")
+    sibling = (
+        tmp_path
+        / "classes"
+        / CLASS_ID
+        / "modules"
+        / "scoreform"
+        / "work"
+        / ASSIGNMENT_ID
+        / "assignment.json"
+    )
+    sibling.parent.mkdir(parents=True)
+    sibling.write_text(json.dumps(_assignment()), encoding="utf-8")
+    legacy = (
+        tmp_path
+        / "classes"
+        / CLASS_ID
+        / "assignments"
+        / ASSIGNMENT_ID
+        / "assignment.json"
+    )
+    legacy.parent.mkdir(parents=True)
+    legacy.write_text(json.dumps(_assignment()), encoding="utf-8")
+
+    choices = workflows.discover_assignment_configs(tmp_path, CLASS_ID)
+
+    assert [choice.assignment_id for choice in choices] == [
+        "A_assignment",
+        "z_assignment",
+    ]
+    assert legacy.is_file()
+
+
+def test_discovery_reports_malformed_and_identity_mismatch(tmp_path: Path) -> None:
+    malformed = _write_discovered_assignment(tmp_path, "bad_json")
+    malformed.write_text("{", encoding="utf-8")
+    _write_discovered_assignment(
+        tmp_path,
+        "folder_id",
+        {**_assignment(), "assignment_id": "record_id"},
+    )
+
+    choices = workflows.discover_assignment_configs(tmp_path, CLASS_ID)
+
+    assert [choice.assignment_id for choice in choices] == ["bad_json", "folder_id"]
+    assert choices[0].error is not None
+    assert "not valid JSON" in choices[0].error
+    assert choices[1].error is not None
+    assert "does not match" in choices[1].error
+    assert malformed.read_text(encoding="utf-8") == "{"
+
+
+def test_discovery_absent_collection_is_pure(tmp_path: Path) -> None:
+    workspace = tmp_path / "absent"
+    assert workflows.discover_assignment_configs(workspace, CLASS_ID) == ()
+    assert not workspace.exists()
 
 
 @pytest.mark.parametrize("value", ["0", "-1", "abc", "1.5"])
@@ -152,7 +252,9 @@ def test_generate_class_packet_happy_path(
         tmp_path
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "templates"
         / "printable_response_pages.pdf"

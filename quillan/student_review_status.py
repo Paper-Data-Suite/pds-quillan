@@ -15,6 +15,7 @@ from pds_core.rosters import RosterError, student_display_name
 from quillan.assignment_submission_assembly import discover_assignment_routed_evidence_status
 from quillan.assignment_summary_context import feedback_status, relative_path_for
 from quillan.assignments import AssignmentConfigError, load_assignment_config
+from quillan.storage import assignment_config_path
 from quillan.feedback_export import feedback_export_path, feedback_pdf_export_path
 from quillan.minimum_requirement_review import configured_requirements
 from quillan.plain_paper_submission import is_plain_paper_submission
@@ -83,7 +84,7 @@ def build_student_review_status(
         raise StudentReviewStatusError(str(error)) from error
 
     root = Path(workspace_root).resolve(strict=False)
-    assignment_path = root / "classes" / class_id / "assignments" / assignment_id / "assignment.json"
+    assignment_path = assignment_config_path(root, class_id, assignment_id)
     try:
         assignment = load_assignment_config(assignment_path)
     except (OSError, AssignmentConfigError) as error:

@@ -19,8 +19,12 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen.canvas import Canvas
 
 from quillan.assignments import load_assignment_config
-from quillan.payloads import build_response_payload
-from quillan.storage import assignment_templates_dir
+from quillan.work_paths import (
+    initialize_managed_work_layout,
+    preflight_managed_work_layout,
+    preflight_work_file_destination,
+    quillan_work_paths,
+)
 
 PRINTABLE_RESPONSE_FILENAME: Final = "printable_response_pages.pdf"
 StudentInput: TypeAlias = StudentRecord | Mapping[str, str]
@@ -51,6 +55,8 @@ def build_response_page_context(
     class_label: str | None = None,
 ) -> ResponsePageContext:
     """Build validated display and routing data for one response page."""
+    from quillan.payloads import build_response_payload
+
     display_name = _require_display_text(student_display_name, "student_display_name")
     resolved_assignment_title = _optional_display_text(
         assignment_title, assignment_id, "assignment_title"
@@ -104,9 +110,17 @@ def generate_printable_response_pdf(
         for page_number in range(1, pages_per_student + 1)
     ]
 
-    output_dir = assignment_templates_dir(workspace_root, class_id, assignment_id)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / PRINTABLE_RESPONSE_FILENAME
+    paths = quillan_work_paths(workspace_root, class_id, assignment_id)
+    output_path = paths.templates_dir / PRINTABLE_RESPONSE_FILENAME
+    preflight_managed_work_layout(paths)
+    validated_output = preflight_work_file_destination(
+        workspace_root,
+        paths.work_ref,
+        Path("templates") / PRINTABLE_RESPONSE_FILENAME,
+    )
+    if validated_output != output_path:
+        raise ValueError("Printable response destination is not canonical.")
+    initialize_managed_work_layout(paths)
 
     pdf = Canvas(str(output_path), pagesize=letter)
     pdf.setTitle("Quillan Printable Writing Response Pages")

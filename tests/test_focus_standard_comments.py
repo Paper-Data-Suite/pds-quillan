@@ -173,7 +173,7 @@ def test_saving_reusable_comment_creates_default_set_with_teacher_text(
             "assignment_id": "essay_01_synthetic",
             "student_id": "00107",
             "review_path": (
-                "classes/english12_p3_synthetic/assignments/essay_01_synthetic/"
+                "classes/english12_p3_synthetic/modules/quillan/work/essay_01_synthetic/"
                 "submissions/00107/review.json"
             ),
             "feedback_comment_id": "feedback_comment_0001",

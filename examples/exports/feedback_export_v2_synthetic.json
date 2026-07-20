@@ -6,13 +6,13 @@
 "primary_export_format": "pdf",
 "companion_export_format": "markdown",
 "source_records": {
-"assignment_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/assignment.json",
-"submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/submission.json",
-"review_record_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/review.json"
+"assignment_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/assignment.json",
+"submission_manifest_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/submission.json",
+"review_record_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/review.json"
 },
 "export_metadata": {
 "feedback_pdf": {
-"path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/exports/feedback.pdf",
+"path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/exports/feedback.pdf",
 "format": "pdf",
 "generated_at": "2026-07-02T00:00:00+00:00",
 "source_review_updated_at": "2026-07-02T00:00:00+00:00",
@@ -21,7 +21,7 @@
 "module_details": {}
 },
 "feedback_markdown": {
-"path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/exports/feedback.md",
+"path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/exports/feedback.md",
 "format": "markdown",
 "generated_at": "2026-07-02T00:00:00+00:00",
 "source_review_updated_at": "2026-07-02T00:00:00+00:00",

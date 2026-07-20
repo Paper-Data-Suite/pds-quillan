@@ -67,7 +67,7 @@ def test_bare_feedback_prints_help_without_resolving_workspace(
 def test_show_without_review_is_ordered_read_only(
     workspace: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assignment = workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+    assignment = workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     submission = assignment.parent / "submissions" / STUDENT_ID / "submission.json"
     before = assignment.read_bytes(), submission.read_bytes()
     assert main(["feedback", "show", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
