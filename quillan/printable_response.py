@@ -1,14 +1,15 @@
-"""Printable PDF generation for Quillan writing-response pages."""
+"""Managed PDF renderer for persisted and verified PDS2 response pages."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from io import BytesIO
+import os
 from pathlib import Path
-from typing import Final, Mapping, Sequence, TypeAlias, cast
+import re
+from typing import Final
 
-from pds_core.rosters import StudentRecord, load_roster, student_display_name
 import qrcode
+from pds_core.routing_models import ModuleWorkRef, RoutingModelError
 from qrcode.constants import ERROR_CORRECT_M
 from qrcode.image.pil import PilImage
 from reportlab.lib.colors import HexColor
@@ -18,155 +19,155 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen.canvas import Canvas
 
-from quillan.assignments import load_assignment_config
+from quillan.printable_response_records import (
+    PrintableResponseRecordSet,
+    PrintableResponseRecordValidationError,
+    validate_printable_response_record_set,
+)
+from quillan.printable_response_persistence import (
+    PersistedPrintableResponseRecordSet,
+    PrintableResponsePersistenceError,
+)
+from quillan.printable_response_routes import (
+    PersistedPrintableResponseRouteSet,
+    PrintableResponseRouteError,
+    RegisteredPrintableResponsePageRoute,
+    validate_registered_printable_response_route_set,
+)
 from quillan.work_paths import (
-    initialize_managed_work_layout,
-    preflight_managed_work_layout,
+    QuillanWorkPathError,
+    _is_link_like,
     preflight_work_file_destination,
     quillan_work_paths,
+    quillan_work_ref,
 )
 
-PRINTABLE_RESPONSE_FILENAME: Final = "printable_response_pages.pdf"
-StudentInput: TypeAlias = StudentRecord | Mapping[str, str]
+PRINTABLE_RESPONSE_FILENAME: Final[str] = "printable_response_pages.pdf"
+_TEMPORARY_FILENAME = re.compile(
+    r"^\.printable_response_pages\.[0-9a-f]{16}\.tmp\.pdf$"
+)
 
 
-@dataclass(frozen=True)
-class ResponsePageContext:
-    """Validated identity and payload data for one printable response page."""
-
-    class_id: str
-    class_label: str
-    assignment_id: str
-    assignment_title: str
-    student_id: str
-    student_display_name: str
-    page_number: int
-    payload: str
+class PrintableResponseRenderError(ValueError):
+    """Raised when managed printable-response render input is invalid."""
 
 
-def build_response_page_context(
-    *,
-    class_id: str,
-    assignment_id: str,
-    student_id: str,
-    student_display_name: str,
-    page_number: int,
-    assignment_title: str | None = None,
-    class_label: str | None = None,
-) -> ResponsePageContext:
-    """Build validated display and routing data for one response page."""
-    from quillan.payloads import build_response_payload
-
-    display_name = _require_display_text(student_display_name, "student_display_name")
-    resolved_assignment_title = _optional_display_text(
-        assignment_title, assignment_id, "assignment_title"
-    )
-    resolved_class_label = _optional_display_text(class_label, class_id, "class_label")
-    payload = build_response_payload(
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
-        page=page_number,
-    )
-
-    return ResponsePageContext(
-        class_id=class_id,
-        class_label=resolved_class_label,
-        assignment_id=assignment_id,
-        assignment_title=resolved_assignment_title,
-        student_id=student_id,
-        student_display_name=display_name,
-        page_number=page_number,
-        payload=payload,
-    )
-
-
-def generate_printable_response_pdf(
+def render_printable_response_pdf(
     workspace_root: str | Path,
-    *,
-    class_id: str,
-    assignment_id: str,
-    students: Sequence[StudentInput],
-    pages_per_student: int = 1,
-    assignment_title: str | None = None,
-    class_label: str | None = None,
+    work_ref: object,
+    destination: str | Path,
+    packets: object,
 ) -> Path:
-    """Generate one assignment PDF containing student-specific response pages."""
-    _validate_page_count(pages_per_student)
-    if not students:
-        raise ValueError("students must contain at least one student.")
-
-    page_contexts = [
-        build_response_page_context(
-            class_id=class_id,
-            assignment_id=assignment_id,
-            assignment_title=assignment_title,
-            class_label=class_label,
-            student_id=_student_id(student),
-            student_display_name=_student_name(student),
-            page_number=page_number,
-        )
-        for student in students
-        for page_number in range(1, pages_per_student + 1)
-    ]
-
-    paths = quillan_work_paths(workspace_root, class_id, assignment_id)
-    output_path = paths.templates_dir / PRINTABLE_RESPONSE_FILENAME
-    preflight_managed_work_layout(paths)
-    validated_output = preflight_work_file_destination(
-        workspace_root,
-        paths.work_ref,
-        Path("templates") / PRINTABLE_RESPONSE_FILENAME,
+    """Render ordered immutable records using only persisted verified routes."""
+    root, validated_work, output = _validate_render_authority(
+        workspace_root, work_ref, destination
     )
-    if validated_output != output_path:
-        raise ValueError("Printable response destination is not canonical.")
-    initialize_managed_work_layout(paths)
+    if not isinstance(packets, tuple) or not packets:
+        raise PrintableResponseRenderError("packets must be a nonempty tuple.")
+    validated: list[
+        tuple[
+            PrintableResponseRecordSet,
+            tuple[RegisteredPrintableResponsePageRoute, ...],
+        ]
+    ] = []
+    for packet in packets:
+        if not isinstance(packet, tuple) or len(packet) != 2:
+            raise PrintableResponseRenderError(
+                "Each render packet must contain persisted records and routes."
+            )
+        persisted_records, persisted_routes = packet
+        if not isinstance(persisted_records, PersistedPrintableResponseRecordSet):
+            raise PrintableResponseRenderError(
+                "Rendering requires a PersistedPrintableResponseRecordSet."
+            )
+        if not isinstance(persisted_routes, PersistedPrintableResponseRouteSet):
+            raise PrintableResponseRenderError(
+                "Rendering requires a PersistedPrintableResponseRouteSet."
+            )
+        if persisted_routes.record_set != persisted_records.record_set:
+            raise PrintableResponseRenderError(
+                "Persisted record and route sets do not identify the same records."
+            )
+        try:
+            verified = validate_registered_printable_response_route_set(
+                root, validated_work, persisted_routes
+            )
+            validate_printable_response_record_set(verified.record_set)
+        except (
+            PrintableResponsePersistenceError,
+            PrintableResponseRecordValidationError,
+            PrintableResponseRouteError,
+            OSError,
+        ) as error:
+            raise PrintableResponseRenderError(str(error)) from error
+        validated.append((verified.record_set, verified.routes))
 
-    pdf = Canvas(str(output_path), pagesize=letter)
+    pdf = Canvas(str(output), pagesize=letter)
     pdf.setTitle("Quillan Printable Writing Response Pages")
-    for context in page_contexts:
-        _draw_response_page(pdf, context, pages_per_student)
-        pdf.showPage()
+    for record_set, routes in validated:
+        for route in routes:
+            _draw_response_page(pdf, record_set, route)
+            pdf.showPage()
     pdf.save()
+    return output
 
-    return output_path
 
-
-def generate_printable_responses_for_roster(
+def _validate_render_authority(
     workspace_root: str | Path,
-    *,
-    assignment_path: str | Path,
-    roster_path: str | Path,
-    pages_per_student: int = 1,
-    class_label: str | None = None,
-) -> Path:
-    """Generate printable response pages from validated shared roster records."""
-    assignment = load_assignment_config(assignment_path)
-    roster = load_roster(roster_path)
-    assignment_class_ids = cast(list[str], assignment["class_ids"])
-
-    if roster.class_id not in assignment_class_ids:
-        raise ValueError(
-            f"Roster class_id '{roster.class_id}' is not included in assignment "
-            f"class_ids: {', '.join(assignment_class_ids)}."
+    work_ref: object,
+    destination: str | Path,
+) -> tuple[Path, ModuleWorkRef, Path]:
+    if not isinstance(workspace_root, (str, Path)):
+        raise PrintableResponseRenderError(
+            "workspace_root must be a string or Path."
         )
-
-    return generate_printable_response_pdf(
-        workspace_root,
-        class_id=roster.class_id,
-        assignment_id=cast(str, assignment["assignment_id"]),
-        assignment_title=cast(str, assignment["title"]),
-        class_label=class_label,
-        students=roster.students,
-        pages_per_student=pages_per_student,
-    )
+    supplied_root = Path(workspace_root)
+    if not supplied_root.is_absolute():
+        raise PrintableResponseRenderError(
+            "workspace_root must be an absolute path."
+        )
+    root = Path(os.path.abspath(supplied_root))
+    if not isinstance(work_ref, ModuleWorkRef):
+        raise PrintableResponseRenderError("work_ref must be a ModuleWorkRef.")
+    try:
+        validated_work = quillan_work_ref(work_ref.class_id, work_ref.work_id)
+    except (RoutingModelError, ValueError, TypeError, AttributeError) as error:
+        raise PrintableResponseRenderError(str(error)) from error
+    if work_ref != validated_work:
+        raise PrintableResponseRenderError("work_ref must identify exact Quillan work.")
+    if not isinstance(destination, (str, Path)):
+        raise PrintableResponseRenderError("destination must be a string or Path.")
+    supplied = Path(destination)
+    if not supplied.is_absolute():
+        raise PrintableResponseRenderError("destination must be an absolute path.")
+    output = Path(os.path.abspath(supplied))
+    paths = quillan_work_paths(root, validated_work.class_id, validated_work.work_id)
+    if output.parent != paths.templates_dir or _TEMPORARY_FILENAME.fullmatch(output.name) is None:
+        raise PrintableResponseRenderError(
+            "destination must be a governed immediate temporary child of templates/."
+        )
+    try:
+        canonical = preflight_work_file_destination(
+            root, validated_work, Path("templates") / output.name
+        )
+    except QuillanWorkPathError as error:
+        raise PrintableResponseRenderError(str(error)) from error
+    if canonical != output:
+        raise PrintableResponseRenderError("destination is not canonical.")
+    if not os.path.lexists(output) or _is_link_like(output) or not output.is_file():
+        raise PrintableResponseRenderError(
+            "destination must be an existing ordinary non-link temporary file."
+        )
+    return root, validated_work, output
 
 
 def _draw_response_page(
     pdf: Canvas,
-    context: ResponsePageContext,
-    pages_per_student: int,
+    record_set: PrintableResponseRecordSet,
+    route: RegisteredPrintableResponsePageRoute,
 ) -> None:
+    issuance = record_set.issuance
+    page = route.page
     page_width, page_height = letter
     margin = 0.5 * inch
     qr_size = 1.0 * inch
@@ -179,29 +180,32 @@ def _draw_response_page(
     pdf.drawString(
         margin,
         page_height - margin - 14,
-        _fit_text(context.assignment_title, "Helvetica-Bold", 14, text_width),
+        _fit_text(
+            issuance.assignment_snapshot.title,
+            "Helvetica-Bold",
+            14,
+            text_width,
+        ),
     )
-
+    class_text = (
+        f"Class: {issuance.class_label} ({page.class_id})"
+        if issuance.class_label != page.class_id
+        else f"Class: {page.class_id}"
+    )
     identity_lines = (
-        f"Student: {context.student_display_name}",
-        f"Student ID: {context.student_id}",
-        f"Class: {context.class_label} ({context.class_id})"
-        if context.class_label != context.class_id
-        else f"Class: {context.class_id}",
-        f"Assignment ID: {context.assignment_id}",
+        f"Student: {issuance.student_snapshot.display_name}",
+        f"Student ID: {page.student_id}",
+        class_text,
+        f"Assignment ID: {page.assignment_id}",
     )
     pdf.setFont("Helvetica", 9)
     line_y = page_height - margin - 31
     for identity_line in identity_lines:
-        pdf.drawString(
-            margin,
-            line_y,
-            _fit_text(identity_line, "Helvetica", 9, text_width),
-        )
+        pdf.drawString(margin, line_y, _fit_text(identity_line, "Helvetica", 9, text_width))
         line_y -= 12
 
     pdf.drawImage(
-        _make_qr_image(context.payload),
+        _make_qr_image(route.payload_text),
         qr_x,
         qr_y,
         width=qr_size,
@@ -209,8 +213,11 @@ def _draw_response_page(
         preserveAspectRatio=True,
         mask="auto",
     )
-
     header_bottom = page_height - margin - qr_size - 0.2 * inch
+    pdf.setFillColor(HexColor("#333333"))
+    pdf.setFont("Helvetica", 6)
+    pdf.drawString(margin, header_bottom + 14, f"Page ID: {page.page_id}")
+    pdf.drawString(margin, header_bottom + 6, f"Route ID: {route.locator.route_id}")
     pdf.setStrokeColor(HexColor("#555555"))
     pdf.setLineWidth(0.8)
     pdf.line(margin, header_bottom, page_width - margin, header_bottom)
@@ -219,29 +226,23 @@ def _draw_response_page(
     writing_bottom = margin + 0.35 * inch
     writing_left = margin + 0.2 * inch
     writing_right = page_width - margin
-
     pdf.setStrokeColor(HexColor("#C8C8C8"))
     pdf.setLineWidth(0.35)
     line_y = writing_top
     while line_y >= writing_bottom:
         pdf.line(writing_left, line_y, writing_right, line_y)
         line_y -= 0.32 * inch
-
     pdf.setStrokeColor(HexColor("#C98888"))
     pdf.setLineWidth(0.5)
     pdf.line(writing_left, writing_bottom, writing_left, writing_top)
 
     pdf.setFillColor(HexColor("#333333"))
     pdf.setFont("Helvetica", 8)
-    pdf.drawString(
-        margin,
-        margin - 6,
-        "Quillan writing response",
-    )
+    pdf.drawString(margin, margin - 6, "Quillan writing response")
     pdf.drawRightString(
         page_width - margin,
         margin - 6,
-        f"Page {context.page_number} of {pages_per_student}",
+        f"Page {page.logical_page} of {page.total_pages}",
     )
 
 
@@ -255,7 +256,6 @@ def _make_qr_image(payload: str) -> ImageReader:
     )
     qr.add_data(payload)
     qr.make(fit=True)
-
     image = qr.make_image(fill_color="black", back_color="white")
     image_data = BytesIO()
     image.save(image_data, format="PNG")
@@ -266,59 +266,15 @@ def _make_qr_image(payload: str) -> ImageReader:
 def _fit_text(text: str, font_name: str, font_size: int, max_width: float) -> str:
     if stringWidth(text, font_name, font_size) <= max_width:
         return text
-
     ellipsis = "..."
     candidate = text
-    while (
-        candidate
-        and stringWidth(candidate + ellipsis, font_name, font_size) > max_width
-    ):
+    while candidate and stringWidth(candidate + ellipsis, font_name, font_size) > max_width:
         candidate = candidate[:-1]
     return candidate + ellipsis
 
 
-def _student_id(student: StudentInput) -> str:
-    if isinstance(student, StudentRecord):
-        return _require_display_text(student.student_id, "student_id")
-    return _student_field(student, "student_id")
-
-
-def _student_name(student: StudentInput) -> str:
-    if isinstance(student, StudentRecord):
-        return _require_display_text(
-            student_display_name(student), "student_display_name"
-        )
-    return _student_field(student, "student_display_name")
-
-
-def _student_field(student: Mapping[str, str], field: str) -> str:
-    try:
-        value = student[field]
-    except KeyError as error:
-        raise ValueError(f"student is missing required field '{field}'.") from error
-    return _require_display_text(value, field)
-
-
-def _optional_display_text(
-    value: str | None,
-    fallback: str,
-    field: str,
-) -> str:
-    if value is None:
-        return fallback
-    return _require_display_text(value, field)
-
-
-def _require_display_text(value: str, field: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{field} must be a non-empty string.")
-    return value.strip()
-
-
-def _validate_page_count(pages_per_student: int) -> None:
-    if (
-        isinstance(pages_per_student, bool)
-        or not isinstance(pages_per_student, int)
-        or pages_per_student < 1
-    ):
-        raise ValueError("pages_per_student must be a positive integer.")
+__all__ = [
+    "PRINTABLE_RESPONSE_FILENAME",
+    "PrintableResponseRenderError",
+    "render_printable_response_pdf",
+]

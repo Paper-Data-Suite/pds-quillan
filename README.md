@@ -77,10 +77,11 @@ class, and work ID. The class roster remains a shared Core-owned class record.
 Within Quillan work, `scans/` stores Quillan-routed evidence rather than Core's
 retained source scan, while `routes/` is reserved for Core-owned route
 registrations. Quillan supports only the module-qualified tree above: there is
-no unqualified assignment path, legacy migration, or fallback. Immutable v1
-issuance and physical-page records are now defined and safely persisted. This
-does not yet claim PDS2 PDF generation, route registration, QR rendering,
-submission assembly, or completion of the CLI migration.
+no unqualified assignment path, legacy migration, or fallback. Printable class
+packets now use immutable v1 issuance/page records and one verified Core route
+per physical page. Each QR contains only the canonical PDS2 locator; generation
+renders to a same-directory temporary PDF and installs it atomically. This does
+not yet claim PDS2 scan dispatch, submission assembly, or complete CLI migration.
 
 ## Teacher-Facing Menu
 
@@ -127,9 +128,13 @@ quillan printable-responses generate <class_id> <assignment_id> --pages-per-stud
 ```
 
 The CLI and menu share the same canonical assignment/roster planning and packet
-generation service. The CLI writes only the assignment-local
-`templates/printable_response_pages.pdf`, protects existing packets unless
-`--overwrite --yes` is supplied, and never opens the generated file.
+transaction. Dry runs allocate no identities and write nothing. `--overwrite`
+replaces only the canonical PDF; immutable records and Core routes are never
+overwritten or reused. Direct CLI generation never opens the result; only the
+menu offers an explicit open-file or open-folder choice after installation.
+The CLI writes only the assignment-local
+`templates/printable_response_pages.pdf` and protects existing packets unless
+`--overwrite --yes` is supplied.
 
 The v0.8.6 creation workflow prompts for class, title, assignment ID, writing
 type, student prompt, pds-core standards profile, Focus Standards, review-unit

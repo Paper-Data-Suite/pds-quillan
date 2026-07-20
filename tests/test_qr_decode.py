@@ -12,7 +12,7 @@ import pytest
 import qrcode
 from qrcode.image.pil import PilImage
 
-from quillan.payloads import build_response_payload
+from tests.pds1_scan_test_support import build_response_payload
 from quillan.qr_decode import (
     ImageArray,
     decode_qr_payload_from_image,

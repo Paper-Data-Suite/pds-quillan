@@ -20,7 +20,7 @@ import quillan.cli_app.handlers.routing as cli_routing
 from quillan.intake_assembly import IntakeAssemblyTarget
 from quillan.menu import handle_scan_post_route_menu
 from quillan.menu_navigation import QuitQuillan, ReturnToMainMenu
-from quillan.payloads import build_response_payload
+from tests.pds1_scan_test_support import build_response_payload
 from quillan.pdf_pages import PdfPageImage
 from quillan.submission_status import AssignmentSubmissionStatus
 

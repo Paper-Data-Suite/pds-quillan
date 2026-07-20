@@ -19,9 +19,9 @@ from quillan.comment_management import (
 from quillan.evidence_filing import EvidenceFilingError, RoutedEvidenceFile
 from quillan.feedback_export import ExportedFeedback, ExportedFeedbackPdf
 from quillan.focus_standard_comments import SavedReusableFocusStandardComment
-from quillan.printable_response_packet import (
-    GeneratedPrintableResponsePacket,
-    PrintableResponsePacketPlan,
+from quillan.cli_app.printable_response_output import (
+    print_generated_printable_response_packet as print_generated_printable_response_packet,
+    print_printable_response_packet_plan as print_printable_response_packet_plan,
 )
 from quillan.review_feedback import (
     AddedFeedbackComment,
@@ -54,40 +54,6 @@ from quillan.submission_page_management import (
     SubmissionPageContext,
 )
 from quillan.submission_status import AssignmentSubmissionStatus
-
-
-def print_printable_response_packet_plan(
-    plan: PrintableResponsePacketPlan,
-) -> None:
-    """Print a stable, aggregate-only printable packet dry-run summary."""
-    print("Printable response packet dry run:")
-    print(f"Class: {plan.class_id}")
-    print(f"Assignment: {plan.assignment_id} - {plan.assignment_title}")
-    print(f"Students: {plan.student_count}")
-    print(f"Pages per student: {plan.pages_per_student}")
-    print(f"Total packet pages: {plan.total_page_count}")
-    print(f"Assignment config: {plan.assignment_relative_path}")
-    print(f"Roster: {plan.roster_relative_path}")
-    print(f"Would write: {plan.output_relative_path}")
-    print(f"Existing target: {format_bool(plan.target_exists)}")
-    if plan.target_exists:
-        print("Replacement requires --overwrite --yes during actual generation.")
-    print("No files were written.")
-
-
-def print_generated_printable_response_packet(
-    result: GeneratedPrintableResponsePacket,
-) -> None:
-    """Print a stable, aggregate-only printable packet generation summary."""
-    print("Generated printable response packet:")
-    print(f"Class: {result.class_id}")
-    print(f"Assignment: {result.assignment_id} - {result.assignment_title}")
-    print(f"Students: {result.student_count}")
-    print(f"Pages per student: {result.pages_per_student}")
-    print(f"Total packet pages: {result.total_page_count}")
-    action = "replaced existing packet" if result.replaced_existing else "created"
-    print(f"Action: {action}")
-    print(f"PDF: {result.output_relative_path}")
 
 
 def print_reusable_comment_inventory(inventory: ReusableCommentInventory) -> None:

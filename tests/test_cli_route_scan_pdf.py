@@ -19,7 +19,7 @@ from quillan.cli import main
 import quillan.cli_app.handlers.routing as cli_routing
 from quillan.evidence_filing import EvidenceFilingError
 from quillan.evidence_filing import file_routed_response_evidence
-from quillan.payloads import build_response_payload
+from tests.pds1_scan_test_support import build_response_payload
 from quillan.pdf_pages import PdfPageConversionError, PdfPageConversionFailure
 from quillan.pdf_pages import PdfPageImage
 from quillan.route_planning import RoutePlan

@@ -10,7 +10,7 @@ from quillan.payload_validation import (
     ResponsePayloadValidationFailure,
     decoded_payload_to_response_page,
 )
-from quillan.payloads import build_response_payload
+from tests.pds1_scan_test_support import build_response_payload
 from quillan.route_planning import DecodedResponsePage
 
 

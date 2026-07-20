@@ -178,7 +178,7 @@ pages. The identities are deliberately distinct:
 * a **page** is one intended physical page in an issuance and has a fresh
   `pg_<32 lowercase hex>` identity.
 
-A future Core route is separate from all four. Issue #336 will register exactly
+A Core route is separate from all four. Managed generation registers exactly
 one immutable Core route per page, targeted at:
 
 ```text
@@ -188,9 +188,12 @@ record_id:        <page_id>
 contract_version: "1"
 ```
 
-This contract creates no route ID, route registration, locator, QR payload, or
-PDF. It contains no PDS1 compatibility, legacy import, fallback loader, or
-unqualified-path lookup.
+Managed packet generation creates one fresh Core route registration for every
+immutable physical-page record. The page record itself still contains no route
+ID or QR text. The QR carries only
+`PDS2|m=quillan|c=<class_id>|w=<assignment_id>|r=<route_id>`; the registration
+targets the exact `response_page` record with contract version `1` and contains
+only `issuance_id`, `logical_page`, and `total_pages` as module details.
 
 #### Storage
 
@@ -311,8 +314,8 @@ persisted predecessor with the same class, assignment, and student, but does
 not mutate it. The predecessor may be explicitly superseded only after the
 replacement is issued.
 
-Because v1 deliberately has no generation or artifact index, issue #336 must
-generate fresh cryptographically random generation and artifact IDs for every
+Because v1 deliberately has no generation or artifact index, generation uses
+fresh cryptographically random generation and artifact IDs for every
 additional copy; it must not infer reuse from equivalent content or paths.
 
 These generated-page records are not student submissions and do not prove that
@@ -321,8 +324,9 @@ evidence state until issue #339 migrates that contract. Plain-paper submissions
 remain valid without a generation, issuance, page, route, scan, or evidence
 record.
 
-Issue #335 does not complete PDS2 PDF generation, route registration, QR
-rendering, scan intake, evidence filing, submission assembly, or CLI migration.
+PDS2 PDF generation and immutable route registration are implemented. PDS2 scan
+dispatch, retained-source intake, evidence filing, submission assembly, and the
+remaining CLI scan migration are separate boundaries.
 
 ## Standards References
 

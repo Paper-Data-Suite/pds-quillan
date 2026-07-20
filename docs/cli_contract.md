@@ -367,23 +367,26 @@ page counts; it does not list student identities.
 Exactly one of `--yes` and `--dry-run` is required. Dry-run validates identifier
 syntax, assignment schema and path identity, assignment class membership,
 roster structure and class identity, a nonempty student collection, the page
-count, canonical output route, and existing-target state. It does not call the
-renderer, create `templates/`, generate QR images or temporary files, touch an
-existing PDF, or write any file. `--overwrite` requires `--yes`; an existing
+count, canonical output route, predecessor counts, and existing-target state.
+It allocates no generation, artifact, issuance, page, or route IDs; does not call
+the renderer, create `templates/`, generate QR images or temporary files, touch
+an existing PDF, or write any file. `--overwrite` requires `--yes`; an existing
 packet otherwise fails unchanged with guidance to use `--overwrite --yes`.
 
 Actual generation may create the selected assignment's `templates/` directory
 and create or replace only:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/templates/printable_response_pages.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/templates/printable_response_pages.pdf
 ```
 
 All displayed paths are workspace-relative POSIX paths. The direct command
 does not accept alternate output paths or filenames and does not open the PDF
-or its folder. It uses the shared application planning/generation service also
-used by the menu, whose low-level renderer remains
-`generate_printable_responses_for_roster(...)`. Assignment, roster, class,
+or its folder. It uses the shared managed PDS2 transaction also used by the
+menu. The transaction writes and reload-verifies one Core route per immutable
+physical page, renders a same-directory temporary PDF, issues new records,
+atomically installs the packet, and only then supersedes predecessors.
+Assignment, roster, class,
 submission, review, evidence, scan, reusable-comment, feedback, and report data
 remain unchanged. Generation performs no scan processing, QR decoding, OCR,
 handwriting recognition, AI, inference, assembly, review, grading, feedback,
@@ -996,7 +999,7 @@ positive integer.
 The current output mode is one combined class packet PDF:
 
 ```text
-<workspace_root>/classes/<class_id>/assignments/<assignment_id>/templates/printable_response_pages.pdf
+<workspace_root>/classes/<class_id>/modules/quillan/work/<assignment_id>/templates/printable_response_pages.pdf
 ```
 
 An existing packet is replaced only after exact `OVERWRITE` confirmation.

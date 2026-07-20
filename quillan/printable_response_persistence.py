@@ -98,6 +98,113 @@ class PersistedPrintableResponseRecordSet:
     page_paths: tuple[Path, ...]
 
 
+def list_printable_response_issuances(
+    workspace_root: str | Path,
+    work_ref: object,
+) -> tuple[PrintableResponseIssuance, ...]:
+    """Strictly load every direct canonical issuance child in filename order."""
+    validated_work_ref = _validated_quillan_work_ref(work_ref)
+    paths = quillan_work_paths(
+        workspace_root, validated_work_ref.class_id, validated_work_ref.work_id
+    )
+    _preflight_directories(
+        Path(workspace_root), (paths.response_page_issuances_dir,)
+    )
+    collection = paths.response_page_issuances_dir
+    if not collection.exists():
+        return ()
+    try:
+        children = tuple(sorted(collection.iterdir(), key=lambda path: path.name))
+    except OSError as error:
+        raise PrintableResponseReadError(
+            f"Could not inspect issuance collection {collection}: {error}"
+        ) from error
+    issuances: list[PrintableResponseIssuance] = []
+    for child in children:
+        if _is_link_like(child) or not child.is_file() or child.suffix != ".json":
+            raise PrintableResponseReadError(
+                f"Canonical issuance collection contains an invalid direct child: {child}"
+            )
+        issuance_id = child.stem
+        try:
+            validate_issuance_id(issuance_id)
+        except PrintableResponseRecordValidationError as error:
+            raise PrintableResponseReadError(
+                f"Canonical issuance child has an invalid filename: {child}"
+            ) from error
+        issuances.append(
+            load_printable_response_issuance(
+                workspace_root, validated_work_ref, issuance_id
+            )
+        )
+    return tuple(issuances)
+
+
+def preflight_printable_response_record_sets(
+    workspace_root: str | Path,
+    work_ref: object,
+    record_sets: object,
+) -> tuple[Path, ...]:
+    """Nonmutating artifact-wide preflight for immutable response records."""
+    validated_work_ref = _validated_quillan_work_ref(work_ref)
+    if not isinstance(record_sets, (tuple, list)) or not record_sets:
+        raise PrintableResponsePersistenceValidationError(
+            "record_sets must be a nonempty ordered collection."
+        )
+    paths = quillan_work_paths(
+        workspace_root, validated_work_ref.class_id, validated_work_ref.work_id
+    )
+    _preflight_directories(
+        Path(workspace_root),
+        (
+            paths.response_pages_dir,
+            paths.response_page_issuances_dir,
+            paths.response_page_records_dir,
+        ),
+    )
+    destinations: list[Path] = []
+    for value in record_sets:
+        try:
+            validate_printable_response_record_set(value)
+        except PrintableResponseRecordValidationError as error:
+            raise PrintableResponsePersistenceValidationError(str(error)) from error
+        if not isinstance(value, PrintableResponseRecordSet):
+            raise PrintableResponsePersistenceValidationError(
+                "record_sets contains an invalid record set."
+            )
+        if (value.issuance.class_id, value.issuance.assignment_id) != (
+            validated_work_ref.class_id,
+            validated_work_ref.work_id,
+        ):
+            raise PrintableResponsePersistenceValidationError(
+                "Record-set identity does not match work_ref."
+            )
+        _verify_creation_sources(workspace_root, validated_work_ref, value.issuance)
+        _verify_predecessor(workspace_root, validated_work_ref, value.issuance)
+        destinations.extend(
+            response_page_record_path(
+                workspace_root, validated_work_ref, page.page_id
+            )
+            for page in value.pages
+        )
+        destinations.append(
+            response_page_issuance_path(
+                workspace_root, validated_work_ref, value.issuance.issuance_id
+            )
+        )
+    if len(set(destinations)) != len(destinations):
+        raise PrintableResponseRecordCollisionError(
+            "Immutable record destinations must be unique artifact-wide."
+        )
+    for destination in destinations:
+        _preflight_exact_file(workspace_root, validated_work_ref, destination)
+        if destination.exists():
+            raise PrintableResponseRecordCollisionError(
+                f"Immutable record destination already exists: {destination}"
+            )
+    return tuple(destinations)
+
+
 @dataclass(frozen=True, slots=True)
 class _CreatedRecord:
     path: Path
@@ -701,11 +808,13 @@ __all__ = [
     "PrintableResponseRollbackError",
     "canonical_printable_response_json",
     "load_printable_response_issuance",
+    "list_printable_response_issuances",
     "load_printable_response_page",
     "load_printable_response_page_context",
     "load_printable_response_record_set",
     "response_page_issuance_path",
     "response_page_record_path",
+    "preflight_printable_response_record_sets",
     "transition_printable_response_issuance",
     "write_printable_response_record_set",
 ]
