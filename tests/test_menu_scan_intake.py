@@ -56,7 +56,7 @@ def _menu_input(
 
 def _write_workspace(root: Path) -> None:
     class_dir = root / "classes" / CLASS_ID
-    assignment_dir = class_dir / "assignments" / ASSIGNMENT_ID
+    assignment_dir = class_dir / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     assignment_dir.mkdir(parents=True)
 
     with (class_dir / "roster.csv").open(
@@ -186,7 +186,9 @@ def _routed_pngs(workspace: Path) -> list[Path]:
             workspace
             / "classes"
             / CLASS_ID
-            / "assignments"
+            / "modules"
+            / "quillan"
+            / "work"
             / ASSIGNMENT_ID
             / "scans"
         ).glob("response_*.png")

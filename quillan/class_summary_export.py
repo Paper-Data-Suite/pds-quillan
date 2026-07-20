@@ -22,6 +22,7 @@ from quillan.assignment_summary_context import (
     relative_path_for,
     standard_column_keys,
 )
+from quillan.work_paths import quillan_work_paths
 
 BASE_CSV_COLUMNS: Final[tuple[str, ...]] = (
     "class_id",
@@ -82,15 +83,9 @@ def class_summary_export_path(
     """Return the compatibility path for the comprehensive class summary."""
     _validate_identifier(class_id, "class_id")
     _validate_identifier(assignment_id, "assignment_id")
-    return (
-        Path(workspace_root)
-        / "classes"
-        / class_id
-        / "assignments"
-        / assignment_id
-        / "exports"
-        / "class_summary.csv"
-    )
+    return quillan_work_paths(
+        workspace_root, class_id, assignment_id
+    ).exports_dir / "class_summary.csv"
 
 
 def export_class_review_summary(

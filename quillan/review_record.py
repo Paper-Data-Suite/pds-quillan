@@ -11,6 +11,11 @@ from typing import Any, Final, cast
 
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
 
+from quillan.work_paths import (
+    relative_assignment_path,
+    relative_submission_manifest_path,
+)
+
 REVIEW_SCHEMA_VERSION: Final = "2"
 REVIEW_MODULE: Final = "quillan"
 REVIEW_RECORD_TYPE: Final = "submission_review"
@@ -320,14 +325,11 @@ def _validate_assignment_path(record: dict[str, Any]) -> None:
 def _canonical_submission_manifest_path(
     class_id: str, assignment_id: str, student_id: str
 ) -> str:
-    return (
-        f"classes/{class_id}/assignments/{assignment_id}/submissions/"
-        f"{student_id}/submission.json"
-    )
+    return relative_submission_manifest_path(class_id, assignment_id, student_id)
 
 
 def _canonical_assignment_path(class_id: str, assignment_id: str) -> str:
-    return f"classes/{class_id}/assignments/{assignment_id}/assignment.json"
+    return relative_assignment_path(class_id, assignment_id)
 
 
 def _validate_minimum_requirement_checks(value: Any) -> None:

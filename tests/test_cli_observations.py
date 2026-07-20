@@ -82,7 +82,9 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         tmp_path
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "assignment.json"
     )
@@ -167,7 +169,7 @@ def test_list_without_review_is_read_only_and_reports_setup_guidance(
     workspace: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assignment_path = (
-        workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+        workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     )
     manifest_path = submission_manifest_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
     before = assignment_path.read_bytes(), manifest_path.read_bytes()

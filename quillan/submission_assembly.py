@@ -19,6 +19,10 @@ from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
 )
+from quillan.work_paths import (
+    initialize_student_submission_dir,
+    quillan_work_ref,
+)
 
 _RETAINED_SOURCE_FIELDS: Final[tuple[str, ...]] = (
     "source_scan_id",
@@ -154,6 +158,11 @@ def assemble_submission_manifest(
     )
     path = submission_manifest_path(
         workspace_root, class_id, assignment_id, student_id
+    )
+    initialize_student_submission_dir(
+        workspace_root,
+        quillan_work_ref(class_id, assignment_id),
+        student_id,
     )
     return write_submission_manifest(path, manifest, overwrite=overwrite)
 

@@ -77,7 +77,7 @@ def _route_failure(workspace: Path) -> RouteFailure:
 
 def _route_plan(workspace: Path) -> RoutePlan:
     assignment_dir = (
-        workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID
+        workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     )
     return RoutePlan(
         class_id=CLASS_ID,

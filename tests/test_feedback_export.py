@@ -41,7 +41,7 @@ STANDARD_DESCRIPTION = (
 
 
 def _write_assignment(root: Path) -> None:
-    assignment_dir = root / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID
+    assignment_dir = root / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     assignment_dir.mkdir(parents=True, exist_ok=True)
     assignment = {
         "schema_version": "2",
@@ -186,7 +186,9 @@ def test_exports_ordered_student_content_without_mutating_sources(
         tmp_path
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "scans"
         / "response_00107_pg_001.pdf"
@@ -222,12 +224,12 @@ def test_exports_ordered_student_content_without_mutating_sources(
         student_id=STUDENT_ID,
         review_record_path=review_path,
         review_record_relative_path=(
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
             f"{STUDENT_ID}/review.json"
         ),
         feedback_path=expected_path,
         feedback_relative_path=(
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
             f"{STUDENT_ID}/exports/feedback.md"
         ),
         included_comment_count=2,
@@ -479,12 +481,12 @@ def test_identity_mismatch_is_rejected(
     else:
         review[field] = value
         review["submission_manifest_path"] = (
-            f"classes/{review['class_id']}/assignments/"
+            f"classes/{review['class_id']}/modules/quillan/work/"
             f"{review['assignment_id']}/submissions/{review['student_id']}/"
             "submission.json"
         )
         review["assignment_path"] = (
-            f"classes/{review['class_id']}/assignments/{review['assignment_id']}/"
+            f"classes/{review['class_id']}/modules/quillan/work/{review['assignment_id']}/"
             "assignment.json"
         )
     write_submission_manifest(

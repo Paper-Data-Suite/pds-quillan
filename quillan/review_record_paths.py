@@ -8,9 +8,14 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from pds_core.identifiers import IdentifierValidationError, validate_identifier
-
 from quillan.review_record import validate_review_record
+from quillan.work_paths import (
+    QuillanWorkPathError,
+    _preflight_arbitrary_file_destination,
+    quillan_work_ref,
+    review_record_path as work_review_record_path,
+    student_submission_dir,
+)
 
 
 class ReviewRecordPathError(ValueError):
@@ -24,18 +29,11 @@ def review_record_dir(
     student_id: str,
 ) -> Path:
     """Return the canonical directory for one student's review record."""
-    _validate_identifier(class_id, "class_id")
-    _validate_identifier(assignment_id, "assignment_id")
-    _validate_identifier(student_id, "student_id")
-    return (
-        Path(workspace_root)
-        / "classes"
-        / class_id
-        / "assignments"
-        / assignment_id
-        / "submissions"
-        / student_id
-    )
+    try:
+        work_ref = quillan_work_ref(class_id, assignment_id)
+        return student_submission_dir(workspace_root, work_ref, student_id)
+    except ValueError as error:
+        raise ReviewRecordPathError(str(error)) from error
 
 
 def review_record_path(
@@ -45,10 +43,11 @@ def review_record_path(
     student_id: str,
 ) -> Path:
     """Return the canonical review.json path for one student."""
-    return (
-        review_record_dir(workspace_root, class_id, assignment_id, student_id)
-        / "review.json"
-    )
+    try:
+        work_ref = quillan_work_ref(class_id, assignment_id)
+        return work_review_record_path(workspace_root, work_ref, student_id)
+    except ValueError as error:
+        raise ReviewRecordPathError(str(error)) from error
 
 
 def write_review_record(
@@ -60,6 +59,11 @@ def write_review_record(
     """Validate and safely write a review record as UTF-8 JSON."""
     validate_review_record(record)
     review_path = Path(path)
+
+    try:
+        _preflight_arbitrary_file_destination(review_path)
+    except QuillanWorkPathError as error:
+        raise ReviewRecordPathError(str(error)) from error
 
     if not overwrite and review_path.exists():
         raise ReviewRecordPathError(f"Review record already exists: {review_path}")
@@ -115,10 +119,3 @@ def write_review_record(
                 pass
 
     return review_path
-
-
-def _validate_identifier(value: str, field: str) -> None:
-    try:
-        validate_identifier(value, field)
-    except IdentifierValidationError as error:
-        raise ReviewRecordPathError(str(error)) from error

@@ -41,7 +41,7 @@ def write_packet_workspace(root: Path) -> tuple[Path, Path]:
         ),
     )
     assignment_path = (
-        root / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+        root / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     )
     assignment_path.parent.mkdir(parents=True, exist_ok=True)
     assignment_path.write_text(json.dumps(valid_assignment()), encoding="utf-8")
@@ -96,7 +96,7 @@ def test_plan_validates_without_writing_and_reports_canonical_paths(
     assert plan.assignment_relative_path.endswith("/assignment.json")
     assert plan.roster_relative_path.endswith("/roster.csv")
     assert plan.output_relative_path == (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/templates/"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/templates/"
         "printable_response_pages.pdf"
     )
     assert not plan.target_exists
@@ -122,7 +122,7 @@ def test_generation_counts_pages_and_preserves_inputs(tmp_path: Path) -> None:
     assignment_path, roster_path = write_packet_workspace(tmp_path)
     untouched_paths = [
         tmp_path / "classes" / CLASS_ID / "class.json",
-        tmp_path / "classes" / CLASS_ID / "assignments" / "sibling" / "assignment.json",
+        tmp_path / "classes" / CLASS_ID / "modules" / "quillan" / "work" / "sibling" / "assignment.json",
         assignment_path.parent / "submissions" / "synthetic_student" / "submission.json",
         assignment_path.parent / "submissions" / "synthetic_student" / "review.json",
         assignment_path.parent / "scans" / "synthetic_evidence.txt",
@@ -191,7 +191,7 @@ def test_empty_roster_fails_before_templates_directory(tmp_path: Path) -> None:
         plan_printable_response_packet(tmp_path, CLASS_ID, ASSIGNMENT_ID)
 
     assert not (
-        tmp_path / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "templates"
+        tmp_path / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "templates"
     ).exists()
 
 

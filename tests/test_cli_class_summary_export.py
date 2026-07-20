@@ -46,7 +46,7 @@ def test_cli_exports_ready_and_non_ready_rows_and_prints_summary(
     assert "Feedback PDF stale: 0" in output
     assert "Overwrote existing: no" in output
     relative = (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/exports/"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/exports/"
         "class_summary.csv"
     )
     assert f"Summary file: {relative}" in output

@@ -30,7 +30,7 @@ STUDENT_ID = "stu_0001"
 SECOND_STUDENT_ID = "stu_0002"
 TIMESTAMP = "2026-06-22T12:00:00+00:00"
 EVIDENCE_RELATIVE_PATH = (
-    f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/"
+    f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/scans/"
     "response_stu_0001_pg_001.pdf"
 )
 
@@ -61,7 +61,7 @@ def _menu_input(
 
 def _write_workspace(root: Path) -> None:
     class_dir = root / "classes" / CLASS_ID
-    assignment_dir = class_dir / "assignments" / ASSIGNMENT_ID
+    assignment_dir = class_dir / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     assignment_dir.mkdir(parents=True)
 
     with (class_dir / "roster.csv").open(
@@ -194,7 +194,7 @@ def _write_two_page_manifest(root: Path) -> Path:
     )
     manifest = json.loads(path.read_text(encoding="utf-8"))
     second_evidence_path = (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/scans/"
         "response_stu_0001_pg_002.pdf"
     )
     (root / second_evidence_path).write_bytes(b"synthetic evidence page 2")
@@ -370,7 +370,9 @@ def test_review_summary_includes_existing_review_record_counts(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -732,7 +734,9 @@ def test_overall_rating_entry_loops_and_updates_without_duplicates(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "assignment.json"
     )
@@ -821,7 +825,9 @@ def test_overall_rating_entry_cancellations_do_not_write(
             workspace
             / "classes"
             / CLASS_ID
-            / "assignments"
+            / "modules"
+            / "quillan"
+            / "work"
             / ASSIGNMENT_ID
             / "assignment.json"
         ).read_text(encoding="utf-8")
@@ -953,7 +959,9 @@ def test_review_menu_views_current_review_details_read_only(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -1193,7 +1201,9 @@ def test_review_menu_creates_plain_paper_submission_and_shows_review_actions(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / SECOND_STUDENT_ID
@@ -1236,7 +1246,9 @@ def test_review_menu_adds_teacher_note_to_review_record(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -1558,7 +1570,9 @@ def test_review_menu_excludes_submission_page_without_touching_review_record(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID

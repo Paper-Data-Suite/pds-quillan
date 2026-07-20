@@ -78,7 +78,7 @@ def test_cli_exports_feedback_and_prints_summary(
     assert "Scores: 1" in output
     assert "Overwrote existing: no" in output
     relative = (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
         f"{STUDENT_ID}/exports/feedback.md"
     )
     assert f"Feedback file: {relative}" in output

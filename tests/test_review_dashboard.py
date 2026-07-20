@@ -38,7 +38,7 @@ def test_dashboard_unions_students_isolates_invalid_records_and_is_read_only(
     review = copy.deepcopy(_review("feedback_composed"))
     review["student_id"] = "00100"
     review["submission_manifest_path"] = (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
         "00100/submission.json"
     )
     _write_json(_student_dir(tmp_path, "00100") / "submission.json", manifest)
@@ -50,7 +50,9 @@ def test_dashboard_unions_students_isolates_invalid_records_and_is_read_only(
         tmp_path
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "scans"
         / "response_00400_pg_001.pdf"

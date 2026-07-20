@@ -54,21 +54,31 @@ Canonical active records and exports live at:
 
 ```text
 classes/<class_id>/roster.csv
-classes/<class_id>/assignments/<assignment_id>/assignment.json
-classes/<class_id>/assignments/<assignment_id>/templates/printable_response_pages.pdf
-classes/<class_id>/assignments/<assignment_id>/scans/
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
-classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/response_pages/
+classes/<class_id>/modules/quillan/work/<assignment_id>/templates/printable_response_pages.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/scans/
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/submission.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/review.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/student_performance_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
 shared/focus_standard_comments/<comment_set_id>.json
 shared/standards/library.json
 scans/source/YYYY-MM-DD/
 scans/review/
 ```
+
+An assignment ID is Quillan's `work_id`; its complete identity is the module,
+class, and work ID. The class roster remains a shared Core-owned class record.
+Within Quillan work, `scans/` stores Quillan-routed evidence rather than Core's
+retained source scan, while `routes/` is reserved for Core-owned route
+registrations. Quillan supports only the module-qualified tree above: there is
+no unqualified assignment path, legacy migration, or fallback. This layout does
+not yet claim response-page persistence, PDS2 generation or routing, submission
+assembly, or completion of the CLI migration.
 
 ## Teacher-Facing Menu
 
@@ -104,7 +114,7 @@ Assignment Management supports:
 Assignment creation requires an existing roster and writes:
 
 ```text
-<workspace_root>/classes/<class_id>/assignments/<assignment_id>/assignment.json
+<workspace_root>/classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
 ```
 
 Printable response packets can also be generated non-interactively:
@@ -201,16 +211,16 @@ Student feedback export reads a valid matching `submission.json` and
 schema-version-2 `review.json` and can write:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
 The three assignment-local CSV reports are:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/student_performance_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
 ```
 
 Student Performance Summary is the compact ordinary teacher-facing table.

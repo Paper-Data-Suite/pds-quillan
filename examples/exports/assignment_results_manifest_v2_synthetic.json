@@ -4,7 +4,7 @@
   "record_type": "assignment_results_manifest",
   "class_id": "english_10_simulation",
   "assignment_id": "coming-of-age_literary_analysis",
-  "assignment_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/assignment.json",
+  "assignment_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/assignment.json",
   "standards_profile_id": "english10_2023_njsls_ela",
   "focus_standard_ids": [
     "njsls-ela:RL.CR.9-10.1",
@@ -13,7 +13,7 @@
   ],
   "exports": {
     "class_summary_csv": {
-      "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/exports/class_summary.csv",
+      "path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/exports/class_summary.csv",
       "format": "csv",
       "generated_at": "2026-07-02T00:00:00+00:00",
       "stale": false,
@@ -21,7 +21,7 @@
     },
     "class_summary_pdf": null,
     "standards_summary_csv": {
-      "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/exports/standards_summary.csv",
+      "path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/exports/standards_summary.csv",
       "format": "csv",
       "generated_at": "2026-07-02T00:00:00+00:00",
       "stale": false,
@@ -41,10 +41,10 @@
       "student_id": "10001",
       "student_display_name": "Sample Student",
       "roster_status": "rostered",
-      "submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/submission.json",
+      "submission_manifest_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/submission.json",
       "submission_state": "reviewed",
       "submission_valid": true,
-      "review_record_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/review.json",
+      "review_record_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/review.json",
       "review_state": "ready_for_export",
       "review_valid": true,
       "minimum_requirement_status": "met",
@@ -71,12 +71,12 @@
       ],
       "feedback_exports": {
         "feedback_pdf": {
-          "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/exports/feedback.pdf",
+          "path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/exports/feedback.pdf",
           "status": "present",
           "stale": false
         },
         "feedback_markdown": {
-          "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/exports/feedback.md",
+          "path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/exports/feedback.md",
           "status": "present",
           "stale": false
         }
@@ -88,10 +88,10 @@
       "student_id": "10002",
       "student_display_name": "Jordan Example",
       "roster_status": "rostered",
-      "submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10002/submission.json",
+      "submission_manifest_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10002/submission.json",
       "submission_state": "reviewed",
       "submission_valid": true,
-      "review_record_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10002/review.json",
+      "review_record_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10002/review.json",
       "review_state": "returned_without_full_review",
       "review_valid": true,
       "minimum_requirement_status": "returned_without_full_review",
@@ -99,7 +99,7 @@
       "overall_standard_ratings": [],
       "feedback_exports": {
         "feedback_pdf": {
-          "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10002/exports/feedback.pdf",
+          "path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10002/exports/feedback.pdf",
           "status": "present",
           "stale": false
         },
@@ -118,10 +118,10 @@
       "student_id": "10003",
       "student_display_name": "Casey Synthetic",
       "roster_status": "rostered",
-      "submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10003/submission.json",
+      "submission_manifest_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10003/submission.json",
       "submission_state": "in_progress",
       "submission_valid": true,
-      "review_record_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10003/review.json",
+      "review_record_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10003/review.json",
       "review_state": "observations_in_progress",
       "review_valid": true,
       "minimum_requirement_status": "met",
@@ -189,10 +189,10 @@
       "student_id": "19999",
       "student_display_name": "Unrostered Example",
       "roster_status": "unrostered_submission",
-      "submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/19999/submission.json",
+      "submission_manifest_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/19999/submission.json",
       "submission_state": "reviewed",
       "submission_valid": true,
-      "review_record_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/19999/review.json",
+      "review_record_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/19999/review.json",
       "review_state": "feedback_composed",
       "review_valid": true,
       "minimum_requirement_status": "met",

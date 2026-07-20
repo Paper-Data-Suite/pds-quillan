@@ -47,7 +47,7 @@ def _manifest() -> dict[str, Any]:
                     {
                         "evidence_id": "evidence_001",
                         "routed_evidence_path": (
-                            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/"
+                            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/"
                             "scans/response_00107_pg_001.pdf"
                         ),
                         "evidence_role": "selected",

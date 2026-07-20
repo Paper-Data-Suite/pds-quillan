@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
-from pds_core.routes import assignment_templates_dir
+import quillan.printable_response as printable_response
+from quillan.storage import assignment_templates_dir
 from pypdf import PdfReader
 
 from quillan.printable_response import (
@@ -16,6 +17,7 @@ from quillan.printable_response import (
     generate_printable_response_pdf,
     generate_printable_responses_for_roster,
 )
+from quillan.work_paths import QuillanWorkPathError, quillan_work_paths
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "paper_workflow"
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
@@ -204,3 +206,40 @@ def test_generate_printable_response_pdf_rejects_empty_students(
             assignment_id="literary_argument_synthetic",
             students=[],
         )
+
+
+def test_printable_preflight_late_collision_creates_no_partial_layout(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class_id = "english12_p4_synthetic"
+    assignment_id = "literary_argument_synthetic"
+    paths = quillan_work_paths(tmp_path, class_id, assignment_id)
+    paths.exports_dir.parent.mkdir(parents=True)
+    paths.exports_dir.write_bytes(b"collision-bytes")
+    monkeypatch.setattr(
+        printable_response,
+        "build_response_page_context",
+        lambda **_kwargs: object(),
+    )
+
+    with pytest.raises(QuillanWorkPathError, match="not a directory"):
+        generate_printable_response_pdf(
+            tmp_path,
+            class_id=class_id,
+            assignment_id=assignment_id,
+            students=[
+                {
+                    "student_id": "stu_0001",
+                    "student_display_name": "Synthetic Student",
+                    "class_id": class_id,
+                }
+            ],
+        )
+
+    assert paths.exports_dir.read_bytes() == b"collision-bytes"
+    assert not paths.assignment_path.exists()
+    assert not paths.response_pages_dir.exists()
+    assert not paths.templates_dir.exists()
+    assert not paths.scans_dir.exists()
+    assert not paths.submissions_dir.exists()

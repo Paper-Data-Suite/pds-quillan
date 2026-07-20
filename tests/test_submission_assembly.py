@@ -421,7 +421,9 @@ def test_assemble_writes_canonical_reloadable_manifest_and_overwrite(
         tmp_path
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID

@@ -16,6 +16,7 @@ from quillan.submission_manifest import (
     SubmissionManifestError,
     load_submission_manifest,
 )
+from quillan.storage import assignment_config_path, assignment_submissions_dir
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,11 +44,11 @@ class LoadedStudentRecord:
 
 
 def assignment_path(workspace_root: Path, class_id: str, assignment_id: str) -> Path:
-    return workspace_root / "classes" / class_id / "assignments" / assignment_id / "assignment.json"
+    return assignment_config_path(workspace_root, class_id, assignment_id)
 
 
 def submissions_dir(workspace_root: Path, class_id: str, assignment_id: str) -> Path:
-    return workspace_root / "classes" / class_id / "assignments" / assignment_id / "submissions"
+    return assignment_submissions_dir(workspace_root, class_id, assignment_id)
 
 
 def load_assignment(workspace_root: Path, class_id: str, assignment_id: str) -> dict[str, Any]:

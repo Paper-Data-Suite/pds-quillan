@@ -21,6 +21,7 @@ from quillan.assignment_summary_context import (
     rating_labels,
     relative_path_for,
 )
+from quillan.work_paths import quillan_work_paths
 
 MISSING_RATING = ""
 BASE_CSV_COLUMNS = (
@@ -61,15 +62,9 @@ def student_performance_summary_export_path(
     """Return the assignment-local student performance summary CSV path."""
     _validate_identifier(class_id, "class_id")
     _validate_identifier(assignment_id, "assignment_id")
-    return (
-        Path(workspace_root)
-        / "classes"
-        / class_id
-        / "assignments"
-        / assignment_id
-        / "exports"
-        / "student_performance_summary.csv"
-    )
+    return quillan_work_paths(
+        workspace_root, class_id, assignment_id
+    ).exports_dir / "student_performance_summary.csv"
 
 
 def export_student_performance_summary(

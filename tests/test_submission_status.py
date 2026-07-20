@@ -30,7 +30,9 @@ def _assignment_dir(workspace: Path) -> Path:
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
     )
 
@@ -50,7 +52,7 @@ def _evidence(
     return RoutedSubmissionEvidence(
         page_number=page_number,
         routed_evidence_path=(
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/{filename}"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/scans/{filename}"
         ),
         **kwargs,
     )

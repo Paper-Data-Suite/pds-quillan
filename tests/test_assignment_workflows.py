@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from datetime import datetime, timezone
+import os
 from pathlib import Path
 
 from pds_core.classes import write_class_roster
@@ -23,6 +24,7 @@ from quillan.assignments import (
     validate_assignment_config,
 )
 from quillan.menu_navigation import QuitQuillan, ReturnToMainMenu
+from quillan.work_paths import quillan_work_paths
 
 STANDARD_ID = "njsls-ela:W.AW.11-12.1"
 SECOND_STANDARD_ID = "njsls-ela:L.KL.11-12.2"
@@ -221,7 +223,9 @@ def test_write_assignment_config_uses_canonical_path(tmp_path: Path) -> None:
         tmp_path
         / "classes"
         / "english_12_p3"
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / "literary_analysis_essay"
         / "assignment.json"
     )
@@ -244,7 +248,9 @@ def test_write_assignment_config_allows_included_multi_class_path(
         tmp_path
         / "classes"
         / "english_12_p4"
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / "literary_analysis_essay"
         / "assignment.json"
     )
@@ -264,6 +270,79 @@ def test_write_assignment_config_rejects_class_path_mismatch(
         )
 
     assert not list(tmp_path.rglob("assignment.json"))
+
+
+def test_write_assignment_config_rejects_assignment_directory_without_partial_layout(
+    tmp_path: Path,
+) -> None:
+    paths = quillan_work_paths(
+        tmp_path, "english_12_p3", "literary_analysis_essay"
+    )
+    paths.assignment_path.mkdir(parents=True)
+    marker = paths.assignment_path / "marker.bin"
+    marker.write_bytes(b"unchanged")
+
+    with pytest.raises(AssignmentConfigError, match="regular file"):
+        workflows.write_assignment_config(
+            tmp_path, "english_12_p3", _assignment()
+        )
+
+    assert marker.read_bytes() == b"unchanged"
+    assert not paths.response_pages_dir.exists()
+    assert not paths.templates_dir.exists()
+    assert not paths.scans_dir.exists()
+    assert not paths.submissions_dir.exists()
+    assert not paths.exports_dir.exists()
+
+
+def test_write_assignment_config_late_collision_is_all_or_nothing(
+    tmp_path: Path,
+) -> None:
+    paths = quillan_work_paths(
+        tmp_path, "english_12_p3", "literary_analysis_essay"
+    )
+    paths.exports_dir.parent.mkdir(parents=True)
+    paths.exports_dir.write_bytes(b"collision-bytes")
+
+    with pytest.raises(AssignmentConfigError, match="not a directory"):
+        workflows.write_assignment_config(
+            tmp_path, "english_12_p3", _assignment()
+        )
+
+    assert paths.exports_dir.read_bytes() == b"collision-bytes"
+    assert not paths.assignment_path.exists()
+    assert not paths.response_pages_dir.exists()
+    assert not paths.templates_dir.exists()
+    assert not paths.scans_dir.exists()
+    assert not paths.submissions_dir.exists()
+
+
+def test_write_assignment_config_rejects_symlink_destination_without_external_write(
+    tmp_path: Path,
+) -> None:
+    paths = quillan_work_paths(
+        tmp_path, "english_12_p3", "literary_analysis_essay"
+    )
+    paths.assignment_path.parent.mkdir(parents=True)
+    outside = tmp_path / "outside-assignment.json"
+    outside.write_bytes(b"outside-unchanged")
+    try:
+        os.symlink(outside, paths.assignment_path)
+    except OSError as error:
+        pytest.skip(f"symlink creation is unavailable: {error}")
+
+    with pytest.raises(AssignmentConfigError, match="symlink or junction"):
+        workflows.write_assignment_config(
+            tmp_path, "english_12_p3", _assignment(), overwrite=True
+        )
+
+    assert outside.read_bytes() == b"outside-unchanged"
+    assert paths.assignment_path.is_symlink()
+    assert not paths.response_pages_dir.exists()
+    assert not paths.templates_dir.exists()
+    assert not paths.scans_dir.exists()
+    assert not paths.submissions_dir.exists()
+    assert not paths.exports_dir.exists()
 
 
 def test_parse_class_folder_selection_accepts_numbers_and_class_ids(
@@ -384,7 +463,9 @@ def test_prompt_create_assignment_writes_valid_v2_config(
         tmp_path
         / "classes"
         / "english_12_p3"
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / "literary_analysis_essay"
         / "assignment.json"
     )
@@ -476,7 +557,9 @@ def test_prompt_create_assignment_writes_same_config_for_multiple_classes(
         tmp_path
         / "classes"
         / "english_12_p3"
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / "argument_essay"
         / "assignment.json"
     )
@@ -484,7 +567,9 @@ def test_prompt_create_assignment_writes_same_config_for_multiple_classes(
         tmp_path
         / "classes"
         / "english_12_p4"
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / "argument_essay"
         / "assignment.json"
     )
@@ -624,7 +709,9 @@ def test_prompt_create_assignment_default_rating_scale_has_four_unique_levels(
         tmp_path
         / "classes"
         / "english_12_p3"
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / "argument_essay"
         / "assignment.json"
     )
@@ -673,7 +760,9 @@ def test_prompt_create_assignment_writes_declined_minimum_requirement_policy(
         tmp_path
         / "classes"
         / "english_12_p3"
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / "argument_essay"
         / "assignment.json"
     )
@@ -780,7 +869,9 @@ def test_prompt_create_assignment_preflights_all_overwrite_conflicts(
         tmp_path
         / "classes"
         / "english_12_p4"
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / "argument_essay"
         / "assignment.json"
     )
@@ -859,7 +950,9 @@ def test_prompt_create_assignment_overwrites_with_explicit_confirmation(
         tmp_path
         / "classes"
         / "english_12_p3"
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / "argument_essay"
         / "assignment.json"
     )
@@ -933,7 +1026,9 @@ def test_view_validate_assignment_reports_error_without_traceback(
         tmp_path
         / "classes"
         / "english_12_p3"
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / "invalid"
         / "assignment.json"
     )

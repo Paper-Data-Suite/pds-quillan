@@ -53,7 +53,7 @@ def _manifest() -> dict[str, Any]:
 
 @pytest.fixture
 def workspace(tmp_path: Path) -> Path:
-    assignment_path = tmp_path / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+    assignment_path = tmp_path / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     assignment_path.parent.mkdir(parents=True)
     assignment_path.write_text(json.dumps(_assignment()), encoding="utf-8")
     write_submission_manifest(

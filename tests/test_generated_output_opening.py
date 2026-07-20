@@ -18,7 +18,9 @@ def _generated_pdf(workspace_root: Path) -> Path:
         workspace_root
         / "classes"
         / "english10_p2"
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / "essay_01"
         / "templates"
         / "printable_response_pages.pdf"
@@ -47,7 +49,7 @@ def test_open_generated_output_file_opens_valid_file_inside_workspace(
     assert opened == OpenedGeneratedOutput(
         path=output_path,
         relative_path=(
-            "classes/english10_p2/assignments/essay_01/templates/"
+            "classes/english10_p2/modules/quillan/work/essay_01/templates/"
             "printable_response_pages.pdf"
         ),
     )
@@ -71,7 +73,7 @@ def test_open_generated_output_folder_opens_valid_containing_folder(
     assert calls == [output_path.parent]
     assert opened == OpenedGeneratedOutput(
         path=output_path.parent,
-        relative_path="classes/english10_p2/assignments/essay_01/templates",
+        relative_path="classes/english10_p2/modules/quillan/work/essay_01/templates",
     )
 
 

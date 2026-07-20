@@ -7,8 +7,7 @@ from pathlib import Path
 
 from pds_core.classes import list_class_folders
 
-from quillan.assignments import AssignmentConfigError, load_assignment_config
-from quillan.storage import assignment_config_path
+from quillan.assignment_discovery import discover_quillan_assignments
 from quillan.menu_navigation import (
     NavigationChoice,
     navigation_hint,
@@ -95,26 +94,18 @@ def available_assignments(
     workspace_root: Path, class_id: str
 ) -> tuple[AssignmentChoice, ...]:
     """Return valid canonical assignment configs for one class."""
-    assignments_dir = workspace_root / "classes" / class_id / "assignments"
-    if not assignments_dir.is_dir():
-        return ()
     choices: list[AssignmentChoice] = []
-    for assignment_dir in sorted(
-        (path for path in assignments_dir.iterdir() if path.is_dir()),
-        key=lambda path: path.name.casefold(),
-    ):
-        path = assignment_config_path(workspace_root, class_id, assignment_dir.name)
-        try:
-            assignment = load_assignment_config(path)
-        except (AssignmentConfigError, OSError):
+    for discovered in discover_quillan_assignments(workspace_root, class_id):
+        if discovered.assignment is None:
             continue
+        assignment = discovered.assignment
         title = assignment.get("title")
         choices.append(
             AssignmentChoice(
                 class_id=class_id,
-                assignment_id=assignment_dir.name,
+                assignment_id=discovered.assignment_id,
                 title=title if isinstance(title, str) and title.strip() else None,
-                path=path,
+                path=discovered.path,
             )
         )
     return tuple(choices)

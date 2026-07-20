@@ -71,7 +71,7 @@ def _manifest() -> dict[str, Any]:
 @pytest.fixture
 def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     assignment_path = (
-        tmp_path / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+        tmp_path / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     )
     assignment_path.parent.mkdir(parents=True)
     assignment_path.write_text(json.dumps(_assignment()), encoding="utf-8")
@@ -113,7 +113,7 @@ def test_bare_namespace_prints_help_without_resolving_workspace(
 def test_show_without_review_is_read_only(
     workspace: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assignment_path = workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+    assignment_path = workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     manifest_path = submission_manifest_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
     before = assignment_path.read_bytes(), manifest_path.read_bytes()
 
@@ -134,7 +134,7 @@ def test_count_creates_menu_equivalent_canonical_units(
     workspace: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr("builtins.input", lambda *_args: pytest.fail("CLI prompted"))
-    assignment_path = workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+    assignment_path = workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     manifest_path = submission_manifest_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
     before = assignment_path.read_bytes(), manifest_path.read_bytes()
     args = ["review-units", "set", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]

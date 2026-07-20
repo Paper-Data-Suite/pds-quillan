@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -46,7 +47,9 @@ def test_submission_paths_use_canonical_quillan_layout(tmp_path: Path) -> None:
         tmp_path
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / STUDENT_ID
@@ -86,7 +89,8 @@ def test_submission_paths_reject_invalid_identifiers(
     }
     identifiers[field] = value
 
-    with pytest.raises(SubmissionManifestPathError, match=field):
+    expected_field = "work_id" if field == "assignment_id" else field
+    with pytest.raises(SubmissionManifestPathError, match=expected_field):
         submission_dir(tmp_path, **identifiers)
 
 
@@ -147,8 +151,23 @@ def test_parent_path_that_is_a_file_raises(tmp_path: Path) -> None:
 
     with pytest.raises(
         SubmissionManifestPathError,
-        match="Could not create submission manifest directory",
+        match="not a directory",
     ):
         write_submission_manifest(path, _manifest())
 
     assert parent.read_text(encoding="utf-8") == "not a directory"
+
+
+def test_manifest_symlink_is_rejected_without_modifying_target(tmp_path: Path) -> None:
+    target = tmp_path / "outside.json"
+    target.write_text("original", encoding="utf-8")
+    path = tmp_path / "submission.json"
+    try:
+        os.symlink(target, path)
+    except OSError as error:
+        pytest.skip(f"symlink creation is unavailable: {error}")
+
+    with pytest.raises(SubmissionManifestPathError, match="symlink"):
+        write_submission_manifest(path, _manifest(), overwrite=True)
+
+    assert target.read_text(encoding="utf-8") == "original"

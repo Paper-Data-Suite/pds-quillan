@@ -22,6 +22,10 @@ from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
 )
+from quillan.work_paths import (
+    initialize_student_submission_dir,
+    quillan_work_ref,
+)
 
 PLAIN_PAPER_ENTRY_METHOD = "plain_paper_manual"
 PLAIN_PAPER_PHYSICAL_EVIDENCE_STATUS = "teacher_has_external_plain_paper"
@@ -162,6 +166,11 @@ def create_plain_paper_submission(
     validate_submission_manifest(manifest)
     validate_review_record(review)
 
+    initialize_student_submission_dir(
+        workspace_root,
+        quillan_work_ref(class_id, assignment_id),
+        student_id,
+    )
     write_submission_manifest(plan.submission_manifest_path, manifest)
     try:
         write_review_record(plan.review_record_path, review)

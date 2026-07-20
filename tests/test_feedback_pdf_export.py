@@ -47,7 +47,7 @@ def _write_roster(root: Path) -> None:
 
 def _write_assignment_with_rating_labels(root: Path) -> None:
     _write_assignment(root)
-    path = root / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+    path = root / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     assignment = json.loads(path.read_text(encoding="utf-8"))
     assignment["rating_scale"]["levels"].append(
         {"value": 3, "label": "Meeting", "description": "Meets expectations."}
@@ -157,12 +157,12 @@ def test_normal_pdf_export_creates_student_facing_pdf_and_metadata(
         assignment_title="Synthetic Essay",
         review_record_path=review_path,
         review_record_relative_path=(
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
             f"{STUDENT_ID}/review.json"
         ),
         feedback_pdf_path=expected_path,
         feedback_pdf_relative_path=(
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
             f"{STUDENT_ID}/exports/feedback.pdf"
         ),
         feedback_markdown_path=None,
@@ -213,7 +213,7 @@ def test_normal_pdf_export_creates_student_facing_pdf_and_metadata(
     assert review_after["review_state"] == "exported"
     assert metadata == {
         "path": (
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
             f"{STUDENT_ID}/exports/feedback.pdf"
         ),
         "generated_at": TIMESTAMP,

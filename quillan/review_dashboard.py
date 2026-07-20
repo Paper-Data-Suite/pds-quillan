@@ -16,6 +16,7 @@ from quillan.assignment_submission_assembly import (
 )
 from quillan.assignment_summary_context import feedback_status, relative_path_for
 from quillan.assignments import AssignmentConfigError, load_assignment_config
+from quillan.storage import assignment_config_path
 from quillan.feedback_export import feedback_export_path, feedback_pdf_export_path
 from quillan.plain_paper_submission import is_plain_paper_submission
 from quillan.review_record import ReviewRecordError, load_review_record
@@ -147,9 +148,7 @@ def build_assignment_review_dashboard(
     except ValueError as error:
         raise ReviewDashboardError(str(error)) from error
     root = Path(workspace_root).resolve(strict=False)
-    assignment_path = (
-        root / "classes" / class_id / "assignments" / assignment_id / "assignment.json"
-    )
+    assignment_path = assignment_config_path(root, class_id, assignment_id)
     try:
         assignment = load_assignment_config(assignment_path)
     except (OSError, AssignmentConfigError) as error:
@@ -473,12 +472,9 @@ def _dashboard(**values: Any) -> AssignmentReviewDashboard:
         standards_profile_id=assignment["standards_profile_id"],
         focus_standard_count=len(assignment["focus_standard_ids"]),
         assignment_path=relative_path_for(
-            values["root"]
-            / "classes"
-            / values["class_id"]
-            / "assignments"
-            / values["assignment_id"]
-            / "assignment.json",
+            assignment_config_path(
+                values["root"], values["class_id"], values["assignment_id"]
+            ),
             values["root"],
         ),
         roster_available=roster_students is not None,

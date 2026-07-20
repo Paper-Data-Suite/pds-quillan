@@ -24,7 +24,9 @@ def _scans_dir(workspace: Path) -> Path:
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "scans"
     )

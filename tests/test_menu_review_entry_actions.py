@@ -39,7 +39,7 @@ def _menu_input(monkeypatch: pytest.MonkeyPatch, responses: list[str]) -> None:
 
 def _write_workspace(root: Path) -> None:
     class_dir = root / "classes" / CLASS_ID
-    assignment_dir = class_dir / "assignments" / ASSIGNMENT_ID
+    assignment_dir = class_dir / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     assignment_dir.mkdir(parents=True)
 
     with (class_dir / "roster.csv").open("w", encoding="utf-8", newline="") as file:
@@ -108,7 +108,9 @@ def _write_workspace(root: Path) -> None:
         root
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "scans"
         / "response_stu_0001_pg_001.pdf"
@@ -137,7 +139,7 @@ def _write_manifest(root: Path) -> Path:
                     {
                         "evidence_id": "evidence_001",
                         "routed_evidence_path": (
-                            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/"
+                            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/scans/"
                             "response_stu_0001_pg_001.pdf"
                         ),
                         "evidence_role": "selected",

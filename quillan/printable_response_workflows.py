@@ -8,21 +8,16 @@ from typing import cast
 
 from pds_core.classes import ClassFolder, list_class_folders
 from pds_core.rosters import RosterError
-from pds_core.routes import class_assignments_dir
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
-from quillan.assignments import AssignmentConfigError, load_assignment_config
-from quillan.cli_app.output import print_generated_printable_response_packet
+from quillan.assignment_discovery import discover_quillan_assignments
+from quillan.assignments import AssignmentConfigError
 from quillan.generated_output_opening import (
     GeneratedOutputOpeningError,
     open_generated_output_file,
     open_generated_output_folder,
 )
 from quillan.printable_response import PRINTABLE_RESPONSE_FILENAME
-from quillan.printable_response_packet import (
-    generate_printable_response_packet,
-    plan_printable_response_packet,
-)
 from quillan.storage import assignment_templates_dir
 
 
@@ -55,34 +50,24 @@ def discover_assignment_configs(
     class_id: str,
 ) -> tuple[AssignmentChoice, ...]:
     """Discover canonical assignment configs for one class folder."""
-    assignments_dir = class_assignments_dir(workspace_root, class_id)
-    try:
-        entries = sorted(assignments_dir.iterdir(), key=lambda entry: entry.name)
-    except (FileNotFoundError, NotADirectoryError):
-        return ()
-
     choices: list[AssignmentChoice] = []
-    for entry in entries:
-        path = entry / "assignment.json"
-        if not entry.is_dir() or not path.is_file():
-            continue
-        try:
-            assignment = load_assignment_config(path)
-        except (AssignmentConfigError, OSError) as error:
+    for discovered in discover_quillan_assignments(workspace_root, class_id):
+        if discovered.assignment is None:
             choices.append(
                 AssignmentChoice(
-                    assignment_id=entry.name,
-                    path=path,
+                    assignment_id=discovered.assignment_id,
+                    path=discovered.path,
                     title=None,
                     class_ids=(),
-                    error=str(error),
+                    error=discovered.error,
                 )
             )
             continue
+        assignment = discovered.assignment
         choices.append(
             AssignmentChoice(
-                assignment_id=cast(str, assignment["assignment_id"]),
-                path=path,
+                assignment_id=discovered.assignment_id,
+                path=discovered.path,
                 title=cast(str, assignment["title"]),
                 class_ids=tuple(cast(list[str], assignment["class_ids"])),
             )
@@ -247,7 +232,12 @@ def _prompt_assignment_selection(
 
 def prompt_generate_class_packet() -> int:
     """Prompt for roster and assignment selection, then generate one class PDF."""
+    from quillan.cli_app.output import print_generated_printable_response_packet
     from quillan.menu import print_menu_header
+    from quillan.printable_response_packet import (
+        generate_printable_response_packet,
+        plan_printable_response_packet,
+    )
 
     print_menu_header("Generate Printable Response Class Packet")
     workspace_root = _workspace_root()

@@ -27,7 +27,7 @@ CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"
 STUDENT_ID = "00107"
 EVIDENCE_PATH = (
-    f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/"
+    f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/scans/"
     "response_00107_pg_001.pdf"
 )
 
@@ -127,7 +127,7 @@ def test_success_opens_selected_evidence_and_returns_context(
         student_id=STUDENT_ID,
         manifest_path=manifest_path,
         manifest_relative_path=(
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
             f"{STUDENT_ID}/submission.json"
         ),
         submission_state="unreviewed",
@@ -199,11 +199,11 @@ def test_multiple_selected_evidence_files_open_in_page_order(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     page_1_path = (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/scans/"
         "response_00107_pg_001.pdf"
     )
     page_2_path = (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/scans/"
         "response_00107_pg_002.pdf"
     )
     _write_manifest(
@@ -246,7 +246,7 @@ def test_page_number_opens_only_requested_page(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     page_2_path = (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/scans/"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/scans/"
         "response_00107_pg_002.pdf"
     )
     _write_manifest(

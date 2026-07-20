@@ -37,7 +37,9 @@ def _student_dir(workspace: Path, student_id: str) -> Path:
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "submissions"
         / student_id
@@ -55,7 +57,9 @@ def _write_assignment(workspace: Path) -> Path:
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "assignment.json",
         {
@@ -112,7 +116,7 @@ def _records(student_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
     review = copy.deepcopy(_review("ready_for_export"))
     review["student_id"] = student_id
     review["submission_manifest_path"] = (
-        f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+        f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
         f"{student_id}/submission.json"
     )
     return manifest, review
@@ -208,7 +212,7 @@ def test_exports_assignment_local_rows_with_focus_standard_ratings(
     md_path.write_text("feedback markdown", encoding="utf-8")
     first_review["exports"]["feedback_pdf"] = {
         "path": (
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
             "00100/exports/feedback.pdf"
         ),
         "generated_at": TIMESTAMP,
@@ -217,7 +221,7 @@ def test_exports_assignment_local_rows_with_focus_standard_ratings(
     }
     first_review["exports"]["feedback_markdown"] = {
         "path": (
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/submissions/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
             "00100/exports/feedback.md"
         ),
         "generated_at": TIMESTAMP,
@@ -261,7 +265,7 @@ def test_exports_assignment_local_rows_with_focus_standard_ratings(
         assignment_id=ASSIGNMENT_ID,
         summary_path=expected_path,
         summary_relative_path=(
-            f"classes/{CLASS_ID}/assignments/{ASSIGNMENT_ID}/exports/"
+            f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/exports/"
             "class_summary.csv"
         ),
         row_count=4,

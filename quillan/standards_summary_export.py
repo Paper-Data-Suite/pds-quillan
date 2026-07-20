@@ -28,6 +28,7 @@ from quillan.assignment_summary_context import (
     relative_path_for,
     standard_column_keys,
 )
+from quillan.work_paths import quillan_work_paths
 
 CSV_COLUMNS: Final[tuple[str, ...]] = (
     "class_id",
@@ -86,15 +87,9 @@ def standards_summary_export_path(
     """Return the canonical assignment-local standards summary CSV path."""
     _validate_identifier(class_id, "class_id")
     _validate_identifier(assignment_id, "assignment_id")
-    return (
-        Path(workspace_root)
-        / "classes"
-        / class_id
-        / "assignments"
-        / assignment_id
-        / "exports"
-        / "standards_summary.csv"
-    )
+    return quillan_work_paths(
+        workspace_root, class_id, assignment_id
+    ).exports_dir / "standards_summary.csv"
 
 
 def export_standards_summary(

@@ -40,7 +40,7 @@ def _write_workspace(
     assignment_id: str = ASSIGNMENT_ID,
 ) -> None:
     class_dir = root / "classes" / CLASS_ID
-    assignment_dir = class_dir / "assignments" / assignment_id
+    assignment_dir = class_dir / "modules" / "quillan" / "work" / assignment_id
     assignment_dir.mkdir(parents=True)
 
     with (class_dir / "roster.csv").open(
@@ -179,7 +179,9 @@ def test_route_scan_decode_qr_successfully_routes_single_image(
         workspace
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "scans"
         / "response_stu_0001_pg_002.png"
@@ -227,7 +229,9 @@ def test_route_scan_payload_mode_still_works_without_qr_decoding(
             workspace
             / "classes"
             / CLASS_ID
-            / "assignments"
+            / "modules"
+            / "quillan"
+            / "work"
             / ASSIGNMENT_ID
             / "scans"
         ).glob("response_*.png")

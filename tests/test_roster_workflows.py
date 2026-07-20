@@ -436,7 +436,9 @@ def test_remove_is_in_memory_only_and_does_not_touch_evidence(
         tmp_path
         / "classes"
         / roster.class_id
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / "essay"
         / "submissions"
         / "0012"

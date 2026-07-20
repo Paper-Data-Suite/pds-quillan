@@ -83,7 +83,9 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         tmp_path
         / "classes"
         / CLASS_ID
-        / "assignments"
+        / "modules"
+        / "quillan"
+        / "work"
         / ASSIGNMENT_ID
         / "assignment.json"
     )
@@ -134,7 +136,7 @@ def test_list_is_read_only_and_preserves_requirement_order(
     monkeypatch.setattr(
         "builtins.input", lambda *_args: pytest.fail("direct command prompted")
     )
-    assignment_path = workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+    assignment_path = workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     manifest_path = submission_manifest_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
     before = (assignment_path.read_bytes(), manifest_path.read_bytes())
 
@@ -245,7 +247,7 @@ def test_met_succeeds_only_after_every_configured_check_is_met(workspace: Path) 
 
 
 def test_assignment_policy_cannot_be_overridden(workspace: Path) -> None:
-    assignment_path = workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+    assignment_path = workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     assignment = _assignment()
     assignment["minimum_requirement_policy"]["allow_return_without_full_review"] = False
     assignment_path.write_text(json.dumps(assignment), encoding="utf-8")
@@ -297,7 +299,7 @@ def test_stale_unmet_check_does_not_enable_outcome(workspace: Path) -> None:
 def test_no_configured_requirements_list_succeeds_but_set_fails(
     workspace: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    path = workspace / "classes" / CLASS_ID / "assignments" / ASSIGNMENT_ID / "assignment.json"
+    path = workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "assignment.json"
     assignment = _assignment()
     assignment["basic_requirements"] = {}
     path.write_text(json.dumps(assignment), encoding="utf-8")

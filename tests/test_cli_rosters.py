@@ -382,7 +382,7 @@ def test_remove_changes_only_roster_and_preserves_evidence_and_metadata(
         "english_10_p2", "2026-2027", created_at=datetime.now(timezone.utc)
     )
     metadata_path = write_class_metadata_for_class(workspace, metadata)
-    evidence = roster_path.parent / "assignments" / "essay" / "submissions" / "0007" / "feedback.md"
+    evidence = roster_path.parent / "modules" / "quillan" / "work" / "essay" / "submissions" / "0007" / "feedback.md"
     evidence.parent.mkdir(parents=True, exist_ok=True)
     evidence.write_text("retain", encoding="utf-8")
     metadata_before = metadata_path.read_bytes()
