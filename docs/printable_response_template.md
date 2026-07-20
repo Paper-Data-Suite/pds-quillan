@@ -1,267 +1,99 @@
-# Quillan Printable Writing-Response Template Contract
+# Printable Response Packet Contract
 
-## Overview
-
-This document defines the current contract for one generic printable Quillan
-writing-response page. It describes the information and page structure that the
-PDF generator produces so teachers can distribute identifiable
-paper writing surfaces and later connect captured pages to local Quillan
-records.
-
-The page is a paper-writing and routing artifact. It does not evaluate student
-work, provide feedback, assign a score, or represent a software-made judgment.
-Teacher review remains governed by
-[`teacher_review_model.md`](teacher_review_model.md).
-
-## Template Purpose
-
-The template supports paper-first and restricted-technology writing workflows
-by providing:
-
-* a usable surface for student handwriting;
-* human-readable identity information for distribution and handling;
-* machine-readable identity for future scan-routing work; and
-* durable links to one class, assignment, student, and response-page number.
-
-This is a response-page contract, not a complete assignment-packet contract.
-Assignment prompts, directions, requirements, rubrics, standards summaries,
-and other packet materials are separate concerns.
-
-## Core Page Unit
-
-One physical response page represents exactly:
-
-* one `class_id`;
-* one `assignment_id`;
-* one `student_id`;
-* one positive integer `page_number`; and
-* one lined student writing surface.
-
-The generator may produce `N` response pages for a student by repeating
-this contract with a different `page_number` on each page. The human-readable
-identity and PDS1 payload must describe the same class, assignment, student,
-and page number.
-
-## Page Format
-
-The current page format is:
-
-* US Letter;
-* 8.5 by 11 inches; and
-* portrait orientation.
-
-Content must stay within printer-safe margins suitable for ordinary school
-printers. The identity area, QR code, writing area, and footer must not overlap
-or depend on edge-to-edge printing.
-
-Future contracts may add other paper sizes or orientations. Such options do
-not change the current default and are not layout modes defined here.
-
-## Required Page Elements
-
-Each response page must contain:
-
-* one QR code encoding the canonical Quillan PDS1 response payload;
-* the student's human-readable display name;
-* the human-readable `student_id`;
-* a human-readable class label or `class_id`;
-* a human-readable assignment title or `assignment_id`;
-* the human-readable `page_number`;
-* a large, simple lined writing area; and
-* a basic header and/or footer that organizes page identity without
-  interfering with writing.
-
-The header is the natural location for student, class, and assignment
-information. The QR code and page number may be placed in the header or
-footer. This contract does not prescribe typography, exact dimensions, or a
-final visual design, but all required elements must remain legible on the
-printed page.
-
-## Student Identity
-
-Every page must display both:
-
-* the student display name, for practical teacher distribution and student
-  use; and
-* `student_id`, for durable routing and record linkage.
-
-The display name is presentation data and must not replace `student_id`.
-Teachers should not need to memorize student IDs to distribute pages, while
-future processing must not rely on names as stable identifiers.
-
-The page's QR payload must contain `student_id`. It must not contain the
-student display name.
-
-For class and assignment information, a friendly class label and assignment
-title are preferred for usability. If those display values are unavailable,
-the page must display `class_id` and `assignment_id` instead. The underlying
-PDS1 payload always uses the identifiers.
-
-## QR / PDS1 Payload
-
-Each page must include a QR code encoding the existing canonical response
-payload:
+Quillan generates one combined class-packet PDF at:
 
 ```text
-PDS1|module=quillan|class=<class_id>|aid=<assignment_id>|sid=<student_id>|page=<page_number>|doc=response
+classes/<class_id>/modules/quillan/work/<assignment_id>/templates/printable_response_pages.pdf
 ```
 
-The payload fields have these meanings:
+Each actual operation creates one fresh generation ID and artifact ID, one
+issuance per roster student, and one immutable page ID plus one Core route ID
+per physical page. Continuation pages share their student's issuance but never
+share page or route identity. Roster order, including leading-zero student IDs,
+is preserved.
 
-* `module=quillan` identifies the Paper Data Suite module;
-* `class` carries `class_id`;
-* `aid` carries `assignment_id`;
-* `sid` carries `student_id`;
-* `page` carries the positive integer response-page number; and
-* `doc=response` identifies the document as a writing-response page.
+## PDS2 route and QR
 
-The PDS1 payload is the machine-readable source of routing identity. Human-
-readable labels support people handling the paper, but they do not override
-the payload. All displayed identifiers and the displayed page number must
-match their corresponding payload values.
-
-The future validation, destination, filename, collision, and failure behavior
-for an already-decoded payload is defined in
-[`scan_routing_design.md`](scan_routing_design.md).
-
-The QR code must be visually separate from the writing lines, printed with
-sufficient contrast, and given unobstructed whitespace so the page remains
-usable for future scanning. QR image generation and embedding are implemented
-by the current PDF generator. QR extraction or decoding from later scans and
-scan routing belong to future implementation work.
-
-Synthetic example:
+The QR contains only Core's canonical locator serialization:
 
 ```text
-PDS1|module=quillan|class=english12_period3_synthetic|aid=villainy_final_essay_synthetic|sid=stu_0001|page=1|doc=response
+PDS2|m=quillan|c=<class_id>|w=<assignment_id>|r=<route_id>
 ```
 
-## Writing Area
-
-The MVP writing surface is one simple lined area occupying most of the usable
-page. It must:
-
-* provide practical spacing for handwriting;
-* leave enough uninterrupted room for a student response;
-* remain clear of the QR code and identity fields; and
-* avoid header, footer, or decorative elements that obscure writing lines.
-
-This contract does not require an exact line count, line spacing, margin
-width, or header height. The implementation chooses and tests practical
-measurements while this contract intentionally avoids making drawing
-coordinates public data contracts.
-
-The current generator has one writing-area layout. Cornell notes, graphic
-organizers, short-answer boxes, rubric grids, teacher scoring areas, and other
-specialized layouts are not variants of this contract.
-
-## Page Numbering
-
-`page_number` is required for every response page and must be a positive
-integer.
-
-For `N` pages generated for one student, class, and assignment, pages should
-be numbered in response order from `1` through `N`. The number must appear:
-
-* in human-readable form on the printed page; and
-* as the `page` value in that page's PDS1 payload.
-
-The displayed form may be `Page 1` or `Page 1 of N`. A total page count is
-optional and is not part of the current PDS1 response payload. Page order is
-scoped to the combination of class, assignment, and student; it is not a
-global page identifier.
-
-## Output Location
-
-Generated printable response PDFs belong under the assignment-local
-template directory:
+The locator resolves a Core-owned active route registration whose target is:
 
 ```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/templates/
+ModuleRecordRef(
+    module_id="quillan",
+    record_kind="response_page",
+    record_id=<page_id>,
+    contract_version="1",
+)
 ```
 
-This location keeps teacher-distributed materials with the applicable local
-assignment. The current generator writes one batch PDF named
-`printable_response_pages.pdf`, containing each requested page for each
-student.
+The registration timestamp equals the immutable page timestamp. Its diagnostic
+details are exactly `issuance_id`, `logical_page`, and `total_pages`; its human
+fallback is:
 
-## Implemented Generator
+```text
+Quillan | class=<class_id> | assignment=<assignment_id> | student=<student_id> | page=<logical_page>/<total_pages> | page_id=<page_id>
+```
 
-`quillan.printable_response.generate_printable_response_pdf()` renders US
-Letter portrait pages with ReportLab and embeds QR codes with `qrcode[pil]`.
-`build_response_page_context()` exposes the validated human-readable identity
-and canonical PDS1 payload for one page so contract behavior can be tested
-without inspecting PDF drawing coordinates.
+Student, issuance, page, logical-page, generation, artifact, and record-path
+meaning is not encoded in the QR. The immutable response-page record supplies
+that meaning after Core resolves the locator.
 
-`generate_printable_responses_for_roster()` loads shared `pds-core` roster
-records with `class_id`, `student_id`, `last_name`, `first_name`, and `period`.
-Student IDs remain strings so leading zeros are preserved. This API support
-is used through one shared packet planning and generation service by both the
-teacher-facing Printable Response Pages menu and the direct
-`quillan printable-responses generate` command. The shared service validates
-canonical assignment and roster inputs and enforces overwrite policy; the
-low-level renderer remains `generate_printable_responses_for_roster()`.
-The CLI adds no alternate layout and does not change this page or PDS1 payload
-contract.
+## Page layout
 
-## Privacy and Synthetic Data
+Pages are US Letter portrait with printer-safe margins. Each page displays the
+assignment title, immutable student display name and student ID, class label and
+class ID, assignment ID, `Page X of N`, full page ID, and full route ID. The QR
+uses medium error correction and a four-module quiet border. The lined writing
+area remains clear of the QR and diagnostics. Prompts, standards, scales, review
+settings, and submission, scan, or evidence state are never printed.
 
-Generated production pages are local, teacher-controlled artifacts. They may
-contain real student display names and IDs when a teacher creates them for
-actual classroom use. Those local artifacts must be handled according to the
-school's privacy and records practices and must not be committed to this
-repository.
+Logical page number describes the intended page within one issuance.
+`source_page_number`, used by later scan intake, describes a page in a scanned
+source file and is not interchangeable with logical page number.
 
-Documentation, examples, tests, and fixtures committed to the repository must
-use synthetic data only. Do not commit:
+## Managed transaction
 
-* real student names or IDs;
-* real rosters;
-* real student writing;
-* real grades;
-* real scanned student work; or
-* real parent or guardian information.
+Generation revalidates assignment and roster SHA-256 fingerprints, selects
+unambiguous predecessors, allocates fresh identities with bounded collision
+retries, and preflights every record, route, output, and temporary destination.
+It then writes page records and prepared issuances, writes and reload-verifies
+one immutable Core route per page, renders a same-directory temporary PDF from
+the immutable records and verified routes, transitions new issuances to
+`issued`, and atomically installs the PDF. Only after installation are named
+predecessors superseded.
 
-Synthetic display names should be obviously fictional, and synthetic
-identifiers should follow the same validation rules as production identifiers.
+No Core route is deleted, overwritten, repointed, or reused. Record failures
+before route creation cancel prepared issuances. Failures after any route may
+exist invalidate the new issuances while retaining page records and routes.
+Predecessor-supersession failure is an installed partial failure: the new PDF
+and issued records remain installed and the unresolved lineage is reported.
 
-## Relationship to Test Fixtures
+`--overwrite` authorizes replacement of only the canonical PDF. It never
+authorizes identity, record, route, or lifecycle reuse. Concurrent output
+changes prevent installation.
 
-The synthetic paper-workflow fixtures in
-`tests/fixtures/paper_workflow/` provide repository-safe assignment,
-standards, student display, and submission data for response-page tests. They
-include:
+## Dry run and interfaces
 
-* a valid `class_id`;
-* a valid `assignment_id`;
-* an assignment title;
-* a valid `student_id`;
-* a synthetic student display name;
-* a standards profile reference; and
-* valid submission metadata and synthetic submission text.
+`plan_printable_response_packet(...)` is the public aggregate dry-run boundary.
+It validates canonical inputs, counts students, issuances, pages, routes, and
+predecessors, fingerprints sources, and reports output existence. It allocates
+no IDs and creates no directory, record, route, temporary file, or PDF.
 
-The fixture consistency tests verify that the assignment, standards profile,
-student display record, and submission refer to the same synthetic workflow.
-Response-page tests combine those fixture identities with a
-positive page number. The fixture layout is test data, not a production roster
-or workspace schema.
+The direct command is noninteractive and never opens files:
 
-## Out of Scope
+```text
+quillan printable-responses generate <class_id> <assignment_id> [--pages-per-student N] [--overwrite] (--yes | --dry-run)
+```
 
-This contract does not implement or define:
+Only the teacher menu may offer to open an installed PDF or its folder, and
+opening remains an explicit choice.
 
-* scan decoding, routing, filing, or OCR;
-* complete printable assignment packets;
-* prompt, rubric, standards-summary, or graphic-organizer pages;
-* multiple response-layout modes;
-* teacher scoring areas;
-* assignment, submission, or standards model redesign;
-* requirements checking, tagging, scoring, feedback, or reporting;
-* AI tagging, scoring, feedback, or automatic grading;
-* assignment creation workflows; or
-* workspace configuration workflows.
-
-The field-level PDS1 contract remains documented in
-[`data_contracts.md`](data_contracts.md), and the intended assignment-local
-directory remains documented in
-[`workspace_lifecycle.md`](workspace_lifecycle.md).
+PDS1 generation has been removed. PDS1 scan interpretation remains a separate,
+later migration boundary; this contract does not claim installed module-profile
+registration, a route handler, PDS2 scan dispatch, retained-source intake,
+evidence assembly, submission-schema migration, or plain-paper changes.

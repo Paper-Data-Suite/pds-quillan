@@ -16,6 +16,7 @@ from quillan.generated_output_opening import (
     OpenedGeneratedOutput,
 )
 import quillan.printable_response_workflows as workflows
+from quillan.printable_response_generation import PrintableResponseGenerationError
 
 
 CLASS_ID = "synthetic_english_p3"
@@ -494,6 +495,42 @@ def test_generate_class_packet_reports_invalid_pages_without_traceback(
     assert workflows.prompt_generate_class_packet() == 1
     output = capsys.readouterr().out
     assert "Pages per student must be a positive integer" in output
+    assert "Traceback" not in output
+    assert not list(tmp_path.rglob("*.pdf"))
+
+
+def test_menu_governed_packet_error_is_clean_and_never_opens(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path)
+    _write_assignment(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        workflows,
+        "plan_printable_response_packet",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            PrintableResponseGenerationError("synthetic governed planning failure")
+        ),
+        raising=False,
+    )
+    # The workflow imports the function locally; replace the source module binding.
+    monkeypatch.setattr(
+        "quillan.printable_response_packet.plan_printable_response_packet",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            PrintableResponseGenerationError("synthetic governed planning failure")
+        ),
+    )
+    monkeypatch.setattr(
+        workflows,
+        "open_generated_output_file",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("opened output")),
+    )
+    _inputs(monkeypatch, ["1", "1", "1"])
+    assert workflows.prompt_generate_class_packet() == 1
+    output = capsys.readouterr().out
+    assert "Error: synthetic governed planning failure" in output
     assert "Traceback" not in output
     assert not list(tmp_path.rglob("*.pdf"))
 

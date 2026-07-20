@@ -228,6 +228,20 @@ def preflight_work_file_destination(
     return target
 
 
+def preflight_work_directory_destination(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    relative_path: str | Path,
+) -> Path:
+    """Validate a contained Quillan work directory without mutation."""
+    validated_work = _require_quillan_work_ref(work_ref)
+    target = safe_module_work_descendant(
+        workspace_root, validated_work, relative_path
+    )
+    _preflight_path_chain(Path(workspace_root), target, expect_file=False)
+    return target
+
+
 def initialize_managed_work_layout(paths: QuillanWorkPaths) -> QuillanWorkPaths:
     """Preflight and create only Quillan's static managed work directories."""
     preflight_managed_work_layout(paths)
@@ -382,6 +396,7 @@ __all__ = [
     "preflight_managed_work_layout",
     "preflight_quillan_work_collection",
     "preflight_work_file_destination",
+    "preflight_work_directory_destination",
     "quillan_work_collection_dir",
     "quillan_work_paths",
     "quillan_work_ref",

@@ -2,18 +2,22 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 from pathlib import Path
 
 from pds_core.classes import write_class_roster
 from pds_core.rosters import RosterError, create_roster
+from pds_core.routing_models import ModuleWorkRef
 from pypdf import PdfReader
 import pytest
 
 from quillan.printable_response_packet import (
     generate_printable_response_packet,
     plan_printable_response_packet,
+    validate_printable_response_packet_plan,
 )
+from quillan.printable_response_generation import IdentityGenerators
 
 CLASS_ID = "synthetic_english_p3"
 ASSIGNMENT_ID = "synthetic_response"
@@ -103,19 +107,95 @@ def test_plan_validates_without_writing_and_reports_canonical_paths(
     assert not plan.output_path.parent.exists()
 
 
-def test_generate_reuses_renderer_and_rejects_unexpected_path(
+@pytest.mark.parametrize(
+    "forge",
+    [
+        lambda plan: replace(plan, output_path=plan.workspace_root / "outside.pdf"),
+        lambda plan: replace(plan, output_relative_path="wrong/output.pdf"),
+        lambda plan: replace(plan, assignment_path=plan.workspace_root / "assignment.json"),
+        lambda plan: replace(plan, roster_path=plan.workspace_root / "roster.csv"),
+        lambda plan: replace(
+            plan,
+            work_ref=ModuleWorkRef("scoreform", plan.class_id, plan.assignment_id),
+        ),
+        lambda plan: replace(plan, class_id="forged_class"),
+        lambda plan: replace(plan, assignment_title="forged title"),
+        lambda plan: replace(plan, student_count=99),
+        lambda plan: replace(plan, total_page_count=99),
+        lambda plan: replace(plan, planned_route_count=99),
+        lambda plan: replace(plan, predecessor_count=1),
+        lambda plan: replace(plan, assignment_sha256="BAD"),
+        lambda plan: replace(plan, roster_sha256="0" * 63),
+        lambda plan: replace(plan, target_exists=True, output_sha256=None),
+        lambda plan: replace(plan, target_exists=False, output_sha256="0" * 64),
+    ],
+    ids=[
+        "output-path",
+        "output-relative",
+        "assignment-path",
+        "roster-path",
+        "work-ref",
+        "class-id",
+        "assignment-title",
+        "student-count",
+        "page-count",
+        "route-count",
+        "predecessor-count",
+        "assignment-hash",
+        "roster-hash",
+        "target-without-digest",
+        "absent-with-digest",
+    ],
+)
+def test_fabricated_packet_plan_fails_before_identity_or_mutation(
+    tmp_path: Path, forge: object
+) -> None:
+    write_packet_workspace(tmp_path)
+    plan = plan_printable_response_packet(tmp_path, CLASS_ID, ASSIGNMENT_ID)
+    fabricated = forge(plan)  # type: ignore[operator]
+    calls = 0
+
+    def identity() -> str:
+        nonlocal calls
+        calls += 1
+        return "gen_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+    before = {
+        path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()
+    }
+    with pytest.raises(ValueError):
+        generate_printable_response_packet(
+            fabricated,
+            generators=IdentityGenerators(generation=identity),
+        )
+    assert calls == 0
+    assert {
+        path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()
+    } == before
+    assert not plan.output_path.parent.exists()
+
+
+def test_packet_plan_validator_requires_exact_model_type() -> None:
+    with pytest.raises(ValueError, match="exactly"):
+        validate_printable_response_packet_plan(object())
+
+
+def test_render_failure_is_reported_before_installation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     write_packet_workspace(tmp_path)
     plan = plan_printable_response_packet(tmp_path, CLASS_ID, ASSIGNMENT_ID)
-    unexpected = tmp_path / "unexpected.pdf"
-    monkeypatch.setattr(
-        "quillan.printable_response_packet.generate_printable_responses_for_roster",
-        lambda *_args, **_kwargs: unexpected,
-    )
+    def fail_render(*_args: object, **_kwargs: object) -> Path:
+        raise OSError("synthetic render failure")
 
-    with pytest.raises(ValueError, match="unexpected output path"):
-        generate_printable_response_packet(plan)
+    monkeypatch.setattr(
+        "quillan.printable_response_generation.render_printable_response_pdf",
+        fail_render,
+    )
+    result = generate_printable_response_packet(plan)
+    assert not result.installed
+    assert result.failure_stage == "pdf_rendering"
+    assert "synthetic render failure" in (result.error or "")
 
 
 def test_generation_counts_pages_and_preserves_inputs(tmp_path: Path) -> None:
@@ -170,12 +250,15 @@ def test_existing_packet_requires_explicit_overwrite(tmp_path: Path) -> None:
     plan.output_path.write_bytes(b"existing synthetic packet")
     original_stat = plan.output_path.stat()
 
-    with pytest.raises(FileExistsError, match="--overwrite --yes"):
+    with pytest.raises(FileExistsError, match="appeared after planning"):
         generate_printable_response_packet(plan)
 
     assert plan.output_path.read_bytes() == b"existing synthetic packet"
     assert plan.output_path.stat().st_mtime_ns == original_stat.st_mtime_ns
-    replaced = generate_printable_response_packet(plan, overwrite=True)
+    replacement_plan = plan_printable_response_packet(
+        tmp_path, CLASS_ID, ASSIGNMENT_ID
+    )
+    replaced = generate_printable_response_packet(replacement_plan, overwrite=True)
     assert replaced.replaced_existing
     assert plan.output_path.read_bytes().startswith(b"%PDF")
 

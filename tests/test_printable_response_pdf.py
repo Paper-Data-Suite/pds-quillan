@@ -1,245 +1,229 @@
-"""Tests for printable Quillan writing-response PDFs."""
+"""Managed printable-response renderer and layout tests."""
 
-from __future__ import annotations
-
-import json
+from dataclasses import replace
 from pathlib import Path
-from typing import Any, cast
 
-import pytest
-import quillan.printable_response as printable_response
-from quillan.storage import assignment_templates_dir
 from pypdf import PdfReader
+import pytest
 
 from quillan.printable_response import (
-    PRINTABLE_RESPONSE_FILENAME,
-    build_response_page_context,
-    generate_printable_response_pdf,
-    generate_printable_responses_for_roster,
+    PrintableResponseRenderError,
+    render_printable_response_pdf,
 )
-from quillan.work_paths import QuillanWorkPathError, quillan_work_paths
-
-FIXTURE_DIR = Path(__file__).parent / "fixtures" / "paper_workflow"
-EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
-ROSTER_PATH = EXAMPLES_DIR / "rosters" / "english12_p3_synthetic.csv"
-ASSIGNMENT_PATH = (
-    EXAMPLES_DIR / "assignments" / "villainy_final_essay_synthetic.json"
+from quillan.printable_response_packet import (
+    generate_printable_response_packet,
+    plan_printable_response_packet,
+)
+from quillan.printable_response_generation import (
+    build_printable_response_artifact_plan,
+    select_printable_response_predecessors,
+)
+from quillan.printable_response_persistence import (
+    PersistedPrintableResponseRecordSet,
+    write_printable_response_record_set,
+)
+from quillan.printable_response_routes import (
+    PersistedPrintableResponseRouteSet,
+    RegisteredPrintableResponsePageRoute,
+    persist_printable_response_route_set,
+)
+from pds_core.routes import route_registration_path
+from quillan.work_paths import (
+    initialize_managed_work_layout,
+    quillan_work_paths,
+    quillan_work_ref,
+)
+from tests.test_printable_response_packet import (
+    ASSIGNMENT_ID,
+    CLASS_ID,
+    write_packet_workspace,
 )
 
 
-def _load_assignment() -> dict[str, Any]:
-    assignment = json.loads(
-        (FIXTURE_DIR / "assignment.json").read_text(encoding="utf-8")
+def test_managed_packet_layout_uses_immutable_identity_and_order(tmp_path: Path) -> None:
+    write_packet_workspace(tmp_path)
+    result = generate_printable_response_packet(
+        plan_printable_response_packet(
+            tmp_path, CLASS_ID, ASSIGNMENT_ID, pages_per_student=2
+        )
     )
-    assert isinstance(assignment, dict)
-    return cast(dict[str, Any], assignment)
-
-
-def _load_students() -> list[dict[str, str]]:
-    students = json.loads((FIXTURE_DIR / "students.json").read_text(encoding="utf-8"))
-    assert isinstance(students, list)
-    assert all(isinstance(student, dict) for student in students)
-    return cast(list[dict[str, str]], students)
-
-
-def _write_roster_assignment(
-    tmp_path: Path,
-    *,
-    class_ids: list[str] | None = None,
-) -> Path:
-    assignment = json.loads(ASSIGNMENT_PATH.read_text(encoding="utf-8"))
-    assert isinstance(assignment, dict)
-    assignment["class_ids"] = class_ids or ["english12_p3"]
-    assignment_path = tmp_path / "assignment.json"
-    assignment_path.write_text(json.dumps(assignment), encoding="utf-8")
-    return assignment_path
-
-
-def test_build_response_page_context_uses_fixture_identity() -> None:
-    assignment = _load_assignment()
-    student = _load_students()[0]
-
-    context = build_response_page_context(
-        class_id=student["class_id"],
-        assignment_id=cast(str, assignment["assignment_id"]),
-        assignment_title=cast(str, assignment["title"]),
-        student_id=student["student_id"],
-        student_display_name=student["student_display_name"],
-        page_number=2,
-    )
-
-    assert context.class_id == "english12_p4_synthetic"
-    assert context.class_label == "english12_p4_synthetic"
-    assert context.assignment_id == "literary_argument_synthetic"
-    assert context.assignment_title == "Literary Argument Response"
-    assert context.student_id == "stu_0001"
-    assert context.student_display_name == student["student_display_name"]
-    assert context.page_number == 2
-    assert context.payload == (
-        "PDS1|module=quillan|class=english12_p4_synthetic|"
-        "aid=literary_argument_synthetic|sid=stu_0001|page=2|doc=response"
-    )
-    assert context.student_display_name not in context.payload
-
-
-def test_generate_printable_response_pdf_uses_templates_route(
-    tmp_path: Path,
-) -> None:
-    assignment = _load_assignment()
-    students = _load_students()
-    class_id = students[0]["class_id"]
-    assignment_id = cast(str, assignment["assignment_id"])
-
-    output_path = generate_printable_response_pdf(
-        tmp_path,
-        class_id=class_id,
-        assignment_id=assignment_id,
-        assignment_title=cast(str, assignment["title"]),
-        students=students,
-    )
-
-    assert output_path == (
-        assignment_templates_dir(tmp_path, class_id, assignment_id)
-        / PRINTABLE_RESPONSE_FILENAME
-    )
-    assert output_path.is_file()
-    assert output_path.stat().st_size > 1_000
-    assert output_path.read_bytes().startswith(b"%PDF")
-
-
-def test_generate_printable_response_pdf_supports_multiple_students_and_pages(
-    tmp_path: Path,
-) -> None:
-    assignment = _load_assignment()
-    students = _load_students()
-    students.append(
-        {
-            "student_id": "stu_0002",
-            "student_display_name": "Jordan Example",
-            "class_id": students[0]["class_id"],
-        }
-    )
-
-    output_path = generate_printable_response_pdf(
-        tmp_path,
-        class_id=students[0]["class_id"],
-        assignment_id=cast(str, assignment["assignment_id"]),
-        assignment_title=cast(str, assignment["title"]),
-        students=students,
-        pages_per_student=2,
-    )
-
-    reader = PdfReader(str(output_path))
+    assert result.success
+    reader = PdfReader(str(result.output_path))
     assert len(reader.pages) == 4
+    texts = tuple(page.extract_text() for page in reader.pages)
+    assert "Avery Zulu" in texts[0]
+    assert "Student ID: 00107" in texts[0]
+    assert "Page 1 of 2" in texts[0]
+    assert "Page 2 of 2" in texts[1]
+    assert "Morgan Alpha" in texts[2]
+    assert "Student ID: 00002" in texts[2]
+    assert f"Page ID: {result.page_ids[0]}" in texts[0]
+    assert f"Route ID: {result.route_ids[0]}" in texts[0]
+    assert all("Private synthetic directions" not in text for text in texts)
 
 
-def test_printable_response_generation_accepts_pds_core_roster_fixture(
+def test_renderer_has_no_unmanaged_mapping_bypass(tmp_path: Path) -> None:
+    with pytest.raises(PrintableResponseRenderError):
+        render_printable_response_pdf(
+            tmp_path.resolve(),
+            quillan_work_ref(CLASS_ID, ASSIGNMENT_ID),
+            tmp_path / "unsafe.pdf",
+            ({"page": "raw"},),
+        )
+    assert not (tmp_path / "unsafe.pdf").exists()
+
+
+@pytest.mark.parametrize("invalid_root", [None, object(), 42, []])
+def test_renderer_rejects_wrong_root_types_as_render_errors(
     tmp_path: Path,
+    invalid_root: object,
 ) -> None:
-    output_path = generate_printable_responses_for_roster(
-        tmp_path,
-        assignment_path=_write_roster_assignment(tmp_path),
-        roster_path=ROSTER_PATH,
+    destination = tmp_path / "unchanged.pdf"
+    destination.write_bytes(b"unchanged renderer destination")
+    with pytest.raises(PrintableResponseRenderError, match="workspace_root"):
+        render_printable_response_pdf(
+            invalid_root,  # type: ignore[arg-type]
+            object(),
+            destination,
+            object(),
+        )
+    assert destination.read_bytes() == b"unchanged renderer destination"
+    assert tuple(tmp_path.iterdir()) == (destination,)
+
+
+def persisted_render_packet(tmp_path: Path):  # type: ignore[no-untyped-def]
+    packet = plan_printable_response_packet(tmp_path, CLASS_ID, ASSIGNMENT_ID)
+    predecessors = select_printable_response_predecessors(
+        packet.workspace_root, packet.work_ref, packet.students
     )
-
-    reader = PdfReader(str(output_path))
-    assert output_path.is_file()
-    assert len(reader.pages) == 3
-
-
-def test_printable_response_generation_preserves_roster_identity(
-    tmp_path: Path,
-) -> None:
-    output_path = generate_printable_responses_for_roster(
-        tmp_path,
-        assignment_path=_write_roster_assignment(tmp_path),
-        roster_path=ROSTER_PATH,
+    artifact = build_printable_response_artifact_plan(
+        workspace_root=packet.workspace_root,
+        work_ref=packet.work_ref,
+        assignment=packet.assignment,
+        students=packet.students,
+        pages_per_student=1,
+        output_path=packet.output_path,
+        predecessors=predecessors,
     )
+    initialize_managed_work_layout(
+        quillan_work_paths(tmp_path, CLASS_ID, ASSIGNMENT_ID)
+    )
+    records = write_printable_response_record_set(
+        tmp_path, packet.work_ref, artifact.record_sets[0]
+    )
+    routes = persist_printable_response_route_set(
+        tmp_path, packet.work_ref, records, artifact.route_sets[0]
+    )
+    artifact.temporary_path.write_bytes(b"owned temporary sentinel")
+    return packet, artifact, records, routes
 
-    first_page_text = PdfReader(str(output_path)).pages[0].extract_text()
-    assert "Student: Jane Doe" in first_page_text
-    assert "Student ID: 01001" in first_page_text
-    assert "Student ID: 1001" not in first_page_text
 
-
-def test_printable_response_generation_rejects_roster_assignment_class_mismatch(
+def test_renderer_rejects_claimed_but_unpersisted_records_before_truncation(
     tmp_path: Path,
 ) -> None:
-    with pytest.raises(ValueError, match="english12_p3.*class_ids"):
-        generate_printable_responses_for_roster(
-            tmp_path,
-            assignment_path=_write_roster_assignment(
-                tmp_path, class_ids=["english12_p4"]
+    write_packet_workspace(tmp_path)
+    packet = plan_printable_response_packet(tmp_path, CLASS_ID, ASSIGNMENT_ID)
+    predecessors = select_printable_response_predecessors(
+        packet.workspace_root, packet.work_ref, packet.students
+    )
+    artifact = build_printable_response_artifact_plan(
+        workspace_root=packet.workspace_root,
+        work_ref=packet.work_ref,
+        assignment=packet.assignment,
+        students=packet.students,
+        pages_per_student=1,
+        output_path=packet.output_path,
+        predecessors=predecessors,
+    )
+    initialize_managed_work_layout(
+        quillan_work_paths(tmp_path, CLASS_ID, ASSIGNMENT_ID)
+    )
+    artifact.temporary_path.write_bytes(b"unchanged")
+    claimed = PersistedPrintableResponseRecordSet(
+        artifact.record_sets[0],
+        tmp_path / "claimed-issuance.json",
+        tuple(tmp_path / page.page_id for page in artifact.record_sets[0].pages),
+    )
+    planned_route = artifact.route_sets[0][0]
+    claimed_routes = PersistedPrintableResponseRouteSet(
+        artifact.record_sets[0],
+        (
+            RegisteredPrintableResponsePageRoute(
+                planned_route,
+                route_registration_path(tmp_path, planned_route.locator),
             ),
-            roster_path=ROSTER_PATH,
-        )
-
-
-@pytest.mark.parametrize("pages_per_student", [0, -1, True, 1.5, "1"])
-def test_generate_printable_response_pdf_rejects_invalid_page_counts(
-    tmp_path: Path,
-    pages_per_student: object,
-) -> None:
-    assignment = _load_assignment()
-    students = _load_students()
-
-    with pytest.raises(
-        ValueError, match="pages_per_student must be a positive integer"
-    ):
-        generate_printable_response_pdf(
-            tmp_path,
-            class_id=students[0]["class_id"],
-            assignment_id=cast(str, assignment["assignment_id"]),
-            assignment_title=cast(str, assignment["title"]),
-            students=students,
-            pages_per_student=pages_per_student,  # type: ignore[arg-type]
-        )
-
-
-def test_generate_printable_response_pdf_rejects_empty_students(
-    tmp_path: Path,
-) -> None:
-    with pytest.raises(ValueError, match="at least one student"):
-        generate_printable_response_pdf(
-            tmp_path,
-            class_id="english12_p4_synthetic",
-            assignment_id="literary_argument_synthetic",
-            students=[],
-        )
-
-
-def test_printable_preflight_late_collision_creates_no_partial_layout(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    class_id = "english12_p4_synthetic"
-    assignment_id = "literary_argument_synthetic"
-    paths = quillan_work_paths(tmp_path, class_id, assignment_id)
-    paths.exports_dir.parent.mkdir(parents=True)
-    paths.exports_dir.write_bytes(b"collision-bytes")
-    monkeypatch.setattr(
-        printable_response,
-        "build_response_page_context",
-        lambda **_kwargs: object(),
+        ),
     )
-
-    with pytest.raises(QuillanWorkPathError, match="not a directory"):
-        generate_printable_response_pdf(
-            tmp_path,
-            class_id=class_id,
-            assignment_id=assignment_id,
-            students=[
-                {
-                    "student_id": "stu_0001",
-                    "student_display_name": "Synthetic Student",
-                    "class_id": class_id,
-                }
-            ],
+    with pytest.raises(PrintableResponseRenderError):
+        render_printable_response_pdf(
+            tmp_path.resolve(),
+            packet.work_ref,
+            artifact.temporary_path,
+            ((claimed, claimed_routes),),
         )
+    assert artifact.temporary_path.read_bytes() == b"unchanged"
 
-    assert paths.exports_dir.read_bytes() == b"collision-bytes"
-    assert not paths.assignment_path.exists()
-    assert not paths.response_pages_dir.exists()
-    assert not paths.templates_dir.exists()
-    assert not paths.scans_dir.exists()
-    assert not paths.submissions_dir.exists()
+
+def test_renderer_rejects_missing_persisted_page_before_truncation(
+    tmp_path: Path,
+) -> None:
+    write_packet_workspace(tmp_path)
+    packet, artifact, records, routes = persisted_render_packet(tmp_path)
+    records.page_paths[0].unlink()
+    before = artifact.temporary_path.read_bytes()
+    with pytest.raises(PrintableResponseRenderError):
+        render_printable_response_pdf(
+            tmp_path.resolve(), packet.work_ref, artifact.temporary_path, ((records, routes),)
+        )
+    assert artifact.temporary_path.read_bytes() == before
+
+
+def test_renderer_rejects_noncanonical_registered_path_before_truncation(
+    tmp_path: Path,
+) -> None:
+    write_packet_workspace(tmp_path)
+    packet, artifact, records, routes = persisted_render_packet(tmp_path)
+    fabricated_route = replace(
+        routes.routes[0], registration_path=tmp_path / "fabricated-route.json"
+    )
+    fabricated = PersistedPrintableResponseRouteSet(
+        routes.record_set, (fabricated_route,)
+    )
+    before = artifact.temporary_path.read_bytes()
+    with pytest.raises(PrintableResponseRenderError):
+        render_printable_response_pdf(
+            tmp_path.resolve(), packet.work_ref, artifact.temporary_path, ((records, fabricated),)
+        )
+    assert artifact.temporary_path.read_bytes() == before
+
+
+def test_renderer_rejects_route_authority_from_another_workspace(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    write_packet_workspace(first)
+    packet, artifact, records, routes = persisted_render_packet(first)
+    write_packet_workspace(second)
+    second_paths = quillan_work_paths(second, CLASS_ID, ASSIGNMENT_ID)
+    initialize_managed_work_layout(second_paths)
+    destination = second_paths.templates_dir / artifact.temporary_path.name
+    destination.write_bytes(b"other workspace sentinel")
+    with pytest.raises(PrintableResponseRenderError):
+        render_printable_response_pdf(
+            second.resolve(), packet.work_ref, destination, ((records, routes),)
+        )
+    assert destination.read_bytes() == b"other workspace sentinel"
+
+
+def test_renderer_rejects_wrong_destination_without_creation(tmp_path: Path) -> None:
+    write_packet_workspace(tmp_path)
+    wrong = tmp_path / "wrong.pdf"
+    with pytest.raises(PrintableResponseRenderError):
+        render_printable_response_pdf(
+            tmp_path.resolve(),
+            quillan_work_ref(CLASS_ID, ASSIGNMENT_ID),
+            wrong,
+            (),
+        )
+    assert not wrong.exists()

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import os
+import sys
 from typing import cast
 
 from pds_core.classes import ClassFolder, list_class_folders
@@ -18,7 +20,27 @@ from quillan.generated_output_opening import (
     open_generated_output_folder,
 )
 from quillan.printable_response import PRINTABLE_RESPONSE_FILENAME
+from quillan.printable_response_generation import PrintableResponseGenerationError
 from quillan.storage import assignment_templates_dir
+
+
+def _print_menu_header(title: str) -> None:
+    print("\033[32mQuillan\033[0m")
+    print(title)
+    print()
+
+
+def _clear_screen() -> None:
+    try:
+        interactive = sys.stdin.isatty() and sys.stdout.isatty()
+    except (AttributeError, OSError):
+        interactive = False
+    if interactive:
+        os.system("cls" if os.name == "nt" else "clear")
+
+
+def _pause_for_user() -> None:
+    input("Press Enter to continue...")
 
 
 @dataclass(frozen=True)
@@ -232,14 +254,15 @@ def _prompt_assignment_selection(
 
 def prompt_generate_class_packet() -> int:
     """Prompt for roster and assignment selection, then generate one class PDF."""
-    from quillan.cli_app.output import print_generated_printable_response_packet
-    from quillan.menu import print_menu_header
+    from quillan.cli_app.printable_response_output import (
+        print_generated_printable_response_packet,
+    )
     from quillan.printable_response_packet import (
         generate_printable_response_packet,
         plan_printable_response_packet,
     )
 
-    print_menu_header("Generate Printable Response Class Packet")
+    _print_menu_header("Generate Printable Response Class Packet")
     workspace_root = _workspace_root()
     if workspace_root is None:
         return 1
@@ -265,7 +288,13 @@ def prompt_generate_class_packet() -> int:
             assignment.assignment_id,
             pages_per_student=pages_per_student,
         )
-    except (AssignmentConfigError, RosterError, OSError, ValueError) as error:
+    except (
+        AssignmentConfigError,
+        OSError,
+        PrintableResponseGenerationError,
+        RosterError,
+        ValueError,
+    ) as error:
         print(f"Error: {error}")
         return 1
 
@@ -286,19 +315,25 @@ def prompt_generate_class_packet() -> int:
             plan,
             overwrite=overwrite,
         )
-    except (AssignmentConfigError, RosterError, OSError, ValueError) as error:
+    except (
+        AssignmentConfigError,
+        OSError,
+        PrintableResponseGenerationError,
+        RosterError,
+        ValueError,
+    ) as error:
         print(f"Error: {error}")
         return 1
 
     print_generated_printable_response_packet(generated)
-    print(f"Saved at: {generated.output_path}")
-    _prompt_open_generated_packet(workspace_root, generated.output_path)
-    return 0
+    if generated.installed:
+        print(f"Saved at: {generated.output_path}")
+        _prompt_open_generated_packet(workspace_root, generated.output_path)
+    return 0 if generated.success else 1
 
 
 def launch_printable_response_menu() -> int:
     """Launch the teacher-facing printable response pages submenu."""
-    from quillan.menu import clear_screen, pause_for_user, print_menu_header
     from quillan.menu_navigation import (
         NavigationChoice,
         navigation_hint,
@@ -308,8 +343,8 @@ def launch_printable_response_menu() -> int:
 
     try:
         while True:
-            clear_screen()
-            print_menu_header("Printable Response Pages")
+            _clear_screen()
+            _print_menu_header("Printable Response Pages")
             print("1. Generate class packet")
             print_navigation_options()
             print()
@@ -320,12 +355,12 @@ def launch_printable_response_menu() -> int:
             if choice == "2" or navigation is NavigationChoice.BACK:
                 return 0
             if choice == "1":
-                clear_screen()
+                _clear_screen()
                 prompt_generate_class_packet()
             else:
                 print(f"Invalid selection. {navigation_hint()}")
             print()
-            pause_for_user()
+            _pause_for_user()
     except KeyboardInterrupt:
         print("\nExiting printable response menu.")
         return 0

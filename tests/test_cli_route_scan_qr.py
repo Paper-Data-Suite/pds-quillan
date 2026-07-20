@@ -18,7 +18,7 @@ from pds_core.scan_failure_metadata import validate_routing_failure_metadata
 from quillan.cli import main
 import quillan.cli_app.handlers.routing as cli_routing
 from quillan.evidence_filing import EvidenceFilingError
-from quillan.payloads import build_response_payload
+from tests.pds1_scan_test_support import build_response_payload
 
 CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"

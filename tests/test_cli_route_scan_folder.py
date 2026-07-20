@@ -17,7 +17,7 @@ from qrcode.image.pil import PilImage
 
 from quillan.cli import main
 import quillan.cli_app.handlers.routing as cli_routing
-from quillan.payloads import build_response_payload
+from tests.pds1_scan_test_support import build_response_payload
 from quillan.pdf_pages import PdfPageConversionError, PdfPageConversionFailure
 from quillan.pdf_pages import PdfPageImage
 from quillan.routing_review import RoutingReviewError

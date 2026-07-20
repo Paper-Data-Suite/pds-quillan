@@ -8,7 +8,7 @@ from pds_core.rosters import RosterError
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
 from quillan.assignments import AssignmentConfigError
-from quillan.cli_app.output import (
+from quillan.cli_app.printable_response_output import (
     print_generated_printable_response_packet,
     print_printable_response_packet_plan,
 )
@@ -16,6 +16,7 @@ from quillan.printable_response_packet import (
     generate_printable_response_packet,
     plan_printable_response_packet,
 )
+from quillan.printable_response_generation import PrintableResponseGenerationError
 
 
 def handle_printable_responses_generate(args: argparse.Namespace) -> int:
@@ -37,10 +38,11 @@ def handle_printable_responses_generate(args: argparse.Namespace) -> int:
             return 0
         result = generate_printable_response_packet(plan, overwrite=args.overwrite)
         print_generated_printable_response_packet(result)
-        return 0
+        return 0 if result.success else 1
     except (
         AssignmentConfigError,
         OSError,
+        PrintableResponseGenerationError,
         RosterError,
         ValueError,
         WorkspaceRootError,

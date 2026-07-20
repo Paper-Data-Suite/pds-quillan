@@ -13,7 +13,7 @@ import qrcode
 from qrcode.image.pil import PilImage
 
 from quillan.cli import main
-from quillan.payloads import build_response_payload
+from tests.pds1_scan_test_support import build_response_payload
 
 CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"
