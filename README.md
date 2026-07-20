@@ -1,5 +1,19 @@
 # Quillan
 
+## Installed PDS2 module boundary
+
+Quillan registers the `quillan` entry point in `paper_data_suite.modules` through
+`quillan.pds_module:get_module_profile`. The profile supports Core routing contract
+`1`, QR schema `PDS2`, route-registration schema `1`, and only Core route status
+`active`.
+
+An active route is only structurally dispatchable. The response-page handler also
+requires the immutable issuance lifecycle to be exactly `issued`. Student and page
+meaning come from immutable page context, never QR text, fallback text, filenames,
+current roster data, or current assignment data. This boundary validates one
+retained source page and returns a typed runtime result; it does not extract evidence,
+persist observations, or assemble submissions.
+
 For a compact, read-only diagnostic of one student's submission and review
 workflow, use `quillan review-status <class_id> <assignment_id> <student_id>`;
 add `--format json` for the stable versioned structured contract.

@@ -1,5 +1,38 @@
 # Quillan Scan Routing Design
 
+## Installed PDS2 response-page handler
+
+Core invokes Quillan with a `RouteResolution`, `RetainedSourceScan`, and one positive
+source-page number. Quillan revalidates the registration, derives the workspace only
+from `class_root.parent.parent`, and requires canonical class, module, and work roots
+without link-like components. It loads only the registered immutable page context and
+cross-checks target, work identity, creation time, diagnostic details, exact fallback,
+ordered issuance membership, and page-to-issuance provenance.
+
+The filesystem-free registration validator requires target
+`quillan/response_page/<page_id>` contract `1`, exactly `issuance_id`, `logical_page`,
+and `total_pages` details, and the exact one-line Quillan fallback grammar. These
+diagnostics never become routing authority.
+
+Retained provenance must use `scans/source/YYYY-MM-DD/<retained filename>`, match
+Core's canonical path, and identify a readable ordinary non-link file. Images allow
+only source page 1; PDFs allow a positive requested page without decoding. Actual
+enumeration belongs to #338. Core preserves typed Quillan causes when wrapping
+validator or handler failures. The handler writes no evidence or submission data.
+
+Both retained-source validation and public dispatch-result validation use the same
+pure provenance-consistency service. The aware timestamp generates Core's retained
+filename while `intake_date` independently selects the retained date bucket; Core may
+supply an explicit override, so the dates need not match. The service reconstructs
+the source-scan ID and requires control-free source filename text, source extension,
+retained extension, hash prefix, normalized stem, absolute path, and POSIX relative
+path to describe the same retention event.
+
+The handler validates canonical route context and immutable page records and requires
+an `issued` issuance before inspecting retained-source provenance or filesystem paths.
+Quillan's registration validator also requires the canonical route form
+`rt_<32 lowercase hexadecimal characters>` before the handler can run.
+
 ## Overview
 
 This design describes how Quillan accepts a selected writing-response scan with
