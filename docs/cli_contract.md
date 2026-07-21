@@ -251,10 +251,7 @@ quillan roster update-student <class_id> <student_id> [--last-name <name>] [--fi
 quillan roster remove-student <class_id> <student_id> (--yes | --dry-run)
 quillan printable-responses generate <class_id> <assignment_id> [--pages-per-student N] [--overwrite] (--yes | --dry-run)
 quillan validate-assignment <path>
-quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
-quillan route-scan <source-image> --decode-qr
-quillan route-scan <source-pdf> --decode-qr
-quillan route-scan <source-folder> --decode-qr
+quillan route-scan <source-image-or-pdf-or-folder>
 quillan list-scan-review [--include-resolved] [--limit N] [--class-id <class_id>] [--assignment-id <assignment_id>] [--failure-category <category>]
 quillan resolve-scan-review <failure_id> --action <action> [--message "..."] [--evidence-path <workspace-relative-path>]
 quillan decode-scan <source-file> [--hide-payload]
@@ -1039,17 +1036,19 @@ containing supported image/PDF scan files.
 The workflow uses the same QR-aware implementation path as:
 
 ```powershell
-quillan route-scan <source> --decode-qr
+quillan route-scan <source>
 ```
 
 It does not expose payload mode.
 
-It prints the structured scan intake summary, including processed sources,
-attempted pages, routed, preserved, failed, skipped unsupported,
-review-required, and failure-category counts.
+It prints the retained PDS2 dispatch-stage summary: selected and retained
+sources, source failures, enumerated and terminal pages, dispatch successes,
+Core dispatch failures, pre-dispatch failures, Quillan integration failures,
+persisted review occurrences, review-persistence failures, skipped entries,
+failure categories, and the exact batch status.
 
-If routed evidence exists, it prints the same explicit
-`assemble-submissions` next-step guidance as the direct command.
+It prints the same retained-source dispatch summary as the direct command and
+does not offer submission-assembly guidance before #339.
 
 If review is required, the preserved-failure caution is printed.
 
@@ -1322,19 +1321,13 @@ handled-failure behavior in their command sections and help output.
 ## Scan Routing
 
 ```powershell
-quillan route-scan <source-file> --payload "<already-decoded PDS1 payload>"
-quillan route-scan <source-image> --decode-qr
-quillan route-scan <source-pdf> --decode-qr
-quillan route-scan <source-folder> --decode-qr
+quillan route-scan <source-image-or-pdf-or-folder>
 ```
 
-This command routes selected scan sources using exactly one payload source:
-caller-supplied canonical PDS1 text through `--payload`, or QR payloads
-decoded from a supported local image, each page of a PDF, or every supported
-scan file directly inside a folder through `--decode-qr`.
-
-Folder intake is QR-aware only; `--payload` requires a file and rejects
-folders.
+This command accepts no caller-supplied route payload. It preflights the
+workspace and selected source, builds one installed Core registry, retains each
+selected source exactly once, and reads only retained bytes afterward. Raw QR
+text is parsed exclusively by Core's strict PDS2 parser.
 
 Supported scan extensions are:
 
@@ -1365,13 +1358,10 @@ On success, route-scan retains the source under:
 scans/source/YYYY-MM-DD/
 ```
 
-and files routed evidence under the target assignment's `scans/` directory.
+PDF pages dispatch independently. `source_page_number` is physical retained
+scan order and is not Quillan logical-page meaning.
 
-PDF pages route independently and successful PDF page evidence is filed as PNG
-files. `source_page_number` records the physical PDF page separately from the
-decoded `payload_page_number`.
-
-Decode, payload, planning, filing, or PDF conversion failures are preserved
+Page loading, QR detection, payload parsing, dispatch, and integration failures are preserved
 under:
 
 ```text
@@ -1380,41 +1370,19 @@ scans/review/
 
 when they can be handled safely.
 
-QR-aware image and PDF intake prints a structured scan intake summary with
-source, page, routed, preserved, failed, skipped unsupported, and
-review-required counts. Folder intake produces one aggregate summary across
-all processed sources.
-
-Partial success is explicit: exit `0` can mean all pages routed or that
-expected failures were safely preserved for review, including when later files
-continued after a preserved failure. Preserved failures require review before
-intake is treated as complete. Exit `1` means an unexpected failure occurred
-or a failure could not be preserved safely.
-
-After QR-aware intake, the command derives assembly targets from routed
-`ScanIntakePageResult` entries in the current `ScanIntakeSummary`. Routed
-pages with both `class_id` and `assignment_id` are grouped by class/assignment
-and reported in deterministic order as explicit next-step commands:
-
-```powershell
-quillan assemble-submissions <class_id> <assignment_id>
-```
-
-Preserved, failed, skipped, and malformed routed pages without complete
-class/assignment identity do not create assembly targets.
-
-The command does not scan assignment `scans/` directories to find targets, so
-the guidance only reflects evidence routed by the current intake run.
-
-When review is required, the next-step message warns that preserved failures
-should be reviewed before the batch is treated as complete.
+Every enumerated page has exactly one of four terminal categories:
+`dispatch_success`, `core_dispatch_failure`, `pre_dispatch_failure`, or
+`quillan_integration_failure`. Exit `0` requires complete dispatch success;
+partial success, zero success, source failure, integration failure, or review
+write failure exits `1`.
 
 The command does not move, delete, or archive source files after folder
 intake. The Scan Intake / Route Paper Responses menu invokes this same
 QR-aware intake path.
 
-QR-aware scan intake does not assemble submissions, create review records, run
-OCR, or identify a student from raw scan content without a valid payload.
+Scan intake writes Core-v2 failure occurrence records but no successful page
+observations, routed evidence, submission manifests, or submissions. See
+[`pds2_scan_intake.md`](pds2_scan_intake.md).
 
 ## Scan Review Resolution
 

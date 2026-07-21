@@ -21,6 +21,13 @@ The result is not persisted and contains no submission ID, routed-evidence path,
 display name, assignment title, or writable continuation flag. Continuation is
 derived from page role. Observation and submission persistence remain #339.
 
+The retained scan intake models are frozen and slotted. A source result owns the
+exact Core `RetainedSourceScan`; every page and request shares that same object
+identity. Page outcomes preserve raw detected text, a locator only after complete
+Core parsing, exact Core outcomes, and one terminal category. Core-v2 failure
+records place routing identity only in `route_locator` and `target`; bounded
+Quillan diagnostics remain under `module_details`.
+
 The versioned, read-only selected-student diagnostic is defined separately in
 [`review_status_contract.md`](review_status_contract.md). It composes canonical
 assignment, submission-manifest, and review-record data without changing any of

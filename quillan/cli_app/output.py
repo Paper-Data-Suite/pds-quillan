@@ -41,7 +41,6 @@ from quillan.review_ratings import (
 )
 from quillan.review_status_display import review_status_label
 from quillan.review_workflow_state import UpdatedReviewWorkflowState
-from quillan.route_planning import RouteFailure
 from quillan.routing_review import RoutingReviewRecord
 from quillan.standards_summary_export import ExportedStandardsSummary
 from quillan.student_performance_summary_export import (
@@ -837,13 +836,13 @@ def print_routed_evidence(filed_evidence: RoutedEvidenceFile) -> None:
 
 
 def print_route_failure_review(
-    route_failure: RouteFailure,
+    route_failure: object,
     review_record: RoutingReviewRecord,
 ) -> None:
     """Print a safely preserved route-planning failure summary."""
     print("Quillan response page was not routed; preserved for review.")
-    print(f"Reason: {route_failure.failure_message}")
-    print(f"Category: {route_failure.failure_category}")
+    print(f"Reason: {getattr(route_failure, 'failure_message', route_failure)}")
+    print(f"Category: {getattr(route_failure, 'failure_category', 'processing_error')}")
     print(f"Review record: {review_record.failure_metadata_relative_path}")
 
 
