@@ -798,29 +798,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     assemble_parser = subparsers.add_parser(
         "assemble-submissions",
-        help="Assemble assignment submission manifests from routed evidence.",
+        help="Assemble assignment submissions from persisted page observations.",
         description=(
-            "Discover routed response evidence already filed under an "
-            "assignment's scans directory and assemble one submission manifest "
-            "per student. Existing manifests are skipped unless --overwrite is "
-            "given."
+            "Discover immutable response-page observations and assemble one "
+            "issuance-authoritative submission manifest per student while "
+            "preserving existing teacher state."
         ),
     )
     assemble_parser.add_argument("class_id", help="Class identifier.")
     assemble_parser.add_argument("assignment_id", help="Assignment identifier.")
-    assemble_parser.add_argument(
-        "--expected-pages",
-        type=positive_integer,
-        help="Expected number of response pages per student.",
-    )
-    assemble_parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help=(
-            "Fully regenerate existing manifests without preserving prior "
-            "review state or teacher selections."
-        ),
-    )
     assemble_parser.set_defaults(handler=handle_assemble_submissions)
 
     plain_paper_parser = subparsers.add_parser(

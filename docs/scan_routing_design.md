@@ -50,8 +50,23 @@ reading their result objects.
 
 Actionable failures are immutable Core routing-failure schema version `2`
 occurrences under `scans/review/`. Their persistence status does not replace the
-primary terminal outcome. Successful intake produces no routed evidence,
-observation, submission, assembly target, or resolution event before #339.
+primary terminal outcome. After #338 returns its summary, the #339 layer persists
+successful Quillan observations and assembles affected submissions without
+modifying any terminal outcome.
 
 The detailed state model, categories, persistence behavior, and CLI boundary
 are documented in [`pds2_scan_intake.md`](pds2_scan_intake.md).
+
+## Durable successful-page layer (#339)
+
+Only an exact successful Quillan Core dispatch may create an observation. The
+service revalidates the request, resolution, registration target, retained
+source, immutable page context, complete issuance membership, and issued
+lifecycle. Images are copied byte-for-byte from Core retention; one requested
+PDF page is rendered to PNG. Observation JSON and evidence are installed as one
+exclusive logical transaction and exact retries return `existing`.
+
+Assembly enumerates `scans/observations/*.json`, verifies evidence hashes, and
+groups by exact issuance ID. It loads all expected pages in issuance order,
+represents missing slots, preserves rescans as duplicate candidates, and never
+parses a routed filename for identity.

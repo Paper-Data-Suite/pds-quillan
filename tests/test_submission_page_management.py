@@ -13,12 +13,21 @@ from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
 )
+from quillan.response_page_observation_persistence import (
+    persist_quillan_page_observation,
+)
+from quillan.submission_manifest import load_submission_manifest
+from quillan.submission_observation_assembly import (
+    assemble_quillan_submission_manifests,
+)
 from quillan.submission_page_management import (
     SubmissionPageManagementError,
     exclude_submission_page,
+    load_submission_page_context,
     mark_submission_page_needs_rescan,
     restore_excluded_submission_page,
 )
+from tests.observation_test_support import successful_pdf_pages
 
 CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"
@@ -26,7 +35,9 @@ STUDENT_ID = "stu_0001"
 TIMESTAMP = "2026-06-22T12:00:00+00:00"
 
 
-def _evidence(evidence_id: str, page_number: int, *, role: str = "selected") -> dict[str, Any]:
+def _evidence(
+    evidence_id: str, page_number: int, *, role: str = "selected"
+) -> dict[str, Any]:
     return {
         "evidence_id": evidence_id,
         "routed_evidence_path": (
@@ -102,14 +113,9 @@ def test_exclude_page_preserves_evidence_files_and_excludes_manifest_records(
     tmp_path: Path,
 ) -> None:
     path = _write_manifest(tmp_path)
-    evidence_before = {
-        item: item.read_bytes()
-        for item in tmp_path.rglob("*.pdf")
-    }
+    evidence_before = {item: item.read_bytes() for item in tmp_path.rglob("*.pdf")}
 
-    result = exclude_submission_page(
-        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, 1
-    )
+    result = exclude_submission_page(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, 1)
 
     manifest = _read(path)
     page = manifest["pages"][0]
@@ -117,12 +123,12 @@ def test_exclude_page_preserves_evidence_files_and_excludes_manifest_records(
     assert page["selected_evidence_id"] is None
     assert page["evidence"][0]["evidence_role"] == "excluded"
     assert page["evidence"][0]["evidence_state"] == "excluded"
-    assert page["evidence"][0]["module_details"][
-        "quillan_before_page_exclusion"
-    ] == {"evidence_role": "selected", "evidence_state": "active"}
+    assert page["evidence"][0]["module_details"]["quillan_before_page_exclusion"] == {
+        "evidence_role": "selected",
+        "evidence_state": "active",
+    }
     assert evidence_before == {
-        item: item.read_bytes()
-        for item in tmp_path.rglob("*.pdf")
+        item: item.read_bytes() for item in tmp_path.rglob("*.pdf")
     }
 
 
@@ -231,7 +237,11 @@ def test_non_integer_page_number_fails_without_type_error(tmp_path: Path) -> Non
 
     with pytest.raises(SubmissionPageManagementError, match="positive integer"):
         exclude_submission_page(
-            tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, "1"  # type: ignore[arg-type]
+            tmp_path,
+            CLASS_ID,
+            ASSIGNMENT_ID,
+            STUDENT_ID,
+            "1",  # type: ignore[arg-type]
         )
 
     assert path.read_bytes() == before
@@ -253,3 +263,72 @@ def test_write_os_error_is_wrapped_without_partial_manifest(
         exclude_submission_page(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, 1)
 
     assert path.read_bytes() == before
+
+
+def test_observation_backed_exclude_rescan_restore_and_needs_rescan(
+    tmp_path: Path,
+) -> None:
+    first_outcome, rescan_outcome = successful_pdf_pages(tmp_path)
+    first = persist_quillan_page_observation(tmp_path, first_outcome)
+    identity = first.observation
+    created = assemble_quillan_submission_manifests(
+        tmp_path, identity.class_id, identity.assignment_id
+    ).assembled[0]
+    assert (
+        load_submission_page_context(
+            tmp_path, identity.class_id, identity.assignment_id, identity.student_id
+        ).present_count
+        == 1
+    )
+
+    exclude_submission_page(
+        tmp_path, identity.class_id, identity.assignment_id, identity.student_id, 1
+    )
+    excluded = load_submission_manifest(created.manifest_path)
+    assert excluded["pages"][0]["page_state"] == "excluded"
+    assert excluded["pages"][0]["evidence"][0]["module_details"][
+        "quillan_before_page_exclusion"
+    ] == {"evidence_role": "selected", "evidence_state": "active"}
+    revision = excluded["module_details"]["assembly_revision"]
+
+    second = persist_quillan_page_observation(tmp_path, rescan_outcome)
+    merged_result = assemble_quillan_submission_manifests(
+        tmp_path, identity.class_id, identity.assignment_id
+    ).assembled[0]
+    merged = load_submission_manifest(created.manifest_path)
+    page = merged["pages"][0]
+    assert merged_result.status == "updated"
+    assert merged["module_details"]["assembly_revision"] == revision + 1
+    assert page["page_state"] == "excluded"
+    assert page["selected_evidence_id"] is None
+    assert [item["evidence_role"] for item in page["evidence"]] == [
+        "excluded",
+        "candidate",
+    ]
+    assert page["evidence"][1]["evidence_id"] == second.observation.observation_id
+
+    restore_excluded_submission_page(
+        tmp_path, identity.class_id, identity.assignment_id, identity.student_id, 1
+    )
+    restored = load_submission_manifest(created.manifest_path)
+    restored_page = restored["pages"][0]
+    assert restored_page["page_state"] == "duplicate"
+    assert restored_page["selected_evidence_id"] == identity.observation_id
+    assert [item["evidence_role"] for item in restored_page["evidence"]] == [
+        "selected",
+        "candidate",
+    ]
+
+    mark_submission_page_needs_rescan(
+        tmp_path, identity.class_id, identity.assignment_id, identity.student_id, 1
+    )
+    context = load_submission_page_context(
+        tmp_path, identity.class_id, identity.assignment_id, identity.student_id
+    )
+    assert context.needs_rescan_count == 1
+    before_retry = created.manifest_path.read_bytes()
+    unchanged = assemble_quillan_submission_manifests(
+        tmp_path, identity.class_id, identity.assignment_id
+    ).assembled[0]
+    assert unchanged.status == "unchanged"
+    assert created.manifest_path.read_bytes() == before_retry

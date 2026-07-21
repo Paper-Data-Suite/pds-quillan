@@ -68,10 +68,11 @@ a successful occurrence stays attached even when another occurrence fails,
 and a possibly durable path is reported when verification fails after writing.
 Source-level review paths and persistence errors appear in the summary.
 
-## #339 boundary
+## Post-dispatch persistence (#339)
 
-Issue #338 creates no successful page observations, routed Quillan evidence,
-submission manifests, submissions, or resolution events. The legacy
-`RoutePlan` evidence-filing API is an explicit typed migration gate and does
-not retain or write. Assembly returns no targets until #339 defines durable
-successful observations and evidence writes.
+After the immutable #338 summary is complete, Quillan processes only successful
+Quillan-owned outcomes. It persists or reload-verifies one deterministic
+observation/evidence pair per physical occurrence, then assembles every affected
+student by authoritative issuance membership. Foreign successes remain opaque.
+Dispatch, persistence, and assembly counts are reported separately; a
+post-dispatch conflict makes `route-scan` nonzero without changing Core outcomes.

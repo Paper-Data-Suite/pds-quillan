@@ -11,8 +11,9 @@ An active route is only structurally dispatchable. The response-page handler als
 requires the immutable issuance lifecycle to be exactly `issued`. Student and page
 meaning come from immutable page context, never QR text, fallback text, filenames,
 current roster data, or current assignment data. This boundary validates one
-retained source page and returns a typed runtime result; it does not extract evidence,
-persist observations, or assemble submissions.
+retained source page and returns a typed runtime result. After successful dispatch,
+Quillan persists an immutable page observation, materializes page-specific evidence,
+and assembles the exact issued response set into a submission manifest.
 
 For a compact, read-only diagnostic of one student's submission and review
 workflow, use `quillan review-status <class_id> <assignment_id> <student_id>`;
@@ -94,8 +95,9 @@ registrations. Quillan supports only the module-qualified tree above: there is
 no unqualified assignment path, legacy migration, or fallback. Printable class
 packets now use immutable v1 issuance/page records and one verified Core route
 per physical page. Each QR contains only the canonical PDS2 locator; generation
-renders to a same-directory temporary PDF and installs it atomically. This does
-not yet claim PDS2 scan dispatch, submission assembly, or complete CLI migration.
+renders to a same-directory temporary PDF and installs it atomically. Successful
+scan dispatch now uses immutable observations and issuance membership for
+submission assembly. Routed filenames are diagnostics, never identity.
 
 ## Teacher-Facing Menu
 
@@ -221,8 +223,9 @@ quillan route-scan <source>
 It retains each supported image/PDF source exactly once, reads only the Core
 retained copy, parses strict PDS2 locators, and dispatches physical pages through
 the installed Core module registry. Actionable failures use Core review schema
-version `2`. Intake writes no routed Quillan evidence or submissions; durable
-observations and assembly remain #339.
+version `2`. Successful Quillan pages create immutable observations and evidence,
+then assemble affected submissions; post-dispatch failures remain distinct from
+Core dispatch outcomes.
 
 Opening evidence delegates to the local system viewer and is read-only. It
 never marks work reviewed.

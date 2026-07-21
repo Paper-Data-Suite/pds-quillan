@@ -96,6 +96,46 @@ def validate_core_retention_event_consistency(
     return CoreRetentionEventIdentity(expected_filename, relative, expected_scan_id)
 
 
+def validate_serialized_core_retention_event_consistency(
+    *,
+    source_scan_id: object,
+    source_filename: object,
+    source_sha256: object,
+    retained_source_relative_path: object,
+    intake_timestamp: object,
+    intake_date: object,
+) -> CoreRetentionEventIdentity:
+    """Validate serialized observation provenance without filesystem access."""
+    if not isinstance(intake_timestamp, str):
+        raise ValueError("intake_timestamp must be ISO timestamp text.")
+    try:
+        parsed_timestamp = datetime.fromisoformat(intake_timestamp)
+    except ValueError as error:
+        raise ValueError(
+            "intake_timestamp must be valid ISO timestamp text."
+        ) from error
+    if not isinstance(intake_date, str):
+        raise ValueError("intake_date must be ISO date text.")
+    try:
+        parsed_date = date.fromisoformat(intake_date)
+    except ValueError as error:
+        raise ValueError("intake_date must be valid ISO date text.") from error
+    relative = _canonical_relative_path(retained_source_relative_path)
+    anchor = Path.cwd().anchor
+    root = Path(anchor) if anchor else Path("/")
+    absolute = root.joinpath(*relative.parts)
+    return validate_core_retention_event_consistency(
+        source_scan_id=source_scan_id,
+        source_filename=source_filename,
+        source_sha256=source_sha256,
+        retained_source_path=absolute,
+        retained_source_relative_path=relative.as_posix(),
+        intake_timestamp=parsed_timestamp,
+        intake_date=parsed_date,
+        workspace_root=root,
+    )
+
+
 def _canonical_relative_path(value: object) -> PurePosixPath:
     if not isinstance(value, str) or not value or "\\" in value:
         raise ValueError("retained relative path must be nonempty POSIX text.")
@@ -118,4 +158,5 @@ def _canonical_relative_path(value: object) -> PurePosixPath:
 __all__ = [
     "CoreRetentionEventIdentity",
     "validate_core_retention_event_consistency",
+    "validate_serialized_core_retention_event_consistency",
 ]

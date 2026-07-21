@@ -1,36 +1,15 @@
-"""Explicit #339 migration gate for legacy routed-evidence filing."""
+"""Evidence filing exposes only the authoritative page-outcome boundary."""
 
-from datetime import datetime, timezone
 from pathlib import Path
 
-import pds_core.scan_retention as core_retention
-import pytest
-
-import quillan.evidence_filing as evidence_filing
-from quillan.evidence_filing import EvidenceFilingError, file_routed_response_evidence
+from quillan.evidence_filing import file_routed_response_evidence
+from tests.observation_test_support import successful_image_page
 
 
-def test_routed_evidence_gate_never_retains_or_writes(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    workspace = tmp_path / "workspace"
-    workspace.mkdir()
-    source = tmp_path / "scan.png"
-    source.write_bytes(b"source")
-    before = tuple(workspace.rglob("*"))
-
-    def forbidden(*_args: object, **_kwargs: object) -> object:
-        pytest.fail("#339 gate must not retain or copy a source")
-
-    monkeypatch.setattr(core_retention, "retain_source_scan", forbidden)
-    monkeypatch.setattr(evidence_filing, "_copy_exclusive", forbidden)
-    with pytest.raises(EvidenceFilingError, match="#339 observation contract"):
-        file_routed_response_evidence(
-            workspace,
-            route_plan=object(),
-            source_file_path=source,
-            intake_timestamp=datetime.now(timezone.utc),
-        )
-    assert tuple(workspace.rglob("*")) == before
-    assert not (workspace / "scans").exists()
+def test_evidence_filing_delegates_to_observation_persistence(tmp_path: Path) -> None:
+    persisted = file_routed_response_evidence(
+        tmp_path, page_outcome=successful_image_page(tmp_path)
+    )
+    assert persisted.status == "created"
+    assert persisted.observation_path.is_file()
+    assert persisted.evidence_path.is_file()

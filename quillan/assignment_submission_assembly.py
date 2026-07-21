@@ -1,56 +1,73 @@
-"""Assignment-level assembly of routed evidence into submission manifests."""
+"""Assignment-level observation discovery and issuance-based assembly."""
 
 from __future__ import annotations
 
-import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
+import os
 from pathlib import Path
+from types import MappingProxyType
 from typing import Final
 
-from pds_core.identifiers import IdentifierValidationError, validate_identifier
+from pds_core.identifiers import validate_identifier
 
-from quillan.storage import assignment_scans_dir
-from quillan.submission_assembly import (
-    RoutedSubmissionEvidence,
-    assemble_submission_manifest,
+from quillan.response_page_observations import (
+    QuillanResponsePageObservation,
+    list_quillan_page_observations,
 )
-from quillan.submission_manifest import load_submission_manifest
-from quillan.submission_manifest_paths import submission_manifest_path
+from quillan.submission_observation_assembly import (
+    AssembledQuillanSubmission,
+    QuillanSubmissionAssemblyFailure,
+    assemble_quillan_submission_manifests,
+)
 
-_ROUTED_EVIDENCE_PATTERN: Final[re.Pattern[str]] = re.compile(
-    r"^response_(?P<student_id>[A-Za-z0-9_-]+)_pg_"
-    r"(?P<page_number>[0-9]+)"
-    r"(?:__dup_(?P<duplicate_number>[0-9]+))?"
-    r"\.(?P<extension>pdf|png|jpg|jpeg|tif|tiff)$",
-    re.IGNORECASE,
-)
+_MAPPING_PROXY_TYPE: Final[type[object]] = type(MappingProxyType({}))
 
 
 @dataclass(frozen=True, slots=True)
 class SkippedRoutedEvidenceFile:
-    """One assignment scans file excluded from routed-evidence discovery."""
+    """Compatibility diagnostic; orphan evidence is never discovered."""
 
     path: Path
     reason: str
 
+    def __post_init__(self) -> None:
+        _canonical_absolute_path(self.path, "skipped evidence path")
+        if type(self.reason) is not str or not self.reason.strip():
+            raise ValueError("Skipped evidence reason must be nonempty text.")
+
 
 @dataclass(frozen=True, slots=True)
 class StudentSubmissionAssemblySummary:
-    """Page-state summary for one newly written student manifest."""
-
     student_id: str
     manifest_path: Path
     missing_pages: tuple[int, ...]
     duplicate_pages: tuple[int, ...]
     needs_rescan_pages: tuple[int, ...]
     excluded_pages: tuple[int, ...]
+    status: str
+
+    def __post_init__(self) -> None:
+        validate_identifier(self.student_id, "student_id")
+        _canonical_absolute_path(self.manifest_path, "manifest_path")
+        if self.status not in {"created", "updated", "unchanged"}:
+            raise ValueError("Unsupported student summary status.")
+        groups = (
+            self.missing_pages,
+            self.duplicate_pages,
+            self.needs_rescan_pages,
+            self.excluded_pages,
+        )
+        for values in groups:
+            _page_tuple(values)
+        flattened = tuple(value for values in groups for value in values)
+        if len(set(flattened)) != len(flattened):
+            raise ValueError("Student summary page-state tuples must be disjoint.")
 
 
 @dataclass(frozen=True, slots=True)
 class AssignmentSubmissionAssemblyResult:
-    """Outcome of assembling all routed evidence for one assignment."""
-
     class_id: str
     assignment_id: str
     written_manifests: tuple[Path, ...]
@@ -58,23 +75,140 @@ class AssignmentSubmissionAssemblyResult:
     skipped_files: tuple[SkippedRoutedEvidenceFile, ...]
     students_with_evidence: tuple[str, ...]
     student_summaries: tuple[StudentSubmissionAssemblySummary, ...]
+    assembled: tuple[AssembledQuillanSubmission, ...]
+    failures: tuple[QuillanSubmissionAssemblyFailure, ...]
+
+    def __post_init__(self) -> None:
+        validate_identifier(self.class_id, "class_id")
+        validate_identifier(self.assignment_id, "assignment_id")
+        for name, values, member_type in (
+            ("written_manifests", self.written_manifests, Path),
+            ("skipped_existing_manifests", self.skipped_existing_manifests, Path),
+            ("skipped_files", self.skipped_files, SkippedRoutedEvidenceFile),
+            ("students_with_evidence", self.students_with_evidence, str),
+            ("student_summaries", self.student_summaries, StudentSubmissionAssemblySummary),
+            ("assembled", self.assembled, AssembledQuillanSubmission),
+            ("failures", self.failures, QuillanSubmissionAssemblyFailure),
+        ):
+            if type(values) is not tuple or any(
+                not isinstance(item, Path)
+                if member_type is Path
+                else type(item) is not member_type
+                for item in values
+            ):
+                raise ValueError(f"{name} must be an exact member tuple.")
+        for paths in (self.written_manifests, self.skipped_existing_manifests):
+            for path in paths:
+                _canonical_absolute_path(path, "manifest path")
+            if len(set(paths)) != len(paths) or paths != tuple(sorted(paths, key=lambda item: item.as_posix())):
+                raise ValueError("Manifest paths must be unique and deterministically ordered.")
+        if set(self.written_manifests) & set(self.skipped_existing_manifests):
+            raise ValueError("Written and unchanged manifest paths must be disjoint.")
+        if self.students_with_evidence != tuple(sorted(set(self.students_with_evidence))):
+            raise ValueError("students_with_evidence must be unique and sorted.")
+        if tuple(item.student_id for item in self.student_summaries) != tuple(
+            sorted(item.student_id for item in self.student_summaries)
+        ):
+            raise ValueError("Student summaries must be deterministically ordered.")
+        if tuple(item.student_id for item in self.assembled) != tuple(
+            sorted(item.student_id for item in self.assembled)
+        ):
+            raise ValueError("Assembled results must be deterministically ordered.")
+        failure_keys = tuple(
+            (item.student_id or "", item.issuance_ids, item.observation_ids)
+            for item in self.failures
+        )
+        if failure_keys != tuple(sorted(failure_keys)):
+            raise ValueError("Assembly failures must be deterministically ordered.")
+        assembled_targets = {(item.student_id, item.issuance_id) for item in self.assembled}
+        failure_targets = {
+            (item.student_id, issuance_id)
+            for item in self.failures
+            if item.student_id is not None
+            for issuance_id in item.issuance_ids
+        }
+        if assembled_targets & failure_targets:
+            raise ValueError("A student issuance cannot be both assembled and failed.")
+        expected_summaries = tuple(
+            (
+                item.student_id,
+                item.manifest_path,
+                item.missing_pages,
+                item.duplicate_pages,
+                item.needs_rescan_pages,
+                item.excluded_pages,
+                item.status,
+            )
+            for item in self.assembled
+        )
+        actual_summaries = tuple(
+            (
+                item.student_id,
+                item.manifest_path,
+                item.missing_pages,
+                item.duplicate_pages,
+                item.needs_rescan_pages,
+                item.excluded_pages,
+                item.status,
+            )
+            for item in self.student_summaries
+        )
+        if actual_summaries != expected_summaries:
+            raise ValueError("Student summaries must exactly represent assembled results.")
+        expected_written = tuple(
+            item.manifest_path for item in self.assembled if item.status in {"created", "updated"}
+        )
+        expected_unchanged = tuple(
+            item.manifest_path for item in self.assembled if item.status == "unchanged"
+        )
+        if self.written_manifests != expected_written or self.skipped_existing_manifests != expected_unchanged:
+            raise ValueError("Compatibility manifest paths contradict assembled statuses.")
 
 
 @dataclass(frozen=True, slots=True)
 class AssignmentRoutedEvidenceDiscovery:
-    """Read-only routed-evidence discovery for one assignment."""
+    """Compatibility name for observation-authoritative discovery."""
 
-    evidence_by_student: dict[str, list[RoutedSubmissionEvidence]]
+    evidence_by_student: Mapping[str, tuple[QuillanResponsePageObservation, ...]]
     skipped_files: tuple[SkippedRoutedEvidenceFile, ...]
+
+    def __post_init__(self) -> None:
+        if type(self.evidence_by_student) is not _MAPPING_PROXY_TYPE:
+            raise ValueError("evidence_by_student must be an immutable mapping.")
+        if type(self.skipped_files) is not tuple or any(
+            type(item) is not SkippedRoutedEvidenceFile for item in self.skipped_files
+        ):
+            raise ValueError("skipped_files must be an exact tuple.")
+        keys = tuple(self.evidence_by_student)
+        if keys != tuple(sorted(keys)):
+            raise ValueError("Evidence student groups must be deterministically ordered.")
+        seen: set[str] = set()
+        for student_id, observations in self.evidence_by_student.items():
+            validate_identifier(student_id, "student_id")
+            if type(observations) is not tuple or any(
+                type(item) is not QuillanResponsePageObservation
+                or item.student_id != student_id
+                for item in observations
+            ):
+                raise ValueError("Evidence groups must contain exact matching observations.")
+            ids = tuple(item.observation_id for item in observations)
+            if len(set(ids)) != len(ids) or seen.intersection(ids):
+                raise ValueError("Grouped observation IDs must be unique.")
+            seen.update(ids)
+            observation_keys = tuple(
+                _observation_sort_key(item) for item in observations
+            )
+            if observation_keys != tuple(sorted(observation_keys)):
+                raise ValueError("Evidence groups must be deterministically ordered.")
 
 
 def discover_assignment_routed_evidence(
     workspace_root: str | Path,
     class_id: str,
     assignment_id: str,
-) -> dict[str, list[RoutedSubmissionEvidence]]:
-    """Discover routed response evidence files grouped by student ID."""
-    return _discover_assignment_routed_evidence(
+) -> Mapping[str, tuple[QuillanResponsePageObservation, ...]]:
+    """Group strict observation records by their stored student identity."""
+    return discover_assignment_routed_evidence_status(
         workspace_root, class_id, assignment_id
     ).evidence_by_student
 
@@ -84,9 +218,21 @@ def discover_assignment_routed_evidence_status(
     class_id: str,
     assignment_id: str,
 ) -> AssignmentRoutedEvidenceDiscovery:
-    """Discover routed evidence plus files excluded from discovery."""
-    return _discover_assignment_routed_evidence(
-        workspace_root, class_id, assignment_id
+    """Discover observations only; routed evidence filenames are never parsed."""
+    observations = list_quillan_page_observations(
+        Path(workspace_root), class_id, assignment_id
+    )
+    grouped: dict[str, list[QuillanResponsePageObservation]] = {}
+    for observation in observations:
+        grouped.setdefault(observation.student_id, []).append(observation)
+    return AssignmentRoutedEvidenceDiscovery(
+        MappingProxyType(
+            {
+                student_id: tuple(grouped[student_id])
+                for student_id in sorted(grouped)
+            }
+        ),
+        (),
     )
 
 
@@ -95,183 +241,87 @@ def assemble_assignment_submissions(
     class_id: str,
     assignment_id: str,
     *,
-    expected_pages: int | None = None,
-    overwrite: bool = False,
     created_at: datetime | str | None = None,
     updated_at: datetime | str | None = None,
 ) -> AssignmentSubmissionAssemblyResult:
-    """Assemble manifests for every student with routed assignment evidence.
-
-    ``overwrite=True`` performs full regeneration. It does not merge prior
-    review state or preserve prior teacher selections.
-    """
-    if (
-        expected_pages is not None
-        and (
-            isinstance(expected_pages, bool)
-            or not isinstance(expected_pages, int)
-            or expected_pages < 1
-        )
-    ):
-        raise ValueError("expected_pages must be a positive integer.")
-
-    discovery = _discover_assignment_routed_evidence(
-        workspace_root, class_id, assignment_id
+    """Assemble every observed student without caller-supplied page identity."""
+    timestamp = updated_at if updated_at is not None else created_at
+    root = Path(workspace_root)
+    observations = list_quillan_page_observations(root, class_id, assignment_id)
+    result = assemble_quillan_submission_manifests(
+        root,
+        class_id,
+        assignment_id,
+        timestamp=timestamp,
     )
-    students = tuple(discovery.evidence_by_student)
-    written: list[Path] = []
-    skipped_existing: list[Path] = []
-    summaries: list[StudentSubmissionAssemblySummary] = []
-
-    for student_id, evidence_items in discovery.evidence_by_student.items():
-        manifest_path = submission_manifest_path(
-            workspace_root, class_id, assignment_id, student_id
+    written = tuple(
+        item.manifest_path
+        for item in result.assembled
+        if item.status in {"created", "updated"}
+    )
+    unchanged = tuple(
+        item.manifest_path for item in result.assembled if item.status == "unchanged"
+    )
+    summaries = tuple(
+        StudentSubmissionAssemblySummary(
+            student_id=item.student_id,
+            manifest_path=item.manifest_path,
+            missing_pages=item.missing_pages,
+            duplicate_pages=item.duplicate_pages,
+            needs_rescan_pages=item.needs_rescan_pages,
+            excluded_pages=item.excluded_pages,
+            status=item.status,
         )
-        if manifest_path.exists() and not overwrite:
-            skipped_existing.append(manifest_path)
-            continue
-
-        written_path = assemble_submission_manifest(
-            workspace_root,
-            class_id,
-            assignment_id,
-            student_id,
-            evidence_items,
-            expected_pages=expected_pages,
-            overwrite=overwrite,
-            created_at=created_at,
-            updated_at=updated_at,
-        )
-        written.append(written_path)
-        summaries.append(_summarize_manifest(student_id, written_path))
-
+        for item in result.assembled
+    )
     return AssignmentSubmissionAssemblyResult(
         class_id=class_id,
         assignment_id=assignment_id,
-        written_manifests=tuple(written),
-        skipped_existing_manifests=tuple(skipped_existing),
-        skipped_files=discovery.skipped_files,
-        students_with_evidence=students,
-        student_summaries=tuple(summaries),
+        written_manifests=written,
+        skipped_existing_manifests=unchanged,
+        skipped_files=(),
+        students_with_evidence=tuple(sorted({item.student_id for item in observations})),
+        student_summaries=summaries,
+        assembled=result.assembled,
+        failures=result.failures,
     )
 
 
-def _discover_assignment_routed_evidence(
-    workspace_root: str | Path,
-    class_id: str,
-    assignment_id: str,
-) -> AssignmentRoutedEvidenceDiscovery:
-    validate_identifier(class_id, "class_id")
-    validate_identifier(assignment_id, "assignment_id")
-    root = Path(workspace_root).resolve(strict=False)
-    scans_dir = assignment_scans_dir(root, class_id, assignment_id)
-    if not scans_dir.exists():
-        return AssignmentRoutedEvidenceDiscovery({}, ())
-    if not scans_dir.is_dir():
-        raise NotADirectoryError(
-            f"Assignment scans path is not a directory: {scans_dir}"
-        )
-
-    grouped: dict[str, list[RoutedSubmissionEvidence]] = {}
-    skipped: list[SkippedRoutedEvidenceFile] = []
-    try:
-        entries = sorted(scans_dir.iterdir(), key=lambda path: path.name.casefold())
-    except OSError:
-        raise
-
-    for path in entries:
-        if not path.is_file():
-            continue
-        match = _ROUTED_EVIDENCE_PATTERN.fullmatch(path.name)
-        if match is None:
-            skipped.append(
-                SkippedRoutedEvidenceFile(
-                    path=path,
-                    reason=_unmatched_filename_reason(path.name),
-                )
-            )
-            continue
-
-        student_id = match.group("student_id")
-        try:
-            validate_identifier(student_id, "student_id")
-        except IdentifierValidationError as error:
-            skipped.append(SkippedRoutedEvidenceFile(path=path, reason=str(error)))
-            continue
-
-        page_number = int(match.group("page_number"))
-        duplicate_text = match.group("duplicate_number")
-        duplicate_number = (
-            int(duplicate_text) if duplicate_text is not None else None
-        )
-        if page_number < 1:
-            skipped.append(
-                SkippedRoutedEvidenceFile(
-                    path=path,
-                    reason="page number must be a positive integer",
-                )
-            )
-            continue
-        if duplicate_number is not None and duplicate_number < 1:
-            skipped.append(
-                SkippedRoutedEvidenceFile(
-                    path=path,
-                    reason="duplicate number must be a positive integer",
-                )
-            )
-            continue
-
-        grouped.setdefault(student_id, []).append(
-            RoutedSubmissionEvidence(
-                page_number=page_number,
-                routed_evidence_path=path.relative_to(root),
-                duplicate_number=duplicate_number,
-                retained_source_path=None,
-                source_scan_id=None,
-                source_filename=None,
-                source_sha256=None,
-                source_page_number=None,
-            )
-        )
-
-    ordered = {
-        student_id: sorted(
-            grouped[student_id],
-            key=lambda item: (
-                item.page_number,
-                item.duplicate_number is not None,
-                item.duplicate_number or 0,
-                str(item.routed_evidence_path).casefold(),
-            ),
-        )
-        for student_id in sorted(grouped)
-    }
-    return AssignmentRoutedEvidenceDiscovery(ordered, tuple(skipped))
+def _canonical_absolute_path(value: object, field_name: str) -> Path:
+    if not isinstance(value, Path) or not value.is_absolute() or Path(os.path.abspath(value)) != value:
+        raise ValueError(f"{field_name} must be a canonical absolute Path.")
+    return value
 
 
-def _unmatched_filename_reason(filename: str) -> str:
-    if filename.casefold().startswith("response_"):
-        return "malformed routed response evidence filename"
-    return "filename does not match routed response evidence convention"
+def _page_tuple(values: object) -> tuple[int, ...]:
+    if type(values) is not tuple or any(
+        type(value) is not int or isinstance(value, bool) or value < 1 for value in values
+    ):
+        raise ValueError("Page summaries must be exact positive-integer tuples.")
+    if values != tuple(sorted(set(values))):
+        raise ValueError("Page summaries must be unique and sorted.")
+    return values
 
 
-def _summarize_manifest(
-    student_id: str, manifest_path: Path
-) -> StudentSubmissionAssemblySummary:
-    manifest = load_submission_manifest(manifest_path)
-
-    def pages_with_state(state: str) -> tuple[int, ...]:
-        return tuple(
-            page["page_number"]
-            for page in manifest["pages"]
-            if page["page_state"] == state
-        )
-
-    return StudentSubmissionAssemblySummary(
-        student_id=student_id,
-        manifest_path=manifest_path,
-        missing_pages=pages_with_state("missing"),
-        duplicate_pages=pages_with_state("duplicate"),
-        needs_rescan_pages=pages_with_state("needs_rescan"),
-        excluded_pages=pages_with_state("excluded"),
+def _observation_sort_key(
+    observation: QuillanResponsePageObservation,
+) -> tuple[str, int, str, str, int, str]:
+    return (
+        observation.issuance_id,
+        observation.logical_page,
+        observation.created_at,
+        observation.source_scan_id,
+        observation.source_page_number,
+        observation.observation_id,
     )
+
+
+__all__ = [
+    "AssignmentRoutedEvidenceDiscovery",
+    "AssignmentSubmissionAssemblyResult",
+    "SkippedRoutedEvidenceFile",
+    "StudentSubmissionAssemblySummary",
+    "assemble_assignment_submissions",
+    "discover_assignment_routed_evidence",
+    "discover_assignment_routed_evidence_status",
+]

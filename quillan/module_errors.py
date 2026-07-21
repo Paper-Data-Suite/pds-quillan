@@ -1,5 +1,7 @@
 """Typed failures exposed by Quillan's installed-module boundary."""
 
+from pathlib import Path
+
 
 class QuillanModuleError(Exception):
     """Base failure raised through Quillan's installed module boundary."""
@@ -98,6 +100,82 @@ class QuillanScanReviewPersistenceError(QuillanScanIntakeError):
     """An actionable post-retention failure could not be preserved."""
 
 
+class QuillanObservationError(Exception):
+    """Base failure for immutable response-page observations."""
+
+
+class QuillanObservationValidationError(QuillanObservationError, ValueError):
+    """An observation or its serialized representation is invalid."""
+
+
+class QuillanObservationAuthorityError(QuillanObservationError):
+    """A page outcome is not authoritative for observation creation."""
+
+
+class QuillanRoutedEvidenceError(QuillanObservationError):
+    """Routed page evidence could not be safely materialized."""
+
+
+class QuillanRoutedEvidenceMissingError(QuillanRoutedEvidenceError):
+    """The canonical routed evidence file is missing."""
+
+
+class QuillanRoutedEvidenceIntegrityError(QuillanRoutedEvidenceError):
+    """Routed evidence exists but contradicts immutable metadata."""
+
+
+class QuillanRoutedEvidencePathError(QuillanRoutedEvidenceError):
+    """A routed-evidence path or one of its ancestors is unsafe."""
+
+
+class QuillanObservationPersistenceError(QuillanObservationError):
+    """An observation/evidence transaction could not be completed."""
+
+    possible_observation_path: Path | None
+    possible_evidence_path: Path | None
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        possible_observation_path: Path | None = None,
+        possible_evidence_path: Path | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.possible_observation_path = possible_observation_path
+        self.possible_evidence_path = possible_evidence_path
+
+
+class QuillanObservationIntegrityError(QuillanObservationPersistenceError):
+    """Existing observation or evidence state contradicts immutable identity."""
+
+
+class QuillanObservationDiscoveryError(QuillanObservationError):
+    """The canonical observation collection contains invalid state."""
+
+    category: str
+    original_error: Exception
+
+    def __init__(self, category: str, message: str, original_error: Exception) -> None:
+        super().__init__(message)
+        self.category = category
+        self.original_error = original_error
+
+
+class QuillanSubmissionObservationAssemblyError(Exception):
+    """Base failure for issuance-based observation assembly."""
+
+
+class QuillanCategorizedAssemblyError(QuillanSubmissionObservationAssemblyError):
+    """An assembly validation failure with an exact public category."""
+
+    category: str
+
+    def __init__(self, category: str, message: str) -> None:
+        super().__init__(message)
+        self.category = category
+
+
 __all__ = [
     "QuillanDispatchResultError",
     "QuillanDispatchIntegrationError",
@@ -117,6 +195,18 @@ __all__ = [
     "QuillanScanPreflightError",
     "QuillanScanRegistryError",
     "QuillanScanReviewPersistenceError",
+    "QuillanObservationAuthorityError",
+    "QuillanObservationDiscoveryError",
+    "QuillanObservationError",
+    "QuillanObservationIntegrityError",
+    "QuillanObservationPersistenceError",
+    "QuillanObservationValidationError",
+    "QuillanCategorizedAssemblyError",
+    "QuillanRoutedEvidenceError",
+    "QuillanRoutedEvidenceIntegrityError",
+    "QuillanRoutedEvidenceMissingError",
+    "QuillanRoutedEvidencePathError",
+    "QuillanSubmissionObservationAssemblyError",
     "QuillanSourceMissingError",
     "QuillanSourcePageError",
     "QuillanSourceTypeUnsupportedError",

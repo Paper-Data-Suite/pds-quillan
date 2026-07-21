@@ -17,9 +17,10 @@ retained path, POSIX relative path, extension, and `scan_<retained stem>` identi
 agree exactly. Original source filenames may contain no control or Unicode line- or
 paragraph-separator characters.
 
-The result is not persisted and contains no submission ID, routed-evidence path,
-display name, assignment title, or writable continuation flag. Continuation is
-derived from page role. Observation and submission persistence remain #339.
+The runtime result contains no display name, assignment title, or writable
+continuation flag. Continuation is derived from page role. An exact successful
+Quillan outcome is the sole authority accepted by immutable observation
+persistence.
 
 The retained scan intake models are frozen and slotted. A source result owns the
 exact Core `RetainedSourceScan`; every page and request shares that same object
@@ -347,14 +348,15 @@ fresh cryptographically random generation and artifact IDs for every
 additional copy; it must not infer reuse from equivalent content or paths.
 
 These generated-page records are not student submissions and do not prove that
-work was returned. Submission-manifest pages remain mutable, teacher-reviewed
-evidence state until issue #339 migrates that contract. Plain-paper submissions
-remain valid without a generation, issuance, page, route, scan, or evidence
-record.
+work was returned. Observation-backed digital manifests name one exact issuance
+while preserving mutable teacher-controlled evidence state. Plain-paper
+submissions remain valid without a generation, issuance, page, route, scan, or
+evidence record.
 
-PDS2 PDF generation and immutable route registration are implemented. PDS2 scan
-dispatch, retained-source intake, evidence filing, submission assembly, and the
-remaining CLI scan migration are separate boundaries.
+PDS2 PDF generation, route registration, retained-source intake, dispatch,
+observation persistence, evidence materialization, and issuance-based assembly
+are implemented. Scan-review resolution and broader review/CLI migration remain
+later boundaries.
 
 ## Standards References
 

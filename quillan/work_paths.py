@@ -36,6 +36,8 @@ class QuillanWorkPaths:
     response_page_records_dir: Path
     templates_dir: Path
     scans_dir: Path
+    response_page_observations_dir: Path
+    routed_evidence_root: Path
     submissions_dir: Path
     exports_dir: Path
 
@@ -93,6 +95,12 @@ def quillan_work_paths(
             workspace_root, work_ref, "templates"
         ),
         scans_dir=safe_module_work_descendant(workspace_root, work_ref, "scans"),
+        response_page_observations_dir=safe_module_work_descendant(
+            workspace_root, work_ref, Path("scans") / "observations"
+        ),
+        routed_evidence_root=safe_module_work_descendant(
+            workspace_root, work_ref, Path("scans") / "evidence"
+        ),
         submissions_dir=safe_module_work_descendant(
             workspace_root, work_ref, "submissions"
         ),
@@ -149,6 +157,96 @@ def response_page_record_path(
         validated_work,
         Path("response_pages") / "pages" / f"{validated_id}.json",
     )
+
+
+def response_page_observations_dir(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+) -> Path:
+    """Return the canonical immutable observation collection."""
+    validated_work = _require_quillan_work_ref(work_ref)
+    return safe_module_work_descendant(
+        workspace_root, validated_work, Path("scans") / "observations"
+    )
+
+
+def response_page_observation_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    observation_id: str,
+) -> Path:
+    """Return one canonical immutable response-page observation path."""
+    from quillan.response_page_observations import validate_observation_id
+
+    validated_work = _require_quillan_work_ref(work_ref)
+    validated_id = validate_observation_id(observation_id)
+    return safe_module_work_descendant(
+        workspace_root,
+        validated_work,
+        Path("scans") / "observations" / f"{validated_id}.json",
+    )
+
+
+def routed_evidence_root(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+) -> Path:
+    """Return the canonical routed-evidence collection."""
+    validated_work = _require_quillan_work_ref(work_ref)
+    return safe_module_work_descendant(
+        workspace_root, validated_work, Path("scans") / "evidence"
+    )
+
+
+def routed_evidence_issuance_dir(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    issuance_id: str,
+) -> Path:
+    """Return one issuance's canonical routed-evidence directory."""
+    from quillan.printable_response_records import validate_issuance_id
+
+    validated_work = _require_quillan_work_ref(work_ref)
+    validated_issuance = validate_issuance_id(issuance_id)
+    return safe_module_work_descendant(
+        workspace_root,
+        validated_work,
+        Path("scans") / "evidence" / validated_issuance,
+    )
+
+
+def routed_evidence_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    issuance_id: str,
+    student_id: str,
+    logical_page: int,
+    observation_id: str,
+    extension: str,
+) -> Path:
+    """Return a readable but non-authoritative routed-evidence path."""
+    from quillan.response_page_observations import validate_observation_id
+
+    validated_work = _require_quillan_work_ref(work_ref)
+    validated_student = validate_identifier(student_id, "student_id")
+    validated_observation = validate_observation_id(observation_id)
+    issuance_dir = routed_evidence_issuance_dir(
+        workspace_root, validated_work, issuance_id
+    )
+    if isinstance(logical_page, bool) or not isinstance(logical_page, int) or logical_page < 1:
+        raise QuillanWorkPathError("logical_page must be a positive integer.")
+    if not isinstance(extension, str):
+        raise QuillanWorkPathError("extension must be a string.")
+    normalized_extension = extension.lower()
+    if not normalized_extension.startswith("."):
+        normalized_extension = f".{normalized_extension}"
+    if normalized_extension not in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}:
+        raise QuillanWorkPathError("Unsupported routed-evidence extension.")
+    filename = (
+        f"response_{validated_student}_pg_{logical_page:03d}__"
+        f"{validated_observation}{normalized_extension}"
+    )
+    return issuance_dir / filename
 
 
 def submission_manifest_path(
@@ -402,8 +500,13 @@ __all__ = [
     "quillan_work_ref",
     "relative_assignment_path",
     "relative_submission_manifest_path",
+    "response_page_observation_path",
+    "response_page_observations_dir",
     "response_page_issuance_path",
     "response_page_record_path",
+    "routed_evidence_issuance_dir",
+    "routed_evidence_path",
+    "routed_evidence_root",
     "review_record_path",
     "student_submission_dir",
     "submission_manifest_path",

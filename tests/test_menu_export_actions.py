@@ -356,7 +356,7 @@ def test_assignment_assembly_action_clears_and_prints_focused_header(
     assert "Quillan\x1b[0m\nAssemble Routed Submissions" in output
     assert f"Class: {CLASS_ID}" in output
     assert f"Assignment: {ASSIGNMENT_ID}" in output
-    assert "Skipped existing manifests: 1" in output
+    assert "Skipped existing manifests: 0" in output
 
 
 def test_selected_student_review_menu_includes_feedback_export(

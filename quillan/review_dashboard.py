@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -797,7 +798,7 @@ def _manifest_evidence_paths(root: Path, manifest: dict[str, Any]) -> set[Path]:
 
 def _routed_file_status(
     root: Path,
-    evidence_by_student: dict[str, list[Any]],
+    evidence_by_student: Mapping[str, tuple[Any, ...]],
     manifests: dict[str, dict[str, Any]],
     assembled: set[Path],
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:

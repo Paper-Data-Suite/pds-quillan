@@ -255,11 +255,11 @@ export, or report generation.
 Teacher tags, teacher comments, rubric/score entry, feedback export, and
 reporting remain likely v0.7 work rather than v0.6 scope.
 
-The first successful-write helper is implemented in `quillan.evidence_filing`.
-It accepts an existing successful `RoutePlan`, retains the selected source
-under `scans/source/YYYY-MM-DD/`, files the retained source or a supplied page
-artifact under assignment `scans/`, preserves duplicate copies, and returns
-provenance.
+Historical note (superseded by the PDS2 intake and #339 observation pipeline):
+the first successful-write helper in `quillan.evidence_filing` once accepted a
+legacy route plan, retained the selected source under
+`scans/source/YYYY-MM-DD/`, and filed assignment-scan evidence. That behavior
+is no longer an active identity or assembly contract.
 
 Metadata-only failure preservation is implemented in `quillan.routing_review`.
 It writes shared `pds-core` failure records under `scans/review/`, preserves

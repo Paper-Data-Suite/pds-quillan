@@ -1,126 +1,49 @@
-"""End-to-end smoke coverage for the v0.6 reviewable-evidence workflow."""
-
-from __future__ import annotations
+"""End-to-end smoke coverage for observation-backed reviewable evidence."""
 
 from pathlib import Path
 
 import pytest
 
+import quillan.submission_assembly as submission_assembly
 import quillan.submission_review_opening
-from quillan.assignment_submission_assembly import (
-    assemble_assignment_submissions,
-)
 from quillan.evidence_opening import OpenedEvidence
-from quillan.submission_manifest import (
-    load_submission_manifest,
-    validate_submission_manifest,
+from quillan.response_page_observation_persistence import (
+    persist_quillan_page_observation,
 )
-from quillan.submission_review_opening import (
-    open_student_submission_for_review,
+from quillan.submission_manifest import load_submission_manifest
+from quillan.submission_observation_assembly import (
+    assemble_quillan_submission_manifests,
 )
+from quillan.submission_review_opening import open_student_submission_for_review
 from quillan.submission_review_state import update_submission_review_state
 from quillan.submission_status import list_assignment_submission_status
-
-CLASS_ID = "english12_p3_synthetic"
-ASSIGNMENT_ID = "essay_01_synthetic"
-STUDENT_IDS = ("00107", "00108")
-ASSEMBLED_AT = "2026-06-22T12:00:00+00:00"
-REVIEWED_AT = "2026-06-22T12:30:00+00:00"
+from tests.observation_test_support import successful_image_page
 
 
-def test_v06_synthetic_reviewable_evidence_workflow_is_non_destructive(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+def test_legacy_caller_metadata_assembly_api_is_absent() -> None:
+    assert not hasattr(submission_assembly, "RoutedSubmissionEvidence")
+    assert not hasattr(submission_assembly, "build_submission_manifest")
+    assert not hasattr(submission_assembly, "assemble_submission_manifest")
+
+
+def test_observation_backed_evidence_remains_reviewable_and_non_destructive(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    scans_dir = (
-        tmp_path
-        / "classes"
-        / CLASS_ID
-        / "modules"
-        / "quillan"
-        / "work"
-        / ASSIGNMENT_ID
-        / "scans"
+    persisted = persist_quillan_page_observation(
+        tmp_path, successful_image_page(tmp_path)
     )
-    scans_dir.mkdir(parents=True)
-    evidence_paths = {
-        student_id: scans_dir / f"response_{student_id}_pg_001.pdf"
-        for student_id in STUDENT_IDS
-    }
-    for student_id, path in evidence_paths.items():
-        path.write_bytes(f"synthetic {student_id} page 1 evidence".encode())
-
-    evidence_before = {
-        path.relative_to(tmp_path): path.read_bytes()
-        for path in evidence_paths.values()
-    }
-
-    assembly = assemble_assignment_submissions(
+    observation = persisted.observation
+    evidence_before = persisted.evidence_path.read_bytes()
+    assembled = assemble_quillan_submission_manifests(
         tmp_path,
-        CLASS_ID,
-        ASSIGNMENT_ID,
-        expected_pages=1,
-        created_at=ASSEMBLED_AT,
-        updated_at=ASSEMBLED_AT,
+        observation.class_id,
+        observation.assignment_id,
+        timestamp="2026-07-21T12:00:00+00:00",
     )
-
-    expected_manifest_paths = {
-        (
-            Path("classes")
-            / CLASS_ID
-            / "modules"
-            / "quillan"
-            / "work"
-            / ASSIGNMENT_ID
-            / "submissions"
-            / student_id
-            / "submission.json"
-        )
-        for student_id in STUDENT_IDS
-    }
-    assert assembly.students_with_evidence == STUDENT_IDS
-    assert not assembly.skipped_existing_manifests
-    assert not assembly.skipped_files
-    assert {
-        path.relative_to(tmp_path) for path in assembly.written_manifests
-    } == expected_manifest_paths
-
-    manifests = {}
-    for manifest_path in assembly.written_manifests:
-        manifest = load_submission_manifest(manifest_path)
-        validate_submission_manifest(manifest)
-        manifests[manifest["student_id"]] = manifest
-        assert manifest["class_id"] == CLASS_ID
-        assert manifest["assignment_id"] == ASSIGNMENT_ID
-        assert manifest["submission_state"] == "unreviewed"
-        assert manifest["expected_pages"] == 1
-        assert len(manifest["pages"]) == 1
-        page = manifest["pages"][0]
-        assert page["page_state"] == "present"
-        assert page["selected_evidence_id"] is not None
-        assert len(page["evidence"]) == 1
-        assert Path(page["evidence"][0]["routed_evidence_path"]) == (
-            evidence_paths[manifest["student_id"]].relative_to(tmp_path)
-        )
-
-    status = list_assignment_submission_status(
-        tmp_path,
-        CLASS_ID,
-        ASSIGNMENT_ID,
-        expected_pages=1,
-    )
-    assert status.students_with_manifests == STUDENT_IDS
-    assert status.students_with_routed_evidence == STUDENT_IDS
-    assert not status.students_without_manifests
-    assert not status.unassembled_routed_files
-    assert not status.skipped_routed_files
-    assert all(
-        student.submission_state == "unreviewed"
-        and len(student.pages) == 1
-        and student.pages[0].page_state == "present"
-        and student.pages[0].selected_evidence_id is not None
-        for student in status.student_statuses
-    )
+    assert not assembled.failures
+    manifest_path = assembled.assembled[0].manifest_path
+    manifest = load_submission_manifest(manifest_path)
+    assert manifest["pages"][0]["selected_evidence_id"] == observation.observation_id
 
     opened_paths: list[Path] = []
 
@@ -142,56 +65,23 @@ def test_v06_synthetic_reviewable_evidence_workflow_is_non_destructive(
     )
     opened = open_student_submission_for_review(
         tmp_path,
-        CLASS_ID,
-        ASSIGNMENT_ID,
-        STUDENT_IDS[0],
+        observation.class_id,
+        observation.assignment_id,
+        observation.student_id,
     )
-    assert opened.evidence_path == evidence_paths[STUDENT_IDS[0]].resolve()
-    assert opened_paths == [evidence_paths[STUDENT_IDS[0]].resolve()]
+    assert opened.evidence_path == persisted.evidence_path.resolve()
+    assert opened_paths == [persisted.evidence_path.resolve()]
 
-    original_manifest = manifests[STUDENT_IDS[0]]
     update_submission_review_state(
         tmp_path,
-        CLASS_ID,
-        ASSIGNMENT_ID,
-        STUDENT_IDS[0],
+        observation.class_id,
+        observation.assignment_id,
+        observation.student_id,
         "reviewed",
-        updated_at=REVIEWED_AT,
+        updated_at="2026-07-21T12:30:00+00:00",
     )
-    reviewed_manifest = load_submission_manifest(opened.manifest_path)
-    unchanged_original = {
-        key: value
-        for key, value in original_manifest.items()
-        if key not in {"submission_state", "updated_at"}
-    }
-    unchanged_reviewed = {
-        key: value
-        for key, value in reviewed_manifest.items()
-        if key not in {"submission_state", "updated_at"}
-    }
-    assert unchanged_reviewed == unchanged_original
-    assert reviewed_manifest["submission_state"] == "reviewed"
-    assert reviewed_manifest["updated_at"] == REVIEWED_AT
-
-    reviewed_status = list_assignment_submission_status(
-        tmp_path,
-        CLASS_ID,
-        ASSIGNMENT_ID,
-        expected_pages=1,
+    status = list_assignment_submission_status(
+        tmp_path, observation.class_id, observation.assignment_id
     )
-    states = {
-        student.student_id: student.submission_state
-        for student in reviewed_status.student_statuses
-    }
-    assert states == {"00107": "reviewed", "00108": "unreviewed"}
-
-    assert {
-        path.relative_to(tmp_path): path.read_bytes()
-        for path in evidence_paths.values()
-    } == evidence_before
-    all_files = {
-        path.relative_to(tmp_path)
-        for path in tmp_path.rglob("*")
-        if path.is_file()
-    }
-    assert all_files == set(evidence_before) | expected_manifest_paths
+    assert status.student_statuses[0].submission_state == "reviewed"
+    assert persisted.evidence_path.read_bytes() == evidence_before
