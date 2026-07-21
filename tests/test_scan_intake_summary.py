@@ -8,4 +8,4 @@ def test_empty_summary_is_deterministic_and_states_write_boundary() -> None:
     assert "Batch status: zero_success" in text
     assert "Skipped unsupported files: 2" in text
     assert "Skipped nonfile entries: 1" in text
-    assert "No routed Quillan evidence or submissions were written." in text
+    assert "Observation persistence" not in text

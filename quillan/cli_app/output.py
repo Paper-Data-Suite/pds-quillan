@@ -743,8 +743,10 @@ def print_assignment_submission_assembly(
         f"{result.assignment_id}."
     )
     print()
-    print(f"Students with routed evidence: {len(result.students_with_evidence)}")
-    print(f"Created manifests: {len(result.written_manifests)}")
+    print(f"Students with persisted observations: {len(result.students_with_evidence)}")
+    print(f"Created manifests: {sum(item.status == 'created' for item in result.assembled)}")
+    print(f"Updated manifests: {sum(item.status == 'updated' for item in result.assembled)}")
+    print(f"Unchanged manifests: {sum(item.status == 'unchanged' for item in result.assembled)}")
     print(
         "Skipped existing manifests: "
         f"{len(result.skipped_existing_manifests)}"
@@ -754,7 +756,7 @@ def print_assignment_submission_assembly(
     print(f"Duplicate pages: {duplicate}")
     print(f"Needs-rescan pages: {needs_rescan}")
     print(f"Excluded pages: {excluded}")
-    print("Failures: 0")
+    print(f"Failures: {len(result.failures)}")
 
     _print_path_section("Created", result.written_manifests, workspace_root)
     _print_path_section(
@@ -770,6 +772,13 @@ def print_assignment_submission_assembly(
                 f"- {workspace_relative_display(skipped.path, workspace_root)}"
                 f" — {skipped.reason}"
             )
+
+    if result.failures:
+        print()
+        print("Assembly failures:")
+        for failure in result.failures:
+            student = failure.student_id or "unknown"
+            print(f"- {student}: {failure.category} — {failure.reason}")
 
     state_details = [
         (
@@ -816,23 +825,17 @@ def print_assignment_submission_assembly(
 
 
 def print_routed_evidence(filed_evidence: RoutedEvidenceFile) -> None:
-    """Print a concise successful-route summary."""
-    duplicate = (
-        "no"
-        if filed_evidence.duplicate_number is None
-        else f"yes (__dup_{filed_evidence.duplicate_number:03d})"
-    )
-    print("Routed Quillan response page.")
-    print(
-        "Retained source: "
-        f"{filed_evidence.retained_source.retained_source_relative_path}"
-    )
-    print(f"Routed evidence: {filed_evidence.routed_evidence_relative_path}")
-    print(f"Class: {filed_evidence.class_id}")
-    print(f"Assignment: {filed_evidence.assignment_id}")
-    print(f"Student: {filed_evidence.student_id}")
-    print(f"Page: {filed_evidence.page_number}")
-    print(f"Duplicate: {duplicate}")
+    """Print a concise successful observation-persistence summary."""
+    observation = filed_evidence.observation
+    print("Persisted Quillan response-page observation.")
+    print(f"Observation: {observation.observation_id}")
+    print(f"Retained source: {observation.retained_source_path}")
+    print(f"Routed evidence: {filed_evidence.evidence_relative_path}")
+    print(f"Class: {observation.class_id}")
+    print(f"Assignment: {observation.assignment_id}")
+    print(f"Student: {observation.student_id}")
+    print(f"Page: {observation.logical_page}")
+    print(f"Persistence status: {filed_evidence.status}")
 
 
 def print_route_failure_review(

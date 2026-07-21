@@ -13,7 +13,7 @@ from quillan.assignment_submission_assembly import (
     discover_assignment_routed_evidence_status,
 )
 from quillan.storage import assignment_submissions_dir
-from quillan.submission_assembly import RoutedSubmissionEvidence
+from quillan.response_page_observations import QuillanResponsePageObservation
 from quillan.submission_manifest import load_submission_manifest
 
 
@@ -92,12 +92,6 @@ def list_assignment_submission_status(
         for page in manifest["pages"]
         for item in page["evidence"]
     }
-    represented_evidence_pages = {
-        student_id: {
-            page["page_number"] for page in manifest["pages"] if page["evidence"]
-        }
-        for student_id, (_, manifest) in manifests.items()
-    }
     unassembled: list[Path] = []
     unused_duplicates: list[Path] = []
     for student_id, items in discovery.evidence_by_student.items():
@@ -105,14 +99,7 @@ def list_assignment_submission_status(
             path = _resolved_evidence_path(root, item.routed_evidence_path)
             if path in assembled_paths:
                 continue
-            if (
-                item.duplicate_number is not None
-                and item.page_number
-                in represented_evidence_pages.get(student_id, set())
-            ):
-                unused_duplicates.append(path)
-            else:
-                unassembled.append(path)
+            unassembled.append(path)
     unassembled_routed_files = tuple(
         sorted(unassembled, key=lambda path: str(path).casefold())
     )
@@ -238,10 +225,10 @@ def _summarize_manifest(
 
 def _summarize_routed_only_student(
     student_id: str,
-    evidence_items: list[RoutedSubmissionEvidence],
+    evidence_items: tuple[QuillanResponsePageObservation, ...],
     expected_pages: int | None,
 ) -> StudentSubmissionStatus:
-    routed_page_numbers = {item.page_number for item in evidence_items}
+    routed_page_numbers = {item.logical_page for item in evidence_items}
     missing_pages = (
         tuple(
             page_number

@@ -4,11 +4,59 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Final, cast
 
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
+
+from quillan.printable_response_records import (
+    validate_artifact_id,
+    validate_generation_id,
+    validate_issuance_id,
+    validate_page_id,
+)
+from quillan.printable_response_routes import validate_route_id
+from quillan.response_page_observations import (
+    ROUTED_EVIDENCE_KINDS,
+    validate_observation_id,
+)
+
+PDS2_SUBMISSION_ENTRY_METHOD: Final[str] = "pds2_response_pages"
+PDS2_TOP_LEVEL_MODULE_DETAIL_FIELDS: Final[frozenset[str]] = frozenset(
+    {
+        "submission_entry_method",
+        "response_issuance_id",
+        "generation_id",
+        "artifact_id",
+        "expected_page_ids",
+        "response_page_contract_version",
+        "page_observation_schema_version",
+        "assembly_revision",
+    }
+)
+PDS2_EVIDENCE_MODULE_DETAIL_FIELDS: Final[frozenset[str]] = frozenset(
+    {
+        "observation_id",
+        "page_id",
+        "route_id",
+        "issuance_id",
+        "generation_id",
+        "artifact_id",
+        "logical_page",
+        "total_pages",
+        "page_role",
+        "routed_evidence_sha256",
+        "routed_evidence_kind",
+    }
+)
+PDS2_EVIDENCE_TEACHER_DETAIL_FIELDS: Final[frozenset[str]] = frozenset(
+    {"quillan_before_page_exclusion"}
+)
+PDS2_EXCLUSION_STATE_FIELDS: Final[frozenset[str]] = frozenset(
+    {"evidence_role", "evidence_state"}
+)
 
 REQUIRED_MANIFEST_FIELDS: Final[tuple[str, ...]] = (
     "schema_version",
@@ -98,9 +146,7 @@ def validate_submission_manifest(manifest: dict[str, Any]) -> None:
     _require_fields(manifest, REQUIRED_MANIFEST_FIELDS, "submission manifest")
     _validate_exact_value(manifest["schema_version"], "schema_version", "1")
     _validate_exact_value(manifest["module"], "module", "quillan")
-    _validate_exact_value(
-        manifest["record_type"], "record_type", "submission_manifest"
-    )
+    _validate_exact_value(manifest["record_type"], "record_type", "submission_manifest")
     for field in ("class_id", "assignment_id", "student_id"):
         _validate_identifier(manifest[field], field)
 
@@ -125,6 +171,216 @@ def validate_submission_manifest(manifest: dict[str, Any]) -> None:
         if not isinstance(page, dict):
             raise SubmissionManifestError(f"{context} must be an object.")
         _validate_page(page, context, seen_page_numbers, seen_evidence_ids)
+    details = manifest["module_details"]
+    if details.get("submission_entry_method") == PDS2_SUBMISSION_ENTRY_METHOD:
+        _validate_pds2_submission(manifest)
+
+
+def _validate_pds2_submission(manifest: dict[str, Any]) -> None:
+    """Validate the strict filesystem-free PDS2 digital sub-contract."""
+    details = manifest["module_details"]
+    _require_exact_keys(details, PDS2_TOP_LEVEL_MODULE_DETAIL_FIELDS, "module_details")
+    issuance_id = _typed_id(
+        details["response_issuance_id"], "response_issuance_id", validate_issuance_id
+    )
+    generation_id = _typed_id(
+        details["generation_id"], "generation_id", validate_generation_id
+    )
+    artifact_id = _typed_id(details["artifact_id"], "artifact_id", validate_artifact_id)
+    _validate_exact_value(
+        details["response_page_contract_version"],
+        "module_details.response_page_contract_version",
+        "1",
+    )
+    _validate_exact_value(
+        details["page_observation_schema_version"],
+        "module_details.page_observation_schema_version",
+        "1",
+    )
+    _validate_positive_integer(
+        details["assembly_revision"], "module_details.assembly_revision"
+    )
+    expected_pages = _validate_positive_integer(
+        manifest["expected_pages"], "expected_pages"
+    )
+    expected_ids = details["expected_page_ids"]
+    if not isinstance(expected_ids, list):
+        raise SubmissionManifestError(
+            "module_details.expected_page_ids must be an array."
+        )
+    for page_id in expected_ids:
+        _typed_id(page_id, "expected_page_ids member", validate_page_id)
+    if len(expected_ids) != expected_pages or len(set(expected_ids)) != len(
+        expected_ids
+    ):
+        raise SubmissionManifestError(
+            "expected_page_ids must be unique and match expected_pages."
+        )
+    pages = manifest["pages"]
+    if len(pages) != expected_pages or [page["page_number"] for page in pages] != list(
+        range(1, expected_pages + 1)
+    ):
+        raise SubmissionManifestError(
+            "PDS2 pages must contain every authoritative page slot in order."
+        )
+    routed_paths: dict[str, str] = {}
+    source_pages: dict[tuple[str, int], str] = {}
+    for page, expected_page_id in zip(pages, expected_ids, strict=True):
+        page_number = page["page_number"]
+        for evidence in page["evidence"]:
+            observation_id = _typed_id(
+                evidence["evidence_id"], "evidence_id", validate_observation_id
+            )
+            module_details = evidence["module_details"]
+            actual_detail_fields = set(module_details)
+            if not PDS2_EVIDENCE_MODULE_DETAIL_FIELDS.issubset(
+                actual_detail_fields
+            ) or not actual_detail_fields.issubset(
+                PDS2_EVIDENCE_MODULE_DETAIL_FIELDS | PDS2_EVIDENCE_TEACHER_DETAIL_FIELDS
+            ):
+                missing = PDS2_EVIDENCE_MODULE_DETAIL_FIELDS - actual_detail_fields
+                unknown = actual_detail_fields - (
+                    PDS2_EVIDENCE_MODULE_DETAIL_FIELDS
+                    | PDS2_EVIDENCE_TEACHER_DETAIL_FIELDS
+                )
+                raise SubmissionManifestError(
+                    "Invalid evidence.module_details keys; missing: "
+                    f"{', '.join(sorted(missing)) or 'none'}; unknown: "
+                    f"{', '.join(sorted(unknown)) or 'none'}."
+                )
+            preserved = module_details.get("quillan_before_page_exclusion")
+            if preserved is not None:
+                if not isinstance(preserved, dict):
+                    raise SubmissionManifestError(
+                        "quillan_before_page_exclusion must be an object."
+                    )
+                _require_exact_keys(
+                    preserved,
+                    PDS2_EXCLUSION_STATE_FIELDS,
+                    "quillan_before_page_exclusion",
+                )
+                _validate_allowed_value(
+                    preserved["evidence_role"],
+                    "quillan_before_page_exclusion.evidence_role",
+                    ALLOWED_EVIDENCE_ROLES,
+                )
+                _validate_allowed_value(
+                    preserved["evidence_state"],
+                    "quillan_before_page_exclusion.evidence_state",
+                    ALLOWED_EVIDENCE_STATES,
+                )
+            if module_details["observation_id"] != observation_id:
+                raise SubmissionManifestError(
+                    "Evidence ID must equal module_details.observation_id."
+                )
+            if (
+                _typed_id(module_details["page_id"], "page_id", validate_page_id)
+                != expected_page_id
+            ):
+                raise SubmissionManifestError(
+                    "Evidence page_id contradicts its page slot."
+                )
+            _typed_id(module_details["route_id"], "route_id", validate_route_id)
+            if (
+                _typed_id(
+                    module_details["issuance_id"], "issuance_id", validate_issuance_id
+                )
+                != issuance_id
+            ):
+                raise SubmissionManifestError(
+                    "Evidence issuance_id contradicts the manifest."
+                )
+            if (
+                _typed_id(
+                    module_details["generation_id"],
+                    "generation_id",
+                    validate_generation_id,
+                )
+                != generation_id
+            ):
+                raise SubmissionManifestError(
+                    "Evidence generation_id contradicts the manifest."
+                )
+            if (
+                _typed_id(
+                    module_details["artifact_id"], "artifact_id", validate_artifact_id
+                )
+                != artifact_id
+            ):
+                raise SubmissionManifestError(
+                    "Evidence artifact_id contradicts the manifest."
+                )
+            if (
+                _validate_positive_integer(
+                    module_details["logical_page"], "logical_page"
+                )
+                != page_number
+            ):
+                raise SubmissionManifestError(
+                    "Evidence logical_page contradicts its page slot."
+                )
+            if (
+                _validate_positive_integer(module_details["total_pages"], "total_pages")
+                != expected_pages
+            ):
+                raise SubmissionManifestError(
+                    "Evidence total_pages contradicts expected_pages."
+                )
+            expected_role = "response_start" if page_number == 1 else "continuation"
+            if module_details["page_role"] != expected_role:
+                raise SubmissionManifestError(
+                    "Evidence page_role contradicts logical_page."
+                )
+            digest = module_details["routed_evidence_sha256"]
+            if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+                raise SubmissionManifestError(
+                    "routed_evidence_sha256 must be lowercase SHA-256 text."
+                )
+            if module_details["routed_evidence_kind"] not in ROUTED_EVIDENCE_KINDS:
+                raise SubmissionManifestError("Unsupported routed_evidence_kind.")
+            retained = evidence["retained_source"]
+            if not isinstance(retained, dict):
+                raise SubmissionManifestError(
+                    "PDS2 evidence requires complete retained_source provenance."
+                )
+            if retained["source_page_number"] is None:
+                raise SubmissionManifestError(
+                    "PDS2 retained source requires source_page_number."
+                )
+            routed_path = evidence["routed_evidence_path"]
+            previous_observation = routed_paths.setdefault(routed_path, observation_id)
+            if previous_observation != observation_id:
+                raise SubmissionManifestError(
+                    "One routed evidence path cannot represent different observations."
+                )
+            source_key = (
+                retained["source_scan_id"],
+                retained["source_page_number"],
+            )
+            previous_page = source_pages.setdefault(source_key, expected_page_id)
+            if previous_page != expected_page_id:
+                raise SubmissionManifestError(
+                    "One retained source page cannot represent contradictory page IDs."
+                )
+
+
+def _typed_id(value: Any, field: str, validator: Callable[[object], str]) -> str:
+    try:
+        return validator(value)
+    except ValueError as error:
+        raise SubmissionManifestError(f"Invalid {field}: {error}") from error
+
+
+def _require_exact_keys(
+    value: dict[str, Any], expected: frozenset[str], context: str
+) -> None:
+    actual = set(value)
+    if actual != expected:
+        missing = ", ".join(sorted(expected - actual)) or "none"
+        unknown = ", ".join(sorted(actual - expected)) or "none"
+        raise SubmissionManifestError(
+            f"Invalid {context} keys; missing: {missing}; unknown: {unknown}."
+        )
 
 
 def _validate_page(
@@ -233,12 +489,8 @@ def _validate_evidence(
         evidence["duplicate_number"], f"{context}.duplicate_number"
     )
     _validate_timestamp(evidence["created_at"], f"{context}.created_at")
-    _validate_retained_source(
-        evidence["retained_source"], f"{context}.retained_source"
-    )
-    _validate_json_object(
-        evidence["module_details"], f"{context}.module_details"
-    )
+    _validate_retained_source(evidence["retained_source"], f"{context}.retained_source")
+    _validate_json_object(evidence["module_details"], f"{context}.module_details")
     return evidence_id, evidence_role
 
 
@@ -329,17 +581,13 @@ def _validate_identifier(value: Any, field: str) -> None:
 
 def _validate_non_empty_string(value: Any, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
-        raise SubmissionManifestError(
-            f"Field '{field}' must be a non-empty string."
-        )
+        raise SubmissionManifestError(f"Field '{field}' must be a non-empty string.")
     return value
 
 
 def _validate_positive_integer(value: Any, field: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
-        raise SubmissionManifestError(
-            f"Field '{field}' must be a positive integer."
-        )
+        raise SubmissionManifestError(f"Field '{field}' must be a positive integer.")
     return value
 
 

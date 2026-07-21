@@ -78,7 +78,6 @@ def format_scan_intake_summary(summary: QuillanScanIntakeSummary) -> str:
                     lines.append(
                         f"  Possibly durable path: {page.review_error.durable_path}"
                     )
-    lines.extend(["", "No routed Quillan evidence or submissions were written."])
     return "\n".join(lines)
 
 

@@ -592,7 +592,7 @@ def _assemble_assignment(
     )
     try:
         result = assemble_assignment_submissions(
-            workspace_root, class_id, assignment_id, overwrite=False
+            workspace_root, class_id, assignment_id
         )
     except Exception as error:
         print(f"Error: could not assemble submissions: {error}")

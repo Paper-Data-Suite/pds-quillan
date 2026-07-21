@@ -13,6 +13,10 @@ from quillan.pds2_scan_intake import (
     process_quillan_scan_folder,
     process_quillan_scan_source,
 )
+from quillan.intake_assembly import (
+    format_post_dispatch_persistence_result,
+    persist_and_assemble_quillan_scan_successes,
+)
 from quillan.retained_scan_pages import SUPPORTED_SCAN_EXTENSIONS
 from quillan.scan_intake_summary import format_scan_intake_summary
 
@@ -49,9 +53,18 @@ def run_qr_scan_intake(
         print(f"Error: scan intake could not start safely: {error}")
         return 1
     print(format_scan_intake_summary(summary))
+    try:
+        post_dispatch = persist_and_assemble_quillan_scan_successes(root, summary)
+    except Exception as error:
+        print(f"Error: post-dispatch persistence could not start safely: {error}")
+        if on_summary is not None:
+            on_summary(summary)
+        return 1
+    print()
+    print(format_post_dispatch_persistence_result(post_dispatch))
     if on_summary is not None:
         on_summary(summary)
-    return 0 if summary.complete_success else 1
+    return 0 if post_dispatch.complete_success else 1
 
 
 __all__ = [

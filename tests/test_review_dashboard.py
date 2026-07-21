@@ -69,17 +69,16 @@ def test_dashboard_unions_students_isolates_invalid_records_and_is_read_only(
         "00200",
         "00900",
         "00300",
-        "00400",
     ]
     assert document["schema_version"] == "1"
     assert document["record_type"] == "quillan_assignment_review_dashboard"
     assert document["summary"]["submissions"]["valid"] == 1
     assert document["summary"]["submissions"]["invalid"] == 1
-    assert document["summary"]["submissions"]["missing"] == 3
+    assert document["summary"]["submissions"]["missing"] == 2
     assert document["summary"]["reviews"]["missing"] == 0
-    assert document["summary"]["routed_evidence"]["students_needing_assembly"] == 1
+    assert document["summary"]["routed_evidence"]["students_needing_assembly"] == 0
     assert document["students"][0]["display_name"] == "Avery Rivera"
-    assert document["students"][-1]["needs_assembly"] is True
+    assert document["students"][-1]["needs_assembly"] is False
     assert _snapshot(tmp_path) == before
 
 

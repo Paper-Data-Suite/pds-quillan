@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import subprocess
+import sys
 from typing import Any
 
 import pytest
@@ -104,7 +106,7 @@ def test_valid_manifest_is_written_readably_and_reloads(tmp_path: Path) -> None:
     assert result == path
     assert path.parent.is_dir()
     assert raw.endswith(b"\n")
-    assert b"\n  \"schema_version\"" in raw
+    assert b'\n  "schema_version"' in raw
     assert "Café" in raw.decode("utf-8")
     assert load_submission_manifest(path) == manifest
 
@@ -165,9 +167,71 @@ def test_manifest_symlink_is_rejected_without_modifying_target(tmp_path: Path) -
     try:
         os.symlink(target, path)
     except OSError as error:
-        pytest.skip(f"symlink creation is unavailable: {error}")
+        if getattr(error, "winerror", None) == 1314:
+            pytest.skip("symlink creation is unavailable: WinError 1314")
+        raise
 
     with pytest.raises(SubmissionManifestPathError, match="symlink"):
         write_submission_manifest(path, _manifest(), overwrite=True)
 
     assert target.read_text(encoding="utf-8") == "original"
+
+
+def test_overwrite_preflight_rejects_fabricated_link_without_target_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "submission.json"
+    path.write_text("external target bytes", encoding="utf-8")
+    original_is_symlink = Path.is_symlink
+    original_read = Path.read_bytes
+
+    monkeypatch.setattr(
+        Path,
+        "is_symlink",
+        lambda candidate: candidate == path or original_is_symlink(candidate),
+    )
+
+    def guarded_read(candidate: Path) -> bytes:
+        if candidate == path:
+            pytest.fail("unsafe manifest target was read before preflight")
+        return original_read(candidate)
+
+    monkeypatch.setattr(Path, "read_bytes", guarded_read)
+    with pytest.raises(SubmissionManifestPathError, match="symlink"):
+        write_submission_manifest(path, _manifest(), overwrite=True)
+
+
+def test_overwrite_rejects_missing_and_directory_targets(tmp_path: Path) -> None:
+    missing = tmp_path / "missing.json"
+    with pytest.raises(SubmissionManifestPathError, match="does not exist"):
+        write_submission_manifest(missing, _manifest(), overwrite=True)
+    directory = tmp_path / "submission.json"
+    directory.mkdir()
+    with pytest.raises(SubmissionManifestPathError):
+        write_submission_manifest(directory, _manifest(), overwrite=True)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows junction test")
+def test_manifest_preflight_rejects_real_windows_junction_without_external_read(
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    target = outside / "submission.json"
+    target.write_text("external", encoding="utf-8")
+    junction = tmp_path / "submission-parent"
+    created = subprocess.run(
+        ["cmd.exe", "/c", "mklink", "/J", str(junction), str(outside)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert created.returncode == 0, created.stderr
+    try:
+        with pytest.raises(SubmissionManifestPathError, match="junction"):
+            write_submission_manifest(
+                junction / "submission.json", _manifest(), overwrite=True
+            )
+        assert target.read_text(encoding="utf-8") == "external"
+    finally:
+        junction.rmdir()

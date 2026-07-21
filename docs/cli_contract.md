@@ -255,7 +255,7 @@ quillan route-scan <source-image-or-pdf-or-folder>
 quillan list-scan-review [--include-resolved] [--limit N] [--class-id <class_id>] [--assignment-id <assignment_id>] [--failure-category <category>]
 quillan resolve-scan-review <failure_id> --action <action> [--message "..."] [--evidence-path <workspace-relative-path>]
 quillan decode-scan <source-file> [--hide-payload]
-quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
+quillan assemble-submissions <class_id> <assignment_id>
 quillan create-plain-paper-submission <class_id> <assignment_id> <student_id> [--yes | --dry-run]
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 quillan pages list <class_id> <assignment_id> <student_id>
@@ -1047,13 +1047,14 @@ Core dispatch failures, pre-dispatch failures, Quillan integration failures,
 persisted review occurrences, review-persistence failures, skipped entries,
 failure categories, and the exact batch status.
 
-It prints the same retained-source dispatch summary as the direct command and
-does not offer submission-assembly guidance before #339.
+It prints the same retained-source dispatch summary as the direct command,
+followed by observation persistence, routed-evidence, and manifest assembly
+counts.
 
 If review is required, the preserved-failure caution is printed.
 
-The workflow does not automatically assemble submissions, move or archive the
-teacher's original source files, create `submission.json` or `review.json`,
+The workflow automatically assembles observation-backed submissions after safe
+persistence. It does not move or archive original sources, create `review.json`,
 run OCR, score, tag, generate feedback, or perform AI work.
 
 #### Review Student Work
@@ -1409,21 +1410,19 @@ result screens.
 ## Submission Assembly and Status
 
 ```powershell
-quillan assemble-submissions <class_id> <assignment_id> [--expected-pages N] [--overwrite]
+quillan assemble-submissions <class_id> <assignment_id>
 quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
 ```
 
-`assemble-submissions` discovers already-routed PDF and image evidence by the
-assignment filename convention and creates canonical student `submission.json`
-manifests.
-
-Existing manifests are skipped unless `--overwrite` requests full
-regeneration. Assembly does not inspect evidence contents, recover provenance
-absent from filenames, or choose among ambiguous duplicate evidence.
+`assemble-submissions` discovers strict immutable observation JSON, verifies its
+evidence, loads complete issuance/page records, and atomically creates, updates,
+or leaves unchanged each canonical student `submission.json`. Expected pages
+come only from issuance membership. Existing teacher state is preserved; mixed
+issuances and plain-paper conflicts are reported without overwriting.
 
 `list-submissions` is read-only. It reports manifest and page states,
-present-but-unselected evidence, students needing assembly, unassembled routed
-files, and skipped filenames without creating or modifying records.
+present-but-unselected evidence, students needing assembly, and unassembled
+observation-backed evidence without creating or modifying records.
 
 These commands do not open evidence, update review state, create review
 records, score work, tag work, generate feedback, run OCR, or perform AI work.

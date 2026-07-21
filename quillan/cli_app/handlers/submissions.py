@@ -82,15 +82,13 @@ def handle_assemble_submissions(args: argparse.Namespace) -> int:
             workspace_root,
             args.class_id,
             args.assignment_id,
-            expected_pages=args.expected_pages,
-            overwrite=args.overwrite,
         )
     except Exception as error:
         print(f"Error: could not assemble submission manifests: {error}")
         return 1
 
     print_assignment_submission_assembly(result, workspace_root)
-    return 0
+    return 0 if not result.failures else 1
 
 
 def handle_list_submissions(args: argparse.Namespace) -> int:
