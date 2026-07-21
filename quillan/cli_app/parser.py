@@ -698,34 +698,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     route_scan_parser = subparsers.add_parser(
         "route-scan",
-        help="Route Quillan response scans from payload text or QR.",
+        help="Retain scans once and dispatch PDS2 QR locators through Core.",
         description=(
-            "Route one scan file using either an already-decoded Quillan PDS1 "
-            "payload or QR payloads decoded from a supported local image or "
-            "PDF. With --decode-qr, a folder path processes supported image "
-            "and PDF files directly inside that folder in deterministic order. "
-            "PDF files are processed page by page. Exit 0 means all attempted "
-            "scan sources were routed or safely preserved for review; exit 1 "
-            "means the input or an attempted source could not be handled safely."
+            "Retain one supported image/PDF or each supported direct child of a "
+            "folder exactly once, then detect PDS2 QR text and dispatch ordered "
+            "physical pages through the installed PDS Core module registry."
         ),
     )
     route_scan_parser.add_argument(
         "source_file",
         type=Path,
-        help="Path to the selected source scan file, or a folder with --decode-qr.",
-    )
-    payload_group = route_scan_parser.add_mutually_exclusive_group(required=True)
-    payload_group.add_argument(
-        "--payload",
-        help="Already-decoded canonical PDS1 payload text.",
-    )
-    payload_group.add_argument(
-        "--decode-qr",
-        action="store_true",
-        help=(
-            "Decode Quillan response-page QR payloads from a source image or "
-            "PDF, or from supported image/PDF files directly inside a folder."
-        ),
+        help="Path to a supported scan file or direct-child scan folder.",
     )
     route_scan_parser.set_defaults(handler=handle_route_scan)
 
@@ -794,17 +777,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     decode_scan_parser = subparsers.add_parser(
         "decode-scan",
-        help="Decode a Quillan response-page QR payload without routing.",
+        help="Retain and strictly decode PDS2 QR locators without routing.",
         description=(
-            "Decode one supported local image file, report the raw QR payload "
-            "and Quillan response-page identity, and exit without routing, "
-            "copying, preserving, assembling, or writing workspace data."
+            "Retain a supported source once, decode each physical page, and "
+            "display strict Core PDS2 locator fields without module resolution, "
+            "dispatch, routed evidence, or submission writes."
         ),
     )
     decode_scan_parser.add_argument(
         "source_file",
         type=Path,
-        help="Path to a supported local image scan file.",
+        help="Path to a supported image or PDF scan file.",
     )
     decode_scan_parser.add_argument(
         "--hide-payload",

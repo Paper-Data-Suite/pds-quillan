@@ -1,95 +1,202 @@
-"""Decode-only scan diagnostic command handler."""
+"""Retain-once, parse-only PDS2 scan diagnostic."""
 
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 from pathlib import Path
 
-from quillan.payload_validation import (
-    ResponsePayloadValidationFailure,
-    decoded_payload_to_response_page,
+from pds_core.pds2 import parse_pds2_payload, serialize_pds2_payload
+from pds_core.routing_models import RouteLocator
+from pds_core.scan_retention import retain_source_scan
+from pds_core.workspace import resolve_workspace_root
+
+from quillan.pds2_scan_intake import (
+    classify_pds2_payload_error,
+    validate_scan_source,
+    validate_scan_workspace,
 )
-from quillan.qr_decode import decode_qr_payload_from_image_path
-from quillan.route_planning import DecodedResponsePage
+from quillan.qr_decode import (
+    detect_qr_payload,
+    validate_qr_payload_detection_result,
+)
+from quillan.retained_scan_pages import (
+    load_retained_page_for_qr,
+    retained_source_page_count,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class DecodedPds2Page:
+    source_page_number: int
+    raw_payload_text: str | None
+    locator: RouteLocator | None
+    decode_method: str | None
+    failure_category: str | None = None
+    error: Exception | None = None
+
+    def __post_init__(self) -> None:
+        if (
+            isinstance(self.source_page_number, bool)
+            or not isinstance(self.source_page_number, int)
+            or self.source_page_number < 1
+        ):
+            raise ValueError("source_page_number must be positive.")
+        if self.raw_payload_text is not None and not isinstance(
+            self.raw_payload_text, str
+        ):
+            raise ValueError("raw payload must be text or None.")
+        if self.locator is not None and not isinstance(self.locator, RouteLocator):
+            raise ValueError("locator must be RouteLocator or None.")
+        if self.decode_method is not None and not isinstance(self.decode_method, str):
+            raise ValueError("decode method must be text or None.")
+        if (self.failure_category is None) != (self.error is None):
+            raise ValueError("failure category and error must occur together.")
+        if self.locator is not None and (
+            self.raw_payload_text is None or self.error is not None
+        ):
+            raise ValueError("successful locator state is contradictory.")
+
+
+def decode_retained_pds2_scan(
+    source_file: str | Path,
+    *,
+    workspace_root: Path,
+) -> tuple[DecodedPds2Page, ...]:
+    """Retain once and parse pages without registry construction or dispatch."""
+    root = validate_scan_workspace(workspace_root)
+    source = validate_scan_source(source_file)
+    retained = retain_source_scan(root, source)
+    page_count = retained_source_page_count(retained, workspace_root=root)
+    pages: list[DecodedPds2Page] = []
+    for number in range(1, page_count + 1):
+        try:
+            image = load_retained_page_for_qr(
+                retained,
+                number,
+                workspace_root=root,
+            )
+        except Exception as error:
+            pages.append(
+                DecodedPds2Page(
+                    number,
+                    None,
+                    None,
+                    None,
+                    "source_unreadable",
+                    error,
+                )
+            )
+            continue
+        try:
+            detection = detect_qr_payload(image)
+        except Exception as error:
+            pages.append(
+                DecodedPds2Page(
+                    number,
+                    None,
+                    None,
+                    None,
+                    "payload_unreadable",
+                    error,
+                )
+            )
+            continue
+        try:
+            detection = validate_qr_payload_detection_result(detection)
+        except Exception as error:
+            pages.append(
+                DecodedPds2Page(
+                    number,
+                    None,
+                    None,
+                    None,
+                    "payload_unreadable",
+                    ValueError(f"QR detector returned an invalid result: {error}"),
+                )
+            )
+            continue
+        raw = detection.raw_payload_text
+        if raw is None:
+            detection_error = detection.error or ValueError(
+                "No QR payload could be decoded."
+            )
+            pages.append(
+                DecodedPds2Page(
+                    number,
+                    None,
+                    None,
+                    detection.decode_method,
+                    getattr(
+                        detection_error,
+                        "failure_category",
+                        "payload_missing",
+                    ),
+                    detection_error,
+                )
+            )
+            continue
+        try:
+            locator = parse_pds2_payload(raw)
+        except Exception as error:
+            pages.append(
+                DecodedPds2Page(
+                    number,
+                    raw,
+                    None,
+                    detection.decode_method,
+                    classify_pds2_payload_error(raw, error),
+                    error,
+                )
+            )
+            continue
+        pages.append(
+            DecodedPds2Page(
+                number,
+                raw,
+                locator,
+                detection.decode_method,
+            )
+        )
+    return tuple(pages)
 
 
 def handle_decode_scan(args: argparse.Namespace) -> int:
-    """Decode and validate one scan image without routing or writing data."""
-    source_file: Path = args.source_file
-    hide_payload: bool = args.hide_payload
-
-    print("Quillan scan decode diagnostic")
-    print()
-    print(f"Source: {source_file}")
-
+    """Display strict PDS2 locators without resolution or dispatch."""
+    print("PDS2 retained scan decode diagnostic")
+    print(f"Source: {args.source_file}")
     try:
-        decode_result = decode_qr_payload_from_image_path(source_file)
-    except Exception as error:
-        print("QR decode: failed")
-        print("Category: processing_error")
-        print(f"Reason: Unexpected QR image decoding failure: {error}")
-        return 1
-
-    if decode_result.payload_text is None:
-        print("QR decode: failed")
-        print(f"Category: {decode_result.failure_category}")
-        print(f"Reason: {decode_result.failure_message}")
-        return 2
-
-    print("QR decode: success")
-    print(f"Decode attempt: {decode_result.successful_attempt}")
-    _print_payload(decode_result.payload_text, hide_payload=hide_payload)
-    print()
-
-    try:
-        validation_result = decoded_payload_to_response_page(
-            decode_result.payload_text
+        pages = decode_retained_pds2_scan(
+            args.source_file,
+            workspace_root=resolve_workspace_root(),
         )
     except Exception as error:
-        print("Payload validation: failed")
-        print("Category: payload_invalid")
-        print(f"Reason: Unexpected payload validation failure: {error}")
+        print(f"Decode failed: {error}")
         return 1
-
-    if isinstance(validation_result, ResponsePayloadValidationFailure):
-        _print_validation_failure(validation_result)
-        return 3
-
-    _print_response_page(validation_result)
-    return 0
-
-
-def _print_payload(payload_text: str, *, hide_payload: bool) -> None:
-    if hide_payload:
-        print("Payload: hidden")
-        return
-    print(f"Payload: {payload_text}")
-
-
-def _print_response_page(page: DecodedResponsePage) -> None:
-    print("Payload validation: success")
-    print(f"Module: {page.module}")
-    print(f"Document type: {page.document_type}")
-    print(f"Class ID: {page.class_id}")
-    print(f"Assignment ID: {page.assignment_id}")
-    print(f"Student ID: {page.student_id}")
-    print(f"Page number: {page.page_number}")
+    success = True
+    for page in pages:
+        print()
+        print(f"Source page: {page.source_page_number}")
+        if page.locator is None:
+            success = False
+            print(f"Decode failed: {page.failure_category}")
+            print(f"Reason: {page.error}")
+            if page.raw_payload_text is not None and not args.hide_payload:
+                print(f"Raw payload: {page.raw_payload_text}")
+            continue
+        locator = page.locator
+        print("Schema: PDS2")
+        print(f"Module: {locator.module_id}")
+        print(f"Class: {locator.class_id}")
+        print(f"Work: {locator.work_id}")
+        print(f"Route: {locator.route_id}")
+        if not args.hide_payload:
+            print(f"Canonical payload: {serialize_pds2_payload(locator)}")
+    return 0 if success and bool(pages) else 1
 
 
-def _print_validation_failure(
-    failure: ResponsePayloadValidationFailure,
-) -> None:
-    print("Payload validation: failed")
-    print(f"Category: {failure.failure_category}")
-    print(f"Reason: {failure.failure_message}")
-    _print_optional_field("Module", failure.module)
-    _print_optional_field("Document type", failure.document_type)
-    _print_optional_field("Class ID", failure.class_id)
-    _print_optional_field("Assignment ID", failure.assignment_id)
-    _print_optional_field("Student ID", failure.student_id)
-    _print_optional_field("Page number", failure.page_number)
-
-
-def _print_optional_field(label: str, value: object | None) -> None:
-    if value is not None:
-        print(f"{label}: {value}")
+__all__ = [
+    "DecodedPds2Page",
+    "decode_retained_pds2_scan",
+    "handle_decode_scan",
+]

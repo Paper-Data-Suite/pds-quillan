@@ -162,19 +162,6 @@ def _write_standards_library(root: Path) -> None:
         ),
     )
 
-def _response_payload(*, student_id: str = STUDENT_ID, page: int = 1) -> str:
-    return (
-        "PDS1|module=quillan|doc=response|"
-        f"class={CLASS_ID}|aid={ASSIGNMENT_ID}|"
-        f"sid={student_id}|page={page}"
-    )
-
-def _source_scan(root: Path) -> Path:
-    source_path = root / "incoming" / "avery_argument_response.pdf"
-    source_path.parent.mkdir(parents=True, exist_ok=True)
-    source_path.write_bytes(b"%PDF-1.4\n% synthetic response scan\n%%EOF\n")
-    return source_path
-
 def test_v080_scan_review_export_end_to_end_smoke(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
@@ -195,42 +182,15 @@ def test_v080_scan_review_export_end_to_end_smoke(
 
     assert main(["validate-assignment", str(assignment_path)]) == 0
 
-    source_path = _source_scan(workspace)
     assert main(
         [
-            "route-scan",
-            str(source_path),
-            "--payload",
-            _response_payload(),
-        ]
-    ) == 0
-
-    routed_files = sorted(
-        (
-            workspace
-            / "classes"
-            / CLASS_ID
-            / "modules"
-            / "quillan"
-            / "work"
-            / ASSIGNMENT_ID
-            / "scans"
-        ).glob("response_*.pdf")
-    )
-    assert len(routed_files) == 1
-    assert not list(workspace.rglob("review.json"))
-    assert not list(workspace.rglob("submission.json"))
-
-    assert main(
-        [
-            "assemble-submissions",
+            "create-plain-paper-submission",
             CLASS_ID,
             ASSIGNMENT_ID,
-            "--expected-pages",
-            "1",
+            STUDENT_ID,
+            "--yes",
         ]
     ) == 0
-
     manifest_path = submission_manifest_path(
         workspace,
         CLASS_ID,
@@ -241,20 +201,14 @@ def test_v080_scan_review_export_end_to_end_smoke(
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["submission_state"] == "unreviewed"
-    assert manifest["expected_pages"] == 1
-    assert manifest["pages"][0]["page_state"] == "present"
-
-    selected_evidence_id = manifest["pages"][0]["selected_evidence_id"]
-    assert isinstance(selected_evidence_id, str)
-    assert selected_evidence_id
+    assert manifest["expected_pages"] is None
+    assert manifest["pages"] == []
 
     assert main(
         [
             "list-submissions",
             CLASS_ID,
             ASSIGNMENT_ID,
-            "--expected-pages",
-            "1",
         ]
     ) == 0
 
@@ -368,7 +322,7 @@ def test_v080_scan_review_export_end_to_end_smoke(
     assert STANDARD_ID in standards_summary_text
 
     output = capsys.readouterr().out
-    assert "Routed Quillan response page." in output
+    assert "Created plain-paper submission:" in output
     assert "Exported student feedback:" in output
     assert "Exported assignment-local class summary:" in output
     assert "Exported assignment-local Focus Standard summary:" in output

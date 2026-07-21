@@ -215,13 +215,14 @@ snapshots under `feedback.standard_feedback`.
 Scan intake uses the same QR-aware behavior as:
 
 ```powershell
-quillan route-scan <source> --decode-qr
+quillan route-scan <source>
 ```
 
-It routes supported QR-bearing images, PDFs, or non-recursive folders, preserves
-handled failures under `scans/review/`, and prints explicit
-`assemble-submissions` guidance. It does not OCR writing, inspect evidence
-content, grade work, create review records, or generate feedback.
+It retains each supported image/PDF source exactly once, reads only the Core
+retained copy, parses strict PDS2 locators, and dispatches physical pages through
+the installed Core module registry. Actionable failures use Core review schema
+version `2`. Intake writes no routed Quillan evidence or submissions; durable
+observations and assembly remain #339.
 
 Opening evidence delegates to the local system viewer and is read-only. It
 never marks work reviewed.

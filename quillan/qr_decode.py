@@ -20,16 +20,58 @@ SUPPORTED_IMAGE_EXTENSIONS: Final = frozenset(
 
 
 @dataclass(frozen=True, slots=True)
-class QrImageDecodeResult:
-    """The decoded QR text or a structured local image-decoding failure."""
+class QrPayloadDetectionResult:
+    """Exact raw QR text, its bounded decode method, or a typed failure."""
 
-    payload_text: str | None
-    failure_category: str | None = None
-    failure_message: str | None = None
-    successful_attempt: str | None = None
+    raw_payload_text: str | None
+    decode_method: str | None
+    error: Exception | None = None
+
+    def __post_init__(self) -> None:
+        raw = self.raw_payload_text
+        method = self.decode_method
+        error = self.error
+        if raw is not None and (type(raw) is not str or not raw):
+            raise ValueError("raw_payload_text must be nonempty text or None.")
+        if method is not None and (type(method) is not str or not method):
+            raise ValueError("decode_method must be nonempty text or None.")
+        if error is not None and not isinstance(error, Exception):
+            raise ValueError("error must be an Exception or None.")
+        if raw is not None:
+            if method is None or error is not None:
+                raise ValueError("successful QR detection has contradictory fields.")
+        elif error is None:
+            raise ValueError("failed QR detection requires an Exception.")
+
+    @property
+    def payload_text(self) -> str | None:
+        return self.raw_payload_text
+
+    @property
+    def successful_attempt(self) -> str | None:
+        return self.decode_method
+
+    @property
+    def failure_category(self) -> str | None:
+        return getattr(self.error, "failure_category", None)
+
+    @property
+    def failure_message(self) -> str | None:
+        return None if self.error is None else str(self.error)
 
 
-def decode_qr_payload_from_image_path(path: str | Path) -> QrImageDecodeResult:
+class QrDetectionFailure(ValueError):
+    """A bounded QR detection attempt produced no usable raw text."""
+
+    def __init__(self, failure_category: str, message: str) -> None:
+        super().__init__(message)
+        self.failure_category = failure_category
+
+
+QrImageDecodeResult = QrPayloadDetectionResult
+
+
+def decode_qr_payload_from_image_path(path: str | Path) -> QrPayloadDetectionResult:
     """Load a supported local image file and decode one QR payload."""
     source_path = Path(path)
     if not source_path.exists():
@@ -61,7 +103,7 @@ def decode_qr_payload_from_image_path(path: str | Path) -> QrImageDecodeResult:
     return decode_qr_payload_from_image(image)
 
 
-def decode_qr_payload_from_image(image: object) -> QrImageDecodeResult:
+def detect_qr_payload(image: object) -> QrPayloadDetectionResult:
     """Decode one QR payload from an already-loaded OpenCV image."""
     if not isinstance(image, np.ndarray) or image.size == 0:
         return _failure(
@@ -88,20 +130,17 @@ def decode_qr_payload_from_image(image: object) -> QrImageDecodeResult:
                 detector_error_seen = True
                 continue
             if payload_text:
-                return QrImageDecodeResult(
-                    payload_text=payload_text,
-                    successful_attempt=label,
+                return QrPayloadDetectionResult(
+                    raw_payload_text=payload_text,
+                    decode_method=label,
                 )
         if detector_error_seen:
             return _failure(
                 "payload_unreadable",
                 "QR detection failed for one or more image candidates.",
             )
-    except Exception:
-        return _failure(
-            "processing_error",
-            "Image processing failed during QR decoding.",
-        )
+    except cv2.error as error:
+        return _failure("payload_unreadable", f"QR image processing failed: {error}")
 
     return _failure(
         "payload_missing",
@@ -109,12 +148,23 @@ def decode_qr_payload_from_image(image: object) -> QrImageDecodeResult:
     )
 
 
-def _failure(category: str, message: str) -> QrImageDecodeResult:
-    return QrImageDecodeResult(
-        payload_text=None,
-        failure_category=category,
-        failure_message=message,
-    )
+def decode_qr_payload_from_image(image: object) -> QrPayloadDetectionResult:
+    """Compatibility name for grammar-independent raw QR detection."""
+    return detect_qr_payload(image)
+
+
+def validate_qr_payload_detection_result(
+    result: object,
+) -> QrPayloadDetectionResult:
+    """Revalidate one exact detector result, including a corrupted instance."""
+    if type(result) is not QrPayloadDetectionResult:
+        raise ValueError("result must be an exact QrPayloadDetectionResult.")
+    result.__post_init__()
+    return result
+
+
+def _failure(category: str, message: str) -> QrPayloadDetectionResult:
+    return QrPayloadDetectionResult(None, None, QrDetectionFailure(category, message))
 
 
 def _qr_candidate_images(image: ImageArray) -> Iterator[QrCandidate]:

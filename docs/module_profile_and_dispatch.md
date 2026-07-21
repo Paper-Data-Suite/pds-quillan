@@ -29,3 +29,9 @@ route IDs, filenames, module details, scan order, and caller values never supply
 student identity, logical-page identity, continuation meaning, or submission
 membership. #337 neither decodes pages nor writes evidence. #338 owns intake and
 source-page enumeration; #339 owns observations and submission assembly.
+
+#338 builds a fresh installed `ModuleRegistry` per top-level file operation and
+one per folder operation, requires the installed `quillan` profile, and preserves
+all other valid discovered profiles. Ordered requests carry the exact Core-parsed
+locator, retained-source object, and physical page number. Foreign module results
+are never inspected by Quillan intake.

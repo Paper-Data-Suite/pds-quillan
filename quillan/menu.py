@@ -445,8 +445,7 @@ def handle_scan_post_route_menu(
 def launch_scan_intake_workflow() -> None:
     """Route scans from the shared inbox, with a power-user path fallback."""
     from quillan.cli_app.handlers import routing
-    from quillan.intake_assembly import assembly_targets_from_intake_summary
-    from quillan.scan_intake_summary import ScanIntakeSummary
+    from quillan.pds2_scan_intake import QuillanScanIntakeSummary
 
     try:
         workspace_root = routing.resolve_workspace_root()
@@ -460,9 +459,8 @@ def launch_scan_intake_workflow() -> None:
     inbox = scans_inbox_dir(workspace_root)
     inbox.mkdir(parents=True, exist_ok=True)
 
-    def post_route(summary: ScanIntakeSummary) -> None:
-        targets = assembly_targets_from_intake_summary(summary)
-        handle_scan_post_route_menu(workspace_root, targets)
+    def post_route(summary: QuillanScanIntakeSummary) -> None:
+        _ = summary
 
     while True:
         clear_screen()

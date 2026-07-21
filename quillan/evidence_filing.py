@@ -8,15 +8,9 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Final
 
-from pds_core.identifiers import IdentifierValidationError, validate_identifier
 from pds_core.scan_retention import (
     RetainedSourceScan as RetainedSourceScan,
-    SourceRetentionError,
-    retain_source_scan,
 )
-
-from quillan.route_planning import RoutePlan
-from quillan.storage import assignment_scans_dir
 
 _COPY_BUFFER_SIZE: Final[int] = 1024 * 1024
 _MAX_DUPLICATE_ATTEMPTS: Final[int] = 10_000
@@ -46,69 +40,20 @@ class RoutedEvidenceFile:
 def file_routed_response_evidence(
     workspace_root: str | Path,
     *,
-    route_plan: RoutePlan,
+    route_plan: object,
     source_file_path: str | Path,
     intake_timestamp: datetime,
     intake_date: date | str | None = None,
     routed_source_file_path: str | Path | None = None,
     routed_extension: str | None = None,
 ) -> RoutedEvidenceFile:
-    """Retain a selected source and file one routed response-page artifact.
-
-    ``routed_source_file_path`` may identify an already-extracted page artifact.
-    When omitted, the newly retained source itself is copied as routed evidence.
-    """
-    root = _resolved_workspace_root(workspace_root)
-    routed_dir, page_number = _validated_route_plan(root, route_plan)
-    routed_input = (
-        _readable_regular_file(
-            routed_source_file_path,
-            "routed_source_file_path",
-        )
-        if routed_source_file_path is not None
-        else None
+    """Reject the removed pre-#339 routed-evidence filing boundary."""
+    _ = (
+        workspace_root, route_plan, source_file_path, intake_timestamp,
+        intake_date, routed_source_file_path, routed_extension,
     )
-    if routed_extension is not None:
-        extension = _normalized_extension(routed_extension)
-    elif routed_input is not None:
-        extension = _normalized_extension(routed_input.suffix)
-    else:
-        extension = None
-
-    try:
-        retained_source = retain_source_scan(
-            root,
-            source_file_path,
-            intake_timestamp=intake_timestamp,
-            intake_date=intake_date,
-        )
-    except SourceRetentionError as error:
-        raise EvidenceFilingError(f"Could not retain source scan: {error}") from error
-
-    if extension is None:
-        extension = _normalized_extension(retained_source.retained_source_path.suffix)
-
-    routed_input = (
-        retained_source.retained_source_path if routed_input is None else routed_input
-    )
-    _create_directory(routed_dir, root, "routed evidence directory")
-    routed_path, duplicate_number = _copy_routed_evidence(
-        routed_input,
-        routed_dir,
-        route_plan.student_id,
-        page_number,
-        extension,
-    )
-
-    return RoutedEvidenceFile(
-        class_id=route_plan.class_id,
-        assignment_id=route_plan.assignment_id,
-        student_id=route_plan.student_id,
-        page_number=page_number,
-        retained_source=retained_source,
-        routed_evidence_path=routed_path,
-        routed_evidence_relative_path=_workspace_relative(routed_path, root),
-        duplicate_number=duplicate_number,
+    raise EvidenceFilingError(
+        "Routed-evidence filing is unavailable until the #339 observation contract."
     )
 
 
@@ -124,45 +69,11 @@ def _resolved_workspace_root(workspace_root: str | Path) -> Path:
         raise EvidenceFilingError(f"Invalid workspace root: {error}") from error
 
 
-def _validated_route_plan(root: Path, route_plan: RoutePlan) -> tuple[Path, int]:
-    if not isinstance(route_plan, RoutePlan):
-        raise EvidenceFilingError("route_plan must be a successful RoutePlan.")
-    try:
-        validate_identifier(route_plan.class_id, "class_id")
-        validate_identifier(route_plan.assignment_id, "assignment_id")
-        validate_identifier(route_plan.student_id, "student_id")
-    except IdentifierValidationError as error:
-        raise EvidenceFilingError(f"Unsafe route identity: {error}") from error
-
-    page_number = route_plan.page_number
-    if (
-        page_number is None
-        or isinstance(page_number, bool)
-        or not isinstance(page_number, int)
-        or page_number < 1
-    ):
-        raise EvidenceFilingError(
-            "RoutePlan.page_number must be a positive integer for evidence filing."
-        )
-
-    try:
-        routed_dir = route_plan.routed_evidence_dir.resolve(strict=False)
-    except (OSError, TypeError, ValueError) as error:
-        raise EvidenceFilingError(
-            f"Invalid routed evidence directory: {error}"
-        ) from error
-    _require_contained(routed_dir, root, "routed evidence directory")
-    expected_routed_dir = assignment_scans_dir(
-        root,
-        route_plan.class_id,
-        route_plan.assignment_id,
-    ).resolve(strict=False)
-    if routed_dir != expected_routed_dir:
-        raise EvidenceFilingError(
-            "RoutePlan.routed_evidence_dir does not match its class_id and "
-            "assignment_id."
-        )
-    return routed_dir, page_number
+def _validated_route_plan(root: Path, route_plan: object) -> tuple[Path, int]:
+    _ = (root, route_plan)
+    raise EvidenceFilingError(
+        "Legacy routed-evidence filing is disabled; PDS2 intake does not write evidence."
+    )
 
 
 def _readable_regular_file(value: str | Path, field_name: str) -> Path:

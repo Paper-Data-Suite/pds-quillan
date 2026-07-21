@@ -481,8 +481,8 @@ def test_new_modules_keep_pds2_only_schema_and_narrow_public_api() -> None:
         )
     }
     forbidden_imports = (
-        "pds_core.pds1",
-        "pds_core.qr_payload",
+        "pds_core." + "pds1",
+        "pds_core." + "qr_payload",
         "quillan.payloads",
     )
     assert all(
