@@ -4,10 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal
 
 from pds_core.module_dispatch import RouteDispatchSuccess
 
 from quillan.pds2_scan_intake import QuillanScanIntakeSummary
+from quillan.pds2_scan_intake import (
+    process_quillan_scan_folder,
+    process_quillan_scan_source,
+)
 from quillan.pds_contract import QUILLAN_MODULE_ID
 from quillan.post_dispatch_review import (
     PersistedPostDispatchReviewOccurrence,
@@ -84,9 +89,28 @@ class QuillanPostDispatchPersistenceResult:
             self.intake_summary.complete_success
             and not self.observation_persistence.failures
             and not self.submission_assembly.failures
+            and not self.review_preservation.failures
             and len(self.observation_persistence.persisted)
             == self.intake_summary.quillan_success_count
         )
+
+    @property
+    def affected_targets(self) -> tuple[IntakeAssemblyTarget, ...]:
+        """Return deterministic Quillan work identities affected by this intake."""
+        return assembly_targets_from_intake_summary(self.intake_summary)
+
+    @property
+    def overall_status(
+        self,
+    ) -> Literal["complete_success", "partial_failure", "complete_failure"]:
+        if self.complete_success:
+            return "complete_success"
+        if self.intake_summary.dispatch_success_count:
+            return "partial_failure"
+        return "complete_failure"
+
+
+QuillanScanWorkflowResult = QuillanPostDispatchPersistenceResult
 
 
 def assembly_targets_from_intake_summary(
@@ -130,6 +154,78 @@ def persist_and_assemble_quillan_scan_successes(
         submission_assembly=assembly,
         review_preservation=preservation,
     )
+
+
+def process_quillan_scan_workflow(
+    workspace_root: Path,
+    source_path: Path,
+) -> QuillanScanWorkflowResult:
+    """Run retained intake, persistence, assembly, and preservation without output."""
+    if source_path.exists() and source_path.is_dir():
+        summary = process_quillan_scan_folder(
+            source_path, workspace_root=workspace_root
+        )
+    else:
+        source = process_quillan_scan_source(
+            source_path, workspace_root=workspace_root
+        )
+        summary = QuillanScanIntakeSummary((source,), source.registry_module_ids)
+    return persist_and_assemble_quillan_scan_successes(workspace_root, summary)
+
+
+def format_scan_workflow_result(result: QuillanScanWorkflowResult) -> str:
+    """Return compact deterministic direct-command output for the full workflow."""
+    summary = result.intake_summary
+    persistence = result.observation_persistence
+    assembly = result.submission_assembly
+    modules = ", ".join(
+        f"{module_id}={count}"
+        for module_id, count in summary.successful_pages_by_module.items()
+    ) or "none"
+    targets = ", ".join(
+        f"{target.class_id}/{target.assignment_id}"
+        for target in result.affected_targets
+    ) or "none"
+    lines = [
+        "Scan intake result",
+        f"Sources: {summary.source_count}",
+        f"Source failures: {summary.source_failure_count}",
+        f"Physical pages: {summary.total_source_pages}",
+        f"Dispatch successes by module: {modules}",
+        f"Core routing failures: {summary.core_dispatch_failure_count}",
+        f"Pre-dispatch failures: {summary.pre_dispatch_failure_count}",
+        f"Quillan integration failures: {summary.quillan_integration_failure_count}",
+        "Core review-record persistence failures: "
+        f"{summary.review_persistence_failure_count}",
+        f"Observations created: {persistence.observation_created_count}",
+        f"Observations unchanged: {persistence.observation_existing_count}",
+        "Observation persistence failures: "
+        f"{persistence.observation_persistence_failure_count}",
+        "Routed evidence created: "
+        f"{persistence.routed_evidence_created_count}",
+        "Routed evidence unchanged: "
+        f"{persistence.routed_evidence_existing_count}",
+        "Routed-evidence persistence failures: "
+        f"{persistence.routed_evidence_persistence_failure_count}",
+        f"Submissions created: {assembly.created_count}",
+        f"Submissions updated: {assembly.updated_count}",
+        f"Submissions unchanged: {assembly.unchanged_count}",
+        f"Submission assembly failures: {len(assembly.failures)}",
+        "Post-dispatch review occurrences created: "
+        f"{len(result.review_preservation.persisted)}",
+        "Post-dispatch preservation failures: "
+        f"{len(result.review_preservation.failures)}",
+        f"Affected work target count: {len(result.affected_targets)}",
+        f"Affected Quillan assignments: {targets}",
+        f"Batch status: {summary.batch_status}",
+        f"Overall status: {result.overall_status}",
+    ]
+    if not result.complete_success:
+        lines.append(
+            "Next step: review Core routing problems and Quillan post-dispatch "
+            "occurrences before retrying affected work."
+        )
+    return "\n".join(lines)
 
 
 def preserve_post_dispatch_review_occurrences(
@@ -256,16 +352,24 @@ def format_post_dispatch_persistence_result(
     lines = [
         "Quillan post-dispatch persistence summary",
         f"Quillan dispatch successes: {result.intake_summary.quillan_success_count}",
-        f"Observations created: {persistence.created_count}",
-        f"Observations already present: {persistence.existing_count}",
-        f"Observation persistence failures: {persistence.failure_count}",
-        f"Routed evidence created: {persistence.created_count}",
+        f"Observations created: {persistence.observation_created_count}",
+        "Observations already present: "
+        f"{persistence.observation_existing_count}",
+        "Observation persistence failures: "
+        f"{persistence.observation_persistence_failure_count}",
+        "Routed evidence created: "
+        f"{persistence.routed_evidence_created_count}",
+        "Routed evidence already present: "
+        f"{persistence.routed_evidence_existing_count}",
+        "Routed-evidence persistence failures: "
+        f"{persistence.routed_evidence_persistence_failure_count}",
         f"Submission manifests created: {assembly.created_count}",
         f"Submission manifests updated: {assembly.updated_count}",
         f"Submission manifests unchanged: {assembly.unchanged_count}",
         f"Submission assembly failures: {len(assembly.failures)}",
         f"Post-dispatch review occurrences: {len(result.review_preservation.persisted)}",
         f"Post-dispatch preservation failures: {len(result.review_preservation.failures)}",
+        f"Affected work target count: {len(result.affected_targets)}",
     ]
     for failure in persistence.failures:
         lines.append(
@@ -290,8 +394,11 @@ __all__ = [
     "IntakeAssemblyTarget",
     "PostDispatchReviewPreservationBatch",
     "QuillanPostDispatchPersistenceResult",
+    "QuillanScanWorkflowResult",
     "assembly_targets_from_intake_summary",
     "format_post_dispatch_persistence_result",
+    "format_scan_workflow_result",
     "persist_and_assemble_quillan_scan_successes",
+    "process_quillan_scan_workflow",
     "preserve_post_dispatch_review_occurrences",
 ]

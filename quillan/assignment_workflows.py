@@ -25,7 +25,6 @@ from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
 from quillan.assignments import (
     AssignmentConfigError,
-    load_assignment_config,
     validate_assignment_config,
 )
 from quillan.atomic_record_io import (
@@ -39,7 +38,6 @@ from quillan.record_context import (
     load_quillan_assignment_context,
 )
 from quillan.assignment_picker import prompt_assignment_choice
-from quillan.storage import assignment_config_path
 from quillan.work_paths import (
     QuillanWorkPathError,
     initialize_managed_work_layout,
@@ -228,6 +226,50 @@ def write_assignment_config(
     return write_assignment_configs(
         workspace_root, (class_id,), assignment, overwrite=overwrite
     )[0]
+
+
+@dataclass(frozen=True, slots=True)
+class AssignmentBatchDestination:
+    """Canonical preflight result for one assignment copy."""
+
+    class_id: str
+    path: Path
+    exists: bool
+
+
+def plan_assignment_config_destinations(
+    workspace_root: str | Path,
+    class_ids: Sequence[str],
+    assignment: Mapping[str, Any],
+) -> tuple[AssignmentBatchDestination, ...]:
+    """Return validated canonical destinations without writing or creating paths."""
+    assignment_data = dict(assignment)
+    validate_assignment_config(assignment_data)
+    selected = tuple(class_ids)
+    if not selected or len(set(selected)) != len(selected):
+        raise AssignmentConfigError("class_ids must be nonempty and unique.")
+    root = canonical_workspace_root(workspace_root)
+    assignment_id = str(assignment_data["assignment_id"])
+    destinations: list[AssignmentBatchDestination] = []
+    for class_id in selected:
+        if class_id not in assignment_data["class_ids"]:
+            raise AssignmentConfigError(
+                "Assignment class_ids must include every selected class_id."
+            )
+        paths = quillan_work_paths(root, class_id, assignment_id)
+        try:
+            preflight_managed_work_layout(paths)
+            preflight_work_file_destination(root, paths.work_ref, "assignment.json")
+        except QuillanWorkPathError as error:
+            raise AssignmentConfigError(str(error)) from error
+        destinations.append(
+            AssignmentBatchDestination(
+                class_id=class_id,
+                path=paths.assignment_path,
+                exists=os.path.lexists(paths.assignment_path),
+            )
+        )
+    return tuple(destinations)
 
 
 def write_assignment_configs(
@@ -481,13 +523,28 @@ def format_assignment_summary(
     workspace_root: str | Path | None = None,
 ) -> str:
     """Return a concise human-readable assignment summary."""
+    path = Path(assignment_path)
+    if path.is_absolute():
+        if workspace_root is None:
+            raise ValueError(
+                "An absolute assignment path requires the exact workspace root."
+            )
+        try:
+            path = path.relative_to(Path(workspace_root))
+        except ValueError as error:
+            raise ValueError(
+                "Assignment path is outside the exact workspace root."
+            ) from error
+    if not path.parts or any(part in {"", ".", ".."} for part in path.parts):
+        raise ValueError("Assignment path is not canonical workspace-relative text.")
+    path_text = path.as_posix()
     class_ids = ", ".join(str(value) for value in assignment["class_ids"])
     focus_standard_ids = [str(value) for value in assignment["focus_standard_ids"]]
     focus_text = ", ".join(focus_standard_ids)
     review_unit = assignment.get("review_unit", {})
     rating_scale = assignment.get("rating_scale", {})
     lines = [
-        f"Assignment path: {Path(assignment_path)}",
+        f"Assignment path: {path_text}",
         f"Schema version: {assignment['schema_version']}",
         f"Assignment ID: {assignment['assignment_id']}",
         f"Title: {assignment['title']}",
@@ -939,10 +996,14 @@ def prompt_create_assignment() -> int:
         print(f"Error: {error}")
         return 1
 
-    output_paths = [
-        assignment_config_path(workspace_root, class_id, assignment_id)
-        for class_id in class_ids
-    ]
+    try:
+        destinations = plan_assignment_config_destinations(
+            workspace_root, class_ids, assignment
+        )
+    except AssignmentConfigError as error:
+        print(f"Error: {error}")
+        return 1
+    output_paths = [destination.path for destination in destinations]
     _print_assignment_section_header(
         "Review Assignment Before Saving",
         class_ids=class_ids,
@@ -954,16 +1015,16 @@ def prompt_create_assignment() -> int:
     class_word = "class" if class_count == 1 else "classes"
     print(f"This assignment will be saved for {class_count} {class_word}:")
     for class_id, output_path in zip(class_ids, output_paths, strict=True):
-        print(f"- {class_id}: {output_path}")
+        print(f"- {class_id}: {output_path.relative_to(workspace_root).as_posix()}")
     if not _prompt_yes_no("Save this assignment? [Y/n]: ", default=True):
         print("Canceled: assignment was not saved.")
         return 0
 
     overwrite = False
     existing_paths = [
-        (class_id, output_path)
-        for class_id, output_path in zip(class_ids, output_paths, strict=True)
-        if output_path.exists()
+        (destination.class_id, destination.path)
+        for destination in destinations
+        if destination.exists
     ]
     if existing_paths:
         _print_assignment_section_header(
@@ -974,7 +1035,10 @@ def prompt_create_assignment() -> int:
         print("Assignment config already exists in one or more selected classes:")
         print()
         for class_id, output_path in existing_paths:
-            print(f"- {class_id}: {output_path}")
+            print(
+                f"- {class_id}: "
+                f"{output_path.relative_to(workspace_root).as_posix()}"
+            )
         print()
         confirmation = input(
             "Type OVERWRITE to replace existing assignment configs: "
@@ -996,12 +1060,22 @@ def prompt_create_assignment() -> int:
     except (AssignmentConfigError, OSError, FileExistsError) as error:
         print(f"Error: {error}")
         return 1
+    from quillan.menu import clear_screen, print_menu_header
+
+    clear_screen()
+    print_menu_header("Assignment Saved")
     if len(saved_paths) == 1:
-        print(f"Saved assignment: {saved_paths[0]}")
+        print(
+            "Saved assignment: "
+            f"{saved_paths[0].relative_to(workspace_root).as_posix()}"
+        )
     else:
         print(f"Saved assignment for {len(saved_paths)} classes:")
         for class_id, saved_path in zip(class_ids, saved_paths, strict=True):
-            print(f"- {class_id}: {saved_path}")
+            print(
+                f"- {class_id}: "
+                f"{saved_path.relative_to(workspace_root).as_posix()}"
+            )
     return 0
 
 
@@ -1119,7 +1193,8 @@ def _normalize_path_input(value: str) -> str:
 
 def prompt_view_validate_assignment() -> int:
     """Select, load, validate, and summarize a canonical assignment config."""
-    from quillan.menu import print_menu_header
+    from quillan.assignment_setup import load_canonical_assignment
+    from quillan.menu import clear_screen, print_menu_header
 
     print_menu_header("View/Validate Assignment")
     workspace_root = _workspace_root()
@@ -1129,12 +1204,16 @@ def prompt_view_validate_assignment() -> int:
     if choice is None:
         return 0
     try:
-        assignment = load_assignment_config(choice.path)
-    except (AssignmentConfigError, OSError) as error:
+        plan = load_canonical_assignment(
+            workspace_root, choice.class_id, choice.assignment_id
+        )
+    except (AssignmentConfigError, OSError, ValueError) as error:
         print(f"Error: {error}")
         return 1
+    clear_screen()
+    print_menu_header("Assignment Validation Result")
     print("Assignment config is valid.")
-    print(format_assignment_summary(assignment, choice.path, workspace_root))
+    print(format_assignment_summary(plan.assignment, plan.path, workspace_root))
     return 0
 
 
@@ -1161,7 +1240,7 @@ def launch_assignment_menu() -> int:
             navigation = parse_navigation_choice(choice)
             print()
 
-            if choice == "4" or navigation is NavigationChoice.BACK:
+            if navigation is NavigationChoice.BACK:
                 return 0
             workflows = {
                 "1": prompt_create_assignment,

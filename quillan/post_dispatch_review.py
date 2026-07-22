@@ -118,7 +118,10 @@ class PostDispatchReviewOccurrence:
             raise PostDispatchReviewError(
                 "Occurrence failure_message must be nonempty text."
             )
-        _timestamp(self.created_at)
+        if _timestamp(self.created_at) != self.created_at:
+            raise PostDispatchReviewError(
+                "Occurrence created_at must be normalized UTC timestamp text."
+            )
         for field in (
             "issuance_ids",
             "page_ids",
@@ -139,6 +142,8 @@ class PostDispatchReviewOccurrence:
                 type(item) is not str or not item for item in values
             ):
                 raise PostDispatchReviewError(f"{field} contains invalid path text.")
+            for item in values:
+                _relative_posix(item)
             if values != tuple(sorted(set(values))):
                 raise PostDispatchReviewError(
                     f"{field} must be a deterministic unique text tuple."
@@ -190,10 +195,15 @@ class PersistedPostDispatchReviewOccurrence:
     occurrence: PostDispatchReviewOccurrence
     path: Path
     relative_path: str
+    original_bytes: bytes
 
     def __post_init__(self) -> None:
         if type(self.occurrence) is not PostDispatchReviewOccurrence:
             raise PostDispatchReviewError("Persisted occurrence has the wrong type.")
+        if type(self.original_bytes) is not bytes or not self.original_bytes:
+            raise PostDispatchReviewError(
+                "Persisted occurrence original_bytes must be exact nonempty bytes."
+            )
         if type(self.workspace_root) is not type(Path()):
             raise PostDispatchReviewError(
                 "Persisted occurrence workspace_root must be an exact Path."
@@ -245,6 +255,12 @@ class PersistedPostDispatchReviewOccurrence:
             )
         except QuillanWorkPathError as error:
             raise PostDispatchReviewError(str(error)) from error
+        if _occurrence_from_bytes(
+            self.original_bytes, self.workspace_root, self.work_ref
+        ) != self.occurrence:
+            raise PostDispatchReviewError(
+                "Persisted occurrence bytes disagree with the occurrence model."
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -454,6 +470,7 @@ def discover_post_dispatch_review_occurrences(
                     occurrence,
                     path,
                     path.relative_to(root).as_posix(),
+                    data,
                 )
             )
         except (
@@ -559,6 +576,7 @@ def _write_occurrence(
         occurrence,
         path,
         path.relative_to(root).as_posix(),
+        data,
     )
 
 
@@ -798,10 +816,10 @@ def _identifier(value: object, field: str) -> None:
 
 def _timestamp(value: datetime | str | None) -> str:
     candidate: datetime | str = datetime.now(timezone.utc) if value is None else value
-    if isinstance(candidate, datetime):
+    if type(candidate) is datetime:
         if candidate.tzinfo is None or candidate.utcoffset() is None:
             raise PostDispatchReviewError("created_at must be timezone-aware.")
-        return candidate.isoformat(timespec="microseconds")
+        return candidate.astimezone(timezone.utc).isoformat(timespec="microseconds")
     if type(candidate) is not str:
         raise PostDispatchReviewError("created_at must be a datetime or string.")
     try:
@@ -810,7 +828,7 @@ def _timestamp(value: datetime | str | None) -> str:
         raise PostDispatchReviewError("created_at must be ISO 8601 text.") from error
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise PostDispatchReviewError("created_at must be timezone-aware.")
-    return candidate
+    return parsed.astimezone(timezone.utc).isoformat(timespec="microseconds")
 
 
 def _freeze_json_mapping(value: Mapping[str, object]) -> Mapping[str, object]:

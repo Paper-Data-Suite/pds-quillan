@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import math
 import re
+import sys
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
@@ -122,5 +123,5 @@ def _optional_trimmed(value: str | None, label: str) -> str | None:
 
 
 def _error(error: Exception) -> int:
-    print(f"Error: {error}")
+    print(f"Error: {error}", file=sys.stderr)
     return 1

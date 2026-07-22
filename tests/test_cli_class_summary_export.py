@@ -30,7 +30,7 @@ def test_cli_exports_ready_and_non_ready_rows_and_prints_summary(
 
     assert main(["export-class-summary", CLASS_ID, ASSIGNMENT_ID]) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Exported assignment-local class summary:" in output
     assert f"Class: {CLASS_ID}" in output
     assert f"Assignment: {ASSIGNMENT_ID}" in output
@@ -68,7 +68,7 @@ def test_cli_missing_submissions_directory_returns_one(
 ) -> None:
     monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
     assert main(["export-class-summary", CLASS_ID, ASSIGNMENT_ID]) == 1
-    assert "assignment config" in capsys.readouterr().out
+    assert "assignment config" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_cli_overwrite_flag_controls_replacement(
@@ -94,7 +94,7 @@ def test_cli_overwrite_flag_controls_replacement(
     assert output_path.read_text(encoding="utf-8") == "manual edit"
     assert main([*command, "--overwrite"]) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Use --overwrite" in output
     assert "Overwrote existing: yes" in output
     assert "review_valid" in output_path.read_text(encoding="utf-8")

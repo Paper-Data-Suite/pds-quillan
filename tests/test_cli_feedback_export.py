@@ -74,13 +74,13 @@ def test_cli_exports_feedback_and_prints_summary(
         ["export-feedback", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]
     ) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Exported student feedback:" in output
     assert f"Class: {CLASS_ID}" in output
     assert f"Assignment: {ASSIGNMENT_ID}" in output
     assert f"Student: {STUDENT_ID}" in output
     assert "Included comments: 1" in output
-    assert "Scores: 1" in output
+    assert "Overall Focus Standard ratings: 1" in output
     assert "Overwrote existing: no" in output
     relative = (
         f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/submissions/"
@@ -108,7 +108,7 @@ def test_cli_missing_review_returns_one(
     assert main(
         ["export-feedback", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]
     ) == 1
-    assert "Review record does not exist" in capsys.readouterr().out
+    assert "Review record does not exist" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_cli_exports_pdf_feedback_and_prints_pdf_summary(
@@ -131,7 +131,7 @@ def test_cli_exports_pdf_feedback_and_prints_pdf_summary(
         ]
     ) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Exported student feedback PDF:" in output
     assert "Focus Standard ratings:" in output
     assert "PDF file:" in output
@@ -160,7 +160,7 @@ def test_cli_overwrite_flag_controls_replacement(
     assert output_path.read_text(encoding="utf-8") == "manual edit"
     assert main([*command, "--overwrite"]) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Use --overwrite" in output
     assert "Overwrote existing: yes" in output
     assert output_path.read_text(encoding="utf-8").startswith("# Feedback")

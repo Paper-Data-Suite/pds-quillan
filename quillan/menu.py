@@ -14,7 +14,10 @@ from quillan.cli_app.output import (
     print_assignment_submission_assembly,
     print_assignment_submission_status,
 )
-from quillan.intake_assembly import IntakeAssemblyTarget
+from quillan.intake_assembly import (
+    IntakeAssemblyTarget,
+    QuillanPostDispatchPersistenceResult,
+)
 from quillan.menu_navigation import (
     NavigationChoice,
     QuitQuillan,
@@ -89,44 +92,30 @@ def print_menu_help() -> None:
     """Print concise teacher-facing purpose, safety, and CLI help."""
     print_menu_header("Help")
     print("Quillan is a local-first, teacher-controlled writing-evidence tool.")
-    print("It helps teachers organize and validate writing evidence.")
     print("Teacher judgment remains primary; Quillan is not automated grading software.")
-    print()
-    print("Quillan does not implement AI tagging, AI scoring, AI feedback, or OCR.")
-    print("Quillan supports guided scan intake and scan-review resolution.")
-    print("Student writing review remains teacher-controlled.")
-    print()
     print("Use synthetic data only in repository examples and tests.")
-    print("Do not commit or post real student data, rosters, scans, writing, grades,")
-    print("feedback, reports, screenshots, or workspace artifacts publicly.")
+    print("Do not commit or post real student data.")
     print()
-    print("Current direct CLI starting points:")
+    print("Assignment setup:")
+    print("  Create, show, or validate an assignment from Assignment Management.")
     print()
-    print("Diagnostics:")
-    print("  quillan review-dashboard <class_id> <assignment_id>")
-    print("  quillan review-status <class_id> <assignment_id> <student_id>")
+    print("Printable response pages:")
+    print("  Generate managed PDS2 response packets from Assignment Management.")
     print()
-    print("Setup and paper workflow:")
-    print("  quillan assignment --help")
-    print("  quillan roster --help")
-    print("  quillan printable-responses --help")
-    print("  quillan route-scan --help")
-    print("  quillan assemble-submissions --help")
+    print("Scan intake and review:")
+    print("  Route retained scans and resolve Core or Quillan review problems.")
     print()
-    print("Review workflow:")
-    print("  quillan requirements --help")
-    print("  quillan review-units --help")
-    print("  quillan observations --help")
-    print("  quillan ratings --help")
-    print("  quillan feedback --help")
-    print("  quillan review-workflow --help")
+    print("Student review:")
+    print("  Assemble submissions, inspect page evidence, and record teacher judgments.")
     print()
-    print("Other tools:")
-    print("  quillan comments --help")
-    print("  quillan pages --help")
-    print("  quillan workspace --help")
-    print("  quillan menu")
-    print("  quillan --help  (complete command surface)")
+    print("Feedback and reports:")
+    print("  Export teacher-authored feedback and assignment CSV reports.")
+    print()
+    print("Workspace settings:")
+    print("  Show, select, or validate the shared Paper Data Suite workspace.")
+    print()
+    print("Complete direct help:")
+    print("  quillan --help")
 
 
 def launch_assignment_menu() -> None:
@@ -383,23 +372,89 @@ def _handle_single_post_route_target(
 
 def handle_scan_post_route_menu(
     workspace_root: Path,
-    targets: Sequence[IntakeAssemblyTarget],
+    workflow: QuillanPostDispatchPersistenceResult | Sequence[IntakeAssemblyTarget],
 ) -> None:
     """Show status-aware follow-up actions after scan intake routes evidence."""
-    if not targets:
-        return
+    if isinstance(workflow, QuillanPostDispatchPersistenceResult):
+        result = workflow
+        targets = result.affected_targets
+    else:
+        result = None
+        targets = tuple(workflow)
 
-    should_clear_menu = False
     while True:
-        if should_clear_menu:
-            clear_screen()
-        print_menu_header("Scan Intake / Route Paper Responses")
+        clear_screen()
+        print_menu_header("Scan Intake Result")
+        if result is not None:
+            summary = result.intake_summary
+            print(f"Outcome: {result.overall_status.replace('_', ' ')}")
+            print(f"Sources: {summary.source_count}")
+            print(f"Physical pages: {summary.total_source_pages}")
+            print(f"Dispatch successes: {summary.dispatch_success_count}")
+            print(f"Core dispatch failures: {summary.core_dispatch_failure_count}")
+            print(f"Pre-dispatch failures: {summary.pre_dispatch_failure_count}")
+            print(
+                "Quillan integration failures: "
+                f"{summary.quillan_integration_failure_count}"
+            )
+            print(
+                "Observation persistence failures: "
+                f"{result.observation_persistence.observation_persistence_failure_count}"
+            )
+            print(
+                "Routed-evidence persistence failures: "
+                f"{result.observation_persistence.routed_evidence_persistence_failure_count}"
+            )
+            print(
+                "Submission assembly failures: "
+                f"{len(result.submission_assembly.failures)}"
+            )
+            print(
+                "Post-dispatch problems preserved: "
+                f"{len(result.review_preservation.persisted)}"
+            )
+            print(
+                "Review-preservation failures: "
+                f"{len(result.review_preservation.failures)}"
+            )
+            print(f"Affected work targets: {len(targets)}")
+            print()
+        if not targets:
+            print("No Quillan assignment work was affected.")
+            if result is not None and (
+                result.intake_summary.core_dispatch_failure_count
+                or result.intake_summary.pre_dispatch_failure_count
+                or result.intake_summary.quillan_integration_failure_count
+                or result.observation_persistence.failures
+                or result.submission_assembly.failures
+                or result.review_preservation.persisted
+                or result.review_preservation.failures
+            ):
+                print()
+                print("1. Review scan problems")
+                print_navigation_options()
+                print()
+                choice = input("Select an option: ").strip()
+                if choice == "1":
+                    from quillan.scan_review_menu import (
+                        launch_scan_review_resolution_menu,
+                    )
+
+                    launch_scan_review_resolution_menu(workspace_root)
+                    continue
+                if choice == "" or parse_navigation_choice(choice) is NavigationChoice.BACK:
+                    return
+                print(f"Invalid selection. {navigation_hint()}")
+                pause_for_user()
+                continue
+            print()
+            pause_for_user()
+            return
         statuses = [
             _post_route_target_status(workspace_root, target)
             for target in targets
         ]
-        print("Scan routed successfully.")
-        print("Routed evidence was filed for:")
+        print("Affected Quillan assignments:")
         for index, (target, status) in enumerate(
             zip(targets, statuses, strict=True),
             start=1,
@@ -421,7 +476,6 @@ def handle_scan_post_route_menu(
             )
             if not should_redraw:
                 return
-            should_clear_menu = True
             continue
 
         print("Select a target to view status-aware actions.")
@@ -437,7 +491,6 @@ def handle_scan_post_route_menu(
                 targets[index],
                 statuses[index],
             )
-            should_clear_menu = True
             continue
         print(f"Invalid selection. {navigation_hint()}")
 
@@ -445,7 +498,6 @@ def handle_scan_post_route_menu(
 def launch_scan_intake_workflow() -> None:
     """Route scans from the shared inbox, with a power-user path fallback."""
     from quillan.cli_app.handlers import routing
-    from quillan.pds2_scan_intake import QuillanScanIntakeSummary
 
     try:
         workspace_root = routing.resolve_workspace_root()
@@ -458,9 +510,6 @@ def launch_scan_intake_workflow() -> None:
         return
     inbox = scans_inbox_dir(workspace_root)
     inbox.mkdir(parents=True, exist_ok=True)
-
-    def post_route(summary: QuillanScanIntakeSummary) -> None:
-        _ = summary
 
     while True:
         clear_screen()
@@ -495,7 +544,6 @@ def launch_scan_intake_workflow() -> None:
             print()
             pause_for_user()
             return
-        selected_inbox_scan = False
         if selection.casefold() == "r":
             continue
         if selection.casefold() == "c":
@@ -508,7 +556,6 @@ def launch_scan_intake_workflow() -> None:
                 continue
         elif selection.isdigit() and 1 <= int(selection) <= len(scans):
             source_path = scans[int(selection) - 1]
-            selected_inbox_scan = True
         else:
             # Preserve pasted-path convenience for experienced users of earlier menus.
             source_path = _normalize_menu_path(selection)
@@ -516,14 +563,20 @@ def launch_scan_intake_workflow() -> None:
                 print(f"Invalid selection. {navigation_hint()}")
                 pause_for_user()
                 continue
+        clear_screen()
+        print_menu_header("Processing Scan Intake")
+        print(f"Source: {source_path}")
         print()
-        routing.run_qr_scan_intake(
-            source_path,
-            workspace_root,
-            on_summary=post_route if selected_inbox_scan else None,
-        )
-        print()
-        pause_for_user()
+        try:
+            result = routing.run_scan_intake_workflow(source_path, workspace_root)
+        except Exception as error:
+            clear_screen()
+            print_menu_header("Scan Intake Failed")
+            print(f"Could not process the selected source: {error}")
+            print()
+            pause_for_user()
+            continue
+        handle_scan_post_route_menu(workspace_root, result)
 
 
 def launch_review_student_work_menu() -> None:
@@ -585,7 +638,7 @@ def launch_workspace_menu(
             workspace_reset()
             print()
             pause_for_user()
-        elif choice == "5" or navigation is NavigationChoice.BACK:
+        elif navigation is NavigationChoice.BACK:
             return
         else:
             print(f"Invalid selection. {navigation_hint()}")
@@ -636,7 +689,7 @@ def launch_menu(
                 print_menu_help()
                 print()
                 pause_for_user()
-            elif choice == "6" or navigation is NavigationChoice.QUIT:
+            elif navigation is NavigationChoice.QUIT:
                 print("Goodbye.")
                 return 0
             else:

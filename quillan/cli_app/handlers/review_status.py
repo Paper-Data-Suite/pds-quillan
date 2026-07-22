@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
@@ -27,7 +28,10 @@ def handle_review_status(args: argparse.Namespace) -> int:
             else format_student_review_status(status)
         )
     except (WorkspaceRootError, StudentReviewStatusError, OSError, TypeError) as error:
-        print(f"Error: could not build student review status: {error}")
+        print(
+            f"Error: could not build student review status: {error}",
+            file=sys.stderr,
+        )
         return 1
     print(output)
     return 0

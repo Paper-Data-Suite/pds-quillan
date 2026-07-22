@@ -97,7 +97,7 @@ def test_assignment_help_surface(capsys: pytest.CaptureFixture[str]) -> None:
         with pytest.raises(SystemExit) as error:
             main(argv)
         assert error.value.code == 0
-        assert expected in capsys.readouterr().out
+        assert expected in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_create_show_validate_and_overwrite_safety(
@@ -122,7 +122,7 @@ def test_create_show_validate_and_overwrite_safety(
     assert path.read_bytes() == original
     assert main(["assignment", "show", "english10_p2", "literary_analysis"]) == 0
     assert main(["assignment", "validate", "english10_p2", "literary_analysis"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Assignment config is valid." in output
     assert "Valid canonical assignment:" in output
 
@@ -141,7 +141,7 @@ def test_dry_run_and_prompt_file_preserve_content(
     assert main(argv) == 0
     assignment = json.loads((target / "assignment.json").read_text(encoding="utf-8"))
     assert assignment["student_prompt"] == "Line one.\nLine two.\n"
-    assert "No files were written." in capsys.readouterr().out
+    assert "No files were written." in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_invalid_standards_and_path_identity_fail_cleanly(
@@ -150,14 +150,14 @@ def test_invalid_standards_and_path_identity_fail_cleanly(
     bad = _args("--dry-run")
     bad[bad.index(STANDARD_ID)] = OTHER_STANDARD_ID
     assert main(bad) == 1
-    assert "assignment was not created" in capsys.readouterr().out
+    assert "assignment was not created" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert main(_args("--yes")) == 0
     path = workspace / "classes/english10_p2/modules/quillan/work/literary_analysis/assignment.json"
     data = json.loads(path.read_text(encoding="utf-8"))
     data["assignment_id"] = "different_id"
     path.write_text(json.dumps(data), encoding="utf-8")
     assert main(["assignment", "validate", "english10_p2", "literary_analysis"]) == 1
-    assert "Path assignment_id" in capsys.readouterr().out
+    assert "Path assignment_id" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_canonical_validate_rejects_assignment_missing_contract_metadata(
@@ -171,4 +171,4 @@ def test_canonical_validate_rejects_assignment_missing_contract_metadata(
     path.write_text(json.dumps(assignment), encoding="utf-8")
 
     assert main(["assignment", "validate", "english10_p2", "literary_analysis"]) == 1
-    assert "Missing required field 'created_at'" in capsys.readouterr().out
+    assert "Missing required field 'created_at'" in (lambda captured: captured.out + captured.err)(capsys.readouterr())

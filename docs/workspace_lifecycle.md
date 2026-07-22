@@ -6,7 +6,7 @@ Quillan uses the shared Paper Data Suite workspace root. Class, assignment,
 and submission records are centered under:
 
 ```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/
+<PDS workspace root>/classes/<class_id>/modules/quillan/work/<assignment_id>/
 ```
 
 This is the active, local-first workspace for teacher-controlled instructional
@@ -52,24 +52,26 @@ The expected current and reserved layout is:
   classes/
     <class_id>/
       roster.csv
-      assignments/
-        <assignment_id>/
-          assignment.json
-          templates/
-            printable_response_pages.pdf
-          scans/
-          submissions/
-            <student_id>/
-              submission.json
-              review.json
+      modules/
+        quillan/
+          work/
+            <assignment_id>/
+              assignment.json
+              templates/
+                printable_response_pages.pdf
+              scans/
+              submissions/
+                <student_id>/
+                  submission.json
+                  review.json
+                  exports/
+                    feedback.pdf
+                    feedback.md
               exports/
-                feedback.pdf
-                feedback.md
-          exports/
-            student_performance_summary.csv
-            class_summary.csv
-            standards_summary.csv
-          debug/
+                student_performance_summary.csv
+                class_summary.csv
+                standards_summary.csv
+              debug/
 ```
 
 Reusable Focus Standard comments live outside individual assignments:
@@ -112,11 +114,11 @@ the teacher selects a class with an existing canonical roster. It uses the
 existing assignment validation contract and the shared assignment route:
 
 ```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/assignment.json
+<PDS workspace root>/classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
 ```
 
-The menu can also load, validate, and summarize an explicit assignment JSON
-path without rewriting it. Existing configs require exact `OVERWRITE`
+The menu can also select, load, validate, and summarize a canonical assignment
+by class and assignment identity without rewriting it. Existing configs require exact `OVERWRITE`
 confirmation before replacement. This workflow does not edit or delete
 assignments and does not perform scoring, feedback, reporting, scan routing,
 OCR, AI, or printable packet
@@ -155,10 +157,12 @@ for teacher review.
 
 ### Assignment `scans/`
 
-The assignment-local directory for routed scan evidence. It is not the
-canonical retained source location. The direct `route-scan` workflow files a
-selected source here only when the caller supplies an already-decoded
-canonical PDS1 payload. The validation, naming, collision, provenance, and
+The assignment-local directory for immutable page observations and routed
+evidence. It is not the canonical retained source location. The direct
+`route-scan` workflow obtains a strict PDS2 locator from the retained physical
+page, dispatches through the current registered route, and persists successful
+Quillan results under the exact module-qualified work root. There is no caller
+payload mode or PDS1 fallback. Validation, naming, collision, provenance, and
 failure-review behavior is defined in
 [`scan_routing_design.md`](scan_routing_design.md). Quillan does not perform
 OCR or evaluate writing from scan contents.
@@ -173,12 +177,12 @@ submission-management state without containing private notes, Focus Standard
 ratings, feedback composition, or feedback exports.
 
 Loading, validation, canonical path computation, safe writing, and
-new-manifest assembly from caller-provided evidence metadata are implemented
-in modules distinct from the legacy text-oriented loader. The direct
-`assemble-submissions` command discovers already-routed evidence by filename
-and creates missing manifests; it does not merge into existing manifests or
-choose among ambiguous duplicates. `set-review-state` provides an explicit,
-metadata-only teacher-controlled state update.
+new-manifest assembly from immutable observation and issuance authority are
+implemented separately from the superseded text-oriented loader. The direct
+`assemble-submissions` command discovers validated observations, verifies
+routed evidence, and assembles issuance-authoritative manifests without
+caller-supplied expected-page identity. `set-review-state` provides an
+explicit, metadata-only teacher-controlled state update.
 
 ### `submissions/<student_id>/review.json`
 
@@ -302,15 +306,16 @@ evidence, teacher-review artifacts, Focus Standard ratings, feedback, and
 derived reports mean within Quillan's teacher-controlled review process.
 
 [`printable_response_template.md`](printable_response_template.md) defines the
-required structure, identity fields, PDS1 payload use, writing area, and
+required structure, immutable issuance/page/route identities, PDS2 locator,
+writing area, and
 implemented `templates/printable_response_pages.pdf` output for printable
 writing-response pages.
 
-[`scan_routing_design.md`](scan_routing_design.md) defines how decoded response
-payloads are validated and how Quillan routed evidence fits the shared
+[`scan_routing_design.md`](scan_routing_design.md) defines how detected PDS2
+locators are validated and how Quillan routed evidence fits the shared
 `pds-core` active scan contract. The direct `route-scan` command supports
-caller-supplied decoded payloads and QR-aware image, PDF, or non-recursive
-folder intake. Canonical retained sources belong in `scans/source/YYYY-MM-DD/`,
+QR-aware image, PDF, or non-recursive folder intake. Canonical retained sources
+belong in `scans/source/YYYY-MM-DD/`,
 canonical failure records belong in `scans/review/`, and assignment-level
 `scans/` contains routed evidence. OCR remains outside Quillan's scope.
 

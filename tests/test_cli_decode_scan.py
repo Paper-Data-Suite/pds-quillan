@@ -1,3 +1,4 @@
+from argparse import Namespace
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,39 @@ from quillan.qr_decode import QrPayloadDetectionResult
 def test_decode_scan_accepts_image_or_pdf_source_path() -> None:
     args = build_parser().parse_args(["decode-scan", "scan.pdf"])
     assert args.source_file.name == "scan.pdf"
-    assert args.hide_payload is False
+    assert args.show_payload is False
+
+
+def test_decode_scan_reports_pds1_as_unsupported_without_echoing_payload(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    raw = "PDS1|student=private_student|assignment=old"
+    page = decoding.DecodedPds2Page(
+        source_page_number=1,
+        raw_payload_text=raw,
+        locator=None,
+        decode_method="synthetic",
+        failure_category="payload_schema_unsupported",
+        error=ValueError(f"could not parse {raw}"),
+    )
+    monkeypatch.setattr(decoding, "resolve_workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(
+        decoding,
+        "decode_retained_pds2_scan",
+        lambda *_args, **_kwargs: (page,),
+    )
+
+    assert decoding.handle_decode_scan(
+        Namespace(source_file=tmp_path / "scan.png", show_payload=False)
+    ) == 1
+    output = capsys.readouterr().out
+    assert "unsupported schema" in output
+    assert "only PDS2 is supported" in output
+    assert "private_student" not in output
+    assert "Schema:" not in output
+    assert "Module:" not in output
 
 
 def test_decode_only_contains_unexpected_qr_error_and_continues(

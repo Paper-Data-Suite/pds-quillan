@@ -53,7 +53,7 @@ def test_direct_dry_run_is_nonmutating_and_aggregate_only(
     assert handlers.handle_printable_responses_generate(
         args(dry_run=True, pages_per_student=2)
     ) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Planned issuances: 2" in output
     assert "Planned routes: 4" in output
     assert "No files were written." in output
@@ -77,7 +77,7 @@ def test_direct_generation_never_opens_and_reports_verified_routes(
     assert handlers.handle_printable_responses_generate(args(yes=True)) == 0
     packet = assignment_path.parent / "templates" / "printable_response_pages.pdf"
     assert len(PdfReader(str(packet)).pages) == 2
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Created routes: 2" in output
     assert "Verified routes: 2" in output
     assert "Installed: yes" in output
@@ -115,7 +115,7 @@ def test_direct_governed_packet_error_is_clean_and_never_opens(
         ),
     )
     assert handlers.handle_printable_responses_generate(args(yes=True)) == 1
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Error: synthetic governed planning failure" in output
     assert "Traceback" not in output
     assert not list(tmp_path.rglob("*.pdf"))

@@ -180,7 +180,7 @@ def test_v080_scan_review_export_end_to_end_smoke(
     assert assignment_path.is_file()
 
 
-    assert main(["validate-assignment", str(assignment_path)]) == 0
+    assert main(["assignment", "validate", CLASS_ID, ASSIGNMENT_ID]) == 0
 
     assert main(
         [

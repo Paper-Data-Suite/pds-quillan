@@ -397,7 +397,7 @@ def test_cli_success_prints_teacher_context(
         )
         == 0
     )
-    assert capsys.readouterr().out == (
+    assert (lambda captured: captured.out + captured.err)(capsys.readouterr()) == (
         "Updated lightweight submission state:\n"
         f"Class: {CLASS_ID}\n"
         f"Assignment: {ASSIGNMENT_ID}\n"
@@ -436,7 +436,7 @@ def test_cli_failure_returns_one(
         )
         == 1
     )
-    assert capsys.readouterr().out == (
+    assert (lambda captured: captured.out + captured.err)(capsys.readouterr()) == (
         "Error: could not update lightweight submission state: "
         "manifest is unavailable\n"
     )

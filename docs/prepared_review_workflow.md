@@ -204,8 +204,8 @@ Composition does not inspect evidence, generate language, or export feedback.
 Student feedback exports are derived artifacts:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
 Returned-work feedback can be exported when a review is returned without full
@@ -214,9 +214,9 @@ standards review.
 Assignment-local summaries are also derived artifacts:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/student_performance_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
 ```
 
 Student Performance Summary is the compact teacher-facing student-by-standard
@@ -237,14 +237,14 @@ results.
 ## Storage Map
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/assignment.json
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
-classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/submission.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/review.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/student_performance_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
 shared/focus_standard_comments/<comment_set_id>.json
 ```
 

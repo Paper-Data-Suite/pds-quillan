@@ -29,7 +29,7 @@ Which generic tags, generic comments, or generic rubric scores were attached to 
 The feedback export is not the canonical review record. The canonical teacher review record remains:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/review.json
 ```
 
 A generated feedback export must not replace, rewrite, or become the source of truth for:
@@ -77,7 +77,7 @@ PDF is the primary student-facing feedback export format.
 The canonical PDF output path is:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
 ```
 
 Markdown may be retained as an optional plain-text companion artifact.
@@ -85,7 +85,7 @@ Markdown may be retained as an optional plain-text companion artifact.
 The optional Markdown output path is:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
 Rules:
@@ -105,7 +105,7 @@ A student feedback export is generated from the following records.
 Canonical path:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/assignment.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
 ```
 
 Required target schema:
@@ -143,7 +143,7 @@ as the default order for student-facing standards sections.
 Canonical path:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/submission.json
 ```
 
 The export may use the submission manifest for:
@@ -174,7 +174,7 @@ Student-facing feedback must not include:
 Canonical path:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/review.json
 ```
 
 Required target schema:
@@ -1099,7 +1099,7 @@ If Markdown is generated, it should use the same content model as the PDF.
 Recommended path:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
 Rules:

@@ -105,10 +105,10 @@ def test_help_lists_pages_namespace_and_all_subcommands(capsys: pytest.CaptureFi
     with pytest.raises(SystemExit) as top_help:
         main(["--help"])
     assert top_help.value.code == 0
-    assert "pages" in capsys.readouterr().out
+    assert "pages" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     assert main(["pages"]) == 0
-    namespace_help = capsys.readouterr().out
+    namespace_help = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "list" in namespace_help
     assert "exclude" in namespace_help
     assert "restore" in namespace_help
@@ -143,7 +143,7 @@ def test_list_is_read_only_and_orders_pages(
 
     assert main(["pages", "list", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert output.index("Page 1:") < output.index("Page 2:") < output.index("Page 3:")
     assert "Selected evidence: none" in output
     assert "Present pages: 1" in output
@@ -164,7 +164,7 @@ def test_plain_paper_lists_zero_pages_and_mutations_fail_without_writing(
     _configure_workspace(monkeypatch, tmp_path)
 
     assert main(["pages", "list", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Plain-paper submission: yes" in output
     assert "zero digital pages" in output
     assert "Digital pages: none" in output
@@ -182,7 +182,7 @@ def test_plain_paper_lists_zero_pages_and_mutations_fail_without_writing(
                 "--yes",
             ]
         ) == 1
-        assert "Page 1 is not in this submission record" in capsys.readouterr().out
+        assert "Page 1 is not in this submission record" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
         assert path.read_bytes() == before
 
 
@@ -195,7 +195,7 @@ def test_missing_manifest_reports_assembly_guidance_without_creating_files(
     path = submission_manifest_path(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
 
     assert main(["pages", "list", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 1
-    assert "Assemble submissions" in capsys.readouterr().out
+    assert "Assemble submissions" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert not path.exists()
     assert not path.parent.exists()
 
@@ -257,13 +257,13 @@ def test_cli_mutations_report_transition_and_preserve_submission_state(
     args = [CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, "--page", "1", "--yes"]
 
     assert main(["pages", "exclude", *args]) == 0
-    excluded_output = capsys.readouterr().out
+    excluded_output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Action: excluded" in excluded_output
     assert "Previous state: present" in excluded_output
     assert "Resulting state: excluded from active review" in excluded_output
 
     assert main(["pages", "restore", *args]) == 0
-    restored_output = capsys.readouterr().out
+    restored_output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Action: restored" in restored_output
     assert "Restore source: preserved pre-exclusion metadata" in restored_output
 

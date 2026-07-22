@@ -765,7 +765,7 @@ def test_roster_menu_displays_options_and_dispatches(
         "prompt_validate_roster",
         lambda: record("validate"),
     )
-    _inputs(monkeypatch, ["1", "", "2", "", "3", "", "4", "", "5"])
+    _inputs(monkeypatch, ["1", "", "2", "", "3", "", "4", "", "b"])
 
     assert workflows.launch_roster_menu() == 0
     output = capsys.readouterr().out
@@ -781,7 +781,7 @@ def test_roster_menu_invalid_selection_and_keyboard_interrupt(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    _inputs(monkeypatch, ["bad", "", "5"])
+    _inputs(monkeypatch, ["bad", "", "b"])
     assert workflows.launch_roster_menu() == 0
     assert "Invalid selection" in capsys.readouterr().out
 

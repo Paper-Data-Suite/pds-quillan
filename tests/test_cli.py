@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-import json
 from pathlib import Path
 
 from pds_core.workspace import WorkspaceRootError, WorkspaceStatus
@@ -62,11 +61,11 @@ def test_cli_without_command_displays_menu_options_and_exits(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["6"])
+    _menu_input(monkeypatch, ["q"])
 
     assert main([]) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Quillan" in output
     assert "\033[32mQuillan\033[0m" in output
     assert "1. Assignment Management" in output
@@ -89,7 +88,7 @@ def test_nested_menu_main_and_quit_shortcuts_unwind_globally(
     _menu_input(monkeypatch, ["1", "m", "q"])
 
     assert main(["menu"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert output.count("1. Assignment Management") == 2
     assert "Goodbye." in output
 
@@ -101,84 +100,31 @@ def test_nested_menu_quit_shortcut_exits_cleanly(
     _menu_input(monkeypatch, ["1", "q"])
 
     assert main(["menu"]) == 0
-    assert "Goodbye." in capsys.readouterr().out
+    assert "Goodbye." in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
-def test_cli_validates_assignment_config(
-    tmp_path: Path,
+def test_cli_retires_raw_path_assignment_validation(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    assignment_path = tmp_path / "assignment.json"
-    assignment_data = {
-        "schema_version": "2",
-        "module": "quillan",
-        "record_type": "assignment",
-        "assignment_id": "villainy_final_essay_synthetic",
-        "title": "Villainy Final Essay",
-        "class_ids": ["english12_period3_synthetic"],
-        "writing_type": "literary argument essay",
-        "student_prompt": "Rank villains using evidence from the texts.",
-        "standards_profile_id": "english_12_njsls_synthetic",
-        "focus_standard_ids": [
-            "njsls-ela:W.AW.11-12.1",
-            "njsls-ela:W.WP.11-12.4",
-        ],
-        "review_unit": {
-            "type": "paragraph",
-            "singular_label": "paragraph",
-            "plural_label": "paragraphs",
-        },
-        "rating_scale": {
-            "scale_id": "standards_2_level",
-            "levels": [
-                {
-                    "value": 1,
-                    "label": "Developing",
-                    "description": "Limited evidence.",
-                }
-            ],
-        },
-        "basic_requirements": {
-            "paragraphs_min": 4,
-            "paragraphs_max": 6,
-            "word_count_min": 500,
-            "required_elements": [
-                "thesis",
-                "textual evidence",
-                "comparative reasoning",
-            ],
-        },
-        "minimum_requirement_policy": {
-            "allow_return_without_full_review": True,
-        },
-        "created_at": "2026-07-13T00:00:00+00:00",
-        "updated_at": "2026-07-13T00:00:00+00:00",
-        "module_details": {},
-    }
-    assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
-
-    main(["validate-assignment", str(assignment_path)])
-
-    captured = capsys.readouterr()
-
-    assert "Valid assignment config: villainy_final_essay_synthetic" in captured.out
-
-    for field in ("created_at", "updated_at", "module_details"):
-        assignment_data.pop(field)
-    assignment_path.write_text(json.dumps(assignment_data), encoding="utf-8")
-
-    with pytest.raises(SystemExit, match="created_at"):
-        main(["validate-assignment", str(assignment_path)])
-
-
-def test_cli_reports_invalid_assignment_config(tmp_path: Path) -> None:
-    assignment_path = tmp_path / "assignment.json"
-    assignment_path.write_text("{bad json", encoding="utf-8")
-
     with pytest.raises(SystemExit) as error:
-        main(["validate-assignment", str(assignment_path)])
+        main(["validate-assignment", "assignment.json"])
 
-    assert "Invalid assignment config" in str(error.value)
+    assert error.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "invalid choice: 'validate-assignment'" in captured.err
+
+
+def test_assignment_namespace_requires_a_canonical_action(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit) as error:
+        main(["assignment", "assignment.json"])
+
+    assert error.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "invalid choice" in captured.err
 
 
 def test_workspace_show_uses_pds_core_status(
@@ -238,7 +184,7 @@ def test_workspace_show_reports_status_fields(
     )
 
     assert main(["workspace", "show"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     assert "Exists:\nno" in output
     assert "Directory:\nno" in output
@@ -271,7 +217,7 @@ def test_workspace_show_reports_workspace_error(
     )
 
     assert main(["workspace", "show"]) != 0
-    assert "Error: bad workspace" in capsys.readouterr().out
+    assert "Error: bad workspace" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_workspace_set_validates_and_saves_shared_root(
@@ -297,7 +243,7 @@ def test_workspace_set_validates_and_saves_shared_root(
     monkeypatch.setattr(cli_workspace, "save_workspace_root", save)
 
     assert main(["workspace", "set", str(requested_root)]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     assert calls == [("ensure", requested_root), ("save", requested_root)]
     assert requested_root.is_dir()
@@ -330,7 +276,7 @@ def test_workspace_validate_uses_current_resolved_root(
     monkeypatch.setattr(cli_workspace, "ensure_workspace_root", ensure)
 
     assert main(["workspace", "validate"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     assert calls == [resolved_root]
     assert resolved_root.is_dir()
@@ -370,7 +316,7 @@ def test_workspace_reset_clears_only_saved_preference(
     )
 
     assert main(["workspace", "reset"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     assert calls == 1
     assert existing_file.read_text(encoding="utf-8") == "keep me"
@@ -401,17 +347,17 @@ def test_workspace_commands_report_workspace_errors(
     monkeypatch.setattr(cli_workspace, patched_name, fail)
 
     assert main(command) != 0
-    assert "Error: bad workspace" in capsys.readouterr().out
+    assert "Error: bad workspace" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_menu_dispatch_displays_options_and_exits(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["6"])
+    _menu_input(monkeypatch, ["q"])
 
     assert main(["menu"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     assert "Quillan" in output
     assert "\033[32mQuillan\033[0m" in output
@@ -432,10 +378,10 @@ def test_menu_help_explains_teacher_control_and_safe_data(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["5", "", "6"])
+    _menu_input(monkeypatch, ["5", "", "q"])
 
     assert main(["menu"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     assert "local-first, teacher-controlled" in output
     assert "Teacher judgment remains primary" in output
@@ -443,17 +389,17 @@ def test_menu_help_explains_teacher_control_and_safe_data(
     assert "synthetic data only" in output
     assert "Do not commit or post real student data" in output
     assert "quillan validate-standards" not in output
-    assert "quillan menu" in output
+    assert "quillan --help" in output
 
 
 def test_assignment_management_opens_printable_response_submenu(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["1", "3", "2", "", "4", "6"])
+    _menu_input(monkeypatch, ["1", "3", "b", "", "b", "q"])
 
     assert main(["menu"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Printable Response Pages" in output
     assert "Generate class packet" in output
     assert "Back" in output
@@ -464,10 +410,10 @@ def test_main_menu_opens_assignment_management_submenu(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["1", "4", "6"])
+    _menu_input(monkeypatch, ["1", "b", "q"])
 
     assert main(["menu"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Assignment Management" in output
     assert "\033[32mQuillan\033[0m" in output
     assert "Create writing assignment" in output
@@ -481,10 +427,10 @@ def test_main_menu_opens_roster_management_submenu(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["3", "5", "6"])
+    _menu_input(monkeypatch, ["3", "b", "q"])
 
     assert main(["menu"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Roster Management" in output
     assert "Create class roster" in output
     assert "View class roster" in output
@@ -507,10 +453,10 @@ def test_workspace_menu_reuses_workspace_show_handler(
         return 0
 
     monkeypatch.setattr(cli_workspace, "show_workspace", handle_workspace_show)
-    _menu_input(monkeypatch, ["4", "1", "", "5", "6"])
+    _menu_input(monkeypatch, ["4", "1", "", "b", "q"])
 
     assert main(["menu"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     assert calls == 1
     assert "Workspace Settings" in output
@@ -538,10 +484,10 @@ def test_workspace_menu_sets_workspace_folder(
         return 0
 
     monkeypatch.setattr(cli_workspace, "set_workspace", handle_workspace_set)
-    _menu_input(monkeypatch, ["4", "2", str(workspace_root), "", "5", "6"])
+    _menu_input(monkeypatch, ["4", "2", str(workspace_root), "", "b", "q"])
 
     assert main(["menu"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     assert calls == [str(workspace_root)]
     assert str(workspace_root) in output
@@ -562,10 +508,10 @@ def test_workspace_menu_blank_set_cancels_without_change(
         return 0
 
     monkeypatch.setattr(cli_workspace, "set_workspace", handle_workspace_set)
-    _menu_input(monkeypatch, ["4", "2", "  ", "", "5", "6"])
+    _menu_input(monkeypatch, ["4", "2", "  ", "", "b", "q"])
 
     assert main(["menu"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     assert calls == 0
     assert "canceled" in output
@@ -589,11 +535,11 @@ def test_workspace_menu_validates_current_workspace(
         "validate_workspace",
         handle_workspace_validate,
     )
-    _menu_input(monkeypatch, ["4", "3", "", "5", "6"])
+    _menu_input(monkeypatch, ["4", "3", "", "b", "q"])
 
     assert main(["menu"]) == 0
     assert calls == 1
-    assert "Workspace validated successfully" in capsys.readouterr().out
+    assert "Workspace validated successfully" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_workspace_menu_resets_saved_preference(
@@ -616,10 +562,10 @@ def test_workspace_menu_resets_saved_preference(
         "reset_workspace",
         handle_workspace_reset,
     )
-    _menu_input(monkeypatch, ["4", "4", "", "5", "6"])
+    _menu_input(monkeypatch, ["4", "4", "", "b", "q"])
 
     assert main(["menu"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     assert calls == 1
     assert "No workspace files were deleted" in output
@@ -637,4 +583,4 @@ def test_menu_handles_keyboard_interrupt(
     monkeypatch.setattr("builtins.input", interrupt)
 
     assert main(["menu"]) == 0
-    assert "Exiting Quillan." in capsys.readouterr().out
+    assert "Exiting Quillan." in (lambda captured: captured.out + captured.err)(capsys.readouterr())

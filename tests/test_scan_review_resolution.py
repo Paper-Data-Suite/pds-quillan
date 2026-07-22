@@ -22,12 +22,42 @@ from pds_core.scan_resolution_metadata import (
 
 from quillan.scan_review_resolution import (
     ScanReviewResolutionError,
+    discover_scan_review_route_options,
     discover_scan_review_items,
     resolve_scan_review_item,
 )
+import quillan.scan_review_resolution as scan_review_resolution
 from tests.test_route_handler import route_context
 
 FAILURE_ID = "failure_20260711T120000000000Z_a1b2c3d4e5f6"
+
+
+def test_route_option_discovery_propagates_unexpected_runtime_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    directory = tmp_path / "routes"
+    directory.mkdir()
+    (directory / "route_0123456789abcdef.json").write_text(
+        "{}", encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        scan_review_resolution,
+        "module_routes_dir",
+        lambda *_args, **_kwargs: directory,
+    )
+    monkeypatch.setattr(
+        scan_review_resolution,
+        "validate_route_id",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            RuntimeError("unexpected programming failure")
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="unexpected programming failure"):
+        discover_scan_review_route_options(
+            tmp_path, "english12_p3", "essay_01"
+        )
 
 
 def _write_failure(
@@ -36,6 +66,7 @@ def _write_failure(
     failure_id: str = FAILURE_ID,
     stage: str = "quillan_route_review",
     module_id: str = "quillan",
+    scoped: bool = True,
 ) -> Path:
     return write_routing_failure_metadata(
         root,
@@ -43,18 +74,29 @@ def _write_failure(
             schema_version="2",
             failure_id=failure_id,
             scope="page",
-            stage=stage,
+            stage=stage if scoped else "qr_detection",
             created_at="2026-07-11T12:00:00+00:00",
             failure_category="payload_missing",
             failure_message="No QR payload was found.",
             source_filename="teacher_scan.pdf",
-            route_locator=RouteLocator(
-                "PDS2",
-                ModuleWorkRef(module_id, "english12_p3", "essay_01"),
-                "route_a1b2c3d4e5f6",
+            route_locator=(
+                RouteLocator(
+                    "PDS2",
+                    ModuleWorkRef(module_id, "english12_p3", "essay_01"),
+                    "route_a1b2c3d4e5f6",
+                )
+                if scoped
+                else None
             ),
             target=None,
-            module_details={"failure_origin": "qr_decode"},
+            module_details=(
+                {"failure_origin": "qr_decode"}
+                if scoped
+                else {
+                    "failure_owner": "quillan",
+                    "failure_origin": "qr_detection",
+                }
+            ),
             source_scan_id="scan_001",
             source_sha256="a" * 64,
             retained_source_path="scans/source/2026-07-11/teacher_scan.pdf",

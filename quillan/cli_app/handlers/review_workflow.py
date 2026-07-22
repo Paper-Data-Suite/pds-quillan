@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
@@ -24,7 +25,10 @@ def handle_review_workflow_set_state(args: argparse.Namespace) -> int:
             args.state,
         )
     except (WorkspaceRootError, ReviewWorkflowStateError) as error:
-        print(f"Error: could not update review workflow state: {error}")
+        print(
+            f"Error: could not update review workflow state: {error}",
+            file=sys.stderr,
+        )
         return 1
     print_updated_review_workflow_state(updated)
     return 0

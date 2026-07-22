@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.menu_screen_recorder import MenuScreenRecorder, assert_focused_child_screen
+
 from quillan.cli import main
 import quillan.review_menu as review_menu
 from quillan.review_record_paths import review_record_path
@@ -165,11 +167,11 @@ def _enter_selected_student() -> list[str]:
 
 
 def _exit_selected_student_to_main() -> list[str]:
-    return ["12", "6", "", "3", "6"]
+    return ["b", "b", "", "b", "q"]
 
 
 def _exit_after_selected_student_action_to_main() -> list[str]:
-    return ["", "12", "6", "", "3", "6"]
+    return ["", "b", "b", "", "b", "q"]
 
 
 @pytest.fixture
@@ -212,6 +214,7 @@ def test_review_menu_selected_student_excludes_legacy_review_entry_actions(
     ).exists()
 
 
+@pytest.mark.menu_density_workflow("minimum requirements")
 def test_review_menu_records_minimum_requirement_check(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
@@ -222,15 +225,25 @@ def test_review_menu_records_minimum_requirement_check(
     )
     manifest_before = manifest_path.read_bytes()
 
-    _menu_input(
-        monkeypatch,
+    recorder = MenuScreenRecorder(
         _enter_selected_student()
         + ["3", "1", "1", "1", "", "4"]
         + _exit_selected_student_to_main(),
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Record Requirement Check",
+        required_text=(f"Student: Avery Rivera ({STUDENT_ID})", "Recorded requirement check:"),
+        forbidden_parent_text="3. Export returned-work feedback",
+        parent_heading="Review Minimum Requirements",
+        result_heading="Recorded requirement check:",
+        unrelated_previous_text="Minimum paragraphs: not checked",
+    )
     assert "Requirement Checks" in output
     assert "Record Requirement Check" in output
     assert "Review Minimum Requirements" in output

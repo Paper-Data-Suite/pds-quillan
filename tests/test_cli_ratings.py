@@ -152,7 +152,7 @@ def test_bare_namespace_prints_help_without_resolving_workspace(
         lambda: pytest.fail("bare ratings namespace resolved workspace"),
     )
     assert main(["ratings"]) == 0
-    assert "{list,set,mark-complete}" in capsys.readouterr().out
+    assert "{list,set,mark-complete}" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_list_without_review_is_ordered_and_strictly_read_only(
@@ -164,7 +164,7 @@ def test_list_without_review_is_ordered_and_strictly_read_only(
 
     assert main(["ratings", "list", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert f"Student: {STUDENT_ID}" in output
     assert "Review state: not_started" in output
     assert "Review record exists: no" in output
@@ -190,7 +190,7 @@ def test_set_creates_then_replaces_without_inference_or_duplicate(
     monkeypatch.setattr("builtins.input", lambda *_args: pytest.fail("CLI prompted"))
 
     assert main(_set_args("--rationale", "  Teacher judgment.  ")) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Rating: 7 - Secure" in output
     assert "Rationale: present" in output
     assert "Include in feedback: no" in output
@@ -203,7 +203,7 @@ def test_set_creates_then_replaces_without_inference_or_duplicate(
     assert review["overall_standard_ratings"][0]["rationale"] is None
     assert review["review_units"] == []
     assert review["feedback"]["standard_feedback"] == []
-    assert "Action: updated" in capsys.readouterr().out
+    assert "Action: updated" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert (assignment_path.read_bytes(), manifest_path.read_bytes()) == immutable
 
 
@@ -211,11 +211,11 @@ def test_write_commands_require_an_existing_review(
     workspace: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main(_set_args()) == 1
-    assert "review record must exist" in capsys.readouterr().out
+    assert "review record must exist" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert main(
         ["ratings", "mark-complete", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, "--yes"]
     ) == 1
-    assert "review record must exist" in capsys.readouterr().out
+    assert "review record must exist" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert not review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).exists()
 
 
@@ -237,12 +237,12 @@ def test_invalid_standard_and_rating_fail_without_writing(
     argv = _set_args()
     argv[argv.index("W.1")] = "CORE.BUT.NOT.CONFIGURED"
     assert main(argv) == 1
-    assert "Valid Focus Standard IDs: W.1, L.2" in capsys.readouterr().out
+    assert "Valid Focus Standard IDs: W.1, L.2" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert path.read_bytes() == before
     argv = _set_args()
     argv[argv.index("7")] = "5"
     assert main(argv) == 1
-    assert "Allowed values: -2, 0, 7" in capsys.readouterr().out
+    assert "Allowed values: -2, 0, 7" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert path.read_bytes() == before
 
 
@@ -262,7 +262,7 @@ def test_mark_complete_requires_yes_and_allows_zero_ratings(
     review = json.loads(path.read_text(encoding="utf-8"))
     assert review["review_state"] == "ratings_complete"
     assert review["overall_standard_ratings"] == []
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Ratings recorded: 0" in output
     assert "Missing ratings: 2" in output
     assert "none were created" in output
@@ -284,9 +284,9 @@ def test_returned_review_is_listable_but_byte_stable_for_failed_writes(
     before = path.read_bytes()
 
     assert main(["ratings", "list", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
-    assert "overall ratings not applicable" in capsys.readouterr().out
+    assert "overall ratings not applicable" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert main(_set_args()) == 1
-    assert "returned without full standards review" in capsys.readouterr().out
+    assert "returned without full standards review" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert main(
         ["ratings", "mark-complete", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, "--yes"]
     ) == 1
@@ -312,7 +312,7 @@ def test_list_reports_stale_rating_without_counting_it(
     before = copy.deepcopy(path.read_bytes())
 
     assert main(["ratings", "list", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Ratings recorded: 0" in output
     assert "Ratings missing: 2" in output
     assert "Unrecognized or stale stored ratings" in output

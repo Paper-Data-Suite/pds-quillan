@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
@@ -22,7 +23,7 @@ def handle_add_note(args: argparse.Namespace) -> int:
             args.text,
         )
     except (WorkspaceRootError, ReviewNoteError) as error:
-        print(f"Error: could not add teacher note: {error}")
+        print(f"Error: could not add teacher note: {error}", file=sys.stderr)
         return 1
 
     print_added_review_note(added)

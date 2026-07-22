@@ -507,7 +507,7 @@ def print_exported_feedback(exported: ExportedFeedback) -> None:
     print(f"Assignment: {exported.assignment_id}")
     print(f"Student: {exported.student_id}")
     print(f"Included comments: {exported.included_comment_count}")
-    print(f"Scores: {exported.score_count}")
+    print(f"Overall Focus Standard ratings: {exported.score_count}")
     print(f"Overwrote existing: {format_bool(exported.overwrote_existing)}")
     print(f"Feedback file: {exported.feedback_relative_path}")
 
@@ -635,7 +635,7 @@ def print_assignment_submission_status(
     page_counts["missing"] += sum(
         len(status.missing_pages)
         for status in result.student_statuses
-        if status.manifest_path is None
+        if status.manifest_path is None and not status.pages
     )
     unselected_count = sum(
         len(status.unselected_present_pages)
@@ -673,11 +673,20 @@ def print_assignment_submission_status(
         for status in result.student_statuses:
             if status.manifest_path is None:
                 routed_details = "routed evidence exists; no manifest"
+                if status.issuance_ids:
+                    routed_details += "; issuance=" + ",".join(status.issuance_ids)
                 if status.missing_pages:
                     routed_details += (
                         "; missing="
                         f"{format_page_numbers(status.missing_pages)}"
                     )
+                if status.duplicate_pages:
+                    routed_details += (
+                        "; duplicate="
+                        f"{format_page_numbers(status.duplicate_pages)}"
+                    )
+                if status.conflicts:
+                    routed_details += "; conflict=" + ",".join(status.conflicts)
                 print(f"- {status.student_id}: {routed_details}")
                 continue
 
@@ -894,13 +903,10 @@ def format_page_numbers(page_numbers: tuple[int, ...]) -> str:
 
 
 def workspace_relative_display(path: Path, workspace_root: Path) -> str:
-    """Display a path relative to the workspace when possible."""
-    try:
-        return path.resolve(strict=False).relative_to(
-            workspace_root.resolve(strict=False)
-        ).as_posix()
-    except (OSError, ValueError):
-        return str(path)
+    """Return one canonical workspace-relative POSIX artifact path."""
+    return path.resolve(strict=False).relative_to(
+        workspace_root.resolve(strict=False)
+    ).as_posix()
 
 
 def _print_path_section(

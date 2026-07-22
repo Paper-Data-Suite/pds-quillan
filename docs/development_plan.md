@@ -123,7 +123,12 @@ Examples and tests should use:
 * synthetic scores;
 * synthetic teacher comments.
 
-## Original Architecture Sketch
+## Historical Architecture Sketch (superseded)
+
+This architecture and the implementation sequence that follows record earlier
+project planning. They are historical, not the current CLI, menu, storage, or
+PDS2 routing contract. Current behavior is defined by `docs/cli_contract.md`,
+`docs/workspace_lifecycle.md`, and `docs/pds2_scan_intake.md`.
 
 The list below records the initial planning decomposition. The current source
 tree uses focused modules such as `review_record.py`, `review_notes.py`,
@@ -203,7 +208,7 @@ Current responsibility:
 Individual student PDFs, scan routing, OCR, review, scoring, feedback, reports,
 AI, and a direct printable CLI command remain out of scope.
 
-### Scan routing
+### Historical scan routing plan (superseded by PDS2)
 
 Future Quillan scan routing must use the shared active scan contract defined by
 `pds-core`. Canonical active retained sources belong in
@@ -213,10 +218,11 @@ than canonical source retention.
 
 `pds-core` owns shared source retention, review paths, failure metadata and
 categories, copy-first behavior, no-overwrite rules, and provenance semantics.
-Quillan owns interpretation of its `PDS1` response payloads, response-page
-validation, routed student evidence layout, submission assembly, completeness
-and rescan decisions, and any future OCR behavior. Quillan-specific failure
-details belong under the shared record's `module_details`.
+Historically, Quillan interpreted its `PDS1` response payloads and owned the
+then-planned routed evidence layout. That interface is superseded. Current
+intake accepts only strict Core PDS2 locators; Core parses and resolves them,
+while Quillan validates dispatched response pages, persists observations and
+routed evidence, and assembles issuance-authoritative submissions.
 
 The first version `1` reviewable-evidence submission manifest contract is
 documented, with loading, validation, canonical Quillan-owned path helpers,
@@ -273,13 +279,12 @@ It writes shared `pds-core` failure records under `scans/review/`, preserves
 route failure and evidence filing context, and records workspace-relative
 retained-source provenance when available. It does not copy review artifacts.
 
-The direct
-`quillan route-scan <source-file> --payload "<PDS1|...>"` command is
-implemented for one selected source and an already-decoded payload. It
-orchestrates the existing parser, planner, evidence filer, and review adapters.
-QR extraction, PDF splitting, OCR, menu integration, and batch routing remain
-unimplemented. Assignment submission assembly is available through a focused
-Python API and `quillan assemble-submissions`; it is not part of `route-scan`.
+Historical implementation note (superseded): an earlier direct
+`quillan route-scan <source-file> --payload "<PDS1|...>"` form accepted an
+already-decoded legacy payload. It is not a supported command. Current
+`quillan route-scan <source>` performs retained-source PDS2 decoding, Core
+dispatch, observation/evidence persistence, submission assembly, and failure
+preservation through the shared workflow service.
 
 ### `submissions.py`
 
@@ -435,9 +440,9 @@ Completed work:
 * Add the Roster Management submenu using shared `pds-core` contracts.
 * Add the Printable Response Pages submenu for combined class-packet
   generation.
-* Add a direct `route-scan` command for already-decoded Quillan PDS1 payloads.
-* Add `assemble-submissions`, `list-submissions`, `open-evidence`,
-  `open-submission`, and `set-review-state`.
+* Add direct retained-source `route-scan` and `decode-scan` PDS2 workflows.
+* Add `assemble-submissions`, issuance-driven `list-submissions`,
+  identity-based `open-submission`, and `set-review-state`.
 * Add CLI tests.
 
 Remaining possible work:
@@ -462,8 +467,8 @@ Planned work:
 
 Likely first commands:
 
-* `quillan validate-assignment <path>`
-* later: `quillan create-assignment`
+* `quillan assignment validate <class_id> <assignment_id>`
+* `quillan assignment create <class_id> <assignment_id> ...`
 
 ### Phase 6 â€” Submissions and Requirements
 
@@ -479,10 +484,9 @@ Completed reviewable-evidence work:
   changing only `submission_state` and `updated_at`.
 * Preserve retained-source provenance and workspace-relative artifact paths.
 * Open individual workspace-relative evidence files safely through the shared
-  `pds-core` local opener. Implemented as a low-level helper,
-  `quillan open-evidence`, and the read-only student-aware
-  `quillan open-submission`, which currently requires exactly one selected
-  evidence item and does not update review state. State changes occur only
+  `pds-core` local opener. The public read-only workflow is the student-aware,
+  identity-based `quillan open-submission`, optionally narrowed by logical page
+  and evidence ID, and it does not update review state. State changes occur only
   through the explicit `quillan set-review-state` command.
 
 Remaining requirements and review work:
@@ -611,7 +615,7 @@ Possible next issues after the initial documentation milestone:
 
 1. Add duplicate standards/comment validation.
 2. Implement assignment config loading and validation.
-3. Add `validate-assignment` CLI command.
+3. Add canonical `assignment validate <class_id> <assignment_id>` CLI action.
 4. Define basic requirements evaluation.
 5. Implement plain-text submission loading.
 6. Add paragraph and word counting.
@@ -647,6 +651,6 @@ These should not distract from the MVP.
 Quillan supports a focused teacher-facing setup path for students who wrote on
 plain paper when printable response pages were unavailable. The path creates
 the existing submission and review contracts without scans, OCR, placeholder
-files, fake evidence, bulk creation, or changes to QR/PDS1 printing. Subsequent
+files, fake evidence, bulk creation, or changes to superseded QR printing. Subsequent
 work remains in the active standards-based review and assignment-local export
 model.

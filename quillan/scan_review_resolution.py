@@ -10,9 +10,18 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Final
 
-from pds_core.identifiers import validate_identifier
-from pds_core.route_registrations import load_route_registration
-from pds_core.routing_models import ModuleRecordRef, ModuleWorkRef, RouteLocator
+from pds_core.identifiers import IdentifierValidationError, validate_identifier
+from pds_core.route_registrations import (
+    RouteRegistrationPersistenceError,
+    load_route_registration,
+)
+from pds_core.routes import module_routes_dir
+from pds_core.routing_models import (
+    ModuleRecordRef,
+    ModuleWorkRef,
+    RouteLocator,
+    RoutingModelError,
+)
 from pds_core.scan_failure_metadata import (
     ROUTING_FAILURE_SCHEMA_VERSION,
     RoutingFailureMetadata,
@@ -41,8 +50,12 @@ from quillan.pds_contract import (
 from quillan.printable_response_persistence import (
     PrintableResponsePersistenceError,
     load_printable_response_page,
+    load_printable_response_page_context,
 )
-from quillan.work_paths import quillan_work_paths
+from quillan.printable_response_records import response_page_target
+from quillan.printable_response_routes import validate_route_id
+from quillan.printable_response_routes import PrintableResponseRouteError
+from quillan.work_paths import QuillanWorkPathError, quillan_work_paths
 from quillan.work_paths import (
     _preflight_arbitrary_file_destination,
     _preflight_path_chain,
@@ -132,6 +145,85 @@ class QuillanReviewDiscovery:
 
     items: tuple[QuillanReviewItem, ...]
     warnings: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class QuillanRouteOption:
+    """One current registered Quillan response-page route for teacher selection."""
+
+    locator: RouteLocator
+    target: ModuleRecordRef
+    student_id: str
+    logical_page: int
+    total_pages: int
+
+
+@dataclass(frozen=True, slots=True)
+class QuillanRouteDiscovery:
+    """Valid route choices and conservative malformed-registration warnings."""
+
+    routes: tuple[QuillanRouteOption, ...]
+    warnings: tuple[str, ...]
+
+
+def discover_scan_review_route_options(
+    workspace_root: str | Path,
+    class_id: str,
+    assignment_id: str,
+) -> QuillanRouteDiscovery:
+    """List valid current response-page routes within one exact Quillan work."""
+    root = _workspace_root(workspace_root)
+    work_ref = ModuleWorkRef(QUILLAN_MODULE_ID, class_id, assignment_id)
+    directory = module_routes_dir(root, work_ref)
+    if not os.path.lexists(directory):
+        return QuillanRouteDiscovery((), ())
+    try:
+        _preflight_path_chain(root=root, target=directory, expect_file=False)
+        children = tuple(sorted(directory.iterdir(), key=lambda path: path.name))
+    except (OSError, RuntimeError, ValueError) as error:
+        return QuillanRouteDiscovery((), (f"Could not inspect route directory: {error}",))
+    routes: list[QuillanRouteOption] = []
+    warnings: list[str] = []
+    for path in children:
+        if path.suffix != ".json":
+            continue
+        try:
+            _preflight_arbitrary_file_destination(path)
+            route_id = validate_route_id(path.stem)
+            locator = RouteLocator("PDS2", work_ref, route_id)
+            registration = load_route_registration(root, locator)
+            if registration.status != "active":
+                continue
+            context = load_printable_response_page_context(
+                root, work_ref, registration.target.record_id
+            )
+            if registration.target != response_page_target(context.page):
+                raise ScanReviewResolutionError(
+                    "registration target contradicts its immutable response page"
+                )
+            routes.append(
+                QuillanRouteOption(
+                    locator,
+                    registration.target,
+                    context.student_id,
+                    context.logical_page,
+                    context.total_pages,
+                )
+            )
+        except (
+            IdentifierValidationError,
+            OSError,
+            PrintableResponsePersistenceError,
+            PrintableResponseRouteError,
+            QuillanWorkPathError,
+            RouteRegistrationPersistenceError,
+            RoutingModelError,
+        ) as error:
+            warnings.append(f"Skipped invalid route {path.name}: {error}")
+    routes.sort(
+        key=lambda item: (item.student_id, item.logical_page, item.locator.route_id)
+    )
+    return QuillanRouteDiscovery(tuple(routes), tuple(warnings))
 
 
 def discover_scan_review_items(
@@ -786,10 +878,13 @@ __all__ = [
     "DEFAULT_RESOLUTION_MESSAGES",
     "QUILLAN_RESOLUTION_ACTIONS",
     "QuillanResolutionResult",
+    "QuillanRouteDiscovery",
+    "QuillanRouteOption",
     "QuillanReviewDiscovery",
     "QuillanReviewItem",
     "ScanReviewResolutionError",
     "discover_scan_review_items",
+    "discover_scan_review_route_options",
     "list_scan_review_items",
     "resolve_scan_review_item",
 ]

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Callable
 from pathlib import Path
+import sys
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
@@ -32,7 +33,7 @@ def handle_pages_list(args: argparse.Namespace) -> int:
             args.student_id,
         )
     except (WorkspaceRootError, SubmissionPageManagementError, OSError) as error:
-        print(f"Error: could not list submission pages: {error}")
+        print(f"Error: could not list submission pages: {error}", file=sys.stderr)
         return 1
     print_submission_page_context(context)
     return 0
@@ -67,7 +68,7 @@ def _mutate(args: argparse.Namespace, service: PageMutation) -> int:
             args.page,
         )
     except (WorkspaceRootError, SubmissionPageManagementError, OSError) as error:
-        print(f"Error: page change was not saved: {error}")
+        print(f"Error: page change was not saved: {error}", file=sys.stderr)
         return 1
     print_managed_submission_page(result, workspace_root)
     return 0

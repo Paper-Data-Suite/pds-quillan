@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from pathlib import Path
+import sys
 
 from pds_core.pds2 import parse_pds2_payload, serialize_pds2_payload
 from pds_core.routing_models import RouteLocator
@@ -171,7 +172,7 @@ def handle_decode_scan(args: argparse.Namespace) -> int:
             workspace_root=resolve_workspace_root(),
         )
     except Exception as error:
-        print(f"Decode failed: {error}")
+        print(f"Decode failed: {error}", file=sys.stderr)
         return 1
     success = True
     for page in pages:
@@ -180,8 +181,8 @@ def handle_decode_scan(args: argparse.Namespace) -> int:
         if page.locator is None:
             success = False
             print(f"Decode failed: {page.failure_category}")
-            print(f"Reason: {page.error}")
-            if page.raw_payload_text is not None and not args.hide_payload:
+            print(f"Reason: {_safe_decode_reason(page)}")
+            if page.raw_payload_text is not None and args.show_payload:
                 print(f"Raw payload: {page.raw_payload_text}")
             continue
         locator = page.locator
@@ -190,9 +191,28 @@ def handle_decode_scan(args: argparse.Namespace) -> int:
         print(f"Class: {locator.class_id}")
         print(f"Work: {locator.work_id}")
         print(f"Route: {locator.route_id}")
-        if not args.hide_payload:
+        if args.show_payload:
             print(f"Canonical payload: {serialize_pds2_payload(locator)}")
     return 0 if success and bool(pages) else 1
+
+
+def _safe_decode_reason(page: DecodedPds2Page) -> str:
+    """Explain a failure without echoing potentially sensitive QR text."""
+    reasons = {
+        "payload_schema_unsupported": (
+            "This QR uses an unsupported schema; only PDS2 is supported."
+        ),
+        "payload_missing": "No QR payload was detected on this physical page.",
+        "payload_unreadable": "The QR payload could not be read safely.",
+        "payload_too_large": "The QR payload exceeds the PDS2 size limit.",
+        "identifier_invalid": "A PDS2 identity field is invalid.",
+        "payload_invalid": "The QR payload is not a valid PDS2 locator.",
+        "source_unreadable": "The retained physical page could not be read.",
+    }
+    return reasons.get(
+        page.failure_category or "",
+        "The physical page could not be decoded as a PDS2 locator.",
+    )
 
 
 __all__ = [

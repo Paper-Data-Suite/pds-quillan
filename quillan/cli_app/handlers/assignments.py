@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
@@ -19,15 +20,17 @@ from quillan.assignment_workflows import (
 )
 
 
-def _relative(path: Path, root: Path) -> Path:
+def _relative(path: Path, root: Path) -> str:
     try:
-        return path.relative_to(root)
-    except ValueError:
-        return path
+        return path.relative_to(root).as_posix()
+    except ValueError as error:
+        raise ValueError(
+            "Canonical assignment path is outside the exact workspace root."
+        ) from error
 
 
 def _error(action: str, error: Exception) -> int:
-    print(f"Error: assignment {action}: {error}")
+    print(f"Error: assignment {action}: {error}", file=sys.stderr)
     return 1
 
 

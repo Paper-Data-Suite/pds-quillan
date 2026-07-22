@@ -149,7 +149,7 @@ def test_bare_namespace_prints_help_without_resolving_workspace(
         lambda: pytest.fail("bare namespace resolved the workspace"),
     )
     assert main(["observations"]) == 0
-    assert "{list,set,mark-complete}" in capsys.readouterr().out
+    assert "{list,set,mark-complete}" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_mark_complete_requires_yes_before_resolving_workspace(
@@ -176,7 +176,7 @@ def test_list_without_review_is_read_only_and_reports_setup_guidance(
 
     assert main(["observations", "list", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert f"Student: {STUDENT_ID}" in output
     assert "Review state: not_started" in output
     assert "Review record exists: no" in output
@@ -204,7 +204,7 @@ def test_list_orders_units_and_standards_and_reports_matrix_totals(
 
     assert main(["observations", "list", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert output.index("1. Opening") < output.index("3. Conclusion")
     first_unit = output[output.index("1. Opening") : output.index("3. Conclusion")]
     assert first_unit.index("Focus Standard: W.1") < first_unit.index("Focus Standard: L.2")
@@ -243,7 +243,7 @@ def test_set_applicable_supports_optional_assignment_scale_rating_and_replacemen
             "false",
         )
     ) == 0
-    first_output = capsys.readouterr().out
+    first_output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Unit-level rating: 7 (Secure)" in first_output
     assert "Rationale: present" in first_output
 
@@ -261,7 +261,7 @@ def test_set_applicable_supports_optional_assignment_scale_rating_and_replacemen
     assert observation["include_in_feedback"] is True
     assert review["overall_standard_ratings"] == []
     assert review["feedback"]["standard_feedback"] == []
-    assert "Action: updated" in capsys.readouterr().out
+    assert "Action: updated" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_set_not_applicable_stores_nulls_and_allows_feedback_override(
@@ -329,7 +329,7 @@ def test_invalid_combinations_do_not_change_review(
     record_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
     before = record_path.read_bytes()
     assert main(_set_args(*extra)) == 1
-    assert message in capsys.readouterr().out
+    assert message in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert record_path.read_bytes() == before
 
 
@@ -364,13 +364,13 @@ def test_returned_review_can_be_listed_but_not_changed(
     before = record_path.read_bytes()
 
     assert main(["observations", "list", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
-    assert "Review state: returned_without_full_review" in capsys.readouterr().out
+    assert "Review state: returned_without_full_review" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert main(_set_args("--applicable", "true", "--evidence-present", "true")) == 1
-    assert "Change the minimum-requirements outcome" in capsys.readouterr().out
+    assert "Change the minimum-requirements outcome" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert record_path.read_bytes() == before
 
     assert main(_complete_args("--yes")) == 1
-    assert "Change the minimum-requirements outcome" in capsys.readouterr().out
+    assert "Change the minimum-requirements outcome" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert record_path.read_bytes() == before
 
 
@@ -405,7 +405,7 @@ def test_mark_complete_reuses_service_result_and_warns_without_prompting(
 
     assert main(_complete_args("--yes")) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert calls == [(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)]
     assert "Unobserved unit-standard pairs: 3" in output
     assert (
@@ -434,7 +434,7 @@ def test_mark_complete_allows_zero_observations_and_preserves_review_content(
     assert main(_complete_args("--yes")) == 0
 
     after = json.loads(record_path.read_text(encoding="utf-8"))
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert after["review_state"] == "observations_complete"
     assert after["updated_at"] != before["updated_at"]
     assert after["review_units"][0]["standard_observations"] == []
@@ -466,7 +466,7 @@ def test_mark_complete_with_partial_coverage_reports_service_count(
 
     assert main(_complete_args("--yes")) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     review = json.loads(
         review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(
             encoding="utf-8"
@@ -514,7 +514,7 @@ def test_mark_complete_with_full_coverage_has_no_warning(
 
     assert main(_complete_args("--yes")) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Unobserved unit-standard pairs: 0" in output
     assert "Warning:" not in output
 
@@ -527,7 +527,7 @@ def test_mark_complete_requires_existing_review_and_units_without_writing(
     manifest_before = manifest_path.read_bytes()
 
     assert main(_complete_args("--yes")) == 1
-    assert "Review units must be defined before recording observations" in capsys.readouterr().out
+    assert "Review units must be defined before recording observations" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert not record_path.exists()
     assert manifest_path.read_bytes() == manifest_before
 
@@ -545,5 +545,5 @@ def test_mark_complete_requires_existing_review_and_units_without_writing(
     before = record_path.read_bytes()
 
     assert main(_complete_args("--yes")) == 1
-    assert "Define review units before marking observations complete" in capsys.readouterr().out
+    assert "Define review units before marking observations complete" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert record_path.read_bytes() == before

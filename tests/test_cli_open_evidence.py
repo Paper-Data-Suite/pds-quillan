@@ -1,4 +1,4 @@
-"""CLI tests for local evidence opening."""
+"""CLI contract tests for identity-based evidence opening."""
 
 from __future__ import annotations
 
@@ -8,63 +8,77 @@ import pytest
 
 from quillan.cli import main
 import quillan.cli_app.handlers.submissions as cli_submissions
-from quillan.evidence_opening import EvidenceOpeningError, OpenedEvidence
+from quillan.submission_review_opening import (
+    OpenedSubmissionEvidencePage,
+    OpenedSubmissionReview,
+)
 
 
-def test_open_evidence_uses_active_workspace_and_prints_relative_path(
+def test_raw_path_open_evidence_command_is_retired(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit) as error:
+        main(["open-evidence", "classes/class_1/scans/evidence.pdf"])
+
+    assert error.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "invalid choice: 'open-evidence'" in captured.err
+
+
+def test_open_submission_passes_explicit_evidence_identity(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    relative_path = "classes/class_1/scans/evidence.pdf"
-    calls: list[tuple[Path, str | Path]] = []
+    calls: list[tuple[int | None, str | None]] = []
+    opened = OpenedSubmissionReview(
+        class_id="class_1",
+        assignment_id="assignment_1",
+        student_id="student_1",
+        manifest_path=tmp_path / "submission.json",
+        manifest_relative_path=(
+            "classes/class_1/modules/quillan/work/assignment_1/"
+            "submissions/student_1/submission.json"
+        ),
+        submission_state="unreviewed",
+        opened_pages=(
+            OpenedSubmissionEvidencePage(
+                page_number=2,
+                evidence_id="evidence_2",
+                evidence_path=tmp_path / "evidence.pdf",
+                evidence_relative_path="classes/class_1/scans/evidence.pdf",
+                page_state="present",
+            ),
+        ),
+    )
+    monkeypatch.setattr(cli_submissions, "resolve_workspace_root", lambda: tmp_path)
+
+    def open_submission(
+        *_args: object,
+        page_number: int | None = None,
+        evidence_id: str | None = None,
+    ) -> OpenedSubmissionReview:
+        calls.append((page_number, evidence_id))
+        return opened
 
     monkeypatch.setattr(
-        cli_submissions, "resolve_workspace_root", lambda: tmp_path
+        cli_submissions, "open_student_submission_for_review", open_submission
     )
 
-    def open_evidence(
-        workspace_root: str | Path,
-        evidence_path: str | Path,
-    ) -> OpenedEvidence:
-        calls.append((Path(workspace_root), evidence_path))
-        return OpenedEvidence(
-            evidence_path=tmp_path / relative_path,
-            evidence_relative_path=relative_path,
-        )
-
-    monkeypatch.setattr(
-        cli_submissions, "open_workspace_evidence", open_evidence
-    )
-
-    assert main(["open-evidence", relative_path]) == 0
-    assert calls == [(tmp_path, relative_path)]
-    assert capsys.readouterr().out == (
-        "Opened evidence file:\n"
-        "classes/class_1/scans/evidence.pdf\n"
-    )
-
-
-@pytest.mark.parametrize("evidence_path", ["missing.pdf", "../outside.pdf"])
-def test_open_evidence_reports_validation_failure(
-    tmp_path: Path,
-    evidence_path: str,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        cli_submissions, "resolve_workspace_root", lambda: tmp_path
-    )
-
-    def fail_to_open(
-        _workspace_root: str | Path,
-        _evidence_path: str | Path,
-    ) -> OpenedEvidence:
-        raise EvidenceOpeningError("unsafe or missing evidence")
-
-    monkeypatch.setattr(
-        cli_submissions, "open_workspace_evidence", fail_to_open
-    )
-
-    assert main(["open-evidence", evidence_path]) == 1
-    assert "Error: could not open evidence file" in capsys.readouterr().out
+    assert main(
+        [
+            "open-submission",
+            "class_1",
+            "assignment_1",
+            "student_1",
+            "--page",
+            "2",
+            "--evidence-id",
+            "evidence_2",
+        ]
+    ) == 0
+    assert calls == [(2, "evidence_2")]
+    output = capsys.readouterr().out
+    assert "Evidence: evidence_2" in output
+    assert str(tmp_path) not in output

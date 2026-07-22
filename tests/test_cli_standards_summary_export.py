@@ -35,7 +35,7 @@ def test_cli_exports_standards_rows_and_prints_summary(
 
     assert main(["export-standards-summary", CLASS_ID, ASSIGNMENT_ID]) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Exported assignment-local Focus Standard summary:" in output
     assert f"Class: {CLASS_ID}" in output
     assert f"Assignment: {ASSIGNMENT_ID}" in output
@@ -71,7 +71,7 @@ def test_cli_handles_missing_directory_and_overwrite(
     monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
     command = ["export-standards-summary", CLASS_ID, ASSIGNMENT_ID]
     assert main(command) == 1
-    assert "assignment config" in capsys.readouterr().out
+    assert "assignment config" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     _write_assignment(tmp_path)
     _write_review(
@@ -88,7 +88,7 @@ def test_cli_handles_missing_directory_and_overwrite(
     assert main(command) == 1
     assert output_path.read_text(encoding="utf-8") == "manual edit"
     assert main([*command, "--overwrite"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Use --overwrite" in output
     assert "Overwrote existing: yes" in output
 

@@ -18,6 +18,8 @@ from pds_core.standards import (
 )
 import pytest
 
+from tests.menu_screen_recorder import MenuScreenRecorder, assert_focused_child_screen
+
 import quillan.assignment_workflows as workflows
 from quillan.assignments import (
     AssignmentConfigError,
@@ -1243,7 +1245,7 @@ def test_assignment_menu_displays_options_and_dispatches(
         "prompt_view_validate_assignment",
         lambda: record("view"),
     )
-    _inputs(monkeypatch, ["1", "", "2", "", "4"])
+    _inputs(monkeypatch, ["1", "", "2", "", "b"])
 
     assert workflows.launch_assignment_menu() == 0
     output = capsys.readouterr().out
@@ -1258,7 +1260,7 @@ def test_assignment_menu_invalid_selection_and_keyboard_interrupt(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    _inputs(monkeypatch, ["bad", "", "4"])
+    _inputs(monkeypatch, ["bad", "", "b"])
     assert workflows.launch_assignment_menu() == 0
     assert "Invalid selection" in capsys.readouterr().out
 
@@ -1268,3 +1270,79 @@ def test_assignment_menu_invalid_selection_and_keyboard_interrupt(
     monkeypatch.setattr("builtins.input", interrupt)
     assert workflows.launch_assignment_menu() == 0
     assert "Exiting assignment menu." in capsys.readouterr().out
+
+
+@pytest.mark.menu_density_workflow("assignment creation")
+def test_assignment_creation_density_uses_real_workflow(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path)
+    _write_standards_library(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    recorder = MenuScreenRecorder(
+        [
+            "1",
+            "1",
+            "1",
+            "Literary Analysis Essay",
+            "",
+            "literary analysis",
+            "Analyze how the author develops a central idea.",
+            "1",
+            "1,2",
+            "",
+            "",
+            "4",
+            "6",
+            "500",
+            "900",
+            "claim, textual evidence",
+            "",
+            "",
+            "",
+            "b",
+        ]
+    )
+    recorder.install(monkeypatch)
+
+    assert workflows.launch_assignment_menu() == 0
+
+    screens = recorder.screens(capsys.readouterr().out)
+    assert_focused_child_screen(
+        screens,
+        heading="Create Writing Assignment",
+        required_text="Assignment creation requires an existing PDS Core standards profile.",
+        forbidden_parent_text="3. Printable Response Pages",
+        parent_heading="Assignment Management",
+        result_heading="Assignment Saved",
+        unrelated_previous_text="View/validate assignment",
+    )
+
+
+@pytest.mark.menu_density_workflow("assignment validation")
+def test_assignment_validation_density_uses_real_workflow(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path)
+    workflows.write_assignment_config(tmp_path, "english_12_p3", _assignment())
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    recorder = MenuScreenRecorder(["2", "1", "1", "", "b"])
+    recorder.install(monkeypatch)
+
+    assert workflows.launch_assignment_menu() == 0
+
+    screens = recorder.screens(capsys.readouterr().out)
+    assert_focused_child_screen(
+        screens,
+        heading="View/Validate Assignment",
+        required_text="english_12_p3",
+        forbidden_parent_text="3. Printable Response Pages",
+        parent_heading="Assignment Management",
+        result_heading="Assignment Validation Result",
+        unrelated_previous_text="Create writing assignment",
+    )
+    recorder.print_transcript(screens, label="ASSIGNMENT VALIDATION")

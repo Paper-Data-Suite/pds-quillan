@@ -65,7 +65,7 @@ def test_roster_help_and_bare_namespace_do_not_resolve_workspace(
 
     monkeypatch.setattr(handlers, "resolve_workspace_root", fail_workspace)
     assert main(["roster"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     for command in (
         "create",
         "show",
@@ -78,7 +78,7 @@ def test_roster_help_and_bare_namespace_do_not_resolve_workspace(
     with pytest.raises(SystemExit) as help_exit:
         main(["roster", "update-student", "--help"])
     assert help_exit.value.code == 0
-    assert "cannot be changed" in capsys.readouterr().out
+    assert "cannot be changed" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 @pytest.mark.parametrize(
@@ -150,7 +150,7 @@ def test_create_uses_active_year_and_dry_run_writes_nothing(
             "--dry-run",
         ]
     ) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "School year: 2027-2028" in output
     assert "No files were written." in output
     assert not (workspace / "classes").exists()
@@ -236,12 +236,12 @@ def test_show_and_validate_are_read_only_and_report_metadata(
     _use_workspace(monkeypatch, workspace)
 
     assert main(["roster", "show", "english_10_p2"]) == 0
-    shown = capsys.readouterr().out
+    shown = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "0007" in shown
     assert "preferred_name" in shown
     assert "School year: not set" in shown
     assert main(["roster", "validate", "english_10_p2"]) == 0
-    assert "Canonical roster is valid." in capsys.readouterr().out
+    assert "Canonical roster is valid." in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert roster_path.read_bytes() == before
     assert not (roster_path.parent / "class.json").exists()
 
@@ -255,7 +255,7 @@ def test_validate_rejects_invalid_existing_metadata(
     _use_workspace(monkeypatch, workspace)
 
     assert main(["roster", "validate", "english_10_p2"]) == 1
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert output.startswith("Error:")
     assert "Traceback" not in output
 
@@ -274,7 +274,7 @@ def test_validate_prints_structured_roster_diagnostics(
     _use_workspace(monkeypatch, workspace)
 
     assert main(["roster", "validate", "english_10_p2"]) == 1
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "[blank_required_value]" in output
     assert "row 2" in output
     assert "column first_name" in output
@@ -397,7 +397,7 @@ def test_remove_changes_only_roster_and_preserves_evidence_and_metadata(
     ] == ["0042"]
     assert metadata_path.read_bytes() == metadata_before
     assert evidence.read_text(encoding="utf-8") == "retain"
-    assert "does not delete" in capsys.readouterr().out
+    assert "does not delete" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_mutation_dry_run_and_missing_confirmation_do_not_write(

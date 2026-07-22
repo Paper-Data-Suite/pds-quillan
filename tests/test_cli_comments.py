@@ -63,7 +63,7 @@ def test_comments_help_and_bare_namespace_do_not_resolve_workspace(
     monkeypatch.setattr(cli_comments, "resolve_workspace_root", fail_if_called)
 
     assert main(["comments"]) == 0
-    namespace_help = capsys.readouterr().out
+    namespace_help = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert all(command in namespace_help for command in ("list", "show", "create"))
     for arguments in (
         ["--help"],
@@ -84,7 +84,7 @@ def test_empty_list_is_successful_and_does_not_create_directory(
 
     assert main(["comments", "list"]) == 0
 
-    assert "No reusable Focus Standard comments matched." in capsys.readouterr().out
+    assert "No reusable Focus Standard comments matched." in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert not directory.exists()
 
 
@@ -92,7 +92,7 @@ def test_show_missing_set_fails_without_creating_files(
     workspace: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main(["comments", "show", "missing_set"]) == 1
-    assert "Error:" in capsys.readouterr().out
+    assert "Error:" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert not (workspace / "shared").exists()
 
 
@@ -122,7 +122,7 @@ def test_create_new_set_preserves_text_and_normalizes_metadata(
         ]
     ) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Comment set: created" in output
     assert "Comment ID: explain_evidence" in output
     assert "Rating values: -1, 0, 2.5" in output
@@ -177,7 +177,7 @@ def test_create_appends_collision_safe_id_and_preserves_existing_data(
         ]
     ) == 0
 
-    assert "Comment ID: explain_evidence_2" in capsys.readouterr().out
+    assert "Comment ID: explain_evidence_2" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     after = load_comment_set(path)
     assert after["comments"][0] == before["comments"][0]
     assert after["created_at"] == before["created_at"]
@@ -220,7 +220,7 @@ def test_incompatible_append_is_byte_for_byte_unchanged(
 
     assert main(arguments) == 1
 
-    assert message in capsys.readouterr().out
+    assert message in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert path.read_bytes() == before
 
 
@@ -269,7 +269,7 @@ def test_list_filters_visibility_order_and_reports_invalid_files(
         ]
     ) == 1
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert output.index("Comment set ID: a_set") < output.index("Comment set ID: z_set")
     assert "A first text." in output
     assert "A second text." not in output
@@ -296,7 +296,7 @@ def test_show_includes_inactive_teacher_only_and_is_read_only(
 
     assert main(["comments", "show", "argument_comments"]) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Description:" in output
     assert "Comment count: 1" in output
     assert "Student-facing: no" in output
@@ -336,7 +336,7 @@ def test_create_rejects_invalid_rating_lists_without_writing(
     )
 
     assert result == 1
-    assert "Error:" in capsys.readouterr().out
+    assert "Error:" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert not (workspace / "shared").exists()
 
 

@@ -60,7 +60,7 @@ def test_bare_feedback_prints_help_without_resolving_workspace(
         handlers, "resolve_workspace_root", lambda: pytest.fail("resolved workspace")
     )
     assert main(["feedback"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "{show,set-options,add-comment,use-reusable-comment,mark-composed}" in output
 
 
@@ -71,7 +71,7 @@ def test_show_without_review_is_ordered_read_only(
     submission = assignment.parent / "submissions" / STUDENT_ID / "submission.json"
     before = assignment.read_bytes(), submission.read_bytes()
     assert main(["feedback", "show", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Review state: not_started" in output
     assert "Configured feedback records: 0" in output
     assert "Missing feedback records: 2" in output
@@ -92,13 +92,13 @@ def test_set_options_replaces_selection_and_rejects_excluded_observation(
         "--include-overall-rationale", "false",
     ]
     assert main([*base, "--observation-ids", "observation_0001"]) == 0
-    assert "Action: created" in capsys.readouterr().out
+    assert "Action: created" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert main(base) == 0
     review = json.loads(path.read_text(encoding="utf-8"))
     assert review["feedback"]["standard_feedback"][0]["included_observation_ids"] == []
     before = path.read_bytes()
     assert main([*base, "--observation-ids", "observation_0003"]) == 1
-    assert "excluded from feedback eligibility" in capsys.readouterr().out
+    assert "excluded from feedback eligibility" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert path.read_bytes() == before
 
 
@@ -117,7 +117,7 @@ def test_add_comment_preserves_exact_inner_text_and_requires_reuse_scope(
     assert review["feedback"]["standard_feedback"][0]["comments"][0]["text"] == "Keep\nTHIS punctuation!"
     before = path.read_bytes()
     assert main([*args, "--purpose", "general"]) == 1
-    assert "require --save-for-reuse" in capsys.readouterr().out
+    assert "require --save-for-reuse" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert path.read_bytes() == before
 
 
@@ -137,7 +137,7 @@ def test_reusable_selection_is_snapshot_and_increments_usage(
         "--comment-id", "claim_next_step", "--include-in-feedback", "true",
     ]
     assert main(args) == 0
-    assert "feedback_comment_0001" in capsys.readouterr().out
+    assert "feedback_comment_0001" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     review = json.loads(review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(encoding="utf-8"))
     assert review["feedback"]["standard_feedback"][0]["comments"][0]["text"] == "Explain why this evidence supports your claim."
     comment_set = json.loads((workspace / "shared" / "focus_standard_comments" / "synthetic_argument_focus_comments.json").read_text(encoding="utf-8"))
@@ -152,7 +152,7 @@ def test_mark_composed_requires_yes_without_argparse_prompt(
     before = path.read_bytes()
     base = ["feedback", "mark-composed", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]
     assert main(base) == 1
-    assert "--yes is required" in capsys.readouterr().out
+    assert "--yes is required" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert path.read_bytes() == before
     assert main([*base, "--yes"]) == 0
     assert json.loads(path.read_text(encoding="utf-8"))["review_state"] == "feedback_composed"

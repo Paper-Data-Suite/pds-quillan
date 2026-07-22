@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
@@ -15,7 +16,6 @@ from quillan.cli_app.output import (
     print_opened_submission_review,
     print_updated_submission_review_state,
 )
-from quillan.evidence_opening import EvidenceOpeningError, open_workspace_evidence
 from quillan.plain_paper_submission import (
     create_plain_paper_submission,
     plan_plain_paper_submission,
@@ -34,7 +34,10 @@ from quillan.submission_status import list_assignment_submission_status
 def handle_create_plain_paper_submission(args: argparse.Namespace) -> int:
     """Validate or create one evidence-less plain-paper submission."""
     if not args.yes and not args.dry_run:
-        print("Error: creating a plain-paper submission requires --yes or --dry-run.")
+        print(
+            "Error: creating a plain-paper submission requires --yes or --dry-run.",
+            file=sys.stderr,
+        )
         return 1
 
     try:
@@ -49,7 +52,7 @@ def handle_create_plain_paper_submission(args: argparse.Namespace) -> int:
             )
     except Exception as error:
         action = "dry run failed" if args.dry_run else "was not created"
-        print(f"Error: plain-paper submission {action}: {error}")
+        print(f"Error: plain-paper submission {action}: {error}", file=sys.stderr)
         return 1
 
     if args.dry_run:
@@ -62,6 +65,7 @@ def handle_create_plain_paper_submission(args: argparse.Namespace) -> int:
             f"{plan.submission_manifest_relative_path}"
         )
         print(f"Would create review record: {plan.review_record_relative_path}")
+        print("No digital pages, scan records, QR records, or evidence will be created.")
         print("No files were written.")
     else:
         print("Created plain-paper submission:")
@@ -84,7 +88,10 @@ def handle_assemble_submissions(args: argparse.Namespace) -> int:
             args.assignment_id,
         )
     except Exception as error:
-        print(f"Error: could not assemble submission manifests: {error}")
+        print(
+            f"Error: could not assemble submission manifests: {error}",
+            file=sys.stderr,
+        )
         return 1
 
     print_assignment_submission_assembly(result, workspace_root)
@@ -99,10 +106,9 @@ def handle_list_submissions(args: argparse.Namespace) -> int:
             workspace_root,
             args.class_id,
             args.assignment_id,
-            expected_pages=args.expected_pages,
         )
     except Exception as error:
-        print(f"Error: could not list submission status: {error}")
+        print(f"Error: could not list submission status: {error}", file=sys.stderr)
         return 1
 
     print_assignment_submission_status(
@@ -113,33 +119,28 @@ def handle_list_submissions(args: argparse.Namespace) -> int:
     return 0
 
 
-def handle_open_evidence(args: argparse.Namespace) -> int:
-    """Open one workspace-relative evidence file with the system viewer."""
-    try:
-        workspace_root = resolve_workspace_root()
-        opened = open_workspace_evidence(workspace_root, args.evidence_path)
-    except (WorkspaceRootError, EvidenceOpeningError) as error:
-        print(f"Error: could not open evidence file: {error}")
-        return 1
-
-    print("Opened evidence file:")
-    print(opened.evidence_relative_path)
-    return 0
-
-
 def handle_open_submission(args: argparse.Namespace) -> int:
     """Open selected evidence for one canonical student submission."""
     try:
         workspace_root = resolve_workspace_root()
-        opened = open_student_submission_for_review(
+        identity = (
             workspace_root,
             args.class_id,
             args.assignment_id,
             args.student_id,
-            page_number=args.page,
         )
+        if args.evidence_id is None:
+            opened = open_student_submission_for_review(
+                *identity, page_number=args.page
+            )
+        else:
+            opened = open_student_submission_for_review(
+                *identity,
+                page_number=args.page,
+                evidence_id=args.evidence_id,
+            )
     except (WorkspaceRootError, SubmissionReviewOpeningError) as error:
-        print(f"Error: could not open student submission: {error}")
+        print(f"Error: could not open student submission: {error}", file=sys.stderr)
         return 1
 
     print_opened_submission_review(opened)
@@ -158,7 +159,10 @@ def handle_set_review_state(args: argparse.Namespace) -> int:
             args.state,
         )
     except (WorkspaceRootError, SubmissionReviewStateError) as error:
-        print(f"Error: could not update lightweight submission state: {error}")
+        print(
+            f"Error: could not update lightweight submission state: {error}",
+            file=sys.stderr,
+        )
         return 1
 
     print_updated_submission_review_state(updated)

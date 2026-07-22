@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from typing import Any
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
@@ -139,5 +140,5 @@ def _yes_no(value: bool) -> str:
 
 
 def _error(error: Exception) -> int:
-    print(f"Error: {error}")
+    print(f"Error: {error}", file=sys.stderr)
     return 1
