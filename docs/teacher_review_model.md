@@ -31,7 +31,7 @@ Source evidence:
 
 ```text
 submission.json
-routed evidence files under classes/<class_id>/assignments/<assignment_id>/scans/
+routed evidence files under classes/<class_id>/modules/quillan/work/<assignment_id>/scans/evidence/
 ```
 
 Teacher review artifact:

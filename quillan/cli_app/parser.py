@@ -71,17 +71,17 @@ from quillan.cli_app.handlers.rosters import (
 from quillan.cli_app.handlers.routing import handle_route_scan
 from quillan.cli_app.handlers.scan_review import (
     handle_list_scan_review,
+    handle_list_post_dispatch_review,
     handle_resolve_scan_review,
+    handle_resolve_post_dispatch_review,
 )
 from quillan.cli_app.handlers.submissions import (
     handle_assemble_submissions,
     handle_create_plain_paper_submission,
     handle_list_submissions,
-    handle_open_evidence,
     handle_open_submission,
     handle_set_review_state,
 )
-from quillan.cli_app.handlers.validation import handle_validate_assignment
 from quillan.cli_app.handlers.assignments import (
     handle_assignment_create,
     handle_assignment_show,
@@ -179,6 +179,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     assignment_parser = subparsers.add_parser(
         "assignment", help="Create, show, and validate canonical assignments."
+    )
+    assignment_parser.set_defaults(
+        handler=partial(_print_parser_help, assignment_parser)
     )
     assignment_subparsers = assignment_parser.add_subparsers(dest="assignment_command")
     assignment_create_parser = assignment_subparsers.add_parser(
@@ -685,17 +688,6 @@ def build_parser() -> argparse.ArgumentParser:
     _add_write_confirmation(roster_remove_parser)
     roster_remove_parser.set_defaults(handler=handle_roster_remove_student)
 
-    validate_assignment_parser = subparsers.add_parser(
-        "validate-assignment",
-        help="Validate an assignment config JSON file.",
-    )
-    validate_assignment_parser.add_argument(
-        "path",
-        type=Path,
-        help="Path to the assignment config JSON file.",
-    )
-    validate_assignment_parser.set_defaults(handler=handle_validate_assignment)
-
     route_scan_parser = subparsers.add_parser(
         "route-scan",
         help="Retain scans once and dispatch PDS2 QR locators through Core.",
@@ -752,13 +744,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--action",
         required=True,
         choices=(
+            "route_selected",
+            "route_corrected",
+            "evidence_filed",
             "rescan_needed",
             "cannot_route",
-            "mixed_assignment",
-            "evidence_filed",
             "dismissed_duplicate",
+            "deferred",
             "other",
+            # Explicitly documented teacher-facing aliases.
             "defer",
+            "mixed_assignment",
         ),
         help="Teacher-selected resolution action.",
     )
@@ -773,7 +769,88 @@ def build_parser() -> argparse.ArgumentParser:
             "it must be an existing ordinary non-link file in the affected work."
         ),
     )
+    resolve_scan_review_parser.add_argument(
+        "--route-id",
+        help="Exact registered PDS2 route ID for a route action.",
+    )
+    resolve_scan_review_parser.add_argument(
+        "--route-class-id",
+        help=(
+            "Canonical class ID for a route action; may default from a "
+            "work-scoped failure."
+        ),
+    )
+    resolve_scan_review_parser.add_argument(
+        "--route-assignment-id",
+        help=(
+            "Canonical assignment ID for a route action; may default from a "
+            "work-scoped failure."
+        ),
+    )
     resolve_scan_review_parser.set_defaults(handler=handle_resolve_scan_review)
+
+    list_post_dispatch_parser = subparsers.add_parser(
+        "list-post-dispatch-review",
+        help="List Quillan-owned post-dispatch review occurrences.",
+        description=(
+            "List immutable post-dispatch occurrences from one selected "
+            "module-qualified Quillan assignment. Resolved occurrences are "
+            "hidden unless --include-resolved is supplied; deferred occurrences "
+            "remain visible."
+        ),
+    )
+    _add_assignment_identity_arguments(list_post_dispatch_parser)
+    list_post_dispatch_parser.add_argument(
+        "--include-resolved",
+        action="store_true",
+        help="Include occurrences whose latest resolution is resolved.",
+    )
+    list_post_dispatch_parser.add_argument(
+        "--limit",
+        type=positive_integer,
+        help="Show at most this many matching occurrences.",
+    )
+    list_post_dispatch_parser.add_argument(
+        "--category",
+        help="Filter by exact Quillan post-dispatch category.",
+    )
+    list_post_dispatch_parser.set_defaults(handler=handle_list_post_dispatch_review)
+
+    resolve_post_dispatch_parser = subparsers.add_parser(
+        "resolve-post-dispatch-review",
+        help="Resolve or defer one Quillan post-dispatch occurrence.",
+        description=(
+            "Append one Quillan-owned resolution beneath the selected "
+            "module-qualified work root. The immutable occurrence and all "
+            "evidence, observations, scans, manifests, and reviews are retained."
+        ),
+    )
+    _add_assignment_identity_arguments(resolve_post_dispatch_parser)
+    resolve_post_dispatch_parser.add_argument("failure_id", help="Occurrence failure ID.")
+    resolve_post_dispatch_parser.add_argument(
+        "--action",
+        required=True,
+        choices=(
+            "rescan_needed",
+            "record_corrected",
+            "cannot_recover",
+            "dismissed_duplicate",
+            "deferred",
+            "other",
+        ),
+        help=(
+            "Explicit teacher-selected post-dispatch resolution action. "
+            "Successful retry resolution is available only from the interactive "
+            "workflow after a current shared-service retry succeeds."
+        ),
+    )
+    resolve_post_dispatch_parser.add_argument(
+        "--message",
+        help="Teacher message; required for action 'other'.",
+    )
+    resolve_post_dispatch_parser.set_defaults(
+        handler=handle_resolve_post_dispatch_review
+    )
 
     decode_scan_parser = subparsers.add_parser(
         "decode-scan",
@@ -790,9 +867,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to a supported image or PDF scan file.",
     )
     decode_scan_parser.add_argument(
-        "--hide-payload",
+        "--show-payload",
         action="store_true",
-        help="Suppress raw QR payload text in diagnostic output.",
+        help="Explicitly include sensitive raw QR payload text in diagnostics.",
     )
     decode_scan_parser.set_defaults(handler=handle_decode_scan)
 
@@ -892,30 +969,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     status_parser.add_argument("class_id", help="Class identifier.")
     status_parser.add_argument("assignment_id", help="Assignment identifier.")
-    status_parser.add_argument(
-        "--expected-pages",
-        type=positive_integer,
-        help=(
-            "Expected page count used only to show missing pages for students "
-            "with routed evidence but no manifest."
-        ),
-    )
     status_parser.set_defaults(handler=handle_list_submissions)
-
-    open_evidence_parser = subparsers.add_parser(
-        "open-evidence",
-        help="Open a local evidence file from the active PDS workspace.",
-        description=(
-            "Open one workspace-relative local evidence file with the system "
-            "default application. The path must remain inside the active PDS "
-            "workspace."
-        ),
-    )
-    open_evidence_parser.add_argument(
-        "evidence_path",
-        help="Workspace-relative path to an existing local evidence file.",
-    )
-    open_evidence_parser.set_defaults(handler=handle_open_evidence)
 
     open_submission_parser = subparsers.add_parser(
         "open-submission",
@@ -931,6 +985,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--page",
         type=positive_integer,
         help="Open only one logical response page number.",
+    )
+    open_submission_parser.add_argument(
+        "--evidence-id",
+        help=(
+            "Open one explicit evidence candidate belonging to this canonical "
+            "submission and, when supplied, --page."
+        ),
     )
     open_submission_parser.set_defaults(handler=handle_open_submission)
 
@@ -976,8 +1037,7 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Generate student-facing feedback from the canonical review.json "
             "for one student submission. PDF export updates feedback export "
-            "metadata after a successful write; Markdown remains available for "
-            "compatibility."
+            "metadata after a successful write."
         ),
     )
     _add_submission_identity_arguments(export_feedback_parser)
@@ -985,7 +1045,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--format",
         choices=("markdown", "pdf", "both"),
         default="markdown",
-        help="Feedback export format. Defaults to markdown for compatibility.",
+        help="Feedback export format (default: markdown).",
     )
     export_feedback_parser.add_argument(
         "--overwrite",

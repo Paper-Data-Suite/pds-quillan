@@ -10,6 +10,8 @@ from typing import Any
 
 import pytest
 
+from tests.menu_screen_recorder import MenuScreenRecorder, assert_focused_child_screen
+
 from quillan.cli import main
 import quillan.review_menu as review_menu
 from quillan.review_record import build_empty_review_record
@@ -45,11 +47,15 @@ def _enter_assignment_review_actions() -> list[str]:
 
 
 def _exit_assignment_review_actions_to_main() -> list[str]:
-    return ["6", "", "3", "6"]
+    return ["b", "", "b", "q"]
 
 
 def _exit_after_assignment_action_to_main() -> list[str]:
-    return ["", "6", "", "3", "6"]
+    return ["", "b", "", "b", "q"]
+
+
+def _exit_after_report_action_to_main() -> list[str]:
+    return ["", "b", "b", "", "b", "q"]
 
 
 def _enter_selected_student(student_choice: str = "1") -> list[str]:
@@ -57,11 +63,11 @@ def _enter_selected_student(student_choice: str = "1") -> list[str]:
 
 
 def _exit_selected_student_to_main() -> list[str]:
-    return ["12"] + _exit_assignment_review_actions_to_main()
+    return ["b"] + _exit_assignment_review_actions_to_main()
 
 
 def _exit_after_selected_student_action_to_main() -> list[str]:
-    return ["", "12"] + _exit_assignment_review_actions_to_main()
+    return ["", "b"] + _exit_assignment_review_actions_to_main()
 
 
 def _write_workspace(root: Path) -> None:
@@ -291,25 +297,41 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
+@pytest.mark.menu_density_workflow("assignment dashboard")
 def test_assignment_review_actions_menu_includes_export_choices(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(
-        monkeypatch,
+    recorder = MenuScreenRecorder(
         _enter_assignment_review_actions()
         + _exit_assignment_review_actions_to_main(),
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Assignment Review Actions",
+        required_text=(
+            f"Class: {CLASS_ID}",
+            f"Assignment: Synthetic Essay ({ASSIGNMENT_ID})",
+        ),
+        forbidden_parent_text="2. Scan Intake / Route Paper Responses",
+        parent_heading="Review Student Work",
+        result_heading="Assembly needed:",
+        unrelated_previous_text="R. Resolve Scan Review Items",
+    )
     assert "Assignment Review Actions" in output
-    assert "2. Assemble routed submissions" in output
-    assert "3. Export assignment-local class summary" in output
-    assert "4. Export assignment-local Focus Standard summary" in output
+    assert "2. View submission status" in output
+    assert "3. Review scan problems" in output
+    assert "4. Export reports" in output
+    assert "5. View full diagnostic dashboard" in output
 
 
+@pytest.mark.menu_density_workflow("full diagnostic dashboard")
 def test_assignment_review_dashboard_hides_unused_duplicate_files(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
@@ -327,7 +349,8 @@ def test_assignment_review_dashboard_hides_unused_duplicate_files(
         / "response_stu_0001_pg_001__dup_001.pdf"
     )
     duplicate.write_bytes(b"duplicate synthetic evidence")
-    _menu_input(monkeypatch, ["6"])
+    recorder = MenuScreenRecorder(["5", "", "b"])
+    recorder.install(monkeypatch)
 
     assert (
         review_menu._launch_assignment_review_actions(
@@ -337,7 +360,20 @@ def test_assignment_review_dashboard_hides_unused_duplicate_files(
     )
 
     output = capsys.readouterr().out
-    assert "Unassembled routed files: 0" in output
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Full Assignment Diagnostic Dashboard",
+        required_text=(
+            f"Class: {CLASS_ID}",
+            f"Assignment: Synthetic Essay ({ASSIGNMENT_ID})",
+        ),
+        forbidden_parent_text="4. Export reports",
+        parent_heading="Assignment Review Actions",
+        result_heading="Full Assignment Diagnostic Dashboard",
+        unrelated_previous_text="1. Select student/submission",
+    )
+    assert "Assembly needed: 0" in output
     assert "Duplicate routed files not used" not in output
     assert duplicate.name not in output
 
@@ -376,6 +412,7 @@ def test_selected_student_review_menu_includes_feedback_export(
     assert "10. Export student feedback" in output
 
 
+@pytest.mark.menu_density_workflow("feedback export")
 def test_menu_export_student_feedback_creates_feedback_file(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
@@ -412,15 +449,26 @@ def test_menu_export_student_feedback_creates_feedback_file(
     )
     review_before = review_path.read_bytes()
 
-    _menu_input(
-        monkeypatch,
+    recorder = MenuScreenRecorder(
         _enter_selected_student()
         + ["10", "2"]
         + _exit_after_selected_student_action_to_main(),
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Export Student Feedback",
+        required_text=(f"Student: Avery Rivera ({STUDENT_ID})", "Exported student feedback:"),
+        forbidden_parent_text="11. Refresh summary",
+        parent_heading="Selected Student Review",
+        result_heading="Exported student feedback:",
+        unrelated_previous_text="Current review summary",
+    )
+    recorder.print_transcript(screens, label="FEEDBACK EXPORT")
     assert "Exported student feedback:" in output
     assert "Overwrote existing: no" in output
     assert feedback_path.is_file()
@@ -478,6 +526,7 @@ def test_menu_export_student_feedback_pdf_creates_pdf_and_updates_metadata(
     )
 
 
+@pytest.mark.menu_density_workflow("assignment-report export")
 def test_menu_export_class_summary_creates_summary_file(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
@@ -497,15 +546,25 @@ def test_menu_export_class_summary_creates_summary_file(
     )
     assert not summary_path.exists()
 
-    _menu_input(
-        monkeypatch,
+    recorder = MenuScreenRecorder(
         _enter_assignment_review_actions()
-        + ["3", ""]
-        + _exit_after_assignment_action_to_main(),
+        + ["4", "1", ""]
+        + _exit_after_report_action_to_main(),
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Export Comprehensive Class Summary",
+        required_text=(f"Class: {CLASS_ID}", "Exported assignment-local class summary:"),
+        forbidden_parent_text="2. Export Focus Standard summary",
+        parent_heading="Assignment Reports",
+        result_heading="Exported assignment-local class summary:",
+        unrelated_previous_text="4. Back",
+    )
     assert "Exported assignment-local class summary:" in output
     assert "Overwrote existing: no" in output
     assert summary_path.is_file()
@@ -533,8 +592,8 @@ def test_menu_export_standards_summary_creates_summary_file(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["4", ""]
-        + _exit_after_assignment_action_to_main(),
+        + ["4", "2", ""]
+        + _exit_after_report_action_to_main(),
     )
 
     assert main(["menu"]) == 0
@@ -709,8 +768,8 @@ def test_menu_export_class_summary_requires_overwrite_when_existing(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["3", ""]
-        + _exit_after_assignment_action_to_main(),
+        + ["4", "1", ""]
+        + _exit_after_report_action_to_main(),
     )
 
     assert main(["menu"]) == 0
@@ -743,8 +802,8 @@ def test_menu_export_class_summary_overwrites_existing_export(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["3", "y"]
-        + _exit_after_assignment_action_to_main(),
+        + ["4", "1", "y"]
+        + _exit_after_report_action_to_main(),
     )
 
     assert main(["menu"]) == 0
@@ -775,8 +834,8 @@ def test_menu_export_class_summary_invalid_overwrite_cancels_without_writing(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["3", "maybe"]
-        + _exit_after_assignment_action_to_main(),
+        + ["4", "1", "maybe"]
+        + _exit_after_report_action_to_main(),
     )
 
     assert main(["menu"]) == 0
@@ -807,8 +866,8 @@ def test_menu_export_standards_summary_overwrites_existing_export(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["4", "y"]
-        + _exit_after_assignment_action_to_main(),
+        + ["4", "2", "y"]
+        + _exit_after_report_action_to_main(),
     )
 
     assert main(["menu"]) == 0
@@ -841,8 +900,8 @@ def test_menu_export_standards_summary_requires_overwrite_when_existing(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["4", ""]
-        + _exit_after_assignment_action_to_main(),
+        + ["4", "2", ""]
+        + _exit_after_report_action_to_main(),
     )
 
     assert main(["menu"]) == 0
@@ -873,8 +932,8 @@ def test_menu_export_standards_summary_invalid_overwrite_cancels_without_writing
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["4", "maybe"]
-        + _exit_after_assignment_action_to_main(),
+        + ["4", "2", "maybe"]
+        + _exit_after_report_action_to_main(),
     )
 
     assert main(["menu"]) == 0

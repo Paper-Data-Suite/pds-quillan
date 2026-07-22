@@ -24,9 +24,9 @@ def test_cli_review_dashboard_text_and_json_are_read_only(
     monkeypatch.setattr(cli_dashboard, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(["review-dashboard", CLASS_ID, ASSIGNMENT_ID]) == 0
-    assert "Assignment Review Dashboard" in capsys.readouterr().out
+    assert "Assignment Review Dashboard" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert main(["review-dashboard", CLASS_ID, ASSIGNMENT_ID, "--format", "json"]) == 0
-    document = json.loads(capsys.readouterr().out)
+    document = json.loads((lambda captured: captured.out + captured.err)(capsys.readouterr()))
 
     assert document["schema_version"] == "1"
     assert document["assignment"]["path"].startswith("classes/")
@@ -42,8 +42,8 @@ def test_cli_review_dashboard_help_and_expected_failure(
     with pytest.raises(SystemExit) as help_exit:
         main(["review-dashboard", "--help"])
     assert help_exit.value.code == 0
-    assert "--format" in capsys.readouterr().out
+    assert "--format" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     monkeypatch.setattr(cli_dashboard, "resolve_workspace_root", lambda: tmp_path)
     assert main(["review-dashboard", CLASS_ID, ASSIGNMENT_ID]) == 1
-    assert "Error: could not build" in capsys.readouterr().out
+    assert "Error: could not build" in (lambda captured: captured.out + captured.err)(capsys.readouterr())

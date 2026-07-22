@@ -233,6 +233,7 @@ def test_persisted_occurrence_rejects_nonexact_relative_paths(
             created.occurrence,
             created.path,
             relative_path,
+            created.original_bytes,
         )
 
 
@@ -276,6 +277,7 @@ def test_persisted_occurrence_rejects_alternative_absolute_destinations(
             created.occurrence,
             alternative,
             alternative.relative_to(tmp_path).as_posix(),
+            created.original_bytes,
         )
 
 

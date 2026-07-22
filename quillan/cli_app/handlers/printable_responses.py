@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
 from pds_core.rosters import RosterError
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
@@ -51,5 +52,5 @@ def handle_printable_responses_generate(args: argparse.Namespace) -> int:
 
 
 def _error(error: Exception) -> int:
-    print(f"Error: {error}")
+    print(f"Error: {error}", file=sys.stderr)
     return 1

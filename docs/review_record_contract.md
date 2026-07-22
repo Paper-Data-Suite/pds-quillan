@@ -6,7 +6,7 @@ The Quillan submission review record stores teacher-entered review data for
 one student submission. Its canonical workspace-relative path is:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/review.json
 ```
 
 `review.json` is separate from the adjacent `submission.json` evidence
@@ -70,19 +70,19 @@ new standards-based review work.
 The canonical active review record path remains:
 
 ```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
+<PDS workspace root>/classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/review.json
 ```
 
 The adjacent evidence manifest remains:
 
 ```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
+<PDS workspace root>/classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/submission.json
 ```
 
 The associated assignment record normally remains:
 
 ```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/assignment.json
+<PDS workspace root>/classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
 ```
 
 The review record must reference the submission manifest and assignment record
@@ -217,13 +217,13 @@ For a review record with identity `<class_id>`, `<assignment_id>`, and
 `<student_id>`, the canonical submission manifest reference is:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/submission.json
 ```
 
 The canonical assignment reference is:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/assignment.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
 ```
 
 Review-local identifiers such as `requirement_check_id`, `unit_id`,
@@ -1422,8 +1422,8 @@ Student-facing feedback files are derived artifacts. In the v0.8.6 target
 model, expected derived feedback paths include:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
 Assignment-level reports are also derived artifacts. They do not replace

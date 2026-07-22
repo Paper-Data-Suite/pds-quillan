@@ -40,6 +40,10 @@ quillan = "quillan.pds_module:get_module_profile"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "menu_density_workflow(label): real recorder-backed menu-density acceptance workflow",
+    "menu_density_contract: collection and execution contract for density workflows",
+]
 
 [tool.ruff]
 line-length = 88

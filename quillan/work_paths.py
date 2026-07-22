@@ -370,6 +370,30 @@ def post_dispatch_review_path(
     return post_dispatch_review_dir(workspace_root, work_ref) / f"{validated_id}.json"
 
 
+def post_dispatch_resolution_dir(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+) -> Path:
+    """Return the Quillan-owned post-dispatch resolution directory."""
+    return safe_module_work_descendant(
+        workspace_root,
+        _require_quillan_work_ref(work_ref),
+        Path("scans") / "review" / "post_dispatch" / "resolutions",
+    )
+
+
+def post_dispatch_resolution_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    resolution_id: str,
+) -> Path:
+    """Return one canonical immutable post-dispatch resolution path."""
+    validated_id = validate_identifier(resolution_id, "resolution_id")
+    return post_dispatch_resolution_dir(
+        workspace_root, work_ref
+    ) / f"{validated_id}.json"
+
+
 def relative_assignment_path(class_id: str, assignment_id: str) -> str:
     """Return the canonical workspace-relative assignment record path."""
     return quillan_work_paths(Path(), class_id, assignment_id).assignment_path.as_posix()
@@ -621,6 +645,8 @@ __all__ = [
     "preflight_work_directory_destination",
     "post_dispatch_review_dir",
     "post_dispatch_review_path",
+    "post_dispatch_resolution_dir",
+    "post_dispatch_resolution_path",
     "quillan_work_collection_dir",
     "quillan_work_paths",
     "quillan_work_ref",

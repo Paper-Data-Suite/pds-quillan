@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
@@ -32,7 +33,10 @@ def handle_review_dashboard(args: argparse.Namespace) -> int:
             else format_assignment_review_dashboard(dashboard)
         )
     except (WorkspaceRootError, ReviewDashboardError, OSError, TypeError) as error:
-        print(f"Error: could not build assignment review dashboard: {error}")
+        print(
+            f"Error: could not build assignment review dashboard: {error}",
+            file=sys.stderr,
+        )
         return 1
     print(output)
     return 0

@@ -124,7 +124,7 @@ def test_bare_requirements_prints_help_without_resolving_workspace(
         lambda: pytest.fail("bare namespace resolved the workspace"),
     )
     assert main(["requirements"]) == 0
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "{list,set-check,set-outcome}" in output
 
 
@@ -142,7 +142,7 @@ def test_list_is_read_only_and_preserves_requirement_order(
 
     assert main(["requirements", "list", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     keys = [
         "paragraphs_min",
         "paragraphs_max",
@@ -180,7 +180,7 @@ def test_set_check_uses_assignment_values_and_clears_omitted_note(
     assert check["met"] is True
     assert "teacher_note" not in check
     assert len(review["minimum_requirement_checks"]) == 1
-    assert "Action: updated" in capsys.readouterr().out
+    assert "Action: updated" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_unknown_key_and_missing_manifest_fail_without_writing(
@@ -191,12 +191,12 @@ def test_unknown_key_and_missing_manifest_fail_without_writing(
         "--requirement-key", "arbitrary", "--met", "true",
     ]
     assert main(command) == 1
-    assert "Valid keys:" in capsys.readouterr().out
+    assert "Valid keys:" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert not review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).exists()
 
     submission_manifest_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).unlink()
     assert main(command) == 1
-    assert "assemble" in capsys.readouterr().out.lower()
+    assert "assemble" in (lambda captured: captured.out + captured.err)(capsys.readouterr()).lower()
     assert not review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).exists()
 
 
@@ -221,7 +221,7 @@ def test_outcome_eligibility_and_return_safeguards(
         "teacher_note": "Revise and resubmit.",
         "updated_at": review["minimum_requirement_outcome"]["updated_at"],
     }
-    assert "Full standards review was not completed." in capsys.readouterr().out
+    assert "Full standards review was not completed." in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_met_succeeds_only_after_every_configured_check_is_met(workspace: Path) -> None:
@@ -304,7 +304,7 @@ def test_no_configured_requirements_list_succeeds_but_set_fails(
     assignment["basic_requirements"] = {}
     path.write_text(json.dumps(assignment), encoding="utf-8")
     assert main(["requirements", "list", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
-    assert "Minimum requirements: none configured" in capsys.readouterr().out
+    assert "Minimum requirements: none configured" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert main(
         ["requirements", "set-check", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID,
          "--requirement-key", "paragraphs_min", "--met", "true"]

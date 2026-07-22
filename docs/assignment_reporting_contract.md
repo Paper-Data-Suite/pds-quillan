@@ -75,7 +75,7 @@ rating each student received on each assignment Focus Standard without
 including internal record paths or routine workflow diagnostics.
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/student_performance_summary.csv
 ```
 
 It contains student identity, review status, minimum-requirement status,
@@ -92,8 +92,8 @@ requirement status, feedback export status, and detailed Focus Standard fields.
 Suggested paths:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/class_summary.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.pdf
 ```
 
 ### Standards Summary
@@ -103,8 +103,8 @@ A teacher-facing summary of Focus Standard performance for one class and one ass
 Suggested paths:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.pdf
 ```
 
 ### Assignment Results Manifest
@@ -114,7 +114,7 @@ A machine-readable, assignment-local handoff artifact that records what Quillan 
 Suggested path:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/exports/assignment_results_manifest.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_results_manifest.json
 ```
 
 The assignment results manifest is forward-looking. It should make future Paper Data Suite reporting integration easier without making Quillan responsible for cross-assignment or cross-module reporting.
@@ -208,7 +208,7 @@ Rules:
 ### Assignment Record
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/assignment.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
 ```
 
 Reports use assignment data for:
@@ -235,7 +235,7 @@ as the default order for standards columns, standards rows, and manifest standar
 ### Submission Manifests
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/submission.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/submission.json
 ```
 
 Reports may use submission manifests for:
@@ -255,7 +255,7 @@ Reports must not expose detailed routed evidence paths or retained-source proven
 ### Review Records
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/review.json
 ```
 
 Target reports use schema version `2` review records.
@@ -286,8 +286,8 @@ Reports must not include:
 Reports may check for student feedback exports at:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
 Reports may use feedback export metadata stored in:
@@ -517,8 +517,8 @@ It is not:
 ### Suggested Paths
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/class_summary.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.pdf
 ```
 
 ### Row Population
@@ -669,8 +669,8 @@ It is not:
 ### Suggested Paths
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.pdf
 ```
 
 ### Row Population
@@ -883,7 +883,7 @@ It is not:
 ### Suggested Path
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/exports/assignment_results_manifest.json
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_results_manifest.json
 ```
 
 ### Top-Level Shape
@@ -897,7 +897,7 @@ Target top-level shape:
   "record_type": "assignment_results_manifest",
   "class_id": "english_10_simulation",
   "assignment_id": "coming-of-age_literary_analysis",
-  "assignment_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/assignment.json",
+  "assignment_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/assignment.json",
   "standards_profile_id": "english10_2023_njsls_ela",
   "focus_standard_ids": [
     "njsls-ela:RL.CR.9-10.1",
@@ -947,7 +947,7 @@ Example:
 
 ```json
 {
-  "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/exports/class_summary.csv",
+  "path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/exports/class_summary.csv",
   "format": "csv",
   "generated_at": "2026-07-02T00:00:00+00:00",
   "stale": false,
@@ -984,10 +984,10 @@ Target shape:
   "student_id": "10001",
   "student_display_name": "Sample Student",
   "roster_status": "rostered",
-  "submission_manifest_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/submission.json",
+  "submission_manifest_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/submission.json",
   "submission_state": "reviewed",
   "submission_valid": true,
-  "review_record_path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/review.json",
+  "review_record_path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/review.json",
   "review_state": "ready_for_export",
   "review_valid": true,
   "minimum_requirement_status": "met",
@@ -1002,12 +1002,12 @@ Target shape:
   ],
   "feedback_exports": {
     "feedback_pdf": {
-      "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/exports/feedback.pdf",
+      "path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/exports/feedback.pdf",
       "status": "present",
       "stale": false
     },
     "feedback_markdown": {
-      "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/exports/feedback.md",
+      "path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/exports/feedback.md",
       "status": "present",
       "stale": false
     }
@@ -1268,7 +1268,7 @@ Example:
 ```json
 {
   "feedback_pdf": {
-    "path": "classes/english_10_simulation/assignments/coming-of-age_literary_analysis/submissions/10001/exports/feedback.pdf",
+    "path": "classes/english_10_simulation/modules/quillan/work/coming-of-age_literary_analysis/submissions/10001/exports/feedback.pdf",
     "status": "present",
     "stale": false
   }
@@ -1310,7 +1310,7 @@ Quillan should not implement those broader reports.
 
 Quillan's responsibility ends at assignment-local summaries and assignment-local handoff metadata.
 
-## Relationship to Legacy Runtime
+## Historical Relationship to Legacy Runtime (superseded)
 
 Legacy runtime exports produced:
 

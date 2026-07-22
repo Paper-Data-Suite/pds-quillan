@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-import os
-import sys
 from typing import cast
 
 from pds_core.classes import ClassFolder, list_class_folders
@@ -22,25 +20,11 @@ from quillan.generated_output_opening import (
 from quillan.printable_response import PRINTABLE_RESPONSE_FILENAME
 from quillan.printable_response_generation import PrintableResponseGenerationError
 from quillan.storage import assignment_templates_dir
-
-
-def _print_menu_header(title: str) -> None:
-    print("\033[32mQuillan\033[0m")
-    print(title)
-    print()
-
-
-def _clear_screen() -> None:
-    try:
-        interactive = sys.stdin.isatty() and sys.stdout.isatty()
-    except (AttributeError, OSError):
-        interactive = False
-    if interactive:
-        os.system("cls" if os.name == "nt" else "clear")
-
-
-def _pause_for_user() -> None:
-    input("Press Enter to continue...")
+from quillan.menu import (
+    clear_screen as _clear_screen,
+    pause_for_user as _pause_for_user,
+    print_menu_header as _print_menu_header,
+)
 
 
 @dataclass(frozen=True)
@@ -119,23 +103,32 @@ def _workspace_root() -> Path | None:
 
 def _prompt_open_generated_packet(
     workspace_root: Path,
-    generated_path: Path,
+    generated: object,
 ) -> None:
+    from quillan.printable_response_generation import GeneratedPrintableResponsePacket
     from quillan.menu_navigation import (
         NavigationChoice,
         parse_navigation_choice,
     )
 
+    if not isinstance(generated, GeneratedPrintableResponsePacket):
+        raise TypeError("generated must be a GeneratedPrintableResponsePacket.")
+    generated_path = generated.output_path
+    _clear_screen()
+    _print_menu_header("Printable Response Result")
+    print("Packet replaced." if generated.replaced_existing else "Packet created.")
+    print(f"Students: {generated.student_count}")
+    print(f"Pages per student: {generated.pages_per_student}")
+    print(f"Total physical pages: {generated.physical_page_count}")
+    print(f"Packet: {generated.output_relative_path}")
     print()
-    print("What would you like to do next?")
-    print("1. Open generated packet")
+    print("1. Open packet")
     print("2. Open containing folder")
-    print("3. Return to Printable Response Pages")
+    print("B. Back")
     selection = input("Select an option: ").strip()
     navigation = parse_navigation_choice(selection)
     if (
         selection == ""
-        or selection == "3"
         or navigation is NavigationChoice.BACK
     ):
         return
@@ -144,24 +137,32 @@ def _prompt_open_generated_packet(
         try:
             opened = open_generated_output_file(workspace_root, generated_path)
         except GeneratedOutputOpeningError as error:
+            _clear_screen()
+            _print_menu_header("Open Printable Response Packet")
             print(f"Error: could not open generated packet: {error}")
             print("Generated packet remains saved at:")
-            print(generated_path)
+            print(generated.output_relative_path)
             return
+        _clear_screen()
+        _print_menu_header("Printable Response Packet Opened")
         print("Opened generated packet:")
-        print(opened.path)
+        print(opened.relative_path)
         return
 
     if selection == "2":
         try:
             opened = open_generated_output_folder(workspace_root, generated_path)
         except GeneratedOutputOpeningError as error:
+            _clear_screen()
+            _print_menu_header("Open Printable Response Folder")
             print(f"Error: could not open containing folder: {error}")
             print("Generated packet remains saved at:")
-            print(generated_path)
+            print(generated.output_relative_path)
             return
+        _clear_screen()
+        _print_menu_header("Printable Response Folder Opened")
         print("Opened containing folder:")
-        print(opened.path)
+        print(opened.relative_path)
         return
 
     print("Returning to Printable Response Pages.")
@@ -262,17 +263,27 @@ def prompt_generate_class_packet() -> int:
         plan_printable_response_packet,
     )
 
-    _print_menu_header("Generate Printable Response Class Packet")
+    _clear_screen()
+    _print_menu_header("Select Class for Printable Responses")
     workspace_root = _workspace_root()
     if workspace_root is None:
         return 1
     class_folder = _prompt_class_selection(workspace_root)
     if class_folder is None:
         return 1
+    _clear_screen()
+    _print_menu_header("Select Assignment for Printable Responses")
+    print(f"Class: {class_folder.class_id}")
+    print()
     assignment = _prompt_assignment_selection(workspace_root, class_folder.class_id)
     if assignment is None:
         return 1
 
+    _clear_screen()
+    _print_menu_header("Choose Pages per Student")
+    print(f"Class: {class_folder.class_id}")
+    print(f"Assignment: {assignment.assignment_id}")
+    print()
     try:
         pages_per_student = parse_pages_per_student(
             input("Pages per student [1]: ")
@@ -298,9 +309,18 @@ def prompt_generate_class_packet() -> int:
         print(f"Error: {error}")
         return 1
 
+    _clear_screen()
+    _print_menu_header("Printable Response Generation Plan")
+    print(f"Class: {plan.class_id}")
+    print(f"Assignment: {plan.assignment_id}")
+    print(f"Students: {plan.student_count}")
+    print(f"Pages per student: {plan.pages_per_student}")
+    print(f"Total physical pages: {plan.total_page_count}")
+    print(f"Packet: {plan.output_relative_path}")
+    print()
     overwrite = False
     if plan.target_exists:
-        print(f"Printable response packet already exists:\n{plan.output_path}")
+        print("A printable response packet already exists.")
         confirmation = input(
             "Type OVERWRITE to replace the existing printable response packet: "
         ).strip()
@@ -309,7 +329,6 @@ def prompt_generate_class_packet() -> int:
             return 1
         overwrite = True
 
-    print("Output mode: one class packet PDF")
     try:
         generated = generate_printable_response_packet(
             plan,
@@ -325,10 +344,10 @@ def prompt_generate_class_packet() -> int:
         print(f"Error: {error}")
         return 1
 
+    _clear_screen()
     print_generated_printable_response_packet(generated)
     if generated.installed:
-        print(f"Saved at: {generated.output_path}")
-        _prompt_open_generated_packet(workspace_root, generated.output_path)
+        _prompt_open_generated_packet(workspace_root, generated)
     return 0 if generated.success else 1
 
 
@@ -352,7 +371,7 @@ def launch_printable_response_menu() -> int:
             navigation = parse_navigation_choice(choice)
             print()
 
-            if choice == "2" or navigation is NavigationChoice.BACK:
+            if navigation is NavigationChoice.BACK:
                 return 0
             if choice == "1":
                 _clear_screen()

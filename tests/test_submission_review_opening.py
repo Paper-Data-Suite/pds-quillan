@@ -552,7 +552,9 @@ def test_cli_failure_returns_one(
     assert (
         main(["open-submission", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 1
     )
-    assert capsys.readouterr().out == (
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == (
         "Error: could not open student submission: manifest is unavailable\n"
     )
 
@@ -569,4 +571,6 @@ def test_cli_missing_manifest_returns_one(
     assert (
         main(["open-submission", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 1
     )
-    assert "This submission is not review-ready yet" in capsys.readouterr().out
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "This submission is not review-ready yet" in captured.err

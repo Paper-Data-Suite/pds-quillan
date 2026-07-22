@@ -20,6 +20,11 @@ from quillan.record_context import (
     mutable_json_copy,
     student_record_paths,
 )
+from quillan.printable_response_persistence import (
+    PrintableResponsePersistenceError,
+    load_printable_response_record_set,
+)
+from quillan.plain_paper_submission import is_plain_paper_submission
 from quillan.response_page_observations import QuillanResponsePageObservation
 from quillan.work_paths import _is_link_like, quillan_work_ref
 
@@ -49,6 +54,9 @@ class StudentSubmissionStatus:
     needs_rescan_pages: tuple[int, ...]
     excluded_pages: tuple[int, ...]
     unselected_present_pages: tuple[int, ...]
+    issuance_ids: tuple[str, ...] = ()
+    conflicts: tuple[str, ...] = ()
+    plain_paper: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,14 +78,10 @@ def list_assignment_submission_status(
     workspace_root: str | Path,
     class_id: str,
     assignment_id: str,
-    *,
-    expected_pages: int | None = None,
 ) -> AssignmentSubmissionStatus:
     """Return read-only submission/evidence status for one assignment."""
     validate_identifier(class_id, "class_id")
     validate_identifier(assignment_id, "assignment_id")
-    _validate_expected_pages(expected_pages)
-
     work_ref = quillan_work_ref(class_id, assignment_id)
     assignment_context = load_quillan_assignment_context(workspace_root, work_ref)
     root = assignment_context.paths.workspace_root
@@ -122,9 +126,10 @@ def list_assignment_submission_status(
     ]
     statuses.extend(
         _summarize_routed_only_student(
+            root,
+            work_ref,
             student_id,
             discovery.evidence_by_student[student_id],
-            expected_pages,
         )
         for student_id in students_without_manifests
     )
@@ -233,34 +238,122 @@ def _summarize_manifest(
         manifest_path=manifest_path,
         submission_state=manifest["submission_state"],
         pages=pages,
+        plain_paper=is_plain_paper_submission(manifest),
     )
 
 
 def _summarize_routed_only_student(
+    root: Path,
+    work_ref: object,
     student_id: str,
     evidence_items: tuple[QuillanResponsePageObservation, ...],
-    expected_pages: int | None,
 ) -> StudentSubmissionStatus:
-    routed_page_numbers = {item.logical_page for item in evidence_items}
-    missing_pages = (
-        tuple(
-            page_number
-            for page_number in range(1, expected_pages + 1)
-            if page_number not in routed_page_numbers
+    issuance_ids = tuple(sorted({item.issuance_id for item in evidence_items}))
+    if len(issuance_ids) != 1:
+        return StudentSubmissionStatus(
+            student_id=student_id,
+            manifest_path=None,
+            submission_state=None,
+            pages=(),
+            missing_pages=(),
+            duplicate_pages=(),
+            needs_rescan_pages=(),
+            excluded_pages=(),
+            unselected_present_pages=(),
+            issuance_ids=issuance_ids,
+            conflicts=("mixed_issuance",),
         )
-        if expected_pages is not None
-        else ()
+    try:
+        record_set = load_printable_response_record_set(
+            root, work_ref, issuance_ids[0]
+        )
+    except PrintableResponsePersistenceError:
+        return StudentSubmissionStatus(
+            student_id=student_id,
+            manifest_path=None,
+            submission_state=None,
+            pages=(),
+            missing_pages=(),
+            duplicate_pages=(),
+            needs_rescan_pages=(),
+            excluded_pages=(),
+            unselected_present_pages=(),
+            issuance_ids=issuance_ids,
+            conflicts=("issuance_invalid",),
+        )
+    if record_set.issuance.student_id != student_id:
+        return StudentSubmissionStatus(
+            student_id=student_id,
+            manifest_path=None,
+            submission_state=None,
+            pages=(),
+            missing_pages=(),
+            duplicate_pages=(),
+            needs_rescan_pages=(),
+            excluded_pages=(),
+            unselected_present_pages=(),
+            issuance_ids=issuance_ids,
+            conflicts=("issuance_student_conflict",),
+        )
+    expected_by_id = {page.page_id: page for page in record_set.pages}
+    unexpected = tuple(
+        item.observation_id
+        for item in evidence_items
+        if item.page_id not in expected_by_id
+        or expected_by_id[item.page_id].logical_page != item.logical_page
+    )
+    if unexpected:
+        return StudentSubmissionStatus(
+            student_id=student_id,
+            manifest_path=None,
+            submission_state=None,
+            pages=(),
+            missing_pages=(),
+            duplicate_pages=(),
+            needs_rescan_pages=(),
+            excluded_pages=(),
+            unselected_present_pages=(),
+            issuance_ids=issuance_ids,
+            conflicts=("unexpected_page",),
+        )
+    pages = tuple(
+        _routed_only_page(page.logical_page, page.page_id, evidence_items)
+        for page in record_set.pages
+    )
+    missing_pages = tuple(
+        page.page_number for page in pages if page.page_state == "missing"
+    )
+    duplicate_pages = tuple(
+        page.page_number for page in pages if page.page_state == "duplicate"
     )
     return StudentSubmissionStatus(
         student_id=student_id,
         manifest_path=None,
         submission_state=None,
-        pages=(),
+        pages=pages,
         missing_pages=missing_pages,
-        duplicate_pages=(),
+        duplicate_pages=duplicate_pages,
         needs_rescan_pages=(),
         excluded_pages=(),
         unselected_present_pages=(),
+        issuance_ids=issuance_ids,
+    )
+
+
+def _routed_only_page(
+    logical_page: int,
+    page_id: str,
+    evidence_items: tuple[QuillanResponsePageObservation, ...],
+) -> PageStatusSummary:
+    matches = tuple(item for item in evidence_items if item.page_id == page_id)
+    state = "missing" if not matches else "duplicate" if len(matches) > 1 else "present"
+    return PageStatusSummary(
+        page_number=logical_page,
+        page_state=state,
+        selected_evidence_id=None,
+        evidence_count=len(matches),
+        evidence_roles=tuple("candidate" for _ in matches),
+        evidence_states=tuple("active" for _ in matches),
     )
 
 
@@ -270,6 +363,7 @@ def _student_status(
     manifest_path: Path,
     submission_state: str,
     pages: tuple[PageStatusSummary, ...],
+    plain_paper: bool = False,
 ) -> StudentSubmissionStatus:
     def pages_with_state(state: str) -> tuple[int, ...]:
         return tuple(
@@ -291,19 +385,8 @@ def _student_status(
             if page.page_state == "present"
             and page.selected_evidence_id is None
         ),
+        plain_paper=plain_paper,
     )
-
-
-def _validate_expected_pages(expected_pages: int | None) -> None:
-    if (
-        expected_pages is not None
-        and (
-            isinstance(expected_pages, bool)
-            or not isinstance(expected_pages, int)
-            or expected_pages < 1
-        )
-    ):
-        raise ValueError("expected_pages must be a positive integer.")
 
 
 def _resolved_evidence_path(root: Path, value: str | Path) -> Path:

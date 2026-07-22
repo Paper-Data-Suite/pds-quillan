@@ -204,7 +204,7 @@ words or paragraphs, detect required elements, run OCR or AI, infer outcomes,
 grade, score, create observations or ratings, or compose feedback. The list
 command writes nothing. The two set commands may create or replace only the
 canonical
-`classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json`,
+`classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/review.json`,
 through the validated atomic review-record writer. They do not modify the
 assignment, submission manifest, roster, evidence, scans, exports, reports, or
 other suite data.
@@ -250,20 +250,20 @@ quillan roster add-student <class_id> --student-id <student_id> --last-name <nam
 quillan roster update-student <class_id> <student_id> [--last-name <name>] [--first-name <name>] [--period <period>] [--field <column=value> ...] (--yes | --dry-run)
 quillan roster remove-student <class_id> <student_id> (--yes | --dry-run)
 quillan printable-responses generate <class_id> <assignment_id> [--pages-per-student N] [--overwrite] (--yes | --dry-run)
-quillan validate-assignment <path>
 quillan route-scan <source-image-or-pdf-or-folder>
 quillan list-scan-review [--include-resolved] [--limit N] [--class-id <class_id>] [--assignment-id <assignment_id>] [--failure-category <category>]
-quillan resolve-scan-review <failure_id> --action <action> [--message "..."] [--evidence-path <workspace-relative-path>]
-quillan decode-scan <source-file> [--hide-payload]
+quillan resolve-scan-review <failure_id> --action <action> [--message "..."] [--evidence-path <workspace-relative-path>] [--route-id <route_id> --route-class-id <class_id> --route-assignment-id <assignment_id>]
+quillan list-post-dispatch-review <class_id> <assignment_id> [--include-resolved] [--limit N] [--category <category>]
+quillan resolve-post-dispatch-review <class_id> <assignment_id> <failure_id> --action <action> [--message "..."]
+quillan decode-scan <source-file> [--show-payload]
 quillan assemble-submissions <class_id> <assignment_id>
 quillan create-plain-paper-submission <class_id> <assignment_id> <student_id> [--yes | --dry-run]
-quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
+quillan list-submissions <class_id> <assignment_id>
 quillan pages list <class_id> <assignment_id> <student_id>
 quillan pages exclude <class_id> <assignment_id> <student_id> --page N --yes
 quillan pages restore <class_id> <assignment_id> <student_id> --page N --yes
 quillan pages mark-needs-rescan <class_id> <assignment_id> <student_id> --page N --yes
-quillan open-evidence <workspace-relative-evidence-path>
-quillan open-submission <class_id> <assignment_id> <student_id> [--page N]
+quillan open-submission <class_id> <assignment_id> <student_id> [--page N] [--evidence-id <evidence_id>]
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan export-feedback <class_id> <assignment_id> <student_id> [--format markdown|pdf|both] [--overwrite]
@@ -615,7 +615,7 @@ or fill applicability, evidence presence, ratings, rationales, or feedback
 choices.
 
 List writes nothing. Set and mark-complete may modify only
-`classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json`
+`classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/review.json`
 through the shared validated atomic writer. Completion changes only
 `review_state` and `updated_at`; it preserves units, observations, minimum-
 requirement data, overall ratings, feedback and comments, private notes, export
@@ -674,7 +674,7 @@ Observation readiness is not a completion gate. Both write commands reject a
 changes.
 
 List writes nothing. Set and mark-complete may modify only canonical
-`classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/review.json`
+`classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/review.json`
 through the validated atomic writer. They do not modify assignments,
 submission manifests, rosters, evidence, scans, observations, feedback
 composition, exports, reports, Core, or ScoreForm. They do not open evidence,
@@ -786,33 +786,17 @@ older records missing required schema-version-2 fields and do not normalize or
 rewrite them.
 
 These commands write or inspect only
-`classes/<class_id>/assignments/<assignment_id>/assignment.json`; they do not
+`classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json`; they do not
 create submission, review, evidence, scan, export, Core, or ScoreForm data.
 
-### `validate-assignment`
+### Retired raw-path interfaces
 
-```powershell
-quillan validate-assignment <path>
-```
-
-Loads a UTF-8 JSON assignment configuration and applies Quillan's current
-structural assignment validation rules. Cross-file validation against the
-shared `pds-core` workspace standards library is available through Quillan's
-assignment standards-selection helper, but this CLI command does not currently
-load the workspace standards library. The structural rules require
-timezone-aware ISO 8601 `created_at` and `updated_at` strings and an object-valued
-`module_details` field. Missing legacy fields are rejected without changing the
-input file.
-
-On success, it writes this form to standard output:
-
-```text
-Valid assignment config: <assignment_id>
-```
-
-It is read-only. It does not create an assignment directory, copy the
-configuration into the workspace, or validate referenced files as a complete
-cross-file workflow.
+`validate-assignment <path>` and `open-evidence <path>` are not public
+commands. Assignment inspection and validation require the canonical
+`<class_id> <assignment_id>` identity. Evidence opening requires the canonical
+`<class_id> <assignment_id> <student_id>` identity and may be narrowed by
+logical page and evidence ID. Argparse rejects the retired command names with
+exit status 2.
 
 ### `workspace show`
 
@@ -910,6 +894,29 @@ Menu workflows should orchestrate reusable application functions. They should
 not become the only route to core operations, and they should not duplicate
 business rules that already live in CLI handlers or domain modules.
 
+**The menu should look and feel like a modern application menu, not a dump of
+CLI commands or a legacy operator console.** Menus therefore use staged list,
+detail, action, confirmation, and result screens with compact labels and a
+small number of context-relevant choices.
+
+**Screen clearing and redrawing after a teacher selects an option is the
+default. Information remains visible only when it is essential or directly
+useful for the teacher's current action.** This is a mandatory behavioral
+contract, not a visual suggestion:
+
+* parent menus are compact;
+* selection lists are compact;
+* detail appears only after selection;
+* action screens are focused on the selected identity and current task;
+* confirmation screens are concise;
+* result workflows clear before rendering the result;
+* result screens are concise, then pause for acknowledgment;
+* returning redraws the parent screen without accumulated child output;
+* direct non-interactive CLI commands are exempt from terminal screen clearing;
+  and
+* context is retained intentionally only when it is needed for the teacher's
+  current decision.
+
 #### Assignment Management
 
 Assignment Management provides:
@@ -925,7 +932,7 @@ Creation selects one class with an existing canonical roster, prompts for the
 fields in the active schema version `2` assignment config contract, and writes:
 
 ```text
-<workspace_root>/classes/<class_id>/assignments/<assignment_id>/assignment.json
+<workspace_root>/classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
 ```
 
 Assignment creation prompts for:
@@ -950,8 +957,9 @@ from that profile and stored as durable pds-core `standard_id` values.
 
 An existing config is replaced only after exact `OVERWRITE` confirmation.
 
-View/validate accepts an explicit JSON path, uses the existing assignment
-loader and validator, prints a concise summary, and does not rewrite the file.
+View/validate selects a canonical class and assignment identity, uses the
+existing assignment loader and validator, prints a concise summary, and does
+not rewrite the file. It does not accept an arbitrary assignment JSON path.
 
 These workflows do not add assignment editing, deletion, import, scoring,
 feedback, generic tagging, reports, scan routing, OCR, or AI.
@@ -1067,7 +1075,8 @@ The first Review Student Work menu provides:
 ```text
 1. Assignment Review Actions
 2. Scan Intake / Route Paper Responses
-3. Back
+R. Resolve Scan Review Items
+B. Back
 ```
 
 The workflow lists available classes from the active workspace, lists
@@ -1381,8 +1390,12 @@ The command does not move, delete, or archive source files after folder
 intake. The Scan Intake / Route Paper Responses menu invokes this same
 QR-aware intake path.
 
-Scan intake writes Core-v2 failure occurrence records but no successful page
-observations, routed evidence, submission manifests, or submissions. See
+The direct command and menu both return the same typed full-workflow result.
+Successful Quillan dispatches persist immutable observations and assemble
+issuance-authoritative submissions. Pre-dispatch failures remain Core-owned;
+post-dispatch persistence, assembly, and review-preservation failures are
+preserved as immutable Quillan occurrences beneath the exact module-qualified
+work root. No caller callback or second assembly pass is used. See
 [`pds2_scan_intake.md`](pds2_scan_intake.md).
 
 ## Scan Review Resolution
@@ -1395,23 +1408,49 @@ unreadable metadata is skipped with a warning count instead of making the
 entire listing fail.
 
 `quillan resolve-scan-review <failure_id> --action <action>` accepts
-`rescan_needed`, `cannot_route`, `mixed_assignment`, `evidence_filed`,
-`dismissed_duplicate`, `other`, or `defer`. Common actions have safe default
-messages; `other` requires `--message`. `--evidence-path` is accepted only with
-`evidence_filed` and must be workspace-relative.
+`route_selected`, `route_corrected`, `rescan_needed`, `cannot_route`,
+`evidence_filed`, `dismissed_duplicate`, `deferred`, or `other` (with the
+documented `defer` and `mixed_assignment` aliases retained by Core). Common
+actions have safe default messages; `other` requires `--message`.
+`--evidence-path` is accepted only with `evidence_filed` and must be
+workspace-relative. Route actions require an exact current registered route
+identity through `--route-id`, `--route-class-id`, and
+`--route-assignment-id`; the service reloads and validates that route before
+writing the resolution.
 
 The command writes a new exclusive-create Core resolution record under
 `scans/review/resolutions/`. It does not change the referenced failure record,
 retained scan, submission manifest, submission review state, or teacher review
 record. The interactive **Review Student Work > Resolve Scan Review Items**
-path provides the same decisions with compact list, detail, action, note, and
-result screens.
+path discovers assignment work with active Quillan post-dispatch occurrences.
+After compact work selection it enters the sole active source directly or,
+when both sources exist, offers Core routing problems, Quillan post-dispatch
+problems, and all active problems. Compact list, detail, contextual action,
+confirmation, and result screens follow the mandatory clear/redraw contract.
+
+`quillan list-post-dispatch-review <class_id> <assignment_id>` lists immutable
+Quillan-owned occurrences for one exact module-qualified work root. Resolved
+items are hidden by default, deferred items remain visible, and category,
+limit, and include-resolved filters are deterministic. `quillan
+resolve-post-dispatch-review` appends a schema-version-1 Quillan resolution;
+it never changes the occurrence, Core review records, observations, evidence,
+manifests, or teacher reviews. Generic direct actions are `rescan_needed`,
+`record_corrected`, `cannot_recover`,
+`dismissed_duplicate`, `deferred`, and `other`; `other` requires a message.
+The generic direct command does not accept `resolved_after_retry` because a
+caller may not assert a successful retry. For safe occurrence categories, the
+menu can retry the existing shared submission-assembly service, show its typed
+result, and only after success ask whether to append `resolved_after_retry`
+with bounded operation, work, student/issuance, result-status, and timestamp
+provenance. Retry success never resolves an occurrence automatically. The menu
+also provides read-only current status and validated occurrence-owned possible
+evidence/manifest opening without arbitrary-path input or automatic resolution.
 
 ## Submission Assembly and Status
 
 ```powershell
 quillan assemble-submissions <class_id> <assignment_id>
-quillan list-submissions <class_id> <assignment_id> [--expected-pages N]
+quillan list-submissions <class_id> <assignment_id>
 ```
 
 `assemble-submissions` discovers strict immutable observation JSON, verifies its
@@ -1447,15 +1486,14 @@ are mutually exclusive.
 ## Evidence and Submission Opening
 
 ```powershell
-quillan open-evidence <workspace-relative-evidence-path>
-quillan open-submission <class_id> <assignment_id> <student_id>
+quillan open-submission <class_id> <assignment_id> <student_id> [--page N] [--evidence-id <evidence_id>]
 ```
 
-`open-evidence` opens one existing file that resolves inside the active
-workspace.
-
-`open-submission` validates one canonical manifest and opens its single
-selected evidence item.
+`open-submission` validates one canonical manifest. With no narrowing option it
+opens each selected page evidence item. `--page` narrows by logical page;
+`--evidence-id` selects an exact evidence candidate within that canonical
+submission identity. Raw workspace-relative paths are not accepted as public
+identity.
 
 Both commands are read-only. They do not inspect content, select evidence,
 score work, tag work, create review records, generate feedback, or update
@@ -1569,8 +1607,8 @@ This direct command requires valid matching canonical `submission.json` and
 `review.json` records, then writes the selected derived artifact or artifacts:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
-classes/<class_id>/assignments/<assignment_id>/submissions/<student_id>/exports/feedback.md
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>/exports/feedback.md
 ```
 
 `--format` accepts `markdown`, `pdf`, or `both`. The default is `markdown` for
@@ -1604,7 +1642,7 @@ submission manifests, review records, and feedback export metadata, then
 writes:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
 ```
 
 Rows follow roster order when a roster is available, then discovered
@@ -1643,7 +1681,7 @@ This command reads the assignment's configured Focus Standards, discovered
 or rostered student records, and feedback export metadata, then writes:
 
 ```text
-classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
 ```
 
 It validates each available `submission.json` and `review.json`, counts
@@ -1696,37 +1734,30 @@ direct CLI handlers. It does not implement a parallel export system.
 
 ## Output and Error Handling
 
-Human-readable command results are the current output contract. Quillan does
-not yet provide a machine-readable `--json` mode, and scripts should not
-assume that prose, whitespace, or field ordering will remain stable before
-1.0.
+Human-readable command results are the default output contract. The
+`review-dashboard` and `review-status` commands also provide stable
+schema-version-1 JSON projections through `--format json`; other prose output
+should not be treated as a machine-readable schema.
 
 The intended convention is:
 
 * successful results and requested help go to standard output;
 * usage and argument-parsing errors go to standard error;
-* operational or validation failures produce a concise, actionable message;
+* expected operational or validation failures go to standard error, produce a
+  concise actionable message, and exit 1;
 * expected user errors do not display a Python traceback; and
 * diagnostics should distinguish invalid input from an internal programming
   failure.
 
-Current validation failures are reported with these prefixes:
-
-```text
-Invalid assignment config: ...
-```
-
-Current workspace-resolution failures use:
+Expected failures use:
 
 ```text
 Error: ...
 ```
 
-At present, validation failures are emitted to standard error by the console
-entry point, while `workspace show` operational failures are printed to
-standard output. This is an existing pre-1.0 inconsistency, not a requirement
-for new commands. New and revised handlers should converge on standard error
-for failures, with tests updated alongside the behavior.
+Artifact paths in teacher-facing output are canonical workspace-relative POSIX
+paths. Absolute host paths are not an artifact identity and are not printed as
+successful workflow results.
 
 Unexpected exceptions indicate defects and are not converted into a success
 status. Sensitive classroom data must not be added to routine diagnostics,

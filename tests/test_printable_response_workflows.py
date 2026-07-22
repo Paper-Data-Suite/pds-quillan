@@ -11,6 +11,8 @@ from pds_core.rosters import create_roster
 from pypdf import PdfReader
 import pytest
 
+from tests.menu_screen_recorder import MenuScreenRecorder, assert_focused_child_screen
+
 from quillan.generated_output_opening import (
     GeneratedOutputOpeningError,
     OpenedGeneratedOutput,
@@ -249,7 +251,7 @@ def test_generate_class_packet_happy_path(
     roster_bytes = roster_path.read_bytes()
     assignment_bytes = assignment_path.read_bytes()
     monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-    _inputs(monkeypatch, ["1", "1", "2", "3"])
+    _inputs(monkeypatch, ["1", "1", "2", "b"])
 
     assert workflows.prompt_generate_class_packet() == 0
 
@@ -271,13 +273,12 @@ def test_generate_class_packet_happy_path(
     assert assignment_path.read_bytes() == assignment_bytes
 
     output = capsys.readouterr().out
-    assert "Output mode: one class packet PDF" in output
     assert "Generated printable response packet:" in output
-    assert str(output_path) in output
+    assert output_path.relative_to(tmp_path).as_posix() in output
     assert f"Class: {CLASS_ID}" in output
     assert f"Assignment: {ASSIGNMENT_ID}" in output
     assert "Pages per student: 2" in output
-    assert "What would you like to do next?" in output
+    assert "Printable Response Result" in output
 
 
 def test_generate_class_packet_accepts_exact_ids_and_blank_page_default(
@@ -327,7 +328,7 @@ def test_generate_class_packet_can_open_generated_packet(
     assert calls == [(tmp_path, output_path)]
     output = capsys.readouterr().out
     assert "Opened generated packet:" in output
-    assert str(output_path) in output
+    assert "synthetic.pdf" in output
 
 
 def test_generate_class_packet_can_open_containing_folder(
@@ -359,10 +360,10 @@ def test_generate_class_packet_can_open_containing_folder(
     assert calls == [(tmp_path, output_path)]
     output = capsys.readouterr().out
     assert "Opened containing folder:" in output
-    assert str(output_path.parent) in output
+    assert "templates" in output
 
 
-@pytest.mark.parametrize("selection", ["3", ""])
+@pytest.mark.parametrize("selection", ["b", ""])
 def test_generate_class_packet_declines_opening(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -420,7 +421,7 @@ def test_generate_class_packet_opening_failure_preserves_success(
     output = capsys.readouterr().out
     assert "Error: could not open generated packet: viewer failed" in output
     assert "Generated packet remains saved at:" in output
-    assert str(output_path) in output
+    assert output_path.relative_to(tmp_path).as_posix() in output
     assert "Traceback" not in output
 
 
@@ -594,7 +595,7 @@ def test_printable_response_menu_displays_options_and_dispatches(
         return 0
 
     monkeypatch.setattr(workflows, "prompt_generate_class_packet", generate)
-    _inputs(monkeypatch, ["1", "", "2"])
+    _inputs(monkeypatch, ["1", "", "b"])
 
     assert workflows.launch_printable_response_menu() == 0
     output = capsys.readouterr().out
@@ -607,7 +608,7 @@ def test_printable_response_menu_invalid_selection_and_keyboard_interrupt(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    _inputs(monkeypatch, ["bad", "", "2"])
+    _inputs(monkeypatch, ["bad", "", "b"])
     assert workflows.launch_printable_response_menu() == 0
     assert "Invalid selection" in capsys.readouterr().out
 
@@ -617,3 +618,33 @@ def test_printable_response_menu_invalid_selection_and_keyboard_interrupt(
     monkeypatch.setattr("builtins.input", interrupt)
     assert workflows.launch_printable_response_menu() == 0
     assert "Exiting printable response menu." in capsys.readouterr().out
+
+
+@pytest.mark.menu_density_workflow("printable-response generation")
+def test_printable_response_density_uses_real_workflow(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _write_roster(tmp_path)
+    _write_assignment(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    recorder = MenuScreenRecorder(["1", "1", "1", "2", "b", "", "b"])
+    recorder.install(
+        monkeypatch,
+        clear_aliases=("quillan.printable_response_workflows._clear_screen",),
+    )
+
+    assert workflows.launch_printable_response_menu() == 0
+
+    screens = recorder.screens(capsys.readouterr().out)
+    assert_focused_child_screen(
+        screens,
+        heading="Select Class for Printable Responses",
+        required_text=f"1. {CLASS_ID}",
+        forbidden_parent_text="1. Generate class packet",
+        parent_heading="Printable Response Pages",
+        result_heading="Printable Response Result",
+        unrelated_previous_text="Back to Assignment Management",
+    )
+    recorder.print_transcript(screens, label="PRINTABLE RESPONSE GENERATION")

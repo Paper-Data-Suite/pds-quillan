@@ -93,7 +93,7 @@ quillan printable-responses generate <class_id> <assignment_id> [--pages-per-stu
 Only the teacher menu may offer to open an installed PDF or its folder, and
 opening remains an explicit choice.
 
-PDS1 generation has been removed. PDS1 scan interpretation remains a separate,
-later migration boundary; this contract does not claim installed module-profile
-registration, a route handler, PDS2 scan dispatch, retained-source intake,
-evidence assembly, submission-schema migration, or plain-paper changes.
+PDS1 generation and interpretation have been removed. Generated pages use
+registered PDS2 locators backed by immutable issuance, page, and route records.
+Retained-source intake dispatches those locators through the installed module
+profile; submission assembly derives expected pages from issuance membership.

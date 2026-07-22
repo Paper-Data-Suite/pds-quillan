@@ -9,6 +9,7 @@ import pytest
 
 from quillan.cli import main
 import quillan.cli_app.handlers.scan_review as cli_scan_review
+from quillan.cli_app.parser import build_parser
 from tests.test_scan_review_resolution import FAILURE_ID, _write_failure
 
 
@@ -16,6 +17,26 @@ from tests.test_scan_review_resolution import FAILURE_ID, _write_failure
 def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(cli_scan_review, "resolve_workspace_root", lambda: tmp_path)
     return tmp_path
+
+
+def test_route_resolution_parser_accepts_exact_registered_route_identity() -> None:
+    args = build_parser().parse_args(
+        [
+            "resolve-scan-review",
+            FAILURE_ID,
+            "--action",
+            "route_selected",
+            "--route-id",
+            "rt_0123456789abcdef0123456789abcdef",
+            "--route-class-id",
+            "english12_p3",
+            "--route-assignment-id",
+            "essay_01",
+        ]
+    )
+    assert args.route_id == "rt_0123456789abcdef0123456789abcdef"
+    assert args.route_class_id == "english12_p3"
+    assert args.route_assignment_id == "essay_01"
 
 
 def test_list_and_resolve_scan_review_commands(
@@ -28,7 +49,7 @@ def test_list_and_resolve_scan_review_commands(
     listed = capsys.readouterr().out
     assert FAILURE_ID in listed
     assert "Status: unresolved" in listed
-    assert "Retained source:" in listed
+    assert "Source: teacher_scan.pdf" in listed
 
     assert main(
         [
@@ -46,7 +67,7 @@ def test_list_and_resolve_scan_review_commands(
     assert failure_path.read_bytes() == before
 
     assert main(["list-scan-review"]) == 0
-    assert "No Quillan scan review items" in capsys.readouterr().out
+    assert "No Core routing review items" in capsys.readouterr().out
     assert main(["list-scan-review", "--include-resolved"]) == 0
     assert "Status: resolved" in capsys.readouterr().out
 
@@ -73,7 +94,9 @@ def test_cli_reports_malformed_and_invalid_requests(
     assert main(
         ["resolve-scan-review", "failure_missing", "--action", "other", "--message", "x"]
     ) == 1
-    assert "Error:" in capsys.readouterr().out
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "Error:" in captured.err
 
 
 def test_cli_writes_only_json_resolution_metadata(

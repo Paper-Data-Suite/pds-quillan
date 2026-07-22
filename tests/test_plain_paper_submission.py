@@ -379,8 +379,8 @@ def test_status_and_evidence_opening_are_teacher_friendly(
     review_menu._open_submission_evidence(
         workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
     )
-    output = capsys.readouterr().out
-    assert "No digital evidence is attached" in output
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
+    assert "plain-paper submission has no digital evidence" in output
     assert "Review the physical paper" in output
 
 
@@ -389,11 +389,11 @@ def test_cli_help_lists_plain_paper_command_and_arguments(
 ) -> None:
     with pytest.raises(SystemExit, match="0"):
         main(["--help"])
-    assert "create-plain-paper-submission" in capsys.readouterr().out
+    assert "create-plain-paper-submission" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
     with pytest.raises(SystemExit, match="0"):
         main(["create-plain-paper-submission", "--help"])
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "class_id" in output
     assert "assignment_id" in output
     assert "student_id" in output
@@ -447,7 +447,7 @@ def test_cli_creates_plain_paper_submission(
         "submission.json",
         "review.json",
     }
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Created plain-paper submission:" in output
     assert f"Class: {CLASS_ID}" in output
     assert f"Assignment: {ASSIGNMENT_ID}" in output
@@ -471,7 +471,7 @@ def test_cli_dry_run_validates_without_writing(
 
     assert result == 0
     assert not (cli_workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "submissions").exists()
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Plain-paper submission dry run:" in output
     assert "Would create submission manifest: classes/" in output
     assert "Would create review record: classes/" in output
@@ -486,7 +486,7 @@ def test_cli_requires_confirmation_without_writing(
     )
 
     assert result == 1
-    assert "requires --yes or --dry-run" in capsys.readouterr().out
+    assert "requires --yes or --dry-run" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert not (cli_workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "submissions").exists()
 
 
@@ -523,7 +523,7 @@ def test_cli_rejects_invalid_student(
     )
 
     assert result == 1
-    assert "not in the roster" in capsys.readouterr().out
+    assert "not in the roster" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert not (cli_workspace / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID / "submissions").exists()
 
 
@@ -545,7 +545,7 @@ def test_cli_refuses_existing_manifest_without_changing_it(
         ]
     ) == 1
     assert created.submission_manifest_path.read_bytes() == original
-    assert "already exists" in capsys.readouterr().out
+    assert "already exists" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_cli_refuses_orphan_review_without_changing_it(
@@ -567,7 +567,7 @@ def test_cli_refuses_orphan_review_without_changing_it(
     ) == 1
     assert review_path.read_bytes() == b"existing review"
     assert not (student_dir / "submission.json").exists()
-    assert "without a submission manifest" in capsys.readouterr().out
+    assert "without a submission manifest" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_cli_workspace_error_is_reported_without_traceback(
@@ -588,7 +588,7 @@ def test_cli_workspace_error_is_reported_without_traceback(
     )
 
     assert result == 1
-    assert capsys.readouterr().out == (
+    assert (lambda captured: captured.out + captured.err)(capsys.readouterr()) == (
         "Error: plain-paper submission was not created: workspace unavailable\n"
     )
 
@@ -621,7 +621,7 @@ def test_cli_rejects_class_not_in_assignment(
     )
 
     assert result == 1
-    assert "is not included in assignment" in capsys.readouterr().out
+    assert "is not included in assignment" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert not (
         cli_workspace
         / "classes"

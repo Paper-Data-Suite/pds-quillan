@@ -219,6 +219,36 @@ class QuillanObservationPersistenceBatch:
     def failure_count(self) -> int:
         return len(self.failures)
 
+    @property
+    def observation_created_count(self) -> int:
+        """Count verified new observation records from the paired transaction."""
+        return sum(item.status == "created" for item in self.persisted)
+
+    @property
+    def observation_existing_count(self) -> int:
+        """Count verified existing observation records from the paired transaction."""
+        return sum(item.status == "existing" for item in self.persisted)
+
+    @property
+    def routed_evidence_created_count(self) -> int:
+        """Count verified new evidence files from the paired transaction."""
+        return sum(item.status == "created" for item in self.persisted)
+
+    @property
+    def routed_evidence_existing_count(self) -> int:
+        """Count verified existing evidence files from the paired transaction."""
+        return sum(item.status == "existing" for item in self.persisted)
+
+    @property
+    def observation_persistence_failure_count(self) -> int:
+        """Count paired operations that did not verify observation durability."""
+        return len(self.failures)
+
+    @property
+    def routed_evidence_persistence_failure_count(self) -> int:
+        """Count paired operations that did not verify evidence durability."""
+        return len(self.failures)
+
 
 def persist_quillan_page_observation(
     workspace_root: Path,

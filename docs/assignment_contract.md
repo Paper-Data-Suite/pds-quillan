@@ -45,7 +45,7 @@ data ever needs conversion.
 The current assignment file location remains:
 
 ```text
-<PDS workspace root>/classes/<class_id>/assignments/<assignment_id>/assignment.json
+<PDS workspace root>/classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
 ```
 
 The assignment record contains `class_ids`, which may include one or more class IDs.
@@ -201,7 +201,7 @@ Rules:
 * must be a non-empty array of strings;
 * every value must follow the shared `pds-core` identifier policy;
 * duplicate class IDs are invalid;
-* if the assignment is stored under `classes/<class_id>/assignments/<assignment_id>/assignment.json`, the path class ID must appear in `class_ids`.
+* if the assignment is stored under `classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json`, the path class ID must appear in `class_ids`.
 
 Example:
 

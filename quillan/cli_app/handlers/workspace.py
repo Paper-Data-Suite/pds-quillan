@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 
 from pds_core.workspace import (
     WorkspaceRootError,
@@ -58,7 +59,7 @@ def show_workspace() -> int:
     try:
         status = inspect_workspace_root()
     except WorkspaceRootError as error:
-        print(f"Error: {error}")
+        print(f"Error: {error}", file=sys.stderr)
         return 1
 
     print_workspace_status(status)
@@ -71,7 +72,7 @@ def set_workspace(path: str | Path) -> int:
         workspace_root = ensure_workspace_root(path)
         saved_root = save_workspace_root(workspace_root)
     except WorkspaceRootError as error:
-        print(f"Error: {error}")
+        print(f"Error: {error}", file=sys.stderr)
         return 1
 
     print("Saved PDS workspace root:")
@@ -91,7 +92,7 @@ def validate_workspace() -> int:
         workspace_root = resolve_workspace_root()
         validated_root = ensure_workspace_root(workspace_root)
     except WorkspaceRootError as error:
-        print(f"Error: {error}")
+        print(f"Error: {error}", file=sys.stderr)
         return 1
 
     print("Workspace validated successfully:")
@@ -105,7 +106,7 @@ def reset_workspace() -> int:
         was_cleared = clear_saved_workspace_root()
         workspace_root = resolve_workspace_root()
     except WorkspaceRootError as error:
-        print(f"Error: {error}")
+        print(f"Error: {error}", file=sys.stderr)
         return 1
 
     if was_cleared:

@@ -15,6 +15,7 @@ from quillan.record_context import (
     mutable_json_copy,
 )
 from quillan.submission_guidance import missing_submission_guidance
+from quillan.plain_paper_submission import is_plain_paper_submission
 from quillan.work_paths import quillan_work_ref
 
 
@@ -76,6 +77,87 @@ class OpenedSubmissionReview:
         return self.opened_pages[0].page_state
 
 
+@dataclass(frozen=True, slots=True)
+class SubmissionEvidenceCandidate:
+    """Compact candidate metadata for identity-based menu selection."""
+
+    evidence_id: str
+    evidence_role: str
+    evidence_state: str
+    selected: bool
+    relative_path: str
+
+
+@dataclass(frozen=True, slots=True)
+class SubmissionEvidencePageOptions:
+    """Compact page state and candidates for one canonical manifest page."""
+
+    page_number: int
+    page_state: str
+    selected_evidence_id: str | None
+    candidates: tuple[SubmissionEvidenceCandidate, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class SubmissionEvidenceInventory:
+    """Read-only identity-based evidence choices for one canonical submission."""
+
+    class_id: str
+    assignment_id: str
+    student_id: str
+    manifest_relative_path: str
+    plain_paper: bool
+    pages: tuple[SubmissionEvidencePageOptions, ...]
+
+
+def list_submission_evidence_candidates(
+    workspace_root: str | Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> SubmissionEvidenceInventory:
+    """Return canonical page/candidate choices without opening or mutation."""
+    try:
+        context = load_quillan_student_review_context(
+            workspace_root,
+            quillan_work_ref(class_id, assignment_id),
+            student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+        )
+    except MissingSubmissionError as error:
+        raise SubmissionReviewOpeningError(missing_submission_guidance()) from error
+    except (OSError, RuntimeError, QuillanRecordContextError) as error:
+        raise SubmissionReviewOpeningError(str(error)) from error
+    manifest = mutable_json_copy(context.submission)
+    pages = tuple(
+        SubmissionEvidencePageOptions(
+            page_number=page["page_number"],
+            page_state=page["page_state"],
+            selected_evidence_id=page["selected_evidence_id"],
+            candidates=tuple(
+                SubmissionEvidenceCandidate(
+                    evidence_id=evidence["evidence_id"],
+                    evidence_role=evidence["evidence_role"],
+                    evidence_state=evidence["evidence_state"],
+                    selected=evidence["evidence_id"]
+                    == page["selected_evidence_id"],
+                    relative_path=evidence["routed_evidence_path"],
+                )
+                for evidence in page["evidence"]
+            ),
+        )
+        for page in manifest["pages"]
+    )
+    return SubmissionEvidenceInventory(
+        class_id,
+        assignment_id,
+        student_id,
+        context.paths.submission_relative_path,
+        is_plain_paper_submission(manifest),
+        pages,
+    )
+
+
 def open_student_submission_for_review(
     workspace_root: str | Path,
     class_id: str,
@@ -83,6 +165,7 @@ def open_student_submission_for_review(
     student_id: str,
     *,
     page_number: int | None = None,
+    evidence_id: str | None = None,
 ) -> OpenedSubmissionReview:
     """Open selected routed evidence files for one submission."""
     try:
@@ -102,6 +185,7 @@ def open_student_submission_for_review(
     selected_pages = selected_submission_evidence_pages(
         manifest,
         page_number=page_number,
+        evidence_id=evidence_id,
     )
 
     try:
@@ -149,9 +233,49 @@ def selected_submission_evidence_pages(
     manifest: dict[str, Any],
     *,
     page_number: int | None = None,
+    evidence_id: str | None = None,
 ) -> tuple[SelectedSubmissionEvidencePage, ...]:
     """Return selected evidence pages in ascending logical page order."""
     pages = manifest["pages"]
+    if evidence_id is not None:
+        if not isinstance(evidence_id, str) or not evidence_id.strip():
+            raise SubmissionReviewOpeningError(
+                "evidence_id must be nonblank exact text."
+            )
+        candidates = (
+            pages
+            if page_number is None
+            else tuple(page for page in pages if page["page_number"] == page_number)
+        )
+        if page_number is not None and not candidates:
+            raise SubmissionReviewOpeningError(
+                f"Submission page {page_number} does not exist."
+            )
+        matches = [
+            (page, evidence)
+            for page in candidates
+            for evidence in page["evidence"]
+            if evidence["evidence_id"] == evidence_id
+        ]
+        if len(matches) != 1:
+            scope = (
+                "this submission"
+                if page_number is None
+                else f"submission page {page_number}"
+            )
+            raise SubmissionReviewOpeningError(
+                f"Evidence ID '{evidence_id}' does not identify exactly one "
+                f"candidate in {scope}."
+            )
+        page, evidence = matches[0]
+        return (
+            SelectedSubmissionEvidencePage(
+                page_number=page["page_number"],
+                evidence_id=evidence["evidence_id"],
+                evidence_relative_path=evidence["routed_evidence_path"],
+                page_state=page["page_state"],
+            ),
+        )
     if page_number is not None:
         matching_page = next(
             (page for page in pages if page["page_number"] == page_number),
@@ -227,3 +351,17 @@ def _validate_manifest_identity(
             raise SubmissionReviewOpeningError(
                 f"Submission manifest {field} is {actual!r}, expected {expected!r}."
             )
+
+
+__all__ = [
+    "OpenedSubmissionEvidencePage",
+    "OpenedSubmissionReview",
+    "SelectedSubmissionEvidencePage",
+    "SubmissionEvidenceCandidate",
+    "SubmissionEvidenceInventory",
+    "SubmissionEvidencePageOptions",
+    "SubmissionReviewOpeningError",
+    "list_submission_evidence_candidates",
+    "open_student_submission_for_review",
+    "selected_submission_evidence_pages",
+]

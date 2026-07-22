@@ -16,7 +16,6 @@ from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
 from quillan.assignment_picker import prompt_assignment_choice
 from quillan.assignment_submission_assembly import assemble_assignment_submissions
-from quillan.assignments import AssignmentConfigError, load_assignment_config
 from quillan.class_summary_export import (
     ClassSummaryExportError,
     export_class_review_summary,
@@ -44,8 +43,6 @@ from quillan.feedback_export import (
     FeedbackExportError,
     export_student_feedback,
     export_student_feedback_pdf,
-    feedback_export_path,
-    feedback_pdf_export_path,
 )
 from quillan.focus_standard_comments import (
     FocusStandardCommentError,
@@ -93,13 +90,6 @@ from quillan.review_feedback import (
     set_standard_feedback_options,
     summarize_standard_feedback,
 )
-from quillan.review_record import (
-    ReviewRecordError,
-    load_review_record,
-)
-from quillan.review_record_paths import (
-    review_record_path,
-)
 from quillan.review_workflow_state import (
     REVIEW_WORKFLOW_STATES,
     ReviewWorkflowStateError,
@@ -113,7 +103,6 @@ from quillan.review_dashboard import (
     format_assignment_review_dashboard,
 )
 from quillan.review_status_display import (
-    feedback_export_status,
     review_progress_status,
     review_status_label,
 )
@@ -124,19 +113,18 @@ from quillan.review_targets import (
     parse_paragraph_selection,
 )
 from quillan.review_requirements import ReviewRequirementError
-from quillan.storage import assignment_config_path
+from quillan.record_context import (
+    MissingSubmissionError,
+    QuillanRecordContextError,
+    ReviewLoadingPolicy,
+    load_quillan_assignment_context,
+    load_quillan_student_review_context,
+    mutable_json_copy,
+)
 from quillan.submission_review_opening import (
     SubmissionReviewOpeningError,
+    list_submission_evidence_candidates,
     open_student_submission_for_review,
-    selected_submission_evidence_pages,
-)
-from quillan.submission_manifest import (
-    SubmissionManifestError,
-    load_submission_manifest,
-)
-from quillan.submission_manifest_paths import (
-    SubmissionManifestPathError,
-    submission_manifest_path,
 )
 from quillan.submission_page_management import (
     SubmissionPageManagementError,
@@ -146,10 +134,16 @@ from quillan.submission_page_management import (
 )
 from quillan.submission_status import (
     AssignmentSubmissionStatus,
+    PageStatusSummary,
     StudentSubmissionStatus,
     list_assignment_submission_status,
 )
 from quillan.student_display import student_display_lookup, student_review_label
+from quillan.student_review_status import (
+    StudentReviewStatusError,
+    build_student_review_status,
+    student_review_status_to_dict,
+)
 from quillan.menu_navigation import (
     NavigationChoice,
     navigation_hint,
@@ -159,8 +153,9 @@ from quillan.menu_navigation import (
 from quillan.plain_paper_submission import (
     PlainPaperSubmissionError,
     create_plain_paper_submission,
-    is_plain_paper_submission,
+    plan_plain_paper_submission,
 )
+from quillan.work_paths import quillan_work_ref
 
 _BACK = object()
 _CANCEL = object()
@@ -183,7 +178,7 @@ def launch_review_student_work_menu() -> int:
             navigation = parse_navigation_choice(choice)
             print()
 
-            if choice in {"", "3"} or navigation is NavigationChoice.BACK:
+            if choice == "" or navigation is NavigationChoice.BACK:
                 return 0
             if choice == "1":
                 clear_screen()
@@ -384,11 +379,8 @@ def _student_status_label(
         )
     if status.manifest_path is None:
         return "routed evidence exists; no manifest"
-    try:
-        if is_plain_paper_submission(load_submission_manifest(status.manifest_path)):
-            return "plain-paper manual submission; no digital evidence"
-    except (OSError, SubmissionManifestError):
-        pass
+    if status.plain_paper:
+        return "plain-paper manual submission; no digital evidence"
     evidence_count = sum(page.evidence_count for page in status.pages)
     return (
         f"{status.submission_state}; manifest exists; evidence files={evidence_count}"
@@ -418,25 +410,38 @@ def _launch_selected_student_review(
         if student_status is None:
             print("No digital submission evidence has been found for this student.")
             print()
-            print("1. Create plain-paper submission for this student")
-            print("2. View routed evidence status")
-            print("3. Refresh summary")
+            try:
+                plan_plain_paper_submission(
+                    workspace_root, class_id, assignment_id, student_id
+                )
+            except (PlainPaperSubmissionError, OSError, ValueError) as error:
+                plain_paper_available = False
+                print(f"Plain-paper creation is unavailable: {error}")
+            else:
+                plain_paper_available = True
+            if plain_paper_available:
+                print("1. Create plain-paper submission for this student")
+                print("2. View routed evidence status")
+                print("3. Refresh summary")
+            else:
+                print("1. View routed evidence status")
+                print("2. Refresh summary")
             print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
             navigation = parse_navigation_choice(choice)
             print()
-            if choice in {"", "4"} or navigation is NavigationChoice.BACK:
+            if choice == "" or navigation is NavigationChoice.BACK:
                 return 0
-            if choice == "1":
+            if choice == "1" and plain_paper_available:
                 _create_plain_paper_submission_menu(
                     workspace_root, class_id, assignment_id, student_id
                 )
                 input("Press Enter to continue...")
                 continue
-            if choice in {"2", "3"}:
+            if choice in ({"2", "3"} if plain_paper_available else {"1", "2"}):
                 continue
-            print("Invalid selection. Please enter a number from 1 to 4.")
+            print("Invalid selection. Please choose a listed action.")
             input("Press Enter to continue...")
             continue
         if student_status.manifest_path is None:
@@ -445,7 +450,7 @@ def _launch_selected_student_review(
                 "submission record has not been assembled yet."
             )
             print(
-                "Assemble submissions before reviewing, tagging, scoring, or exporting."
+                "Assemble submissions before reviewing, rating, or exporting."
             )
             print()
             print("1. Assemble this assignment now")
@@ -456,7 +461,7 @@ def _launch_selected_student_review(
             choice = input("Select an option: ").strip()
             navigation = parse_navigation_choice(choice)
             print()
-            if choice in {"", "4"} or navigation is NavigationChoice.BACK:
+            if choice == "" or navigation is NavigationChoice.BACK:
                 return 0
             if choice == "1":
                 _assemble_assignment(workspace_root, class_id, assignment_id)
@@ -485,7 +490,7 @@ def _launch_selected_student_review(
         navigation = parse_navigation_choice(choice)
         print()
 
-        if choice in {"", "12"} or navigation is NavigationChoice.BACK:
+        if choice == "" or navigation is NavigationChoice.BACK:
             return 0
         if choice == "1":
             _open_submission_evidence(
@@ -700,10 +705,11 @@ def _load_assignment_for_review(
     assignment_id: str,
 ) -> dict[str, Any] | None:
     try:
-        return load_assignment_config(
-            assignment_config_path(workspace_root, class_id, assignment_id)
+        context = load_quillan_assignment_context(
+            workspace_root, quillan_work_ref(class_id, assignment_id)
         )
-    except (AssignmentConfigError, OSError) as error:
+        return mutable_json_copy(context.assignment)
+    except (QuillanRecordContextError, OSError) as error:
         print(f"Error: could not load assignment config: {error}")
         return None
 
@@ -719,14 +725,9 @@ def _menu_update_review_workflow_state(
     )
     print("Use this to update the teacher-review workflow. This is not a grade.")
     print()
-    path = review_record_path(workspace_root, class_id, assignment_id, student_id)
-    record = None
-    if path.exists():
-        try:
-            record = load_review_record(path)
-        except (OSError, ReviewRecordError) as error:
-            print(f"Error: could not load review record: {error}")
-            return
+    record = _current_review_record(
+        workspace_root, class_id, assignment_id, student_id
+    )
     current_state = "not_started" if record is None else str(record["review_state"])
     print(f"Current review workflow state: {current_state}")
     print()
@@ -844,12 +845,19 @@ def _current_review_record(
     assignment_id: str,
     student_id: str,
 ) -> dict[str, Any] | None:
-    path = review_record_path(workspace_root, class_id, assignment_id, student_id)
-    if not path.exists():
-        return None
     try:
-        return load_review_record(path)
-    except (OSError, ReviewRecordError) as error:
+        context = load_quillan_student_review_context(
+            workspace_root,
+            quillan_work_ref(class_id, assignment_id),
+            student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+        )
+        return (
+            None if context.review is None else mutable_json_copy(context.review)
+        )
+    except MissingSubmissionError:
+        return None
+    except (OSError, QuillanRecordContextError) as error:
         print(f"Error: could not load review record: {error}")
         return None
 
@@ -1060,51 +1068,40 @@ def _print_review_summary(
 ) -> None:
     print("Current review summary")
     print()
+    try:
+        status = build_student_review_status(
+            workspace_root, class_id, assignment_id, student_id
+        )
+    except StudentReviewStatusError as error:
+        print(f"Status unavailable: {error}")
+        return
+    data = student_review_status_to_dict(status)
+    student = cast(dict[str, Any], data["student"])
+    routed = cast(dict[str, Any], data["routed_evidence"])
+    submission = cast(dict[str, Any], data["submission"])
+    review = cast(dict[str, Any], data["review"])
+    progress = cast(dict[str, Any], review["progress"])
+    exports = cast(dict[str, Any], review["exports"])
+    export_summary = cast(dict[str, Any], exports["summary"])
     print(f"Class: {class_id}")
     print(f"Assignment: {assignment_id}")
-    print(f"Student: {student_review_label(workspace_root, class_id, student_id)}")
-
-    status = _load_submission_status(workspace_root, class_id, assignment_id)
-    student_status = None
-    if status is not None:
-        student_status = next(
-            (
-                candidate
-                for candidate in status.student_statuses
-                if candidate.student_id == student_id
-            ),
-            None,
-        )
-    if student_status is None:
-        print("Submission: not assembled")
-        print("Evidence files: 0")
-    elif student_status.manifest_path is None:
-        print("Submission: not assembled")
-        print("Evidence files: routed but not assembled")
-    else:
-        print("Submission: assembled")
-        print(
-            "Evidence files: "
-            f"{sum(page.evidence_count for page in student_status.pages)}"
-        )
-
-    path = review_record_path(workspace_root, class_id, assignment_id, student_id)
-    record = None
-    if path.exists():
-        try:
-            record = load_review_record(path)
-        except (OSError, ReviewRecordError):
-            pass
-    print(f"Review: {review_status_label(record)}")
-    _print_review_phase_statuses(record)
-    print(f"Feedback export: {feedback_export_status(workspace_root, record)}")
-
-    _print_review_record_summary(
-        workspace_root,
-        class_id,
-        assignment_id,
-        student_id,
+    print(f"Student: {student['display_name']}")
+    print(f"Submission: {submission['status']}")
+    print(f"Routed evidence files: {routed['file_count']}")
+    print(f"Needs assembly: {_format_yes_no(routed['needs_assembly'] is True)}")
+    print(f"Review: {review['state_label'] or 'not started'}")
+    print(
+        "Review progress: "
+        f"observations={'complete' if progress['observations_complete'] else 'incomplete'}; "
+        f"ratings={'complete' if progress['ratings_complete'] else 'incomplete'}; "
+        f"feedback={'composed' if progress['feedback_composed'] else 'not composed'}"
     )
+    print(
+        "Feedback exports: "
+        f"current={export_summary['current']}; stale={export_summary['stale']}; "
+        f"missing={export_summary['missing']}"
+    )
+    print(f"Warnings: {len(status.warnings)}")
 
 
 def _print_review_record_summary(
@@ -1113,13 +1110,10 @@ def _print_review_record_summary(
     assignment_id: str,
     student_id: str,
 ) -> None:
-    path = review_record_path(
-        workspace_root,
-        class_id,
-        assignment_id,
-        student_id,
+    record = _current_review_record(
+        workspace_root, class_id, assignment_id, student_id
     )
-    if not path.exists():
+    if record is None:
         print("Review record: not started")
         print("Review record file: missing")
         _print_requirement_check_summary(
@@ -1128,13 +1122,6 @@ def _print_review_record_summary(
             assignment_id,
             {},
         )
-        return
-
-    try:
-        record = load_review_record(path)
-    except ReviewRecordError as error:
-        print("Review record: invalid")
-        print(f"Review record error: {error}")
         return
 
     print("Review record: exists")
@@ -1246,10 +1233,11 @@ def _load_assignment_for_summary(
     assignment_id: str,
 ) -> dict[str, Any] | None:
     try:
-        return load_assignment_config(
-            assignment_config_path(workspace_root, class_id, assignment_id)
+        context = load_quillan_assignment_context(
+            workspace_root, quillan_work_ref(class_id, assignment_id)
         )
-    except (AssignmentConfigError, OSError):
+        return mutable_json_copy(context.assignment)
+    except (QuillanRecordContextError, OSError):
         return None
 
 
@@ -1259,47 +1247,108 @@ def _open_submission_evidence(
     assignment_id: str,
     student_id: str,
 ) -> None:
-    try:
-        manifest = load_submission_manifest(
-            submission_manifest_path(
-                workspace_root, class_id, assignment_id, student_id
-            )
-        )
-        if is_plain_paper_submission(manifest):
-            print(
-                "This is a plain-paper manual submission. "
-                "No digital evidence is attached."
-            )
-            print(
-                "Review the physical paper, then use Quillan's review actions "
-                "to record your judgment."
-            )
-            return
-    except (OSError, SubmissionManifestError, SubmissionManifestPathError):
-        pass
-    page_number = _choose_submission_evidence_page(
-        workspace_root,
-        class_id,
-        assignment_id,
-        student_id,
-    )
-    if page_number is _BACK:
-        print("Open submission evidence canceled.")
-        return
-    assert page_number is None or isinstance(page_number, int)
+    from quillan.menu import clear_screen, print_menu_header
 
     try:
-        opened = open_student_submission_for_review(
-            workspace_root,
-            class_id,
-            assignment_id,
-            student_id,
-            page_number=page_number,
+        inventory = list_submission_evidence_candidates(
+            workspace_root, class_id, assignment_id, student_id
         )
+    except SubmissionReviewOpeningError as error:
+        print(f"Error: could not inspect student submission: {error}")
+        return
+    if inventory.plain_paper:
+        clear_screen()
+        print_menu_header("Open Submission Evidence")
+        print("This plain-paper submission has no digital evidence.")
+        print("Review the physical paper and record teacher judgments in Quillan.")
+        return
+    clear_screen()
+    print_menu_header("Select Submission Page")
+    print(f"Class: {class_id}")
+    print(f"Assignment: {assignment_id}")
+    print(f"Student: {student_review_label(workspace_root, class_id, student_id)}")
+    print()
+    for index, page in enumerate(inventory.pages, start=1):
+        selected = "selected" if page.selected_evidence_id is not None else "unselected"
+        print(
+            f"{index}. Page {page.page_number}; {page.page_state}; {selected}; "
+            f"candidates={len(page.candidates)}"
+        )
+    print("A. Open all selected pages")
+    print("B. Back")
+    print()
+    choice = input("Select page: ").strip()
+    if choice.casefold() == "b" or choice == "":
+        return
+    evidence_id: str | None = None
+    page_number: int | None = None
+    if choice.casefold() != "a":
+        if not choice.isdigit() or not 1 <= int(choice) <= len(inventory.pages):
+            return
+        page = inventory.pages[int(choice) - 1]
+        clear_screen()
+        print_menu_header("Select Evidence Candidate")
+        print(f"Page: {page.page_number}")
+        print(f"Page state: {page.page_state}")
+        print()
+        if not page.candidates:
+            print("This page has no evidence candidates to open.")
+            return
+        for index, candidate in enumerate(page.candidates, start=1):
+            label = "selected" if candidate.selected else candidate.evidence_role
+            print(
+                f"{index}. {label}; state={candidate.evidence_state}; "
+                f"evidence={candidate.evidence_id}"
+            )
+        print("B. Back")
+        print()
+        candidate_choice = input("Select candidate: ").strip()
+        if (
+            not candidate_choice.isdigit()
+            or not 1 <= int(candidate_choice) <= len(page.candidates)
+        ):
+            return
+        candidate = page.candidates[int(candidate_choice) - 1]
+        clear_screen()
+        print_menu_header("Evidence Candidate Details")
+        print(f"Page: {page.page_number}")
+        print(f"Evidence ID: {candidate.evidence_id}")
+        print(f"Role: {candidate.evidence_role}")
+        print(f"State: {candidate.evidence_state}")
+        print(f"Path: {candidate.relative_path}")
+        print()
+        if input("Open this candidate? [y/N]: ").strip().casefold() not in {
+            "y",
+            "yes",
+        }:
+            return
+        page_number = page.page_number
+        evidence_id = candidate.evidence_id
+
+    try:
+        if evidence_id is None:
+            opened = open_student_submission_for_review(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+                page_number=page_number,
+            )
+        else:
+            opened = open_student_submission_for_review(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+                page_number=page_number,
+                evidence_id=evidence_id,
+            )
     except SubmissionReviewOpeningError as error:
         print(f"Error: could not open student submission: {error}")
         return
 
+    clear_screen()
+    print_menu_header("Submission Evidence Opened")
     print_opened_submission_review(opened)
 
 
@@ -1312,8 +1361,8 @@ def _create_plain_paper_submission_menu(
     _print_review_action_header(
         "Create Plain-Paper Submission", class_id, assignment_id, student_id
     )
-    print("Use this only when the student completed the assignment on paper outside")
-    print("Quillan and you want to review the physical paper manually.")
+    print("This creates a review-ready record for physical paper.")
+    print("It does not attach or create digital evidence.")
     print()
     print("This will create:")
     print("- submission.json")
@@ -1329,7 +1378,7 @@ def _create_plain_paper_submission_menu(
         print("Plain-paper submission creation canceled.")
         return
     try:
-        create_plain_paper_submission(
+        created = create_plain_paper_submission(
             workspace_root, class_id, assignment_id, student_id
         )
     except Exception as error:
@@ -1338,67 +1387,15 @@ def _create_plain_paper_submission_menu(
         else:
             print(f"Error: plain-paper submission was not created: {error}")
         return
-    student_label = student_review_label(workspace_root, class_id, student_id)
-    print(f"Plain-paper submission created for {student_label}.")
-    print()
-    print(
-        "You can now review minimum requirements, review units, Focus Standard "
-        "observations, overall Focus Standard ratings, feedback, and private notes."
-    )
+    from quillan.menu import clear_screen, print_menu_header
 
-
-def _choose_submission_evidence_page(
-    workspace_root: Path,
-    class_id: str,
-    assignment_id: str,
-    student_id: str,
-) -> int | None | object:
-    try:
-        manifest_path = submission_manifest_path(
-            workspace_root,
-            class_id,
-            assignment_id,
-            student_id,
-        )
-        manifest = load_submission_manifest(manifest_path)
-        pages = selected_submission_evidence_pages(manifest)
-    except (
-        OSError,
-        RuntimeError,
-        SubmissionManifestError,
-        SubmissionManifestPathError,
-        SubmissionReviewOpeningError,
-    ) as error:
-        print(f"Error: could not load selected evidence pages: {error}")
-        return _BACK
-
-    if len(pages) == 1:
-        return pages[0].page_number
-
-    _print_review_action_header(
-        "Open Submission Evidence", class_id, assignment_id, student_id
-    )
-    print("Selected evidence pages:")
-    for index, page in enumerate(pages, start=1):
-        print(
-            f"{index}. Page {page.page_number} - {page.page_state} - {page.evidence_id}"
-        )
-    print_navigation_options(all_items=True)
-    print()
-
-    choice = input("Select page: ").strip()
-    navigation = parse_navigation_choice(choice, allow_all=True)
-    print()
-    if navigation is NavigationChoice.BACK or choice == "":
-        return _BACK
-    if navigation is NavigationChoice.ALL:
-        return None
-    if choice.isdecimal():
-        index = int(choice)
-        if 1 <= index <= len(pages):
-            return pages[index - 1].page_number
-    print(f"Invalid selection. {navigation_hint(all_items=True)}")
-    return _BACK
+    clear_screen()
+    print_menu_header("Plain-Paper Submission Created")
+    print(f"Class: {created.class_id}")
+    print(f"Assignment: {created.assignment_id}")
+    print(f"Student: {student_review_label(workspace_root, class_id, student_id)}")
+    print(f"Submission: {created.submission_manifest_relative_path}")
+    print(f"Review: {created.review_record_relative_path}")
 
 
 def _menu_review_unit_observations(
@@ -2779,6 +2776,7 @@ def _prompt_reusable_comment_purpose() -> str:
     print()
     print("Purpose is broad teacher-facing organization metadata.")
     print("It describes the feedback move, not the assignment genre.")
+    print("Ratings and feedback comments remain explicit teacher choices.")
     print("It is not used for automatic scoring or automatic comment selection.")
     print('Use "general" when none of the categories fit.')
     print()
@@ -3340,57 +3338,56 @@ def _menu_manage_submission_pages(
         return
 
     _print_manageable_pages(student_status.pages)
-    print()
-    print("Actions:")
-    print("1. Exclude page from review")
-    print("2. Restore excluded page")
-    print("3. Mark page as needs rescan")
     print_navigation_options()
     print()
-    choice = input("Select an option: ").strip()
-    if choice in {"", "4"}:
+    page_number = _prompt_page_number("Select page: ")
+    selected_page = next(
+        (page for page in student_status.pages if page.page_number == page_number),
+        None,
+    )
+    if selected_page is None:
         print("Manage submission pages canceled.")
         return
-    if choice == "1":
-        _menu_change_submission_page(
-            workspace_root,
-            class_id,
-            assignment_id,
-            student_id,
-            student_status.pages,
-            action="exclude",
-        )
-    elif choice == "2":
-        _menu_change_submission_page(
-            workspace_root,
-            class_id,
-            assignment_id,
-            student_id,
-            student_status.pages,
-            action="restore",
-        )
-    elif choice == "3":
-        _menu_change_submission_page(
-            workspace_root,
-            class_id,
-            assignment_id,
-            student_id,
-            student_status.pages,
-            action="needs_rescan",
-        )
-    else:
-        print("Invalid selection. Please enter a number from 1 to 4.")
+    _print_review_action_header(
+        "Submission Page Details", class_id, assignment_id, student_id
+    )
+    print(f"Page: {selected_page.page_number}")
+    print(f"State: {_teacher_page_state_label(selected_page.page_state)}")
+    print(f"Evidence records: {selected_page.evidence_count}")
+    print(f"Selected evidence: {selected_page.selected_evidence_id or 'none'}")
+    print(f"Evidence roles: {', '.join(selected_page.evidence_roles) or 'none'}")
+    print(f"Evidence states: {', '.join(selected_page.evidence_states) or 'none'}")
+    print()
+    actions: tuple[tuple[str, str], ...] = (
+        (("restore", "Restore page to active review"),)
+        if selected_page.page_state == "excluded"
+        else (("exclude", "Exclude page from active review"),)
+    )
+    if selected_page.page_state != "needs_rescan":
+        actions += (("needs_rescan", "Mark page as needing rescan"),)
+    for index, (_, label) in enumerate(actions, start=1):
+        print(f"{index}. {label}")
+    print_navigation_options()
+    print()
+    choice = input("Select an action: ").strip()
+    if not choice.isdigit() or not 1 <= int(choice) <= len(actions):
+        print("Page action canceled.")
+        return
+    _menu_change_submission_page(
+        workspace_root,
+        class_id,
+        assignment_id,
+        student_id,
+        selected_page,
+        action=actions[int(choice) - 1][0],
+    )
 
 
-def _print_manageable_pages(pages: tuple[Any, ...]) -> None:
+def _print_manageable_pages(pages: tuple[PageStatusSummary, ...]) -> None:
     print("Pages:")
     for page in pages:
         state = _teacher_page_state_label(page.page_state)
-        selected = page.selected_evidence_id or "no selected evidence"
-        print(
-            f"{page.page_number}. Page {page.page_number} - {state} - "
-            f"selected evidence: {selected}"
-        )
+        print(f"{page.page_number}. Page {page.page_number} — {state}")
 
 
 def _teacher_page_state_label(page_state: str) -> str:
@@ -3406,7 +3403,7 @@ def _menu_change_submission_page(
     class_id: str,
     assignment_id: str,
     student_id: str,
-    pages: tuple[Any, ...],
+    page: PageStatusSummary,
     *,
     action: str,
 ) -> None:
@@ -3420,35 +3417,28 @@ def _menu_change_submission_page(
         print("This keeps the evidence file but removes the page from active review.")
         print(
             "Use this for blank pages, wrong pages, accidental scans, or pages "
-            "that should not be scored."
+            "that should not be part of the active evidence review."
         )
     elif action == "restore":
         print("This returns an excluded page to active review.")
-        print("It does not change scores, tags, comments, or feedback.")
+        print("It does not change teacher observations, ratings, or feedback.")
     else:
         print(
             "Use this when a page is missing, damaged, unreadable, incomplete, "
             "or the wrong page."
         )
-    print()
-    _print_manageable_pages(pages)
-    print("B. Back")
-    print()
-    page_number = _prompt_page_number("Select page: ")
-    if page_number is None:
-        print("Page action canceled.")
-        return
-    if page_number not in {page.page_number for page in pages}:
-        print("Page action canceled. Please choose a listed page.")
-        return
+    page_number = page.page_number
 
     confirm_labels = {
         "exclude": f"Exclude page {page_number} from active review?",
         "restore": f"Restore page {page_number} to active review?",
         "needs_rescan": f"Mark page {page_number} as needing rescan?",
     }
-    print()
+    _print_review_action_header(
+        "Confirm Page Change", class_id, assignment_id, student_id
+    )
     print(confirm_labels[action])
+    print("The evidence record and underlying file will be preserved.")
     print()
     print("1. Save page change")
     print("2. Back")
@@ -3474,11 +3464,14 @@ def _menu_change_submission_page(
         print(f"Error: page change was not saved: {error}")
         return
 
+    _print_review_action_header(
+        "Page Change Result", class_id, assignment_id, student_id
+    )
     print("Page change saved.")
     print(f"Page: {result.page_number}")
     print(f"State: {_teacher_page_state_label(result.page_state)}")
     print(f"Evidence records preserved: {result.evidence_count}")
-    print("Review notes, tags, comments, scores, and feedback were not changed.")
+    print("Teacher observations, ratings, notes, and feedback were not changed.")
 
 
 def _prompt_page_number(prompt: str) -> int | None:
@@ -3594,12 +3587,9 @@ def _menu_export_student_feedback(
     print("This creates a student feedback export from the current review record.")
     print("It does not rescore work or generate AI feedback.")
     print()
-    try:
-        record = load_review_record(
-            review_record_path(workspace_root, class_id, assignment_id, student_id)
-        )
-    except (ReviewRecordError, OSError):
-        record = None
+    record = _current_review_record(
+        workspace_root, class_id, assignment_id, student_id
+    )
     if record is not None:
         status = review_progress_status(record)
         print(f"Current review state: {status.review_state}")
@@ -3621,32 +3611,42 @@ def _menu_export_student_feedback(
         print("Export canceled.")
         return
 
-    pdf_path = feedback_pdf_export_path(
-        workspace_root, class_id, assignment_id, student_id
-    )
-    markdown_path = feedback_export_path(
-        workspace_root, class_id, assignment_id, student_id
-    )
-    selected_paths = {
-        "1": [pdf_path],
-        "2": [markdown_path],
-        "3": [pdf_path, markdown_path],
+    try:
+        status_document = student_review_status_to_dict(
+            build_student_review_status(
+                workspace_root, class_id, assignment_id, student_id
+            )
+        )
+    except (StudentReviewStatusError, OSError) as error:
+        print(f"Error: could not load feedback export status: {error}")
+        return
+    review_section = cast(dict[str, Any], status_document["review"])
+    export_section = cast(dict[str, Any], review_section["exports"])
+    export_keys = {
+        "1": ("feedback_pdf",),
+        "2": ("feedback_markdown",),
+        "3": ("feedback_pdf", "feedback_markdown"),
     }[export_choice]
+    selected_exports = [
+        cast(dict[str, Any], export_section[key]) for key in export_keys
+    ]
     _print_review_action_header(
         "Export Student Feedback", class_id, assignment_id, student_id
     )
     print(f"Export type: {_student_feedback_export_choice_label(export_choice)}")
     print("Output files:")
-    for path in selected_paths:
-        print(f"- {path}")
+    for export in selected_exports:
+        print(f"- {export['path']}")
     overwrite: bool
-    existing_paths = [path for path in selected_paths if path.exists()]
-    if existing_paths:
+    existing_exports = [
+        export for export in selected_exports if export["file_present"] is True
+    ]
+    if existing_exports:
         print()
         print("A feedback export already exists.")
         print("Existing output files:")
-        for path in existing_paths:
-            print(f"- {path}")
+        for export in existing_exports:
+            print(f"- {export['path']}")
         print()
         print("1. Keep existing export and cancel")
         print("2. Overwrite existing export")
@@ -3789,18 +3789,15 @@ def _launch_assignment_review_actions(
             input("Press Enter to continue...")
             return 1
 
-        print(
-            format_assignment_review_dashboard(
-                dashboard, show_unused_duplicate_files=False
-            )
-        )
+        _print_compact_assignment_dashboard(dashboard)
         print()
 
         print("1. Select student/submission")
-        print("2. Assemble routed submissions")
-        print("3. Export assignment-local class summary — Comprehensive Class Summary")
-        print("4. Export assignment-local Focus Standard summary — Standards Summary")
-        print("5. Export Student Performance Summary")
+        print("2. View submission status")
+        print("3. Review scan problems")
+        print("4. Export reports")
+        print("5. View full diagnostic dashboard")
+        print("6. Refresh")
         print_navigation_options()
         print()
 
@@ -3808,7 +3805,7 @@ def _launch_assignment_review_actions(
         navigation = parse_navigation_choice(choice)
         print()
 
-        if choice in {"", "6"} or navigation is NavigationChoice.BACK:
+        if choice == "" or navigation is NavigationChoice.BACK:
             return 0
         elif choice == "1":
             student_id = _prompt_student_id(
@@ -3822,19 +3819,114 @@ def _launch_assignment_review_actions(
                     student_id,
                 )
         elif choice == "2":
-            _assemble_assignment(workspace_root, class_id, assignment_id)
+            clear_screen()
+            print_menu_header("Assignment Submission Status")
+            status = _load_submission_status(
+                workspace_root, class_id, assignment_id
+            )
+            if status is not None:
+                from quillan.cli_app.output import print_assignment_submission_status
+
+                print_assignment_submission_status(status, workspace_root)
             input("Press Enter to continue...")
         elif choice == "3":
-            _menu_export_class_summary(workspace_root, class_id, assignment_id)
-            input("Press Enter to continue...")
+            from quillan.scan_review_menu import launch_scan_review_resolution_menu
+
+            launch_scan_review_resolution_menu(
+                workspace_root, class_id, assignment_id
+            )
         elif choice == "4":
-            _menu_export_standards_summary(workspace_root, class_id, assignment_id)
-            input("Press Enter to continue...")
+            _menu_export_assignment_reports(
+                workspace_root, class_id, assignment_id
+            )
         elif choice == "5":
+            clear_screen()
+            print_menu_header("Full Assignment Diagnostic Dashboard")
+            print(
+                format_assignment_review_dashboard(
+                    dashboard, show_unused_duplicate_files=False
+                )
+            )
+            input("Press Enter to continue...")
+        elif choice == "6":
+            continue
+        else:
+            print("Invalid selection. Please choose a listed action.")
+            input("Press Enter to continue...")
+
+
+def _print_compact_assignment_dashboard(
+    dashboard: AssignmentReviewDashboard,
+) -> None:
+    submissions = dict(dashboard.submission_counts)
+    routed = dict(dashboard.routed_counts)
+    pages = dict(dashboard.page_counts)
+    reviews = dict(dashboard.review_counts)
+    scan_review = dict(dashboard.scan_review_counts)
+    page_problem_count = sum(
+        pages.get(state, 0)
+        for state in ("missing", "duplicate", "needs_rescan", "present_unselected")
+    )
+    print(f"Class: {dashboard.class_id}")
+    print(f"Assignment: {dashboard.assignment_title} ({dashboard.assignment_id})")
+    print(f"Students: {len(dashboard.students)}")
+    print(
+        "Submissions: "
+        f"valid={submissions['valid']}; missing={submissions['missing']}; "
+        f"invalid={submissions['invalid']}"
+    )
+    print(f"Assembly needed: {routed['students_needing_assembly']}")
+    print(f"Page problems: {page_problem_count}")
+    print(
+        "Reviews: "
+        f"valid={reviews['valid']}; missing={reviews['missing']}; "
+        f"invalid={reviews['invalid']}"
+    )
+    print(
+        "Feedback PDFs: "
+        + "; ".join(
+            f"{state}={count}" for state, count in dashboard.feedback_pdf_counts
+        )
+    )
+    print(f"Active Core scan-review items: {scan_review['attention_items']}")
+    print(f"Warnings: {len(dashboard.warnings)}")
+
+
+def _menu_export_assignment_reports(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    from quillan.menu import clear_screen, print_menu_header
+    from quillan.menu_navigation import NavigationChoice, parse_navigation_choice
+
+    while True:
+        clear_screen()
+        print_menu_header("Assignment Reports")
+        print(f"Class: {class_id}")
+        print(f"Assignment: {assignment_id}")
+        print()
+        print("1. Comprehensive Class Summary")
+        print("2. Focus Standard Summary")
+        print("3. Student Performance Summary")
+        print("B. Back")
+        print()
+        choice = input("Select report: ").strip()
+        if choice == "" or parse_navigation_choice(choice) is NavigationChoice.BACK:
+            return
+        clear_screen()
+        if choice == "1":
+            print_menu_header("Export Comprehensive Class Summary")
+            _menu_export_class_summary(workspace_root, class_id, assignment_id)
+        elif choice == "2":
+            print_menu_header("Export Focus Standard Summary")
+            _menu_export_standards_summary(workspace_root, class_id, assignment_id)
+        elif choice == "3":
+            print_menu_header("Export Student Performance Summary")
             _menu_export_student_performance_summary(
                 workspace_root, class_id, assignment_id
             )
-            input("Press Enter to continue...")
         else:
-            print("Invalid selection. Please enter a number from 1 to 6.")
-            input("Press Enter to continue...")
+            continue
+        print()
+        input("Press Enter to return to reports...")

@@ -107,7 +107,7 @@ def test_bare_namespace_prints_help_without_resolving_workspace(
         lambda: pytest.fail("bare namespace resolved the workspace"),
     )
     assert main(["review-units"]) == 0
-    assert "{show,set}" in capsys.readouterr().out
+    assert "{show,set}" in (lambda captured: captured.out + captured.err)(capsys.readouterr())
 
 
 def test_show_without_review_is_read_only(
@@ -119,7 +119,7 @@ def test_show_without_review_is_read_only(
 
     assert main(["review-units", "show", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]) == 0
 
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert f"Student: {STUDENT_ID}" in output
     assert "Review-unit type: paragraph" in output
     assert "Review record exists: no" in output
@@ -150,7 +150,7 @@ def test_count_creates_menu_equivalent_canonical_units(
     ]
     assert all("page_number" not in unit and "evidence_id" not in unit for unit in review["review_units"])
     assert (assignment_path.read_bytes(), manifest_path.read_bytes()) == before
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Resulting unit count: 2" in output
     assert "Newly empty units added: 2" in output
     assert "Review state: observations_in_progress" in output
@@ -196,7 +196,7 @@ def test_invalid_json_input_does_not_create_review(
     units_path.write_text(json.dumps(value), encoding="utf-8")
     args = ["review-units", "set", CLASS_ID, ASSIGNMENT_ID, STUDENT_ID]
     assert main(args + ["--units", str(units_path)]) == 1
-    output = capsys.readouterr().out
+    output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Error: " in output
     assert error_text in output
     assert not review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).exists()

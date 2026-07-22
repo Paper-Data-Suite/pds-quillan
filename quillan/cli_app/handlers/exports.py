@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
@@ -66,7 +67,7 @@ def handle_export_feedback(args: argparse.Namespace) -> int:
             overwrite=args.overwrite,
         )
     except (WorkspaceRootError, FeedbackExportError) as error:
-        print(f"Error: could not export student feedback: {error}")
+        print(f"Error: could not export student feedback: {error}", file=sys.stderr)
         return 1
 
     print_exported_feedback(exported)
@@ -84,7 +85,10 @@ def handle_export_class_summary(args: argparse.Namespace) -> int:
             overwrite=args.overwrite,
         )
     except (WorkspaceRootError, ClassSummaryExportError) as error:
-        print(f"Error: could not export class review summary: {error}")
+        print(
+            f"Error: could not export class review summary: {error}",
+            file=sys.stderr,
+        )
         return 1
 
     print_exported_class_summary(exported)
@@ -99,7 +103,10 @@ def handle_export_student_performance_summary(args: argparse.Namespace) -> int:
             workspace_root, args.class_id, args.assignment_id, overwrite=args.overwrite
         )
     except (WorkspaceRootError, StudentPerformanceSummaryExportError) as error:
-        print(f"Error: could not export student performance summary: {error}")
+        print(
+            f"Error: could not export student performance summary: {error}",
+            file=sys.stderr,
+        )
         return 1
     print_exported_student_performance_summary(exported)
     return 0
@@ -116,7 +123,7 @@ def handle_export_standards_summary(args: argparse.Namespace) -> int:
             overwrite=args.overwrite,
         )
     except (WorkspaceRootError, StandardsSummaryExportError) as error:
-        print(f"Error: could not export standards summary: {error}")
+        print(f"Error: could not export standards summary: {error}", file=sys.stderr)
         return 1
 
     print_exported_standards_summary(exported)

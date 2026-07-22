@@ -513,9 +513,9 @@ def prompt_view_roster() -> int:
     print(
         format_roster_for_display(
             roster,
-            folder.roster_path,
+            folder.roster_path.relative_to(workspace_root).as_posix(),
             metadata=metadata,
-            metadata_path=folder.metadata_path,
+            metadata_path=folder.metadata_path.relative_to(workspace_root).as_posix(),
             metadata_error=metadata_error,
         )
     )
@@ -607,9 +607,11 @@ def prompt_edit_class_roster() -> int:
                 print(
                     format_roster_for_display(
                         staged_roster,
-                        folder.roster_path,
+                        folder.roster_path.relative_to(workspace_root).as_posix(),
                         metadata=metadata,
-                        metadata_path=folder.metadata_path,
+                        metadata_path=(
+                            folder.metadata_path.relative_to(workspace_root).as_posix()
+                        ),
                         metadata_error=metadata_error,
                     )
                 )
@@ -789,7 +791,7 @@ def launch_roster_menu() -> int:
             navigation = parse_navigation_choice(choice)
             print()
 
-            if choice == "5" or navigation is NavigationChoice.BACK:
+            if navigation is NavigationChoice.BACK:
                 return 0
             workflows = {
                 "1": prompt_create_roster,

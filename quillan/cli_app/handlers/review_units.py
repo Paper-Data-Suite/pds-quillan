@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
@@ -73,5 +74,5 @@ def handle_review_units_set(args: argparse.Namespace) -> int:
 
 
 def _error(error: Exception) -> int:
-    print(f"Error: {error}")
+    print(f"Error: {error}", file=sys.stderr)
     return 1

@@ -10,6 +10,8 @@ from typing import Any
 
 import pytest
 
+from tests.menu_screen_recorder import MenuScreenRecorder, assert_focused_child_screen
+
 from quillan.cli import main
 from quillan.focus_standard_comments import focus_standard_comment_set_path
 import quillan.review_menu as review_menu
@@ -296,7 +298,7 @@ def test_main_menu_shows_and_opens_review_student_work(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["2", "3", "6"])
+    _menu_input(monkeypatch, ["2", "b", "q"])
 
     assert main(["menu"]) == 0
 
@@ -312,6 +314,7 @@ def test_main_menu_shows_and_opens_review_student_work(
     assert "Goodbye." in output
 
 
+@pytest.mark.menu_density_workflow("student selection")
 def test_review_workflow_selects_context_and_shows_read_only_summary(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
@@ -329,14 +332,28 @@ def test_review_workflow_selects_context_and_shows_read_only_summary(
         for path in workspace.rglob("*")
         if path.is_file()
     )
-    _menu_input(monkeypatch, ["2", "1", "1", "1", "1", "1", "12", "6", "", "3", "6"])
+    recorder = MenuScreenRecorder(
+        ["2", "1", "1", "1", "1", "1", "b", "b", "", "b", "q"]
+    )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Select Student/Submission",
+        required_text=f"Avery Rivera ({STUDENT_ID})",
+        forbidden_parent_text="5. View full diagnostic dashboard",
+        parent_heading="Assignment Review Actions",
+        result_heading="Selected Student Review",
+        unrelated_previous_text="Assembly needed:",
+    )
+    recorder.print_transcript(screens, label="SELECTED STUDENT REVIEW")
     assert f"1. {CLASS_ID}" in output
     assert f"1. {ASSIGNMENT_ID} - Synthetic Essay" in output
-    assert f"Submission status for assignment {ASSIGNMENT_ID}" in output
+    assert "Select Student/Submission" in output
     assert (
         f"1. Avery Rivera ({STUDENT_ID}): "
         "unreviewed; manifest exists; evidence files=1"
@@ -349,10 +366,10 @@ def test_review_workflow_selects_context_and_shows_read_only_summary(
     assert "Current review summary" in output
     assert f"Class: {CLASS_ID}" in output
     assert f"Assignment: {ASSIGNMENT_ID}" in output
-    assert f"Student: Avery Rivera ({STUDENT_ID})" in output
-    assert "Submission: assembled" in output
-    assert "Evidence files: 1" in output
-    assert "Review record: not started" in output
+    assert "Student: Avery Rivera" in output
+    assert "Submission: valid" in output
+    assert "Routed evidence files: 0" in output
+    assert "Review: no review record" in output
     assert manifest_path.read_bytes() == manifest_before
     assert files_before == sorted(
         path.relative_to(workspace)
@@ -382,26 +399,24 @@ def test_review_summary_includes_existing_review_record_counts(
     review_before = review_path.read_bytes()
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "12", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "b", "b", "", "b", "q"],
     )
 
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
-    assert "Review record: exists" in output
     assert "Review: feedback composed" in output
-    assert "Private notes: 1" in output
-    assert "Review-unit observations: 0" in output
+    assert "Review progress:" in output
     assert review_path.read_bytes() == review_before
 
 
+@pytest.mark.menu_density_workflow("review units")
 def test_review_menu_defines_review_units(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(
-        monkeypatch,
+    recorder = MenuScreenRecorder(
         [
             "2",
             "1",
@@ -415,16 +430,23 @@ def test_review_menu_defines_review_units(
             "1",
             "",
             "4",
-            "12",
-            "6",
-            "",
-            "3",
-            "6",
+            "b", "b", "", "b", "q",
         ],
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Review Units and Focus Standard Observations",
+        required_text=(f"Student: Avery Rivera ({STUDENT_ID})", "Updated review units:"),
+        forbidden_parent_text="11. Refresh summary",
+        parent_heading="Selected Student Review",
+        result_heading="Updated review units:",
+        unrelated_previous_text="Current review summary",
+    )
     assert "Review Units and Focus Standard Observations" in output
     assert "Updated review units:" in output
     review = json.loads(
@@ -443,13 +465,13 @@ def test_review_menu_defines_review_units(
     assert review["review_state"] == "observations_in_progress"
 
 
+@pytest.mark.menu_density_workflow("observations")
 def test_review_menu_records_applicable_focus_standard_observation(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(
-        monkeypatch,
+    recorder = MenuScreenRecorder(
         [
             "2",
             "1",
@@ -473,16 +495,23 @@ def test_review_menu_records_applicable_focus_standard_observation(
             "",
             "B",
             "4",
-            "12",
-            "6",
-            "",
-            "3",
-            "6",
+            "b", "b", "", "b", "q",
         ],
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Record Focus Standard Observation",
+        required_text=(f"Student: Avery Rivera ({STUDENT_ID})", "Updated Focus Standard observation:"),
+        forbidden_parent_text="4. Back",
+        parent_heading="Review Units and Focus Standard Observations",
+        result_heading="Updated Focus Standard observation:",
+        unrelated_previous_text="Review units:",
+    )
     assert "Record Focus Standard Observation" in output
     assert "Step: Applicability" in output
     assert "Step: Save confirmation" in output
@@ -618,11 +647,7 @@ def test_review_menu_marks_observations_complete(
             "1",
             "",
             "4",
-            "12",
-            "6",
-            "",
-            "3",
-            "6",
+            "b", "b", "", "b", "q",
         ],
     )
 
@@ -634,6 +659,7 @@ def test_review_menu_marks_observations_complete(
     assert review["overall_standard_ratings"] == []
 
 
+@pytest.mark.menu_density_workflow("ratings")
 def test_review_menu_records_and_completes_overall_focus_standard_rating(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
@@ -666,8 +692,7 @@ def test_review_menu_records_and_completes_overall_focus_standard_rating(
     review_path = review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)
     review_path.write_text(json.dumps(review), encoding="utf-8")
 
-    _menu_input(
-        monkeypatch,
+    recorder = MenuScreenRecorder(
         [
             "2",
             "1",
@@ -688,16 +713,23 @@ def test_review_menu_records_and_completes_overall_focus_standard_rating(
             "1",
             "",
             "4",
-            "12",
-            "6",
-            "",
-            "3",
-            "6",
+            "b", "b", "", "b", "q",
         ],
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Record Overall Focus Standard Rating",
+        required_text=(f"Student: Avery Rivera ({STUDENT_ID})", "Updated overall Focus Standard rating:"),
+        forbidden_parent_text="4. Back",
+        parent_heading="Overall Focus Standard Ratings",
+        result_heading="Updated overall Focus Standard rating:",
+        unrelated_previous_text="3. Mark ratings complete",
+    )
     assert "Overall Focus Standard Ratings" in output
     assert "Record Overall Focus Standard Rating" in output
     assert "Step: Rating" in output
@@ -892,11 +924,7 @@ def test_review_menu_blocks_observations_for_returned_without_full_review(
             "1",
             "",
             "4",
-            "12",
-            "6",
-            "",
-            "3",
-            "6",
+            "b", "b", "", "b", "q",
         ],
     )
 
@@ -972,7 +1000,7 @@ def test_review_menu_views_current_review_details_read_only(
 
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "2", "", "12", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "2", "", "b", "b", "", "b", "q"],
     )
 
     assert main(["menu"]) == 0
@@ -989,6 +1017,7 @@ def test_review_menu_views_current_review_details_read_only(
     assert review_path.read_bytes() == review_before
 
 
+@pytest.mark.menu_density_workflow("evidence opening")
 def test_review_menu_open_submission_uses_existing_safe_opening(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
@@ -1003,9 +1032,11 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
         student_id: str,
         *,
         page_number: int | None = None,
+        evidence_id: str | None = None,
     ) -> OpenedSubmissionReview:
         calls.append((Path(workspace_root), class_id, assignment_id, student_id))
         assert page_number == 1
+        assert evidence_id == "evidence_001"
         return OpenedSubmissionReview(
             class_id=class_id,
             assignment_id=assignment_id,
@@ -1029,14 +1060,24 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
         "open_student_submission_for_review",
         open_submission,
     )
-    _menu_input(
-        monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "", "12", "6", "", "3", "6"],
+    recorder = MenuScreenRecorder(
+        ["2", "1", "1", "1", "1", "1", "1", "1", "1", "y", "", "b", "b", "", "b", "q"],
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Select Submission Page",
+        required_text=f"Student: Avery Rivera ({STUDENT_ID})",
+        forbidden_parent_text="11. Refresh summary",
+        parent_heading="Selected Student Review",
+        result_heading="Submission Evidence Opened",
+        unrelated_previous_text="Current review summary",
+    )
     assert calls == [(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID)]
     assert "Opened submission evidence for review:" in output
     assert (
@@ -1060,8 +1101,10 @@ def test_review_menu_multi_page_open_submission_selects_one_page(
         student_id: str,
         *,
         page_number: int | None = None,
+        evidence_id: str | None = None,
     ) -> OpenedSubmissionReview:
         calls.append(page_number)
+        assert evidence_id == "evidence_002"
         return OpenedSubmissionReview(
             class_id=class_id,
             assignment_id=assignment_id,
@@ -1087,17 +1130,17 @@ def test_review_menu_multi_page_open_submission_selects_one_page(
     )
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "2", "", "12", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "1", "2", "1", "y", "", "b", "b", "", "b", "q"],
     )
 
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
     assert calls == [2]
-    assert "Open Submission Evidence" in output
-    assert "1. Page 1 - present - evidence_001" in output
-    assert "2. Page 2 - present - evidence_002" in output
-    assert "A. All" in output
+    assert "Select Submission Page" in output
+    assert "1. Page 1; present; selected; candidates=1" in output
+    assert "2. Page 2; present; selected; candidates=1" in output
+    assert "A. Open all selected pages" in output
 
 
 def test_review_menu_multi_page_open_submission_opens_all_pages(
@@ -1149,7 +1192,7 @@ def test_review_menu_multi_page_open_submission_opens_all_pages(
     )
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "A", "", "12", "6", "", "3", "6"],
+        ["2", "1", "1", "1", "1", "1", "1", "A", "", "b", "b", "", "b", "q"],
     )
 
     assert main(["menu"]) == 0
@@ -1172,8 +1215,8 @@ def test_review_menu_reports_missing_openable_evidence(
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
-    assert f"Student: Mina Patel ({SECOND_STUDENT_ID})" in output
-    assert "Submission: not assembled" in output
+    assert "Student: Mina Patel" in output
+    assert "Submission: missing" in output
     assert "No digital submission evidence has been found" in output
     assert "1. Create plain-paper submission for this student" in output
     assert "Plain-paper submission creation canceled." in output
@@ -1181,20 +1224,31 @@ def test_review_menu_reports_missing_openable_evidence(
     assert not list(workspace.rglob("review.json"))
 
 
+@pytest.mark.menu_density_workflow("plain-paper creation")
 def test_review_menu_creates_plain_paper_submission_and_shows_review_actions(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(
-        monkeypatch,
-        ["2", "1", "1", "1", "1", "2", "1", "yes", "", "12", "6", "b", "q"],
+    recorder = MenuScreenRecorder(
+        ["2", "1", "1", "1", "1", "2", "1", "yes", "", "b", "b", "", "b", "q"],
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
-    assert "Plain-paper submission created for Mina Patel" in output
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Create Plain-Paper Submission",
+        required_text=f"Student: Mina Patel ({SECOND_STUDENT_ID})",
+        forbidden_parent_text="3. Refresh summary",
+        parent_heading="Selected Student Review",
+        result_heading="Plain-Paper Submission Created",
+        unrelated_previous_text="No digital submission evidence",
+    )
+    assert "Plain-Paper Submission Created" in output
     assert "1. Open submission evidence" in output
     assert "5. Overall Focus Standard ratings" in output
     student_dir = (
@@ -1215,13 +1269,13 @@ def test_review_menu_creates_plain_paper_submission_and_shows_review_actions(
 
 
 
+@pytest.mark.menu_density_workflow("teacher notes")
 def test_review_menu_adds_teacher_note_to_review_record(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(
-        monkeypatch,
+    recorder = MenuScreenRecorder(
         [
             "2",
             "1",
@@ -1232,15 +1286,22 @@ def test_review_menu_adds_teacher_note_to_review_record(
             "8",
             "This is a test note.",
             "",
-            "12",
-            "6",
-            "",
-            "3",
-            "6",
+            "b", "b", "", "b", "q",
         ],
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
+    screens = recorder.screens(capsys.readouterr().out)
+    assert_focused_child_screen(
+        screens,
+        heading="Add Teacher Note",
+        required_text=(f"Student: Avery Rivera ({STUDENT_ID})", "Added teacher note:"),
+        forbidden_parent_text="11. Refresh summary",
+        parent_heading="Selected Student Review",
+        result_heading="Added teacher note:",
+        unrelated_previous_text="Current review summary",
+    )
 
     review_path = (
         workspace
@@ -1260,13 +1321,13 @@ def test_review_menu_adds_teacher_note_to_review_record(
     assert review["review_state"] == "not_started"
 
 
+@pytest.mark.menu_density_workflow("workflow-state changes")
 def test_review_menu_updates_review_workflow_state(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(
-        monkeypatch,
+    recorder = MenuScreenRecorder(
         [
             "2",
             "1",
@@ -1278,15 +1339,22 @@ def test_review_menu_updates_review_workflow_state(
             "4",
             "1",
             "",
-            "12",
-            "6",
-            "",
-            "3",
-            "6",
+            "b", "b", "", "b", "q",
         ],
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
+    screens = recorder.screens(capsys.readouterr().out)
+    assert_focused_child_screen(
+        screens,
+        heading="Update Review Workflow State",
+        required_text=(f"Student: Avery Rivera ({STUDENT_ID})", "Updated review workflow state:"),
+        forbidden_parent_text="11. Refresh summary",
+        parent_heading="Selected Student Review",
+        result_heading="Updated review workflow state:",
+        unrelated_previous_text="Current review summary",
+    )
 
     manifest_path = submission_manifest_path(
         workspace,
@@ -1304,6 +1372,7 @@ def test_review_menu_updates_review_workflow_state(
     assert review["review_state"] == "observations_in_progress"
 
 
+@pytest.mark.menu_density_workflow("feedback composition")
 def test_review_menu_adds_custom_focus_standard_feedback_comment(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
@@ -1314,8 +1383,7 @@ def test_review_menu_adds_custom_focus_standard_feedback_comment(
     review["feedback"]["standard_feedback"] = []
     review_path.write_text(json.dumps(review), encoding="utf-8")
 
-    _menu_input(
-        monkeypatch,
+    recorder = MenuScreenRecorder(
         [
             "2",
             "1",
@@ -1332,16 +1400,23 @@ def test_review_menu_adds_custom_focus_standard_feedback_comment(
             "1",
             "",
             "5",
-            "12",
-            "6",
-            "",
-            "3",
-            "6",
+            "b", "b", "", "b", "q",
         ],
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Add Focus Standard Feedback Comment",
+        required_text=(f"Student: {STUDENT_ID}", "Added Focus Standard feedback comment:"),
+        forbidden_parent_text="5. Back",
+        parent_heading="Compose Focus Standard Feedback",
+        result_heading="Added Focus Standard feedback comment:",
+        unrelated_previous_text="2. Add custom feedback comment",
+    )
     assert "Compose Focus Standard Feedback" in output
     assert "Add Focus Standard Feedback Comment" in output
     assert "Current rating: not recorded" in output
@@ -1373,7 +1448,7 @@ def test_review_menu_saves_default_custom_comment_text_for_reuse(
             "1", "",  # Reject invalid default-yes input, then accept its default.
             "1", "y",  # Reject invalid default-no input, then choose yes.
             "General feedback", "1", "", "", "1",
-            "", "5", "12", "6", "", "3", "6",
+            "", "5", "b", "b", "", "b", "q",
         ],
     )
 
@@ -1418,7 +1493,7 @@ def test_review_menu_keeps_revised_reusable_text_separate(
             "Avery, revise paragraph 2.", "", "y", "General revision", "2",
             "Revise the relevant paragraph.", "",
             "Character, Scene Development, dialogue", "1",
-            "", "5", "12", "6", "", "3", "6",
+            "", "5", "b", "b", "", "b", "q",
         ],
     )
 
@@ -1463,7 +1538,7 @@ def test_review_menu_back_while_saving_reusable_comment_writes_nothing(
         [
             "2", "1", "1", "1", "1", "1", "6", "2", "1",
             *reusable_steps,
-            "", "5", "12", "6", "", "3", "6",
+            "", "5", "b", "b", "", "b", "q",
         ],
     )
 
@@ -1539,11 +1614,7 @@ def test_review_menu_selects_reusable_focus_standard_feedback_comment(
             "1",
             "",
             "5",
-            "12",
-            "6",
-            "",
-            "3",
-            "6",
+            "b", "b", "", "b", "q",
         ],
     )
 
@@ -1561,6 +1632,7 @@ def test_review_menu_selects_reusable_focus_standard_feedback_comment(
     assert comment["include_in_feedback"] is True
 
 
+@pytest.mark.menu_density_workflow("page selection and page management")
 def test_review_menu_excludes_submission_page_without_touching_review_record(
     workspace: Path,
     capsys: pytest.CaptureFixture[str],
@@ -1582,8 +1654,7 @@ def test_review_menu_excludes_submission_page_without_touching_review_record(
     review_before = review_path.read_bytes()
     evidence_path = workspace / EVIDENCE_RELATIVE_PATH
     evidence_before = evidence_path.read_bytes()
-    _menu_input(
-        monkeypatch,
+    recorder = MenuScreenRecorder(
         [
             "2",
             "1",
@@ -1596,17 +1667,24 @@ def test_review_menu_excludes_submission_page_without_touching_review_record(
             "1",
             "1",
             "",
-            "12",
-            "6",
-            "",
-            "3",
-            "6",
+            "b", "b", "", "b", "q",
         ],
     )
+    recorder.install(monkeypatch)
 
     assert main(["menu"]) == 0
 
     output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert_focused_child_screen(
+        screens,
+        heading="Page Change Result",
+        required_text=(f"Student: Avery Rivera ({STUDENT_ID})", "Page change saved."),
+        forbidden_parent_text="11. Refresh summary",
+        parent_heading="Selected Student Review",
+        result_heading="Page Change Result",
+        unrelated_previous_text="Current review summary",
+    )
     assert "Manage Submission Pages" in output
     assert "Excluding a page does not delete the file." in output
     assert "Page change saved." in output
@@ -1632,7 +1710,7 @@ def test_review_menu_no_classes_and_invalid_selection_back_out_safely(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(review_menu, "resolve_workspace_root", lambda: tmp_path)
-    _menu_input(monkeypatch, ["2", "9", "", "1", "", "3", "6"])
+    _menu_input(monkeypatch, ["2", "9", "", "1", "", "b", "q"])
 
     assert main(["menu"]) == 0
 

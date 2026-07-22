@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Mapping
+import sys
 
 from pds_core.rosters import RosterError, RosterValidationError
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
@@ -21,10 +22,11 @@ from quillan.roster_management import (
     write_roster_mutation,
 )
 from quillan.roster_workflows import format_roster_for_display
+from quillan.cli_app.output import workspace_relative_display
 
 
 def _error(error: Exception) -> int:
-    print(f"Error: {error}")
+    print(f"Error: {error}", file=sys.stderr)
     if isinstance(error, RosterValidationError):
         for issue in error.issues:
             location: list[str] = []
@@ -33,7 +35,7 @@ def _error(error: Exception) -> int:
             if issue.column:
                 location.append(f"column {issue.column}")
             prefix = f"  {' / '.join(location)}: " if location else "  "
-            print(f"{prefix}[{issue.code}] {issue.message}")
+            print(f"{prefix}[{issue.code}] {issue.message}", file=sys.stderr)
     return 1
 
 
@@ -65,8 +67,14 @@ def _print_creation(plan: RosterCreationPlan, *, dry_run: bool) -> None:
         "Optional columns: "
         f"{_optional_columns_label(optional_roster_columns(plan.roster))}"
     )
-    print(f"Roster path: {plan.roster_path}")
-    print(f"Class metadata path: {plan.metadata_path}")
+    print(
+        "Roster path: "
+        f"{workspace_relative_display(plan.roster_path, plan.workspace_root)}"
+    )
+    print(
+        "Class metadata path: "
+        f"{workspace_relative_display(plan.metadata_path, plan.workspace_root)}"
+    )
     print(f"Existing target: {'yes' if plan.target_exists else 'no'}")
     if dry_run:
         print("No files were written.")
@@ -108,9 +116,11 @@ def handle_roster_show(args: argparse.Namespace) -> int:
         print(
             format_roster_for_display(
                 loaded.roster,
-                loaded.roster_path,
+                workspace_relative_display(loaded.roster_path, loaded.workspace_root),
                 metadata=loaded.metadata,
-                metadata_path=loaded.metadata_path,
+                metadata_path=workspace_relative_display(
+                    loaded.metadata_path, loaded.workspace_root
+                ),
                 metadata_error=loaded.metadata_error,
             )
         )
@@ -128,7 +138,10 @@ def handle_roster_validate(args: argparse.Namespace) -> int:
         print("Canonical roster is valid.")
         print(f"Class ID: {loaded.roster.class_id}")
         print(f"Student count: {len(loaded.roster.students)}")
-        print(f"Roster path: {loaded.roster_path}")
+        print(
+            "Roster path: "
+            f"{workspace_relative_display(loaded.roster_path, loaded.workspace_root)}"
+        )
         print(
             "School year: "
             f"{loaded.metadata.school_year if loaded.metadata is not None else 'not set'}"
@@ -151,7 +164,10 @@ def _print_mutation(plan: RosterMutationPlan, *, dry_run: bool) -> None:
     print(f"Period: {plan.student.period}")
     print(f"Optional fields: {_fields_label(plan.student.extra_fields)}")
     print(f"Resulting student count: {len(plan.roster.students)}")
-    print(f"Roster path: {plan.roster_path}")
+    print(
+        "Roster path: "
+        f"{workspace_relative_display(plan.roster_path, plan.workspace_root)}"
+    )
     if dry_run:
         print("No files were written.")
 
