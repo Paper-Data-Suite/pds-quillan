@@ -1,5 +1,12 @@
 # Response-Page Observations
 
+Observation and routed-evidence records are Quillan-owned descendants of the
+exact module-qualified work root. Their paths are derived from the shared work
+identity; submission and review services do not reinterpret routed filenames.
+Post-dispatch persistence failures are stored separately from Core routing
+failures as append-only Quillan occurrences. See
+[Module-qualified record services](module_qualified_record_services.md).
+
 One durable Quillan page observation is identified by the deterministic SHA-256
 key `source_scan_id + source_page_number + route_id + page_id` under the domain
 `quillan-response-page-observation-v1`. Its ID is `obs_` plus the first 32

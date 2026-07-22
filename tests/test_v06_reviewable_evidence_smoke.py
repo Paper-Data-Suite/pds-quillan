@@ -18,6 +18,7 @@ from quillan.submission_review_opening import open_student_submission_for_review
 from quillan.submission_review_state import update_submission_review_state
 from quillan.submission_status import list_assignment_submission_status
 from tests.observation_test_support import successful_image_page
+from tests.review_test_support import _write_assignment
 
 
 def test_legacy_caller_metadata_assembly_api_is_absent() -> None:
@@ -39,6 +40,11 @@ def test_observation_backed_evidence_remains_reviewable_and_non_destructive(
         observation.class_id,
         observation.assignment_id,
         timestamp="2026-07-21T12:00:00+00:00",
+    )
+    _write_assignment(
+        tmp_path,
+        class_id=observation.class_id,
+        assignment_id=observation.assignment_id,
     )
     assert not assembled.failures
     manifest_path = assembled.assembled[0].manifest_path

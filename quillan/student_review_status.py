@@ -14,14 +14,24 @@ from pds_core.rosters import RosterError, student_display_name
 
 from quillan.assignment_submission_assembly import discover_assignment_routed_evidence_status
 from quillan.assignment_summary_context import feedback_status, relative_path_for
-from quillan.assignments import AssignmentConfigError, load_assignment_config
-from quillan.storage import assignment_config_path
 from quillan.feedback_export import feedback_export_path, feedback_pdf_export_path
 from quillan.minimum_requirement_review import configured_requirements
 from quillan.plain_paper_submission import is_plain_paper_submission
-from quillan.review_record import ReviewRecordError, load_review_record
 from quillan.review_status_display import review_progress_status
-from quillan.submission_manifest import SubmissionManifestError, load_submission_manifest
+from quillan.record_context import (
+    InvalidReviewError,
+    InvalidSubmissionError,
+    MissingSubmissionError,
+    OrphanReviewError,
+    QuillanRecordContextError,
+    RecordIdentityMismatchError,
+    ReviewLoadingPolicy,
+    load_quillan_assignment_context,
+    load_quillan_student_review_context,
+    mutable_json_copy,
+    student_record_paths,
+)
+from quillan.work_paths import quillan_work_ref
 
 REVIEW_STATUS_SCHEMA_VERSION: Final = "1"
 REVIEW_STATUS_RECORD_TYPE: Final = "quillan_student_review_status"
@@ -83,20 +93,15 @@ def build_student_review_status(
     except ValueError as error:
         raise StudentReviewStatusError(str(error)) from error
 
-    root = Path(workspace_root).resolve(strict=False)
-    assignment_path = assignment_config_path(root, class_id, assignment_id)
+    work_ref = quillan_work_ref(class_id, assignment_id)
     try:
-        assignment = load_assignment_config(assignment_path)
-    except (OSError, AssignmentConfigError) as error:
+        assignment_context = load_quillan_assignment_context(workspace_root, work_ref)
+        root = assignment_context.paths.workspace_root
+        assignment_path = assignment_context.paths.assignment_path
+        assignment = mutable_json_copy(assignment_context.assignment)
+        paths = student_record_paths(root, work_ref, student_id)
+    except (OSError, QuillanRecordContextError) as error:
         raise StudentReviewStatusError(f"Could not load assignment: {error}") from error
-    if assignment["assignment_id"] != assignment_id:
-        raise StudentReviewStatusError(
-            f"Assignment identity mismatch: expected {assignment_id!r}, found {assignment['assignment_id']!r}."
-        )
-    if class_id not in assignment["class_ids"]:
-        raise StudentReviewStatusError(
-            f"Assignment {assignment_id!r} is not configured for class {class_id!r}."
-        )
 
     warnings: list[str] = []
     display_name = student_id
@@ -125,27 +130,47 @@ def build_student_review_status(
         routed_count = None
         warnings.append("routed_evidence_unavailable")
 
-    student_dir = assignment_path.parent / "submissions" / student_id
-    manifest_path = student_dir / "submission.json"
-    review_path = student_dir / "review.json"
-    manifest, submission_status = _load_record(
-        manifest_path,
-        load_submission_manifest,
-        class_id,
-        assignment_id,
-        student_id,
-        "submission",
-        warnings,
-    )
-    review, review_status = _load_record(
-        review_path,
-        load_review_record,
-        class_id,
-        assignment_id,
-        student_id,
-        "review",
-        warnings,
-    )
+    manifest_path = paths.submission_manifest_path
+    review_path = paths.review_record_path
+    manifest: dict[str, Any] | None = None
+    review: dict[str, Any] | None = None
+    submission_status = "missing"
+    review_status = "missing"
+    try:
+        record_context = load_quillan_student_review_context(
+            root,
+            work_ref,
+            student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+        )
+    except MissingSubmissionError:
+        pass
+    except OrphanReviewError:
+        review_status = "orphaned"
+        warnings.append("review_without_valid_submission")
+    except InvalidSubmissionError:
+        submission_status = "invalid"
+        warnings.append("invalid_submission")
+    except InvalidReviewError as error:
+        submission_status = "valid"
+        review_status = "invalid"
+        warnings.append("invalid_review")
+        if error.submission_record is not None:
+            manifest = mutable_json_copy(error.submission_record.value)
+    except RecordIdentityMismatchError:
+        submission_status = "identity_mismatch"
+        review_status = "identity_mismatch"
+        warnings.append("identity_mismatch")
+    except QuillanRecordContextError:
+        submission_status = "invalid"
+        review_status = "invalid"
+        warnings.append("unsafe_path")
+    else:
+        manifest = mutable_json_copy(record_context.submission)
+        submission_status = "valid"
+        if record_context.review is not None:
+            review = mutable_json_copy(record_context.review)
+            review_status = "valid"
     needs_assembly = None if routed_count is None else bool(routed_count) and manifest is None
     if needs_assembly:
         warnings.append("routed_evidence_needs_assembly")
@@ -153,7 +178,7 @@ def build_student_review_status(
         warnings.append("missing_submission")
     if review_status == "missing":
         warnings.append("missing_review")
-    orphaned = review_path.is_file() and manifest is None
+    orphaned = review_status == "orphaned"
     if orphaned:
         warnings.append("review_without_valid_submission")
 
@@ -189,30 +214,6 @@ def build_student_review_status(
         review=_freeze(review_section),
         warnings=tuple(dict.fromkeys(warnings)),
     )
-
-
-def _load_record(
-    path: Path,
-    loader: Any,
-    class_id: str,
-    assignment_id: str,
-    student_id: str,
-    kind: str,
-    warnings: list[str],
-) -> tuple[dict[str, Any] | None, str]:
-    if not path.is_file():
-        return None, "missing"
-    try:
-        record = loader(path)
-    except (OSError, SubmissionManifestError, ReviewRecordError):
-        warnings.append(f"invalid_{kind}")
-        return None, "invalid"
-    if any(record[key] != expected for key, expected in (
-        ("class_id", class_id), ("assignment_id", assignment_id), ("student_id", student_id)
-    )):
-        warnings.append(f"{kind}_identity_mismatch")
-        return None, "identity_mismatch"
-    return cast(dict[str, Any], record), "valid"
 
 
 def _submission_section(
@@ -528,3 +529,4 @@ def _value(value: object) -> str:
 
 def _yes_no(value: object) -> str:
     return "unavailable" if value is None else "yes" if value is True else "no"
+    ReviewLoadingPolicy,

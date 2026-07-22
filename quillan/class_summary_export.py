@@ -22,7 +22,15 @@ from quillan.assignment_summary_context import (
     relative_path_for,
     standard_column_keys,
 )
-from quillan.work_paths import quillan_work_paths
+from quillan.work_paths import (
+    QuillanWorkPathError,
+    class_summary_path,
+    feedback_markdown_path,
+    feedback_pdf_path,
+    preflight_work_file_destination,
+    quillan_work_ref,
+)
+from quillan.record_context import canonical_workspace_root
 
 BASE_CSV_COLUMNS: Final[tuple[str, ...]] = (
     "class_id",
@@ -83,9 +91,9 @@ def class_summary_export_path(
     """Return the compatibility path for the comprehensive class summary."""
     _validate_identifier(class_id, "class_id")
     _validate_identifier(assignment_id, "assignment_id")
-    return quillan_work_paths(
-        workspace_root, class_id, assignment_id
-    ).exports_dir / "class_summary.csv"
+    return class_summary_path(
+        workspace_root, quillan_work_ref(class_id, assignment_id)
+    )
 
 
 def export_class_review_summary(
@@ -99,16 +107,29 @@ def export_class_review_summary(
     """Export one deterministic CSV row per rostered or discovered student."""
     normalized_created_at = _normalize_timestamp(created_at)
     try:
-        resolved_root = Path(workspace_root).resolve(strict=False)
+        resolved_root = canonical_workspace_root(workspace_root)
         output_path = class_summary_export_path(
             resolved_root, class_id, assignment_id
         )
         assignment = load_assignment(resolved_root, class_id, assignment_id)
+        expected_output = preflight_work_file_destination(
+            resolved_root,
+            quillan_work_ref(class_id, assignment_id),
+            Path("exports") / "class_summary.csv",
+        )
+        if output_path != expected_output:
+            raise ClassSummaryExportError("Class summary path is not canonical.")
         focus_standard_ids = list(assignment["focus_standard_ids"])
         column_keys, key_warnings = standard_column_keys(focus_standard_ids)
         labels = rating_labels(assignment)
         students = discover_students(resolved_root, class_id, assignment_id)
-    except (OSError, RuntimeError, ValueError, ClassSummaryExportError) as error:
+    except (
+        OSError,
+        RuntimeError,
+        ValueError,
+        QuillanWorkPathError,
+        ClassSummaryExportError,
+    ) as error:
         raise ClassSummaryExportError(str(error)) from error
 
     overwrote_existing = output_path.exists()
@@ -189,13 +210,17 @@ def _build_student_row(
     student = loaded.student
     review = loaded.review
     warnings = list(loaded.warnings) + list(key_warnings)
-    feedback_pdf_path = student.student_dir / "exports" / "feedback.pdf"
-    feedback_markdown_path = student.student_dir / "exports" / "feedback.md"
+    canonical_pdf_path = feedback_pdf_path(
+        workspace_root, student.work_ref, student.student_id
+    )
+    canonical_markdown_path = feedback_markdown_path(
+        workspace_root, student.work_ref, student.student_id
+    )
     pdf_path, pdf_status, pdf_stale, pdf_warnings = feedback_status(
-        workspace_root, review, "feedback_pdf", feedback_pdf_path
+        workspace_root, review, "feedback_pdf", canonical_pdf_path
     )
     md_path, md_status, md_stale, md_warnings = feedback_status(
-        workspace_root, review, "feedback_markdown", feedback_markdown_path
+        workspace_root, review, "feedback_markdown", canonical_markdown_path
     )
     warnings.extend(pdf_warnings)
     warnings.extend(md_warnings)

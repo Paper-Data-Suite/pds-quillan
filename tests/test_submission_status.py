@@ -10,10 +10,11 @@ from quillan.response_page_observation_persistence import (
 from quillan.submission_observation_assembly import (
     assemble_quillan_submission_manifests,
 )
-from quillan.submission_manifest import SubmissionManifestError
+from quillan.record_context import InvalidSubmissionError
 from quillan.submission_manifest_paths import submission_manifest_path
 from quillan.submission_status import list_assignment_submission_status
 from tests.observation_test_support import successful_image_page
+from tests.review_test_support import _write_assignment
 
 
 def test_status_lists_observed_and_assembled_student_without_writes(
@@ -25,6 +26,11 @@ def test_status_lists_observed_and_assembled_student_without_writes(
     observation = persisted.observation
     assembled = assemble_quillan_submission_manifests(
         tmp_path, observation.class_id, observation.assignment_id
+    )
+    _write_assignment(
+        tmp_path,
+        class_id=observation.class_id,
+        assignment_id=observation.assignment_id,
     )
     assert not assembled.failures
     before = assembled.assembled[0].manifest_path.read_bytes()
@@ -38,6 +44,11 @@ def test_status_lists_observed_and_assembled_student_without_writes(
 
 
 def test_status_is_empty_without_observations_or_manifests(tmp_path: Path) -> None:
+    _write_assignment(
+        tmp_path,
+        class_id="class_synthetic",
+        assignment_id="assignment_synthetic",
+    )
     status = list_assignment_submission_status(
         tmp_path, "class_synthetic", "assignment_synthetic"
     )
@@ -47,12 +58,17 @@ def test_status_is_empty_without_observations_or_manifests(tmp_path: Path) -> No
 
 
 def test_invalid_existing_manifest_remains_a_status_error(tmp_path: Path) -> None:
+    _write_assignment(
+        tmp_path,
+        class_id="class_synthetic",
+        assignment_id="assignment_synthetic",
+    )
     path = submission_manifest_path(
         tmp_path, "class_synthetic", "assignment_synthetic", "student_001"
     )
     path.parent.mkdir(parents=True)
     path.write_text("{not json", encoding="utf-8")
-    with pytest.raises(SubmissionManifestError, match="not valid JSON"):
+    with pytest.raises(InvalidSubmissionError, match="not valid JSON"):
         list_assignment_submission_status(
             tmp_path, "class_synthetic", "assignment_synthetic"
         )

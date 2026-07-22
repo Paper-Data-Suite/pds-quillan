@@ -22,6 +22,7 @@ from quillan.submission_review_opening import (
     SubmissionReviewOpeningError,
     open_student_submission_for_review,
 )
+from tests.review_test_support import _write_assignment
 
 CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"
@@ -30,6 +31,11 @@ EVIDENCE_PATH = (
     f"classes/{CLASS_ID}/modules/quillan/work/{ASSIGNMENT_ID}/scans/"
     "response_00107_pg_001.pdf"
 )
+
+
+@pytest.fixture(autouse=True)
+def canonical_assignment(tmp_path: Path) -> None:
+    _write_assignment(tmp_path)
 
 
 def _evidence(

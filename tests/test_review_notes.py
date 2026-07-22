@@ -16,6 +16,7 @@ from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
 )
+from tests.review_test_support import _write_assignment
 
 CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"
@@ -23,6 +24,11 @@ STUDENT_ID = "00107"
 ORIGINAL_TIMESTAMP = "2026-06-20T12:00:00+00:00"
 FIRST_NOTE_TIMESTAMP = "2026-06-22T13:30:00-04:00"
 SECOND_NOTE_TIMESTAMP = "2026-06-22T14:00:00-04:00"
+
+
+@pytest.fixture(autouse=True)
+def canonical_assignment(tmp_path: Path) -> None:
+    _write_assignment(tmp_path)
 
 
 def _manifest() -> dict[str, Any]:

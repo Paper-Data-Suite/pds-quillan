@@ -12,18 +12,15 @@ from typing import Any
 from quillan.review_record import (
     ReviewRecordError,
     build_empty_review_record,
-    load_review_record,
     validate_review_record,
 )
-from quillan.review_record_paths import (
-    ReviewRecordPathError,
-    write_review_record,
-)
+from quillan.review_record_paths import ReviewRecordPathError, persist_quillan_review_record
 from quillan.review_unit_management import (
     ReviewUnitManagementError,
     load_review_unit_context,
     validate_review_unit_definitions,
 )
+from quillan.work_paths import quillan_work_ref
 
 _SEQUENTIAL_OBSERVATION_ID = re.compile(r"^observation_(\d{4})$")
 
@@ -379,12 +376,15 @@ def _load_context(
     except ReviewUnitManagementError as error:
         raise ReviewObservationError(str(error)) from error
     return {
+        "record_context": loaded.record_context,
         "workspace_root": loaded.workspace_root,
         "manifest_path": loaded.submission_manifest_path,
         "record_path": loaded.review_record_path,
         "assignment_path": loaded.assignment_path,
         "assignment": loaded.assignment,
         "manifest": loaded.manifest,
+        "review": loaded.review,
+        "work_ref": quillan_work_ref(class_id, assignment_id),
         "class_id": class_id,
         "assignment_id": assignment_id,
         "student_id": student_id,
@@ -392,8 +392,7 @@ def _load_context(
 
 
 def _load_or_create_review(context: dict[str, Any], created_at: str) -> dict[str, Any]:
-    record_path = context["record_path"]
-    if record_path.exists():
+    if context["review"] is not None:
         return _load_existing_review(context)
     return build_empty_review_record(
         class_id=context["class_id"],
@@ -410,31 +409,15 @@ def _load_or_create_review(context: dict[str, Any], created_at: str) -> dict[str
 
 
 def _load_existing_review(context: dict[str, Any]) -> dict[str, Any]:
-    record_path = context["record_path"]
-    if not record_path.exists():
+    if context["review"] is None:
         raise ReviewObservationError("Review units must be defined before recording observations.")
-    try:
-        review = load_review_record(record_path)
-    except (OSError, ReviewRecordError) as error:
-        raise ReviewObservationError(f"Could not load review record: {error}") from error
-    _validate_identity(
-        review,
-        record_name="Review record",
-        class_id=context["class_id"],
-        assignment_id=context["assignment_id"],
-        student_id=context["student_id"],
-    )
-    return copy.deepcopy(review)
+    return copy.deepcopy(context["review"])
 
 
 def _write_review(context: dict[str, Any], review: dict[str, Any]) -> None:
     try:
         validate_review_record(review)
-        write_review_record(
-            context["record_path"],
-            review,
-            overwrite=context["record_path"].exists(),
-        )
+        persist_quillan_review_record(context["record_context"], review)
     except (
         OSError,
         RuntimeError,

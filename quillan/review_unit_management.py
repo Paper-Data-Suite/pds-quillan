@@ -7,16 +7,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
-from quillan.assignments import AssignmentConfigError, load_assignment_config
-from quillan.review_record import ReviewRecordError, load_review_record
-from quillan.review_record_paths import ReviewRecordPathError, review_record_path
-from quillan.storage import assignment_config_path
-from quillan.submission_guidance import missing_submission_guidance
-from quillan.submission_manifest import SubmissionManifestError, load_submission_manifest
-from quillan.submission_manifest_paths import (
-    SubmissionManifestPathError,
-    submission_manifest_path,
+from quillan.record_context import (
+    QuillanRecordContextError,
+    QuillanStudentReviewContext,
+    ReviewLoadingPolicy,
+    load_quillan_student_review_context,
+    mutable_json_copy,
 )
+from quillan.work_paths import quillan_work_ref
 
 _ALLOWED_UNIT_FIELDS = frozenset({"sequence", "label", "page_number", "evidence_id"})
 
@@ -52,6 +50,7 @@ class ReviewUnitContext:
     assignment: dict[str, Any]
     manifest: dict[str, Any]
     review: dict[str, Any] | None
+    record_context: QuillanStudentReviewContext
 
     @property
     def unit_type(self) -> str:
@@ -107,53 +106,32 @@ def load_review_unit_context(
 ) -> ReviewUnitContext:
     """Load canonical review-unit context without writing anything."""
     try:
-        root = Path(workspace_root).resolve(strict=False)
-        assignment_path = assignment_config_path(root, class_id, assignment_id)
-        manifest_path = submission_manifest_path(root, class_id, assignment_id, student_id)
-        record_path = review_record_path(root, class_id, assignment_id, student_id)
-    except (OSError, RuntimeError, ValueError, SubmissionManifestPathError, ReviewRecordPathError) as error:
+        loaded = load_quillan_student_review_context(
+            workspace_root,
+            quillan_work_ref(class_id, assignment_id),
+            student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+        )
+    except (QuillanRecordContextError, OSError, RuntimeError, ValueError) as error:
         raise ReviewUnitManagementError(str(error)) from error
 
-    try:
-        assignment = load_assignment_config(assignment_path)
-    except (OSError, AssignmentConfigError) as error:
-        raise ReviewUnitManagementError(str(error)) from error
-    if assignment["assignment_id"] != assignment_id:
-        raise ReviewUnitManagementError(
-            f"Assignment config assignment_id is {assignment['assignment_id']!r}, expected {assignment_id!r}."
-        )
-    if class_id not in assignment["class_ids"]:
-        raise ReviewUnitManagementError(
-            f"Assignment config class_ids does not include {class_id!r}."
-        )
-
-    if not manifest_path.exists():
-        raise ReviewUnitManagementError(missing_submission_guidance())
-    try:
-        manifest = load_submission_manifest(manifest_path)
-    except (OSError, SubmissionManifestError) as error:
-        raise ReviewUnitManagementError(f"Could not load submission manifest: {error}") from error
-    _validate_identity(manifest, "Submission manifest", class_id, assignment_id, student_id)
-
-    review = None
-    if record_path.exists():
-        try:
-            review = load_review_record(record_path)
-        except (OSError, ReviewRecordError) as error:
-            raise ReviewUnitManagementError(f"Could not load review record: {error}") from error
-        _validate_identity(review, "Review record", class_id, assignment_id, student_id)
+    root = loaded.paths.workspace_root
+    assignment = mutable_json_copy(loaded.assignment_context.assignment)
+    manifest = mutable_json_copy(loaded.submission)
+    review = None if loaded.review is None else mutable_json_copy(loaded.review)
 
     return ReviewUnitContext(
         workspace_root=root,
         class_id=class_id,
         assignment_id=assignment_id,
         student_id=student_id,
-        assignment_path=assignment_path,
-        submission_manifest_path=manifest_path,
-        review_record_path=record_path,
+        assignment_path=loaded.assignment_context.paths.assignment_path,
+        submission_manifest_path=loaded.paths.submission_manifest_path,
+        review_record_path=loaded.paths.review_record_path,
         assignment=assignment,
         manifest=manifest,
         review=review,
+        record_context=loaded,
     )
 
 

@@ -28,7 +28,14 @@ from quillan.assignment_summary_context import (
     relative_path_for,
     standard_column_keys,
 )
-from quillan.work_paths import quillan_work_paths
+from quillan.work_paths import (
+    QuillanWorkPathError,
+    feedback_pdf_path,
+    preflight_work_file_destination,
+    quillan_work_ref,
+    standards_summary_path,
+)
+from quillan.record_context import canonical_workspace_root
 
 CSV_COLUMNS: Final[tuple[str, ...]] = (
     "class_id",
@@ -87,9 +94,9 @@ def standards_summary_export_path(
     """Return the canonical assignment-local standards summary CSV path."""
     _validate_identifier(class_id, "class_id")
     _validate_identifier(assignment_id, "assignment_id")
-    return quillan_work_paths(
-        workspace_root, class_id, assignment_id
-    ).exports_dir / "standards_summary.csv"
+    return standards_summary_path(
+        workspace_root, quillan_work_ref(class_id, assignment_id)
+    )
 
 
 def export_standards_summary(
@@ -103,16 +110,31 @@ def export_standards_summary(
     """Export assignment-local Focus Standard rating aggregates."""
     normalized_created_at = _normalize_timestamp(created_at)
     try:
-        resolved_root = Path(workspace_root).resolve(strict=False)
+        resolved_root = canonical_workspace_root(workspace_root)
         output_path = standards_summary_export_path(
             resolved_root, class_id, assignment_id
         )
         assignment = load_assignment(resolved_root, class_id, assignment_id)
+        expected_output = preflight_work_file_destination(
+            resolved_root,
+            quillan_work_ref(class_id, assignment_id),
+            Path("exports") / "standards_summary.csv",
+        )
+        if output_path != expected_output:
+            raise StandardsSummaryExportError(
+                "Standards summary path is not canonical."
+            )
         focus_standard_ids = list(assignment["focus_standard_ids"])
         column_keys, key_warnings = standard_column_keys(focus_standard_ids)
         values = rating_values(assignment)
         students = discover_students(resolved_root, class_id, assignment_id)
-    except (OSError, RuntimeError, ValueError, StandardsSummaryExportError) as error:
+    except (
+        OSError,
+        RuntimeError,
+        ValueError,
+        QuillanWorkPathError,
+        StandardsSummaryExportError,
+    ) as error:
         raise StandardsSummaryExportError(str(error)) from error
 
     overwrote_existing = output_path.exists()
@@ -203,7 +225,11 @@ def _build_row(
         if review is None:
             continue
         students_with_valid_reviews += 1
-        pdf_path = record.student.student_dir / "exports" / "feedback.pdf"
+        pdf_path = feedback_pdf_path(
+            workspace_root,
+            record.student.work_ref,
+            record.student.student_id,
+        )
         _, pdf_status, _, _ = feedback_status(
             workspace_root, review, "feedback_pdf", pdf_path
         )

@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from pds_core.route_registrations import write_route_registration
+from pds_core.routing_models import (
+    ModuleRecordRef,
+    ModuleWorkRef,
+    RouteLocator,
+    RouteRegistration,
+)
 from pds_core.scan_failure_metadata import RoutingFailureMetadata, write_routing_failure_metadata
 from pds_core.scan_resolution_metadata import (
     scan_resolution_metadata_from_dict,
@@ -17,6 +25,7 @@ from quillan.scan_review_resolution import (
     discover_scan_review_items,
     resolve_scan_review_item,
 )
+from tests.test_route_handler import route_context
 
 FAILURE_ID = "failure_20260711T120000000000Z_a1b2c3d4e5f6"
 
@@ -26,11 +35,12 @@ def _write_failure(
     *,
     failure_id: str = FAILURE_ID,
     stage: str = "quillan_route_review",
+    module_id: str = "quillan",
 ) -> Path:
     return write_routing_failure_metadata(
         root,
         RoutingFailureMetadata(
-            schema_version="1",
+            schema_version="2",
             failure_id=failure_id,
             scope="page",
             stage=stage,
@@ -38,18 +48,19 @@ def _write_failure(
             failure_category="payload_missing",
             failure_message="No QR payload was found.",
             source_filename="teacher_scan.pdf",
+            route_locator=RouteLocator(
+                "PDS2",
+                ModuleWorkRef(module_id, "english12_p3", "essay_01"),
+                "route_a1b2c3d4e5f6",
+            ),
+            target=None,
             module_details={"failure_origin": "qr_decode"},
-            module="quillan",
             source_scan_id="scan_001",
             source_sha256="a" * 64,
             retained_source_path="scans/source/2026-07-11/teacher_scan.pdf",
             review_copy_path="scans/review/teacher_scan_page_2.pdf",
             source_page_number=2,
             detected_payload=None,
-            payload_page_number=None,
-            class_id="english12_p3",
-            assignment_id="essay_01",
-            student_id="stu_001",
         ),
     )
 
@@ -62,6 +73,7 @@ def test_discovery_lists_valid_quillan_items_and_skips_bad_or_other_records(
         tmp_path,
         failure_id="failure_20260711T120001000000Z_b1b2c3d4e5f6",
         stage="scoreform_route_review",
+        module_id="scoreform",
     )
     malformed = tmp_path / "scans" / "review" / "malformed.json"
     malformed.write_text("{not json", encoding="utf-8")
@@ -81,11 +93,11 @@ def test_discovery_lists_valid_quillan_items_and_skips_bad_or_other_records(
     [
         ("rescan_needed", "resolved", "rescan_needed"),
         ("cannot_route", "resolved", "cannot_route"),
-        ("mixed_assignment", "resolved", "mixed_assignment"),
+        ("mixed_assignment", "resolved", "other"),
         ("evidence_filed", "resolved", "evidence_filed"),
         ("dismissed_duplicate", "resolved", "dismissed_duplicate"),
         ("other", "resolved", "other"),
-        ("defer", "deferred", "other"),
+        ("defer", "deferred", "deferred"),
     ],
 )
 def test_resolution_actions_write_shared_metadata(
@@ -96,7 +108,22 @@ def test_resolution_actions_write_shared_metadata(
 ) -> None:
     _write_failure(tmp_path)
     message = "Teacher decision." if action == "other" else None
-    evidence_path = "handled/teacher_scan.pdf" if action == "evidence_filed" else None
+    evidence_path = None
+    if action == "evidence_filed":
+        evidence = (
+            tmp_path
+            / "classes"
+            / "english12_p3"
+            / "modules"
+            / "quillan"
+            / "work"
+            / "essay_01"
+            / "handled"
+            / "teacher_scan.pdf"
+        )
+        evidence.parent.mkdir(parents=True)
+        evidence.write_bytes(b"evidence")
+        evidence_path = evidence.relative_to(tmp_path).as_posix()
 
     result = resolve_scan_review_item(
         tmp_path,
@@ -113,11 +140,10 @@ def test_resolution_actions_write_shared_metadata(
     assert metadata.resolution_status == expected_status
     assert metadata.resolution_action == expected_action
     assert metadata.retained_source_path == "scans/source/2026-07-11/teacher_scan.pdf"
-    assert (metadata.class_id, metadata.assignment_id, metadata.student_id) == (
-        "english12_p3",
-        "essay_01",
-        "stu_001",
-    )
+    assert metadata.schema_version == "2"
+    # Core-v2 no-final-route actions intentionally do not copy a failure route.
+    assert metadata.route_locator is None
+    assert metadata.target is None
     assert metadata.resolution_evidence_path == evidence_path
 
 
@@ -171,3 +197,94 @@ def test_resolution_rejects_missing_failure(tmp_path: Path) -> None:
             "failure_missing",
             action="cannot_route",
         )
+
+
+def _write_routed_failure(
+    root: Path,
+) -> tuple[RouteLocator, ModuleRecordRef, RouteRegistration]:
+    resolution, _ = route_context(root)
+    write_route_registration(root, resolution.registration)
+    registration = resolution.registration
+    write_routing_failure_metadata(
+        root,
+        RoutingFailureMetadata(
+            schema_version="2",
+            failure_id=FAILURE_ID,
+            scope="page",
+            stage="dispatch",
+            created_at="2026-07-11T12:00:00+00:00",
+            failure_category="route_mismatch",
+            failure_message="Teacher routing decision required.",
+            source_filename="teacher_scan.pdf",
+            source_scan_id="scan_001",
+            source_sha256="a" * 64,
+            retained_source_path="scans/source/2026-07-21/teacher_scan.pdf",
+            review_copy_path=None,
+            source_page_number=1,
+            detected_payload="PDS2",
+            route_locator=registration.locator,
+            target=registration.target,
+            module_details={"failure_owner": "quillan"},
+        ),
+    )
+    return registration.locator, registration.target, registration
+
+
+def test_route_selected_requires_explicit_registered_locator_and_target(
+    tmp_path: Path,
+) -> None:
+    locator, target, _ = _write_routed_failure(tmp_path)
+    with pytest.raises(ScanReviewResolutionError, match="requires an exact"):
+        resolve_scan_review_item(tmp_path, FAILURE_ID, action="route_selected")
+
+    result = resolve_scan_review_item(
+        tmp_path,
+        FAILURE_ID,
+        action="route_selected",
+        route_locator=locator,
+        target=target,
+    )
+    assert result.resolution_action == "route_selected"
+
+
+def test_route_corrected_requires_a_changed_registered_route(tmp_path: Path) -> None:
+    locator, target, registration = _write_routed_failure(tmp_path)
+    corrected_locator = RouteLocator(
+        "PDS2",
+        locator.work,
+        "route_ffffffffffffffffffffffffffffffff",
+    )
+    corrected_registration = replace(
+        registration,
+        locator=corrected_locator,
+        target=target,
+    )
+    write_route_registration(tmp_path, corrected_registration)
+
+    result = resolve_scan_review_item(
+        tmp_path,
+        FAILURE_ID,
+        action="route_corrected",
+        route_locator=corrected_locator,
+        target=target,
+    )
+    assert result.resolution_action == "route_corrected"
+
+
+def test_strict_core_loader_skips_duplicate_keys_without_hiding_sibling(
+    tmp_path: Path,
+) -> None:
+    valid = _write_failure(tmp_path)
+    duplicate_path = valid.with_name(
+        "failure_20260711T120002000000Z_c1b2c3d4e5f6.json"
+    )
+    text = valid.read_text(encoding="utf-8").replace(
+        '"failure_id":',
+        '"failure_id": "failure_20260711T120002000000Z_c1b2c3d4e5f6",\n  "failure_id":',
+        1,
+    )
+    duplicate_path.write_text(text, encoding="utf-8")
+
+    discovery = discover_scan_review_items(tmp_path)
+    assert [item.failure_id for item in discovery.items] == [FAILURE_ID]
+    assert any("invalid JSON" in warning for warning in discovery.warnings)

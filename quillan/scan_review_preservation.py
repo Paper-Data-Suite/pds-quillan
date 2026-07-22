@@ -169,7 +169,10 @@ def _persist_page(
                 failure_id=failure_id,
                 created_at=created_at,
                 detected_payload=page.raw_payload_text,
-                module_details={"failure_origin": origin},
+                module_details={
+                    "failure_origin": origin,
+                    "failure_owner": "quillan",
+                },
             )
         stage = (
             "dispatch_integration"
@@ -235,7 +238,10 @@ def _persist_source_error(
             detected_payload=None,
             route_locator=None,
             target=None,
-            module_details={"failure_origin": "source_page_loading"},
+            module_details={
+                "failure_origin": "source_page_loading",
+                "failure_owner": "quillan",
+            },
         )
 
     return _write_fresh(
@@ -362,7 +368,10 @@ def _module_details(
     page: QuillanScanPageOutcome,
     origin: str,
 ) -> dict[str, str]:
-    details = {"failure_origin": origin[:100]}
+    details = {
+        "failure_origin": origin[:100],
+        "failure_owner": "quillan",
+    }
     if page.decode_method is not None:
         details["decode_method"] = page.decode_method[:200]
     if (

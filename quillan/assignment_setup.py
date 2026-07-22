@@ -12,7 +12,6 @@ from pds_core.standards import load_workspace_standards_library
 
 from quillan.assignments import (
     AssignmentConfigError,
-    load_assignment_config,
     validate_assignment_standards_selection,
 )
 from quillan.assignment_workflows import (
@@ -23,6 +22,13 @@ from quillan.assignment_workflows import (
     write_assignment_config,
 )
 from quillan.storage import assignment_config_path
+from quillan.record_context import (
+    canonical_workspace_root,
+    QuillanRecordContextError,
+    load_quillan_assignment_context,
+    mutable_json_copy,
+)
+from quillan.work_paths import quillan_work_ref
 
 
 @dataclass(frozen=True)
@@ -52,7 +58,7 @@ def plan_assignment_creation(
     allow_return_without_full_review: bool = True,
 ) -> AssignmentPlan:
     """Validate creation inputs without creating directories or files."""
-    root = Path(workspace_root).resolve(strict=False)
+    root = canonical_workspace_root(workspace_root)
     validate_identifier(class_id, "class_id")
     validate_identifier(assignment_id, "assignment_id")
     load_class_roster(root, class_id)
@@ -96,20 +102,19 @@ def load_canonical_assignment(
     workspace_root: str | Path, class_id: str, assignment_id: str
 ) -> AssignmentPlan:
     """Load and check one canonical assignment's path identity."""
-    root = Path(workspace_root).resolve(strict=False)
-    validate_identifier(class_id, "class_id")
-    validate_identifier(assignment_id, "assignment_id")
-    path = assignment_config_path(root, class_id, assignment_id)
-    assignment = load_assignment_config(path)
-    if assignment["assignment_id"] != assignment_id:
-        raise AssignmentConfigError(
-            "Path assignment_id does not match assignment config assignment_id."
+    try:
+        context = load_quillan_assignment_context(
+            workspace_root, quillan_work_ref(class_id, assignment_id)
         )
-    if class_id not in assignment["class_ids"]:
-        raise AssignmentConfigError(
-            "Path class_id is not included in assignment config class_ids."
-        )
-    return AssignmentPlan(root, class_id, assignment_id, path, assignment)
+    except QuillanRecordContextError as error:
+        raise AssignmentConfigError(str(error)) from error
+    return AssignmentPlan(
+        context.paths.workspace_root,
+        class_id,
+        assignment_id,
+        context.paths.assignment_path,
+        mutable_json_copy(context.assignment),
+    )
 
 
 def validate_canonical_assignment(plan: AssignmentPlan) -> None:

@@ -1,5 +1,12 @@
 # Quillan Data Contracts
 
+Quillan-owned assignment records and all dependent submission, review, and export
+records are rooted exclusively beneath
+`classes/<class_id>/modules/quillan/work/<assignment_id>/`. Contextual loaders
+validate identity and embedded paths before business services receive immutable
+record data; the unqualified assignment tree is not read or migrated. See
+[Module-qualified record services](module_qualified_record_services.md).
+
 ## Quillan response-page dispatch result
 
 `QuillanResponsePageDispatchResult` is a frozen, slotted runtime model. Its route ID

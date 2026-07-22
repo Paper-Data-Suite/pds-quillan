@@ -27,12 +27,18 @@ from quillan.submission_review_state import (
     UpdatedSubmissionReviewState,
     update_submission_review_state,
 )
+from tests.review_test_support import _write_assignment
 
 CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"
 STUDENT_ID = "00107"
 ORIGINAL_TIMESTAMP = "2026-06-20T12:00:00+00:00"
 UPDATED_TIMESTAMP = "2026-06-22T15:30:00+00:00"
+
+
+@pytest.fixture(autouse=True)
+def canonical_assignment(tmp_path: Path) -> None:
+    _write_assignment(tmp_path)
 
 
 def _manifest() -> dict[str, Any]:
@@ -305,7 +311,7 @@ def test_write_failure_is_wrapped_and_original_remains(
 
     monkeypatch.setattr(
         quillan.submission_review_state,
-        "write_submission_manifest",
+        "update_quillan_submission_manifest",
         fail_write,
     )
 

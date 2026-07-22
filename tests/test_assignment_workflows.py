@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from datetime import datetime, timezone
 import os
 from pathlib import Path
+from typing import Any, cast
 
 from pds_core.classes import write_class_roster
 from pds_core.rosters import create_roster
@@ -23,6 +24,7 @@ from quillan.assignments import (
     load_assignment_config,
     validate_assignment_config,
 )
+from quillan.assignment_workflows import AssignmentBatchWriteError
 from quillan.menu_navigation import QuitQuillan, ReturnToMainMenu
 from quillan.work_paths import quillan_work_paths
 
@@ -231,6 +233,181 @@ def test_write_assignment_config_uses_canonical_path(tmp_path: Path) -> None:
     )
     assert load_assignment_config(path) == assignment
     assert path.read_text(encoding="utf-8").endswith("\n")
+
+
+def _assignment_path(root: Path, class_id: str) -> Path:
+    return (
+        root
+        / "classes"
+        / class_id
+        / "modules"
+        / "quillan"
+        / "work"
+        / "literary_analysis_essay"
+        / "assignment.json"
+    )
+
+
+def test_multiclass_second_create_failure_completely_compensates_first(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    classes = ("english_12_p3", "english_12_p4")
+    assignment = _assignment(class_ids=list(classes))
+    original_create = cast(Any, getattr(workflows, "create_exclusive_record"))
+
+    def fail_second(path: Path, *args: object, **kwargs: object) -> Any:
+        if "english_12_p4" in path.parts:
+            raise OSError("second class failed before installation")
+        return original_create(path, *args, **kwargs)
+
+    monkeypatch.setattr(workflows, "create_exclusive_record", fail_second)
+
+    with pytest.raises(AssignmentBatchWriteError) as captured:
+        workflows.write_assignment_configs(tmp_path, classes, assignment)
+
+    assert captured.value.possibly_durable_paths == ()
+    assert not _assignment_path(tmp_path, classes[0]).exists()
+    assert not _assignment_path(tmp_path, classes[1]).exists()
+
+
+def test_multiclass_third_failure_compensates_all_earlier_creates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    classes = ("english_12_p3", "english_12_p4", "english_12_p5")
+    assignment = _assignment(class_ids=list(classes))
+    original_create = cast(Any, getattr(workflows, "create_exclusive_record"))
+
+    def fail_third(path: Path, *args: object, **kwargs: object) -> Any:
+        if "english_12_p5" in path.parts:
+            raise OSError("third class failed")
+        return original_create(path, *args, **kwargs)
+
+    monkeypatch.setattr(workflows, "create_exclusive_record", fail_third)
+
+    with pytest.raises(AssignmentBatchWriteError) as captured:
+        workflows.write_assignment_configs(tmp_path, classes, assignment)
+
+    assert captured.value.possibly_durable_paths == ()
+    assert not any(_assignment_path(tmp_path, class_id).exists() for class_id in classes)
+
+
+def test_multiclass_mixed_create_update_batch_compensates_exact_original(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    classes = ("english_12_p3", "english_12_p4", "english_12_p5")
+    original_assignment = _assignment(class_ids=list(classes))
+    original_assignment["student_prompt"] = "Original prompt."
+    original_path = workflows.write_assignment_config(
+        tmp_path, classes[0], original_assignment
+    )
+    original_bytes = original_path.read_bytes()
+    replacement = _assignment(class_ids=list(classes))
+    replacement["student_prompt"] = "Replacement prompt."
+    original_create = cast(Any, getattr(workflows, "create_exclusive_record"))
+
+    def fail_third(path: Path, *args: object, **kwargs: object) -> Any:
+        if "english_12_p5" in path.parts:
+            raise OSError("third class failed")
+        return original_create(path, *args, **kwargs)
+
+    monkeypatch.setattr(workflows, "create_exclusive_record", fail_third)
+
+    with pytest.raises(AssignmentBatchWriteError) as captured:
+        workflows.write_assignment_configs(
+            tmp_path, classes, replacement, overwrite=True
+        )
+
+    assert captured.value.possibly_durable_paths == ()
+    assert original_path.read_bytes() == original_bytes
+    assert not _assignment_path(tmp_path, classes[1]).exists()
+    assert not _assignment_path(tmp_path, classes[2]).exists()
+
+
+def test_multiclass_compensation_refuses_concurrent_edit_of_updated_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    classes = ("english_12_p3", "english_12_p4")
+    original_assignment = _assignment(class_ids=list(classes))
+    first_path = workflows.write_assignment_config(
+        tmp_path, classes[0], original_assignment
+    )
+    replacement = _assignment(class_ids=list(classes))
+    replacement["student_prompt"] = "Replacement prompt."
+    original_create = cast(Any, getattr(workflows, "create_exclusive_record"))
+
+    def edit_first_then_fail(path: Path, *args: object, **kwargs: object) -> Any:
+        if "english_12_p4" in path.parts:
+            first_path.write_bytes(b"concurrent updated assignment")
+            raise OSError("second class failed")
+        return original_create(path, *args, **kwargs)
+
+    monkeypatch.setattr(workflows, "create_exclusive_record", edit_first_then_fail)
+
+    with pytest.raises(AssignmentBatchWriteError) as captured:
+        workflows.write_assignment_configs(
+            tmp_path, classes, replacement, overwrite=True
+        )
+
+    assert first_path.read_bytes() == b"concurrent updated assignment"
+    assert captured.value.possibly_durable_paths == (first_path,)
+    assert captured.value.rollback_diagnostics
+
+
+def test_multiclass_compensation_refuses_concurrent_edit_of_created_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    classes = ("english_12_p3", "english_12_p4")
+    first_path = _assignment_path(tmp_path, classes[0])
+    assignment = _assignment(class_ids=list(classes))
+    original_create = cast(Any, getattr(workflows, "create_exclusive_record"))
+
+    def edit_first_then_fail(path: Path, *args: object, **kwargs: object) -> Any:
+        if "english_12_p4" in path.parts:
+            first_path.write_bytes(b"concurrent created assignment")
+            raise OSError("second class failed")
+        return original_create(path, *args, **kwargs)
+
+    monkeypatch.setattr(workflows, "create_exclusive_record", edit_first_then_fail)
+
+    with pytest.raises(AssignmentBatchWriteError) as captured:
+        workflows.write_assignment_configs(tmp_path, classes, assignment)
+
+    assert first_path.read_bytes() == b"concurrent created assignment"
+    assert first_path in captured.value.possibly_durable_paths
+    assert captured.value.rollback_diagnostics
+
+
+def test_multiclass_compensation_filesystem_failure_reports_exact_durable_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    classes = ("english_12_p3", "english_12_p4")
+    first_path = _assignment_path(tmp_path, classes[0])
+    assignment = _assignment(class_ids=list(classes))
+    original_create = cast(Any, getattr(workflows, "create_exclusive_record"))
+    original_replace = os.replace
+
+    def fail_second(path: Path, *args: object, **kwargs: object) -> Any:
+        if "english_12_p4" in path.parts:
+            raise OSError("second class failed")
+        return original_create(path, *args, **kwargs)
+
+    def fail_compensation(source: Path, target: Path) -> None:
+        if source == first_path and "assignment-compensation" in target.name:
+            raise OSError("synthetic compensation filesystem failure")
+        original_replace(source, target)
+
+    monkeypatch.setattr(workflows, "create_exclusive_record", fail_second)
+    monkeypatch.setattr(os, "replace", fail_compensation)
+
+    with pytest.raises(AssignmentBatchWriteError) as captured:
+        workflows.write_assignment_configs(tmp_path, classes, assignment)
+
+    assert first_path in captured.value.possibly_durable_paths
+    assert first_path.is_file()
+    assert any(
+        "compensation filesystem failure" in diagnostic
+        for diagnostic in captured.value.rollback_diagnostics
+    )
 
 
 def test_write_assignment_config_allows_included_multi_class_path(

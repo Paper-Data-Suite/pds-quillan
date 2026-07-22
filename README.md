@@ -1,5 +1,13 @@
 # Quillan
 
+> **Storage contract:** Quillan assignment, submission, review, feedback, and
+> assignment-report services use only
+> `classes/<class_id>/modules/quillan/work/<assignment_id>/`. See
+> [Module-qualified record services](docs/module_qualified_record_services.md)
+> for the canonical contexts, plain-paper behavior, export paths, and scan-review
+> ownership boundary. The former unqualified assignment tree is unsupported and
+> is never inspected or written.
+
 ## Installed PDS2 module boundary
 
 Quillan registers the `quillan` entry point in `paper_data_suite.modules` through

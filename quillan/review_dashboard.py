@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from collections import Counter
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Any, Final
 
@@ -16,20 +17,28 @@ from quillan.assignment_submission_assembly import (
     discover_assignment_routed_evidence_status,
 )
 from quillan.assignment_summary_context import feedback_status, relative_path_for
-from quillan.assignments import AssignmentConfigError, load_assignment_config
 from quillan.storage import assignment_config_path
 from quillan.feedback_export import feedback_export_path, feedback_pdf_export_path
 from quillan.plain_paper_submission import is_plain_paper_submission
-from quillan.review_record import ReviewRecordError, load_review_record
 from quillan.review_status_display import review_progress_status
+from quillan.record_context import (
+    InvalidReviewError,
+    InvalidSubmissionError,
+    MissingSubmissionError,
+    OrphanReviewError,
+    QuillanRecordContextError,
+    RecordIdentityMismatchError,
+    ReviewLoadingPolicy,
+    load_quillan_assignment_context,
+    load_quillan_student_review_context,
+    mutable_json_copy,
+    student_record_paths,
+)
 from quillan.scan_review_resolution import (
     ScanReviewResolutionError,
     discover_scan_review_items,
 )
-from quillan.submission_manifest import (
-    SubmissionManifestError,
-    load_submission_manifest,
-)
+from quillan.work_paths import _is_link_like, quillan_work_ref
 
 DASHBOARD_SCHEMA_VERSION: Final = "1"
 DASHBOARD_RECORD_TYPE: Final = "quillan_assignment_review_dashboard"
@@ -148,21 +157,13 @@ def build_assignment_review_dashboard(
         validate_identifier(assignment_id, "assignment_id")
     except ValueError as error:
         raise ReviewDashboardError(str(error)) from error
-    root = Path(workspace_root).resolve(strict=False)
-    assignment_path = assignment_config_path(root, class_id, assignment_id)
+    work_ref = quillan_work_ref(class_id, assignment_id)
     try:
-        assignment = load_assignment_config(assignment_path)
-    except (OSError, AssignmentConfigError) as error:
+        assignment_context = load_quillan_assignment_context(workspace_root, work_ref)
+        root = assignment_context.paths.workspace_root
+        assignment = mutable_json_copy(assignment_context.assignment)
+    except (OSError, QuillanRecordContextError) as error:
         raise ReviewDashboardError(f"Could not load assignment: {error}") from error
-    if assignment["assignment_id"] != assignment_id:
-        raise ReviewDashboardError(
-            f"Assignment identity mismatch: expected {assignment_id!r}, "
-            f"found {assignment['assignment_id']!r}."
-        )
-    if class_id not in assignment["class_ids"]:
-        raise ReviewDashboardError(
-            f"Assignment {assignment_id!r} is not configured for class {class_id!r}."
-        )
 
     warnings: list[DashboardWarning] = []
     roster_students: tuple[Any, ...] | None
@@ -172,7 +173,7 @@ def build_assignment_review_dashboard(
         roster_students = None
         warnings.append(DashboardWarning("roster_unavailable", str(error)))
 
-    submissions_dir = assignment_path.parent / "submissions"
+    submissions_dir = assignment_context.paths.submissions_dir
     submission_ids = _directory_ids(submissions_dir)
     try:
         routed = discover_assignment_routed_evidence_status(
@@ -194,92 +195,106 @@ def build_assignment_review_dashboard(
     review_files_present = 0
     orphaned_reviews = 0
     for student_id in ordered_ids:
-        student_dir = submissions_dir / student_id
-        manifest_path = student_dir / "submission.json"
-        review_path = student_dir / "review.json"
+        try:
+            paths = student_record_paths(root, work_ref, student_id)
+        except QuillanRecordContextError as error:
+            raise ReviewDashboardError(
+                f"Unsafe student record path for {student_id!r}: {error}"
+            ) from error
+        manifest_path = paths.submission_manifest_path
+        review_path = paths.review_record_path
         manifest_relative = relative_path_for(manifest_path, root)
         review_relative = relative_path_for(review_path, root)
         student_warnings: list[str] = []
         manifest: dict[str, Any] | None = None
-        submission_status = "missing"
-        if manifest_path.is_file():
-            submission_files_present += 1
-            try:
-                loaded = load_submission_manifest(manifest_path)
-            except (OSError, SubmissionManifestError) as error:
-                submission_status = "invalid"
-                student_warnings.append("invalid_submission")
-                warnings.append(
-                    DashboardWarning(
-                        "invalid_submission", str(error), manifest_relative, student_id
-                    )
-                )
-            else:
-                if _identity_mismatch(loaded, class_id, assignment_id, student_id):
-                    submission_status = "identity_mismatch"
-                    student_warnings.append("submission_identity_mismatch")
-                    warnings.append(
-                        DashboardWarning(
-                            "submission_identity_mismatch",
-                            "Submission identity does not match its canonical path.",
-                            manifest_relative,
-                            student_id,
-                        )
-                    )
-                else:
-                    submission_status = "valid"
-                    manifest = loaded
-                    valid_manifests[student_id] = loaded
-                    assembled_paths.update(_manifest_evidence_paths(root, loaded))
-        elif student_id in roster_ids:
-            student_warnings.append("missing_submission")
-
         review: dict[str, Any] | None = None
-        review_status = "missing" if manifest is not None else "unavailable"
-        if review_path.is_file():
+        submission_status = "missing"
+        review_status = "unavailable"
+        try:
+            record_context = load_quillan_student_review_context(
+                root,
+                work_ref,
+                student_id,
+                review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+            )
+        except MissingSubmissionError as error:
+            review_status = "unavailable"
+            if student_id in roster_ids:
+                student_warnings.append("missing_submission")
+            warnings.append(
+                DashboardWarning("missing_submission", str(error), manifest_relative, student_id)
+            )
+        except OrphanReviewError as error:
+            review_status = "orphaned"
+            orphaned_reviews += 1
             review_files_present += 1
-            if manifest is None:
-                review_status = "orphaned"
-                orphaned_reviews += 1
-                student_warnings.append("review_without_valid_submission")
-                warnings.append(
-                    DashboardWarning(
-                        "review_without_valid_submission",
-                        "Review record exists without a valid adjacent submission.",
-                        review_relative,
-                        student_id,
-                    )
+            student_warnings.append("review_without_valid_submission")
+            warnings.append(
+                DashboardWarning(
+                    "review_without_valid_submission",
+                    str(error),
+                    review_relative,
+                    student_id,
                 )
+            )
+        except InvalidSubmissionError as error:
+            submission_status = "invalid"
+            submission_files_present += 1
+            review_status = "unavailable"
+            student_warnings.append("invalid_submission")
+            warnings.append(
+                DashboardWarning("invalid_submission", str(error), manifest_relative, student_id)
+            )
+        except InvalidReviewError as error:
+            submission_status = "valid"
+            submission_files_present += 1
+            review_status = "invalid"
+            review_files_present += 1
+            student_warnings.append("invalid_review")
+            warnings.append(
+                DashboardWarning("invalid_review", str(error), review_relative, student_id)
+            )
+            if error.submission_record is not None:
+                manifest = mutable_json_copy(error.submission_record.value)
+                valid_manifests[student_id] = manifest
+                assembled_paths.update(_manifest_evidence_paths(root, manifest))
+        except RecordIdentityMismatchError as error:
+            submission_status = "identity_mismatch"
+            review_status = "identity_mismatch"
+            student_warnings.append("record_identity_mismatch")
+            warnings.append(
+                DashboardWarning(
+                    "record_identity_mismatch",
+                    str(error),
+                    manifest_relative,
+                    student_id,
+                )
+            )
+        except QuillanRecordContextError as error:
+            submission_status = "identity_mismatch"
+            review_status = "identity_mismatch"
+            student_warnings.append("record_identity_or_path_mismatch")
+            warnings.append(
+                DashboardWarning(
+                    "record_identity_or_path_mismatch",
+                    str(error),
+                    manifest_relative,
+                    student_id,
+                )
+            )
+        else:
+            submission_files_present += 1
+            submission_status = "valid"
+            manifest = mutable_json_copy(record_context.submission)
+            valid_manifests[student_id] = manifest
+            assembled_paths.update(_manifest_evidence_paths(root, manifest))
+            if record_context.review is None:
+                review_status = "missing"
+                student_warnings.append("missing_review")
             else:
-                try:
-                    loaded_review = load_review_record(review_path)
-                except (OSError, ReviewRecordError) as error:
-                    review_status = "invalid"
-                    student_warnings.append("invalid_review")
-                    warnings.append(
-                        DashboardWarning(
-                            "invalid_review", str(error), review_relative, student_id
-                        )
-                    )
-                else:
-                    if _identity_mismatch(
-                        loaded_review, class_id, assignment_id, student_id
-                    ):
-                        review_status = "identity_mismatch"
-                        student_warnings.append("review_identity_mismatch")
-                        warnings.append(
-                            DashboardWarning(
-                                "review_identity_mismatch",
-                                "Review identity does not match its canonical path.",
-                                review_relative,
-                                student_id,
-                            )
-                        )
-                    else:
-                        review_status = "valid"
-                        review = loaded_review
-        elif manifest is not None:
-            student_warnings.append("missing_review")
+                review_files_present += 1
+                review_status = "valid"
+                review = mutable_json_copy(record_context.review)
 
         page_counts = Counter({state: 0 for state in PAGE_STATES})
         present_unselected = 0
@@ -766,7 +781,20 @@ def _student_population(
 
 def _directory_ids(path: Path) -> set[str]:
     try:
-        return {entry.name for entry in path.iterdir() if entry.is_dir()}
+        if not os.path.lexists(path):
+            return set()
+        if _is_link_like(path) or not path.is_dir():
+            raise ReviewDashboardError(
+                f"Submission collection is not an ordinary directory: {path}"
+            )
+        identifiers: set[str] = set()
+        for entry in path.iterdir():
+            if _is_link_like(entry) or not entry.is_dir():
+                raise ReviewDashboardError(
+                    f"Invalid direct submission child: {entry.name}"
+                )
+            identifiers.add(validate_identifier(entry.name, "student_id"))
+        return identifiers
     except (FileNotFoundError, NotADirectoryError):
         return set()
     except OSError as error:
@@ -790,7 +818,7 @@ def _identity_mismatch(
 
 def _manifest_evidence_paths(root: Path, manifest: dict[str, Any]) -> set[Path]:
     return {
-        (root / item["routed_evidence_path"]).resolve(strict=False)
+        Path(os.path.abspath(root / item["routed_evidence_path"]))
         for page in manifest["pages"]
         for item in page["evidence"]
     }
@@ -813,7 +841,7 @@ def _routed_file_status(
     for student_id, items in evidence_by_student.items():
         for item in items:
             path = Path(item.routed_evidence_path)
-            resolved = (root / path).resolve(strict=False)
+            resolved = Path(os.path.abspath(root / path))
             if resolved in assembled:
                 continue
             relative = relative_path_for(resolved, root)

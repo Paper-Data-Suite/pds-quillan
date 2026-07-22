@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Any
 
@@ -12,9 +13,15 @@ from quillan.assignment_submission_assembly import (
     SkippedRoutedEvidenceFile,
     discover_assignment_routed_evidence_status,
 )
-from quillan.storage import assignment_submissions_dir
+from quillan.record_context import (
+    ReviewLoadingPolicy,
+    load_quillan_assignment_context,
+    load_quillan_student_review_context,
+    mutable_json_copy,
+    student_record_paths,
+)
 from quillan.response_page_observations import QuillanResponsePageObservation
-from quillan.submission_manifest import load_submission_manifest
+from quillan.work_paths import _is_link_like, quillan_work_ref
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +78,9 @@ def list_assignment_submission_status(
     validate_identifier(assignment_id, "assignment_id")
     _validate_expected_pages(expected_pages)
 
-    root = Path(workspace_root).resolve(strict=False)
+    work_ref = quillan_work_ref(class_id, assignment_id)
+    assignment_context = load_quillan_assignment_context(workspace_root, work_ref)
+    root = assignment_context.paths.workspace_root
     manifests = _load_assignment_manifests(
         root, class_id, assignment_id
     )
@@ -139,35 +148,39 @@ def _load_assignment_manifests(
     class_id: str,
     assignment_id: str,
 ) -> dict[str, tuple[Path, dict[str, Any]]]:
-    submissions_dir = assignment_submissions_dir(
-        root, class_id, assignment_id
-    )
-    if not submissions_dir.exists():
+    work_ref = quillan_work_ref(class_id, assignment_id)
+    assignment_context = load_quillan_assignment_context(root, work_ref)
+    submissions_dir = assignment_context.paths.submissions_dir
+    if not os.path.lexists(submissions_dir):
         return {}
-    if not submissions_dir.is_dir():
+    if _is_link_like(submissions_dir) or not submissions_dir.is_dir():
         raise NotADirectoryError(
-            f"Assignment submissions path is not a directory: {submissions_dir}"
+            "Assignment submissions path is not an ordinary non-link directory: "
+            f"{submissions_dir}"
         )
 
     manifests: dict[str, tuple[Path, dict[str, Any]]] = {}
     for student_dir in sorted(
         submissions_dir.iterdir(), key=lambda path: path.name.casefold()
     ):
-        if not student_dir.is_dir():
-            continue
-        manifest_path = student_dir / "submission.json"
-        if not manifest_path.exists():
-            continue
         student_id = student_dir.name
         validate_identifier(student_id, "student_id")
-        manifest = load_submission_manifest(manifest_path)
-        _validate_manifest_identity(
-            manifest,
-            class_id=class_id,
-            assignment_id=assignment_id,
-            student_id=student_id,
-            path=manifest_path,
+        if _is_link_like(student_dir) or not student_dir.is_dir():
+            raise NotADirectoryError(
+                f"Invalid direct student submission child: {student_dir}"
+            )
+        manifest_path = student_record_paths(
+            root, work_ref, student_id
+        ).submission_manifest_path
+        if not os.path.lexists(manifest_path):
+            continue
+        context = load_quillan_student_review_context(
+            root,
+            work_ref,
+            student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
         )
+        manifest = mutable_json_copy(context.submission)
         manifests[student_id] = (manifest_path, manifest)
     return manifests
 
@@ -294,4 +307,4 @@ def _validate_expected_pages(expected_pages: int | None) -> None:
 
 
 def _resolved_evidence_path(root: Path, value: str | Path) -> Path:
-    return (root / Path(value)).resolve(strict=False)
+    return Path(os.path.abspath(root / Path(value)))

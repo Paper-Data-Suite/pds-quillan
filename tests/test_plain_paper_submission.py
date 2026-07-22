@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -10,11 +11,14 @@ from quillan.cli_app import parser as cli_parser
 from quillan.cli_app.handlers import submissions as cli_submissions
 from quillan.cli_app.main import main
 from quillan.plain_paper_submission import (
+    PlainPaperSubmissionDurabilityError,
     PlainPaperSubmissionError,
     create_plain_paper_submission,
 )
 from quillan.review_record import load_review_record
 import quillan.review_menu as review_menu
+import quillan.plain_paper_submission as plain_paper_submission
+import quillan.review_record_paths as review_record_paths
 from quillan.submission_manifest import load_submission_manifest
 from quillan.submission_status import list_assignment_submission_status
 
@@ -133,12 +137,16 @@ def test_does_not_overwrite_existing_submission(workspace: Path) -> None:
     )
     original = created.submission_manifest_path.read_bytes()
 
-    with pytest.raises(PlainPaperSubmissionError, match="already exists"):
+    original_review = created.review_record_path.read_bytes()
+    with pytest.raises(PlainPaperSubmissionDurabilityError, match="already exists") as caught:
         create_plain_paper_submission(
             workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
         )
 
     assert created.submission_manifest_path.read_bytes() == original
+    assert created.review_record_path.read_bytes() == original_review
+    assert caught.value.possible_manifest_path == created.submission_manifest_path
+    assert caught.value.possible_review_path == created.review_record_path
 
 
 def test_rejects_orphan_review_without_writing_manifest(workspace: Path) -> None:
@@ -164,6 +172,197 @@ def test_rejects_orphan_review_without_writing_manifest(workspace: Path) -> None
 
     assert review_path.read_text(encoding="utf-8") == "existing review"
     assert not (student_dir / "submission.json").exists()
+
+
+def _student_paths(workspace: Path) -> tuple[Path, Path]:
+    directory = (
+        workspace
+        / "classes"
+        / CLASS_ID
+        / "modules"
+        / "quillan"
+        / "work"
+        / ASSIGNMENT_ID
+        / "submissions"
+        / STUDENT_ID
+    )
+    return directory / "submission.json", directory / "review.json"
+
+
+def _assert_no_orphan_review(manifest_path: Path, review_path: Path) -> None:
+    assert not review_path.exists() or manifest_path.is_file()
+
+
+def test_review_failure_before_installation_compensates_owned_manifest(
+    workspace: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_path, review_path = _student_paths(workspace)
+    primary = RuntimeError("review failed before installation")
+    monkeypatch.setattr(
+        plain_paper_submission,
+        "create_quillan_review_record",
+        lambda *_args: (_ for _ in ()).throw(primary),
+    )
+
+    with pytest.raises(PlainPaperSubmissionDurabilityError) as captured:
+        create_plain_paper_submission(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+        )
+
+    assert captured.value.__cause__ is primary
+    assert captured.value.possible_manifest_path is None
+    assert captured.value.possible_review_path is None
+    assert not manifest_path.exists()
+    assert not review_path.exists()
+    _assert_no_orphan_review(manifest_path, review_path)
+
+
+def test_review_link_then_temporary_cleanup_failure_preserves_exact_pair(
+    workspace: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_path, review_path = _student_paths(workspace)
+    original_unlink = Path.unlink
+
+    def fail_review_temporary(path: Path, missing_ok: bool = False) -> None:
+        if path.name.startswith(".review.json.") and path.suffix == ".tmp":
+            raise OSError("review temporary cleanup failed")
+        original_unlink(path, missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", fail_review_temporary)
+
+    with pytest.raises(PlainPaperSubmissionDurabilityError) as captured:
+        create_plain_paper_submission(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+        )
+
+    assert captured.value.possible_manifest_path == manifest_path
+    assert captured.value.possible_review_path == review_path
+    assert manifest_path.is_file()
+    assert load_review_record(review_path)["student_id"] == STUDENT_ID
+    _assert_no_orphan_review(manifest_path, review_path)
+
+
+def test_review_reload_failure_preserves_installed_pair(
+    workspace: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_path, review_path = _student_paths(workspace)
+    monkeypatch.setattr(
+        review_record_paths,
+        "_verify_review_bytes",
+        lambda *_args: (_ for _ in ()).throw(RuntimeError("reload failed")),
+    )
+
+    with pytest.raises(PlainPaperSubmissionDurabilityError) as captured:
+        create_plain_paper_submission(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+        )
+
+    assert captured.value.possible_manifest_path == manifest_path
+    assert captured.value.possible_review_path == review_path
+    assert manifest_path.is_file() and review_path.is_file()
+    _assert_no_orphan_review(manifest_path, review_path)
+
+
+def test_review_changed_after_installation_preserves_contradictory_pair(
+    workspace: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_path, review_path = _student_paths(workspace)
+
+    def replace_after_install(_data: bytes, _expected: object) -> None:
+        review_path.write_bytes(b"concurrent review bytes")
+        raise RuntimeError("review changed after installation")
+
+    monkeypatch.setattr(review_record_paths, "_verify_review_bytes", replace_after_install)
+
+    with pytest.raises(PlainPaperSubmissionDurabilityError, match="contradictory") as captured:
+        create_plain_paper_submission(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+        )
+
+    assert captured.value.possible_manifest_path == manifest_path
+    assert captured.value.possible_review_path == review_path
+    assert manifest_path.is_file()
+    assert review_path.read_bytes() == b"concurrent review bytes"
+    _assert_no_orphan_review(manifest_path, review_path)
+
+
+def test_manifest_compensation_refuses_concurrent_byte_change(
+    workspace: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_path, review_path = _student_paths(workspace)
+
+    def change_manifest_then_fail(*_args: object) -> None:
+        manifest_path.write_bytes(b"concurrent manifest bytes")
+        raise RuntimeError("review pre-install failure")
+
+    monkeypatch.setattr(
+        plain_paper_submission,
+        "create_quillan_review_record",
+        change_manifest_then_fail,
+    )
+
+    with pytest.raises(PlainPaperSubmissionDurabilityError) as captured:
+        create_plain_paper_submission(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+        )
+
+    assert manifest_path.read_bytes() == b"concurrent manifest bytes"
+    assert not review_path.exists()
+    assert captured.value.possible_manifest_path == manifest_path
+    assert captured.value.possible_review_path is None
+    assert captured.value.__cause__ is not None
+    assert captured.value.__cause__.__notes__
+    _assert_no_orphan_review(manifest_path, review_path)
+
+
+def test_manifest_compensation_failure_preserves_primary_and_manifest(
+    workspace: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_path, review_path = _student_paths(workspace)
+    primary = RuntimeError("primary review failure")
+    monkeypatch.setattr(
+        plain_paper_submission,
+        "create_quillan_review_record",
+        lambda *_args: (_ for _ in ()).throw(primary),
+    )
+    original_replace = os.replace
+
+    def fail_manifest_displacement(source: Path, target: Path) -> None:
+        if source == manifest_path:
+            raise OSError("synthetic compensation failure")
+        original_replace(source, target)
+
+    monkeypatch.setattr(os, "replace", fail_manifest_displacement)
+
+    with pytest.raises(PlainPaperSubmissionDurabilityError) as captured:
+        create_plain_paper_submission(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+        )
+
+    assert captured.value.__cause__ is primary
+    assert any("compensation failed" in note for note in primary.__notes__)
+    assert captured.value.possible_manifest_path == manifest_path
+    assert captured.value.possible_review_path is None
+    assert manifest_path.is_file() and not review_path.exists()
+    _assert_no_orphan_review(manifest_path, review_path)
+
+
+def test_retry_after_orphan_or_contradictory_state_preserves_existing_bytes(
+    workspace: Path,
+) -> None:
+    manifest_path, review_path = _student_paths(workspace)
+    review_path.parent.mkdir(parents=True)
+    review_path.write_bytes(b"orphan review")
+
+    with pytest.raises(PlainPaperSubmissionDurabilityError) as captured:
+        create_plain_paper_submission(
+            workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
+        )
+
+    assert captured.value.possible_manifest_path is None
+    assert captured.value.possible_review_path == review_path
+    assert review_path.read_bytes() == b"orphan review"
+    assert not manifest_path.exists()
 
 
 def test_status_and_evidence_opening_are_teacher_friendly(

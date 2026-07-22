@@ -1,5 +1,12 @@
 # Scan Routing Design
 
+Core continues to own workspace-level routing failures and scan resolutions.
+Quillan consumes Core schema-version-2 metadata and establishes ownership from
+exact locators, targets, or its bounded pre-dispatch marker. Failures after a
+successful Quillan dispatch use the distinct work-local post-dispatch occurrence
+contract described in
+[Module-qualified record services](module_qualified_record_services.md).
+
 ## Installed Quillan handler (#337)
 
 Core invokes the installed Quillan response-page handler with a validated

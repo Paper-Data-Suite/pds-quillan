@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -12,24 +11,21 @@ from typing import Any
 from quillan.review_record import (
     ReviewRecordError,
     build_empty_review_record,
-    load_review_record,
     validate_review_record,
 )
 from quillan.review_record_paths import (
     ReviewRecordPathError,
-    review_record_path,
-    write_review_record,
+    persist_quillan_review_record,
 )
-from quillan.submission_manifest import (
-    SubmissionManifestError,
-    load_submission_manifest,
-)
-from quillan.submission_manifest_paths import (
-    SubmissionManifestPathError,
-    submission_manifest_path,
+from quillan.record_context import (
+    MissingSubmissionError,
+    QuillanRecordContextError,
+    ReviewLoadingPolicy,
+    load_quillan_student_review_context,
+    mutable_json_copy,
 )
 from quillan.submission_guidance import missing_submission_guidance
-from quillan.work_paths import relative_assignment_path
+from quillan.work_paths import quillan_work_ref
 
 _SEQUENTIAL_NOTE_ID = re.compile(r"^note_(\d{4})$")
 
@@ -65,70 +61,29 @@ def add_review_note(
     normalized_text = _normalize_text(text)
     normalized_created_at = _normalize_timestamp(created_at)
 
+    work_ref = quillan_work_ref(class_id, assignment_id)
     try:
-        resolved_workspace_root = Path(workspace_root).resolve(strict=False)
-        manifest_path = submission_manifest_path(
-            resolved_workspace_root,
-            class_id,
-            assignment_id,
+        context = load_quillan_student_review_context(
+            workspace_root,
+            work_ref,
             student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
         )
-        record_path = review_record_path(
-            resolved_workspace_root,
-            class_id,
-            assignment_id,
-            student_id,
-        )
-    except (
-        OSError,
-        RuntimeError,
-        SubmissionManifestPathError,
-        ReviewRecordPathError,
-    ) as error:
+    except MissingSubmissionError as error:
+        raise ReviewNoteError(missing_submission_guidance()) from error
+    except (QuillanRecordContextError, OSError, RuntimeError, ValueError) as error:
         raise ReviewNoteError(str(error)) from error
 
-    if not manifest_path.exists():
-        raise ReviewNoteError(missing_submission_guidance())
-
-    try:
-        manifest = load_submission_manifest(manifest_path)
-    except (OSError, SubmissionManifestError) as error:
-        raise ReviewNoteError(
-            f"Could not load submission manifest: {error}"
-        ) from error
-    _validate_identity(
-        manifest,
-        record_name="Submission manifest",
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
-    )
-
-    if record_path.exists():
-        try:
-            review = load_review_record(record_path)
-        except (OSError, ReviewRecordError) as error:
-            raise ReviewNoteError(
-                f"Could not load review record: {error}"
-            ) from error
-        _validate_identity(
-            review,
-            record_name="Review record",
-            class_id=class_id,
-            assignment_id=assignment_id,
-            student_id=student_id,
-        )
-        updated_review = copy.deepcopy(review)
+    record_path = context.paths.review_record_path
+    if context.review is not None:
+        updated_review = mutable_json_copy(context.review)
     else:
-        manifest_relative_path = _workspace_relative_path(
-            manifest_path, resolved_workspace_root, "submission manifest"
-        )
         updated_review = build_empty_review_record(
             class_id=class_id,
             assignment_id=assignment_id,
             student_id=student_id,
-            submission_manifest_path=manifest_relative_path,
-            assignment_path=relative_assignment_path(class_id, assignment_id),
+            submission_manifest_path=context.paths.submission_relative_path,
+            assignment_path=context.paths.assignment_relative_path,
             created_at=normalized_created_at,
         )
 
@@ -146,14 +101,8 @@ def add_review_note(
 
     try:
         validate_review_record(updated_review)
-        write_review_record(
-            record_path,
-            updated_review,
-            overwrite=record_path.exists(),
-        )
-        record_relative_path = _workspace_relative_path(
-            record_path, resolved_workspace_root, "review record"
-        )
+        persisted = persist_quillan_review_record(context, updated_review)
+        record_relative_path = persisted.relative_path
     except (
         OSError,
         RuntimeError,

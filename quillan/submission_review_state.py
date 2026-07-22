@@ -11,15 +11,21 @@ from typing import Any
 from quillan.submission_manifest import (
     ALLOWED_SUBMISSION_STATES,
     SubmissionManifestError,
-    load_submission_manifest,
     validate_submission_manifest,
 )
 from quillan.submission_manifest_paths import (
     SubmissionManifestPathError,
-    submission_manifest_path,
-    write_submission_manifest,
+    update_quillan_submission_manifest,
 )
 from quillan.submission_guidance import missing_submission_guidance
+from quillan.record_context import (
+    MissingSubmissionError,
+    QuillanRecordContextError,
+    ReviewLoadingPolicy,
+    load_quillan_student_review_context,
+    mutable_json_copy,
+)
+from quillan.work_paths import quillan_work_ref
 
 
 class SubmissionReviewStateError(Exception):
@@ -56,41 +62,21 @@ def update_submission_review_state(
             f"Invalid lightweight submission state {state!r}. Allowed states: {allowed}."
         )
 
+    work_ref = quillan_work_ref(class_id, assignment_id)
     try:
-        resolved_workspace_root = Path(workspace_root).resolve(strict=False)
-        manifest_path = submission_manifest_path(
-            resolved_workspace_root,
-            class_id,
-            assignment_id,
+        context = load_quillan_student_review_context(
+            workspace_root,
+            work_ref,
             student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
         )
-    except (OSError, RuntimeError, SubmissionManifestPathError) as error:
+    except MissingSubmissionError as error:
+        raise SubmissionReviewStateError(missing_submission_guidance()) from error
+    except (OSError, RuntimeError, QuillanRecordContextError) as error:
         raise SubmissionReviewStateError(str(error)) from error
-
-    if not manifest_path.exists():
-        raise SubmissionReviewStateError(missing_submission_guidance())
-
-    try:
-        relative_path = manifest_path.resolve(strict=False).relative_to(
-            resolved_workspace_root
-        ).as_posix()
-        manifest = load_submission_manifest(manifest_path)
-    except (
-        OSError,
-        RuntimeError,
-        ValueError,
-        SubmissionManifestError,
-    ) as error:
-        raise SubmissionReviewStateError(
-            f"Could not load submission manifest: {error}"
-        ) from error
-
-    _validate_manifest_identity(
-        manifest,
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
-    )
+    manifest_path = context.paths.submission_manifest_path
+    relative_path = context.paths.submission_relative_path
+    manifest = mutable_json_copy(context.submission)
     normalized_updated_at = _normalize_timestamp(updated_at)
     previous_state = manifest["submission_state"]
     updated_manifest = copy.deepcopy(manifest)
@@ -99,11 +85,7 @@ def update_submission_review_state(
 
     try:
         validate_submission_manifest(updated_manifest)
-        write_submission_manifest(
-            manifest_path,
-            updated_manifest,
-            overwrite=True,
-        )
+        update_quillan_submission_manifest(context, updated_manifest)
     except (
         OSError,
         RuntimeError,

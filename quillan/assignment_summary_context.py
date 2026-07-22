@@ -4,19 +4,36 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Any
 
 from pds_core.classes import load_class_roster
 from pds_core.rosters import RosterError, StudentRecord, student_display_name
+from pds_core.identifiers import IdentifierValidationError, validate_identifier
+from pds_core.routing_models import ModuleWorkRef
 
-from quillan.assignments import AssignmentConfigError, load_assignment_config
-from quillan.review_record import ReviewRecordError, load_review_record
-from quillan.submission_manifest import (
-    SubmissionManifestError,
-    load_submission_manifest,
+from quillan.assignments import AssignmentConfigError
+from quillan.record_context import (
+    InvalidReviewError,
+    InvalidSubmissionError,
+    MissingSubmissionError,
+    OrphanReviewError,
+    QuillanRecordContextError,
+    RecordIdentityMismatchError,
+    ReviewLoadingPolicy,
+    load_quillan_assignment_context,
+    load_quillan_student_review_context,
+    mutable_json_copy,
+    student_record_paths,
 )
-from quillan.storage import assignment_config_path, assignment_submissions_dir
+from quillan.work_paths import (
+    quillan_work_paths,
+    quillan_work_ref,
+    review_record_path as canonical_review_record_path,
+    student_submission_dir,
+    submission_manifest_path as canonical_submission_manifest_path,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,6 +44,8 @@ class SummaryStudent:
     display_name: str
     roster_status: str
     student_dir: Path
+    workspace_root: Path
+    work_ref: ModuleWorkRef
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,17 +63,20 @@ class LoadedStudentRecord:
 
 
 def assignment_path(workspace_root: Path, class_id: str, assignment_id: str) -> Path:
-    return assignment_config_path(workspace_root, class_id, assignment_id)
+    return quillan_work_paths(workspace_root, class_id, assignment_id).assignment_path
 
 
 def submissions_dir(workspace_root: Path, class_id: str, assignment_id: str) -> Path:
-    return assignment_submissions_dir(workspace_root, class_id, assignment_id)
+    return quillan_work_paths(workspace_root, class_id, assignment_id).submissions_dir
 
 
 def load_assignment(workspace_root: Path, class_id: str, assignment_id: str) -> dict[str, Any]:
     try:
-        assignment = load_assignment_config(assignment_path(workspace_root, class_id, assignment_id))
-    except (OSError, AssignmentConfigError) as error:
+        context = load_quillan_assignment_context(
+            workspace_root, quillan_work_ref(class_id, assignment_id)
+        )
+        assignment = mutable_json_copy(context.assignment)
+    except (OSError, AssignmentConfigError, QuillanRecordContextError) as error:
         raise ValueError(f"Could not load assignment config: {error}") from error
     if class_id not in assignment["class_ids"]:
         raise ValueError(f"Assignment {assignment_id!r} is not configured for class {class_id!r}.")
@@ -69,6 +91,7 @@ def discover_students(
     base_submissions_dir = submissions_dir(workspace_root, class_id, assignment_id)
     submission_ids = _submission_ids(base_submissions_dir)
     roster_students = _roster_students(workspace_root, class_id)
+    work_ref = quillan_work_ref(class_id, assignment_id)
     students: list[SummaryStudent] = []
 
     if roster_students is not None:
@@ -80,7 +103,11 @@ def discover_students(
                     student_id=roster_student.student_id,
                     display_name=student_display_name(roster_student),
                     roster_status="rostered",
-                    student_dir=base_submissions_dir / roster_student.student_id,
+                    student_dir=student_submission_dir(
+                        workspace_root, work_ref, roster_student.student_id
+                    ),
+                    workspace_root=workspace_root,
+                    work_ref=work_ref,
                 )
             )
         for student_id in sorted(submission_ids - roster_ids):
@@ -89,7 +116,11 @@ def discover_students(
                     student_id=student_id,
                     display_name=student_id,
                     roster_status="unrostered_submission",
-                    student_dir=base_submissions_dir / student_id,
+                    student_dir=student_submission_dir(
+                        workspace_root, work_ref, student_id
+                    ),
+                    workspace_root=workspace_root,
+                    work_ref=work_ref,
                 )
             )
         return tuple(students)
@@ -99,7 +130,9 @@ def discover_students(
             student_id=student_id,
             display_name=student_id,
             roster_status="roster_unavailable",
-            student_dir=base_submissions_dir / student_id,
+            student_dir=student_submission_dir(workspace_root, work_ref, student_id),
+            workspace_root=workspace_root,
+            work_ref=work_ref,
         )
         for student_id in sorted(submission_ids)
     )
@@ -114,41 +147,62 @@ def load_student_record(
     if student.roster_status == "unrostered_submission":
         warnings.append("unrostered_submission")
 
-    manifest_path = student.student_dir / "submission.json"
-    review_path = student.student_dir / "review.json"
+    try:
+        paths = student_record_paths(
+            student.workspace_root, student.work_ref, student.student_id
+        )
+    except QuillanRecordContextError:
+        return LoadedStudentRecord(
+            student,
+            canonical_submission_manifest_path(
+                student.workspace_root, student.work_ref, student.student_id
+            ),
+            canonical_review_record_path(
+                student.workspace_root, student.work_ref, student.student_id
+            ),
+            None,
+            None,
+            "false",
+            "false",
+            tuple((*warnings, "unsafe_path")),
+        )
+    manifest_path = paths.submission_manifest_path
+    review_path = paths.review_record_path
     submission: dict[str, Any] | None = None
     review: dict[str, Any] | None = None
     submission_valid = "false"
     review_valid = "false"
 
-    if not manifest_path.is_file():
+    try:
+        context = load_quillan_student_review_context(
+            student.workspace_root,
+            student.work_ref,
+            student.student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+        )
+    except MissingSubmissionError:
         warnings.append("missing_submission")
-    else:
-        try:
-            submission = load_submission_manifest(manifest_path)
+    except OrphanReviewError:
+        warnings.extend(("missing_submission", "invalid_review", "orphan_review"))
+    except InvalidSubmissionError:
+        warnings.append("invalid_submission")
+    except InvalidReviewError as error:
+        if error.submission_record is not None:
+            submission = mutable_json_copy(error.submission_record.value)
             submission_valid = "true"
-        except (OSError, SubmissionManifestError):
-            warnings.append("invalid_submission")
-        if submission is not None and _has_identity_mismatch(
-            submission, class_id, assignment_id, student.student_id
-        ):
-            warnings.append("identity_mismatch")
-            submission_valid = "false"
-
-    if submission_valid == "true":
-        if not review_path.is_file():
+        warnings.append("invalid_review")
+    except RecordIdentityMismatchError:
+        warnings.append("identity_mismatch")
+    except QuillanRecordContextError:
+        warnings.append("unsafe_path")
+    else:
+        submission = mutable_json_copy(context.submission)
+        submission_valid = "true"
+        if context.review is None:
             warnings.append("missing_review")
         else:
-            try:
-                review = load_review_record(review_path)
-                review_valid = "true"
-            except (OSError, ReviewRecordError):
-                warnings.append("invalid_review")
-            if review is not None and _has_identity_mismatch(
-                review, class_id, assignment_id, student.student_id
-            ):
-                warnings.append("identity_mismatch")
-                review_valid = "false"
+            review = mutable_json_copy(context.review)
+            review_valid = "true"
 
     return LoadedStudentRecord(
         student=student,
@@ -218,12 +272,28 @@ def feedback_status(
 
 
 def relative_path_for(path: Path, workspace_root: Path) -> str:
-    return path.resolve(strict=False).relative_to(workspace_root).as_posix()
+    return Path(os.path.abspath(path)).relative_to(workspace_root).as_posix()
 
 
 def _submission_ids(path: Path) -> set[str]:
     try:
-        return {entry.name for entry in path.iterdir() if entry.is_dir()}
+        if not os.path.lexists(path):
+            return set()
+        if _is_link_like(path) or not path.is_dir():
+            raise ValueError("Submission collection is not an ordinary directory.")
+        identifiers: set[str] = set()
+        for entry in path.iterdir():
+            if _is_link_like(entry) or not entry.is_dir():
+                raise ValueError(
+                    f"Invalid direct submission child: {entry.name}"
+                )
+            try:
+                identifiers.add(validate_identifier(entry.name, "student_id"))
+            except IdentifierValidationError as error:
+                raise ValueError(
+                    f"Invalid student submission child: {entry.name}"
+                ) from error
+        return identifiers
     except (FileNotFoundError, NotADirectoryError):
         return set()
     except OSError as error:
@@ -251,3 +321,8 @@ def _has_identity_mismatch(
             ("student_id", student_id),
         )
     )
+
+
+def _is_link_like(path: Path) -> bool:
+    is_junction = getattr(path, "is_junction", None)
+    return path.is_symlink() or bool(is_junction is not None and is_junction())

@@ -40,6 +40,11 @@ STANDARD_DESCRIPTION = (
 )
 
 
+@pytest.fixture(autouse=True)
+def canonical_assignment(tmp_path: Path) -> None:
+    _write_assignment(tmp_path)
+
+
 def _write_assignment(root: Path) -> None:
     assignment_dir = root / "classes" / CLASS_ID / "modules" / "quillan" / "work" / ASSIGNMENT_ID
     assignment_dir.mkdir(parents=True, exist_ok=True)

@@ -1,42 +1,70 @@
-"""Discover and resolve Quillan scan-routing review records."""
+"""Discover and resolve Quillan-owned Core schema-v2 scan-review records."""
 
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Final
 
+from pds_core.identifiers import validate_identifier
+from pds_core.route_registrations import load_route_registration
+from pds_core.routing_models import ModuleRecordRef, ModuleWorkRef, RouteLocator
 from pds_core.scan_failure_metadata import (
+    ROUTING_FAILURE_SCHEMA_VERSION,
     RoutingFailureMetadata,
     RoutingFailureMetadataError,
-    routing_failure_metadata_from_dict,
+    load_routing_failure_metadata,
+    routing_failure_metadata_path,
 )
 from pds_core.scan_resolution_metadata import (
+    SCAN_RESOLUTION_SCHEMA_VERSION,
     ScanResolutionMetadata,
     ScanResolutionMetadataError,
     ScanResolutionMetadataWriteError,
+    create_scan_resolution_metadata,
     scan_resolution_metadata_dir,
-    scan_resolution_metadata_from_dict,
+    load_scan_resolution_metadata,
     scan_resolution_metadata_path,
     write_scan_resolution_metadata,
 )
 from pds_core.scan_routes import routing_review_dir
 
+from quillan.pds_contract import (
+    QUILLAN_MODULE_ID,
+    RESPONSE_PAGE_CONTRACT_VERSION,
+    RESPONSE_PAGE_RECORD_KIND,
+)
+from quillan.printable_response_persistence import (
+    PrintableResponsePersistenceError,
+    load_printable_response_page,
+)
+from quillan.work_paths import quillan_work_paths
+from quillan.work_paths import (
+    _preflight_arbitrary_file_destination,
+    _preflight_path_chain,
+)
+
 
 QUILLAN_RESOLUTION_ACTIONS: Final[tuple[str, ...]] = (
+    "route_selected",
+    "route_corrected",
+    "evidence_filed",
     "rescan_needed",
     "cannot_route",
-    "mixed_assignment",
-    "evidence_filed",
     "dismissed_duplicate",
+    "deferred",
     "other",
     "defer",
+    "mixed_assignment",
 )
 
 DEFAULT_RESOLUTION_MESSAGES: Final[dict[str, str]] = {
+    "route_selected": "Teacher selected the intended route.",
+    "route_corrected": "Teacher corrected the intended route.",
     "rescan_needed": "Teacher marked this scan/page for rescan.",
     "cannot_route": "Teacher marked this scan/page as unable to route safely.",
     "mixed_assignment": "Teacher marked this scan/source as mixed assignment.",
@@ -44,6 +72,7 @@ DEFAULT_RESOLUTION_MESSAGES: Final[dict[str, str]] = {
         "Teacher marked this evidence as filed outside the automatic route-scan flow."
     ),
     "dismissed_duplicate": "Teacher dismissed this review item as a duplicate.",
+    "deferred": "Teacher deferred this review item for later.",
     "defer": "Teacher deferred this review item for later.",
 }
 
@@ -54,7 +83,7 @@ class ScanReviewResolutionError(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class QuillanReviewItem:
-    """One valid Quillan routing failure plus its latest resolution state."""
+    """One validated Quillan-owned Core routing failure and latest resolution."""
 
     failure_id: str
     failure_metadata_path: Path
@@ -87,7 +116,7 @@ class QuillanReviewItem:
 
 @dataclass(frozen=True, slots=True)
 class QuillanResolutionResult:
-    """Provenance for one newly written shared resolution record."""
+    """Provenance for one newly written exact Core-v2 resolution record."""
 
     resolution_id: str
     resolution_metadata_path: Path
@@ -114,52 +143,58 @@ def discover_scan_review_items(
     failure_category: str | None = None,
     limit: int | None = None,
 ) -> QuillanReviewDiscovery:
-    """Discover valid Quillan review items without mutating workspace data."""
+    """Discover exact Core-v2 Quillan review items without mutation."""
     root = _workspace_root(workspace_root)
-    if limit is not None and (isinstance(limit, bool) or limit < 1):
+    if class_id is not None:
+        validate_identifier(class_id, "class_id")
+    if assignment_id is not None:
+        validate_identifier(assignment_id, "assignment_id")
+    if limit is not None and (
+        isinstance(limit, bool) or not isinstance(limit, int) or limit < 1
+    ):
         raise ScanReviewResolutionError("limit must be a positive integer.")
 
     failures, failure_warnings = _load_failures(root)
-    resolutions, resolution_warnings = _load_resolutions(root)
+    resolutions, resolution_warnings = _load_resolutions(root, failures)
     latest_by_failure: dict[str, tuple[ScanResolutionMetadata, Path]] = {}
-    for resolution_metadata, path in resolutions:
-        current = latest_by_failure.get(resolution_metadata.failure_id)
-        if current is None or _resolution_order(
-            resolution_metadata, path
-        ) > _resolution_order(
+    for resolution, path in resolutions:
+        current = latest_by_failure.get(resolution.failure_id)
+        if current is None or _resolution_order(resolution, path) > _resolution_order(
             current[0], current[1]
         ):
-            latest_by_failure[resolution_metadata.failure_id] = (
-                resolution_metadata,
-                path,
-            )
+            latest_by_failure[resolution.failure_id] = (resolution, path)
 
     items: list[QuillanReviewItem] = []
-    for failure_metadata, path in failures:
-        latest = latest_by_failure.get(failure_metadata.failure_id)
+    enrichment_warnings: list[str] = []
+    for failure, path in failures:
+        latest = latest_by_failure.get(failure.failure_id)
         if latest is not None and latest[0].resolution_status == "resolved":
             if not include_resolved:
                 continue
-        if class_id is not None and failure_metadata.class_id != class_id:
-            continue
-        if (
-            assignment_id is not None
-            and failure_metadata.assignment_id != assignment_id
+        work_ref = _failure_work_ref(failure)
+        if class_id is not None and (
+            work_ref is None or work_ref.class_id != class_id
         ):
             continue
-        if (
-            failure_category is not None
-            and failure_metadata.failure_category != failure_category
+        if assignment_id is not None and (
+            work_ref is None or work_ref.work_id != assignment_id
         ):
             continue
-        items.append(_review_item(root, failure_metadata, path, latest))
+        if failure_category is not None and failure.failure_category != failure_category:
+            continue
+        student_id, warning = _student_identity(root, failure, work_ref)
+        if warning is not None:
+            enrichment_warnings.append(warning)
+        items.append(_review_item(root, failure, path, latest, work_ref, student_id))
 
     items.sort(key=lambda item: (item.created_at, item.failure_id))
     if limit is not None:
         items = items[:limit]
     return QuillanReviewDiscovery(
         items=tuple(items),
-        warnings=tuple((*failure_warnings, *resolution_warnings)),
+        warnings=tuple(
+            (*failure_warnings, *resolution_warnings, *enrichment_warnings)
+        ),
     )
 
 
@@ -181,35 +216,40 @@ def resolve_scan_review_item(
     action: str,
     message: str | None = None,
     evidence_path: str | Path | None = None,
+    route_locator: RouteLocator | None = None,
+    target: ModuleRecordRef | None = None,
     resolved_at: datetime | None = None,
 ) -> QuillanResolutionResult:
-    """Write an immutable Core resolution record for one Quillan failure."""
+    """Write an immutable exact Core-v2 resolution for one Quillan failure."""
     root = _workspace_root(workspace_root)
     if action not in QUILLAN_RESOLUTION_ACTIONS:
         raise ScanReviewResolutionError(
             "Unsupported Quillan scan review action: " + str(action)
         )
     normalized_message = _resolution_message(action, message)
-    evidence_relative = _evidence_path(evidence_path)
-    if evidence_relative is not None and action != "evidence_filed":
+    status, metadata_action = _mapped_action(action)
+
+    failures, warnings = _load_failures(root)
+    matches = [(metadata, path) for metadata, path in failures if metadata.failure_id == failure_id]
+    if len(matches) != 1:
+        warning_suffix = f" Discovery warnings: {'; '.join(warnings)}" if warnings else ""
+        if not matches:
+            raise ScanReviewResolutionError(
+                f"No valid Quillan scan review item has failure ID {failure_id}."
+                + warning_suffix
+            )
+        raise ScanReviewResolutionError(
+            f"Multiple Quillan scan review records use failure ID {failure_id}."
+        )
+    failure, _ = matches[0]
+    work_ref = _failure_work_ref(failure)
+    evidence_relative = _evidence_path(root, work_ref, evidence_path)
+    if evidence_relative is not None and metadata_action != "evidence_filed":
         raise ScanReviewResolutionError(
             "evidence_path may only be used with the evidence_filed action."
         )
 
-    discovery = discover_scan_review_items(root, include_resolved=True)
-    matches = [item for item in discovery.items if item.failure_id == failure_id]
-    if not matches:
-        raise ScanReviewResolutionError(
-            f"No valid Quillan scan review item has failure ID {failure_id}."
-        )
-    if len(matches) != 1:
-        raise ScanReviewResolutionError(
-            f"Multiple Quillan scan review records use failure ID {failure_id}."
-        )
-    item = matches[0]
     timestamp = _utc_timestamp(resolved_at)
-    status = "deferred" if action == "defer" else "resolved"
-    metadata_action = "other" if action == "defer" else action
     resolution_id = _resolution_id(
         failure_id=failure_id,
         status=status,
@@ -217,39 +257,35 @@ def resolve_scan_review_item(
         message=normalized_message,
         timestamp=timestamp,
     )
+    module_details = {
+        "resolved_by": "teacher",
+        "resolution_origin": "quillan_scan_review",
+        "original_failure_category": failure.failure_category,
+        "original_failure_stage": failure.stage,
+        "teacher_selected_action": action,
+    }
+    resolution_locator, resolution_target = _resolution_route(
+        root,
+        failure,
+        action,
+        route_locator,
+        target,
+    )
     try:
-        metadata = ScanResolutionMetadata(
-            schema_version="1",
+        metadata = create_scan_resolution_metadata(
+            failure,
             resolution_id=resolution_id,
-            failure_id=item.failure_id,
-            failure_metadata_path=item.failure_metadata_relative_path,
             resolution_status=status,
             resolution_action=metadata_action,
             resolved_at=timestamp.isoformat(timespec="microseconds"),
             resolution_message=normalized_message,
-            module_details={
-                "resolved_by": "teacher",
-                "resolution_origin": "quillan_scan_review",
-                "original_failure_category": item.failure_category,
-                "original_failure_stage": item.stage,
-                "teacher_selected_action": action,
-            },
-            module=item.module or "quillan",
-            source_scan_id=item.source_scan_id,
-            source_sha256=item.source_sha256,
-            source_filename=item.source_filename,
-            retained_source_path=item.retained_source_path,
-            review_copy_path=item.review_copy_path,
+            route_locator=resolution_locator,
+            target=resolution_target,
             resolution_evidence_path=evidence_relative,
-            source_page_number=item.source_page_number,
-            class_id=item.class_id,
-            assignment_id=item.assignment_id,
-            student_id=item.student_id,
+            module_details=module_details,
         )
-        expected = scan_resolution_metadata_path(root, resolution_id).resolve(
-            strict=False
-        )
-        written = write_scan_resolution_metadata(root, metadata).resolve(strict=False)
+        expected = scan_resolution_metadata_path(root, resolution_id)
+        written = write_scan_resolution_metadata(root, metadata)
     except (
         ScanResolutionMetadataError,
         ScanResolutionMetadataWriteError,
@@ -262,7 +298,7 @@ def resolve_scan_review_item(
         ) from error
     if written != expected:
         raise ScanReviewResolutionError(
-            "Shared scan resolution writer returned an unexpected path."
+            "Core scan-resolution writer returned an unexpected path."
         )
     return QuillanResolutionResult(
         resolution_id=resolution_id,
@@ -279,43 +315,232 @@ def _load_failures(
 ) -> tuple[list[tuple[RoutingFailureMetadata, Path]], list[str]]:
     records: list[tuple[RoutingFailureMetadata, Path]] = []
     warnings: list[str] = []
-    review_dir = routing_review_dir(root)
-    if not review_dir.exists():
-        return records, warnings
-    for path in sorted(review_dir.glob("*.json"), key=lambda value: value.name):
+    for path in _json_children(routing_review_dir(root), "review", warnings):
+        failure_id = path.stem
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-            if not isinstance(data, dict):
-                raise RoutingFailureMetadataError("record must be a JSON object.")
-            metadata = routing_failure_metadata_from_dict(data)
-        except (OSError, UnicodeError, json.JSONDecodeError, RoutingFailureMetadataError) as error:
+            if routing_failure_metadata_path(root, failure_id) != path:
+                raise RoutingFailureMetadataError(
+                    "filename is not the exact canonical failure path"
+                )
+            metadata = load_routing_failure_metadata(root, failure_id)
+            if metadata.schema_version != ROUTING_FAILURE_SCHEMA_VERSION:
+                raise RoutingFailureMetadataError("failure schema_version is not 2")
+            if metadata.failure_id != failure_id:
+                raise RoutingFailureMetadataError("filename and failure_id disagree")
+        except (
+            OSError,
+            UnicodeError,
+            json.JSONDecodeError,
+            RoutingFailureMetadataError,
+            RuntimeError,
+            ValueError,
+        ) as error:
             warnings.append(f"Skipped unreadable review record {path.name}: {error}")
             continue
-        if metadata.stage != "quillan_route_review":
+        if not _is_quillan_failure(metadata):
             continue
-        records.append((metadata, path.resolve(strict=False)))
-    return records, warnings
+        records.append((metadata, path))
+    return _reject_duplicate_failures(records, warnings), warnings
 
 
 def _load_resolutions(
     root: Path,
+    failures: list[tuple[RoutingFailureMetadata, Path]],
 ) -> tuple[list[tuple[ScanResolutionMetadata, Path]], list[str]]:
     records: list[tuple[ScanResolutionMetadata, Path]] = []
     warnings: list[str] = []
     directory = scan_resolution_metadata_dir(root)
-    if not directory.exists():
-        return records, warnings
-    for path in sorted(directory.glob("*.json"), key=lambda value: value.name):
+    failure_by_id = {item.failure_id: item for item, _ in failures}
+    for path in _json_children(directory, "resolution", warnings):
+        resolution_id = path.stem
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-            if not isinstance(data, dict):
-                raise ScanResolutionMetadataError("record must be a JSON object.")
-            metadata = scan_resolution_metadata_from_dict(data)
-        except (OSError, UnicodeError, json.JSONDecodeError, ScanResolutionMetadataError) as error:
+            if scan_resolution_metadata_path(root, resolution_id) != path:
+                raise ScanResolutionMetadataError(
+                    "filename is not the exact canonical resolution path"
+                )
+            metadata = load_scan_resolution_metadata(root, resolution_id)
+            if metadata.schema_version != SCAN_RESOLUTION_SCHEMA_VERSION:
+                raise ScanResolutionMetadataError("resolution schema_version is not 2")
+            if metadata.resolution_id != resolution_id:
+                raise ScanResolutionMetadataError("filename and resolution_id disagree")
+            failure = failure_by_id.get(metadata.failure_id)
+            if failure is None:
+                raise ScanResolutionMetadataError(
+                    "resolution references an absent valid failure"
+                )
+            _validate_resolution_linkage(root, metadata, failure)
+        except (
+            OSError,
+            UnicodeError,
+            json.JSONDecodeError,
+            ScanResolutionMetadataError,
+            RuntimeError,
+            ValueError,
+        ) as error:
             warnings.append(f"Skipped unreadable resolution record {path.name}: {error}")
             continue
-        records.append((metadata, path.resolve(strict=False)))
-    return records, warnings
+        records.append((metadata, path))
+    return _reject_duplicate_resolutions(records, warnings), warnings
+
+
+def _json_children(
+    directory: Path, description: str, warnings: list[str]
+) -> tuple[Path, ...]:
+    if not os.path.lexists(directory):
+        return ()
+    try:
+        _preflight_path_chain(
+            root=Path(directory.anchor), target=directory, expect_file=False
+        )
+    except Exception as error:
+        warnings.append(f"Skipped unsafe {description} directory: {error}")
+        return ()
+    if _is_link_like(directory) or not directory.is_dir():
+        warnings.append(
+            f"Skipped unsafe {description} directory: {directory}"
+        )
+        return ()
+    try:
+        children = tuple(sorted(directory.iterdir(), key=lambda value: value.name))
+    except OSError as error:
+        warnings.append(f"Could not inspect {description} directory: {error}")
+        return ()
+    result: list[Path] = []
+    for child in children:
+        if child.suffix != ".json":
+            continue
+        try:
+            _preflight_arbitrary_file_destination(child)
+        except Exception:
+            warnings.append(f"Skipped unsafe {description} record {child.name}.")
+            continue
+        if _is_link_like(child) or not child.is_file():
+            warnings.append(f"Skipped unsafe {description} record {child.name}.")
+            continue
+        result.append(child)
+    return tuple(result)
+
+
+def _reject_duplicate_failures(
+    records: list[tuple[RoutingFailureMetadata, Path]], warnings: list[str]
+) -> list[tuple[RoutingFailureMetadata, Path]]:
+    counts: dict[str, int] = {}
+    for metadata, _ in records:
+        counts[metadata.failure_id] = counts.get(metadata.failure_id, 0) + 1
+    duplicate_ids = {failure_id for failure_id, count in counts.items() if count > 1}
+    for failure_id in sorted(duplicate_ids):
+        warnings.append(f"Skipped duplicate failure ID {failure_id}.")
+    return [item for item in records if item[0].failure_id not in duplicate_ids]
+
+
+def _reject_duplicate_resolutions(
+    records: list[tuple[ScanResolutionMetadata, Path]], warnings: list[str]
+) -> list[tuple[ScanResolutionMetadata, Path]]:
+    counts: dict[str, int] = {}
+    for metadata, _ in records:
+        counts[metadata.resolution_id] = counts.get(metadata.resolution_id, 0) + 1
+    duplicate_ids = {
+        resolution_id for resolution_id, count in counts.items() if count > 1
+    }
+    for resolution_id in sorted(duplicate_ids):
+        warnings.append(f"Skipped duplicate resolution ID {resolution_id}.")
+    return [item for item in records if item[0].resolution_id not in duplicate_ids]
+
+
+def _validate_resolution_linkage(
+    root: Path,
+    resolution: ScanResolutionMetadata,
+    failure: RoutingFailureMetadata,
+) -> None:
+    expected_failure_path = routing_failure_metadata_path(
+        root, failure.failure_id
+    ).relative_to(root).as_posix()
+    if resolution.failure_metadata_path != expected_failure_path:
+        raise ScanResolutionMetadataError(
+            "resolution failure_metadata_path is not canonical"
+        )
+    provenance_fields = (
+        "source_filename",
+        "source_scan_id",
+        "source_sha256",
+        "retained_source_path",
+        "review_copy_path",
+        "source_page_number",
+    )
+    if any(
+        getattr(resolution, field) != getattr(failure, field)
+        for field in provenance_fields
+    ):
+        raise ScanResolutionMetadataError("resolution source provenance is forged")
+    resolved_at = datetime.fromisoformat(resolution.resolved_at)
+    created_at = datetime.fromisoformat(failure.created_at)
+    if resolved_at < created_at:
+        raise ScanResolutionMetadataError("resolution predates its failure")
+
+
+def _is_quillan_failure(failure: RoutingFailureMetadata) -> bool:
+    locator = failure.route_locator
+    target = failure.target
+    if locator is not None or target is not None:
+        modules = {
+            value.module_id for value in (locator, target) if value is not None
+        }
+        return modules == {QUILLAN_MODULE_ID}
+    details = failure.module_details
+    if details.get("failure_owner") != QUILLAN_MODULE_ID:
+        return False
+    marker = (
+        details.get("failure_origin"),
+        failure.scope,
+        failure.stage,
+        failure.failure_category,
+    )
+    exact_markers = {
+        ("source_page_loading", "scan", "source_page_loading", "source_unreadable"),
+        ("source_page_loading", "page", "source_page_loading", "source_unreadable"),
+        ("qr_detection", "page", "qr_detection", "payload_missing"),
+        ("qr_detection", "page", "qr_detection", "payload_unreadable"),
+        ("payload_parsing", "page", "payload_parsing", "payload_invalid"),
+        (
+            "payload_parsing",
+            "page",
+            "payload_parsing",
+            "payload_schema_unsupported",
+        ),
+        ("payload_parsing", "page", "payload_parsing", "payload_too_large"),
+        ("payload_parsing", "page", "payload_parsing", "payload_unreadable"),
+    }
+    return marker in exact_markers
+
+
+def _failure_work_ref(failure: RoutingFailureMetadata) -> ModuleWorkRef | None:
+    locator = failure.route_locator
+    if locator is None or locator.module_id != QUILLAN_MODULE_ID:
+        return None
+    return locator.work
+
+
+def _student_identity(
+    root: Path,
+    failure: RoutingFailureMetadata,
+    work_ref: ModuleWorkRef | None,
+) -> tuple[str | None, str | None]:
+    target = failure.target
+    if (
+        work_ref is None
+        or target is None
+        or target.module_id != QUILLAN_MODULE_ID
+        or target.record_kind != RESPONSE_PAGE_RECORD_KIND
+    ):
+        return None, None
+    try:
+        page = load_printable_response_page(root, work_ref, target.record_id)
+    except PrintableResponsePersistenceError as error:
+        return None, (
+            f"Could not enrich failure {failure.failure_id} from its exact "
+            f"response-page target: {error}"
+        )
+    return page.student_id, None
 
 
 def _review_item(
@@ -323,6 +548,8 @@ def _review_item(
     failure: RoutingFailureMetadata,
     path: Path,
     latest: tuple[ScanResolutionMetadata, Path] | None,
+    work_ref: ModuleWorkRef | None,
+    student_id: str | None,
 ) -> QuillanReviewItem:
     resolution, resolution_path = latest if latest is not None else (None, None)
     return QuillanReviewItem(
@@ -333,7 +560,7 @@ def _review_item(
         failure_message=failure.failure_message,
         stage=failure.stage,
         created_at=failure.created_at,
-        module=failure.module,
+        module=QUILLAN_MODULE_ID,
         source_filename=failure.source_filename,
         retained_source_path=failure.retained_source_path,
         review_copy_path=failure.review_copy_path,
@@ -341,12 +568,16 @@ def _review_item(
         source_sha256=failure.source_sha256,
         source_page_number=failure.source_page_number,
         detected_payload=failure.detected_payload,
-        payload_page_number=failure.payload_page_number,
-        class_id=failure.class_id,
-        assignment_id=failure.assignment_id,
-        student_id=failure.student_id,
-        latest_resolution_status=(None if resolution is None else resolution.resolution_status),
-        latest_resolution_action=(None if resolution is None else resolution.resolution_action),
+        payload_page_number=None,
+        class_id=None if work_ref is None else work_ref.class_id,
+        assignment_id=None if work_ref is None else work_ref.work_id,
+        student_id=student_id,
+        latest_resolution_status=(
+            None if resolution is None else resolution.resolution_status
+        ),
+        latest_resolution_action=(
+            None if resolution is None else resolution.resolution_action
+        ),
         latest_resolution_path=(
             None if resolution_path is None else _relative(resolution_path, root)
         ),
@@ -362,28 +593,146 @@ def _resolution_order(
 
 def _workspace_root(value: str | Path) -> Path:
     try:
-        root = Path(value).resolve(strict=True)
+        root = Path(os.path.abspath(Path(value)))
     except (OSError, TypeError, ValueError) as error:
         raise ScanReviewResolutionError(f"Invalid workspace root: {error}") from error
-    if not root.is_dir():
+    if not os.path.lexists(root) or _is_link_like(root) or not root.is_dir():
         raise ScanReviewResolutionError(
-            f"Workspace root is not an existing directory: {root}"
+            f"Workspace root is not an ordinary existing directory: {root}"
         )
     return root
 
 
-def _evidence_path(value: str | Path | None) -> str | None:
+def _evidence_path(
+    root: Path,
+    work_ref: ModuleWorkRef | None,
+    value: str | Path | None,
+) -> str | None:
     if value is None:
         return None
-    try:
-        path = Path(value)
-    except (TypeError, ValueError) as error:
-        raise ScanReviewResolutionError(f"Invalid evidence_path: {error}") from error
-    if path.is_absolute():
+    if not isinstance(value, (str, Path)):
+        raise ScanReviewResolutionError("evidence_path must be a string or Path.")
+    text = str(value)
+    posix = PurePosixPath(text)
+    windows = PureWindowsPath(text)
+    if (
+        not text
+        or "\\" in text
+        or posix.is_absolute()
+        or windows.is_absolute()
+        or windows.drive
+        or any(component in {"", ".", ".."} for component in posix.parts)
+        or posix.as_posix() != text
+    ):
         raise ScanReviewResolutionError(
-            "evidence_path must be relative to the workspace root."
+            "evidence_path must be canonical workspace-relative POSIX text."
         )
-    return path.as_posix()
+    absolute = root.joinpath(*posix.parts)
+    try:
+        absolute.relative_to(root)
+    except ValueError as error:
+        raise ScanReviewResolutionError("evidence_path escapes the workspace.") from error
+    if not os.path.lexists(absolute) or _is_link_like(absolute) or not absolute.is_file():
+        raise ScanReviewResolutionError(
+            "evidence_path must name an ordinary existing non-link file."
+        )
+    try:
+        _preflight_arbitrary_file_destination(absolute)
+    except Exception as error:
+        raise ScanReviewResolutionError(
+            f"evidence_path has an unsafe ancestor: {error}"
+        ) from error
+    if work_ref is not None:
+        work_root = quillan_work_paths(
+            root, work_ref.class_id, work_ref.work_id
+        ).work_root
+        try:
+            absolute.relative_to(work_root)
+        except ValueError as error:
+            raise ScanReviewResolutionError(
+                "evidence_path is outside the selected Quillan work root."
+            ) from error
+    return text
+
+
+def _resolution_route(
+    root: Path,
+    failure: RoutingFailureMetadata,
+    action: str,
+    locator: RouteLocator | None,
+    target: ModuleRecordRef | None,
+) -> tuple[RouteLocator | None, ModuleRecordRef | None]:
+    route_action = action in {"route_selected", "route_corrected"}
+    if not route_action:
+        if locator is not None or target is not None:
+            raise ScanReviewResolutionError(
+                "route_locator and target are only valid for route actions."
+            )
+        return None, None
+    if type(locator) is not RouteLocator:
+        raise ScanReviewResolutionError(
+            f"{action} requires an exact Core RouteLocator."
+        )
+    if type(target) is not ModuleRecordRef:
+        raise ScanReviewResolutionError(
+            f"{action} requires an exact Core ModuleRecordRef target."
+        )
+    if locator.schema != "PDS2" or locator.module_id != QUILLAN_MODULE_ID:
+        raise ScanReviewResolutionError(
+            "route_locator must be an exact PDS2 Quillan locator."
+        )
+    if (
+        target.module_id != QUILLAN_MODULE_ID
+        or target.record_kind != RESPONSE_PAGE_RECORD_KIND
+        or target.contract_version != RESPONSE_PAGE_CONTRACT_VERSION
+    ):
+        raise ScanReviewResolutionError(
+            "target is not a supported Quillan response-page reference."
+        )
+    failure_work = _failure_work_ref(failure)
+    if failure_work is not None and locator.work != failure_work:
+        raise ScanReviewResolutionError(
+            "Corrected route crosses the failure's exact class or assignment."
+        )
+    if action == "route_corrected" and (
+        failure.route_locator == locator and failure.target == target
+    ):
+        raise ScanReviewResolutionError(
+            "route_corrected must change the failure's route or target."
+        )
+    try:
+        registration = load_route_registration(root, locator)
+    except Exception as error:
+        raise ScanReviewResolutionError(
+            f"route_locator does not identify a valid canonical route: {error}"
+        ) from error
+    if registration.locator != locator or registration.target != target:
+        raise ScanReviewResolutionError(
+            "route_locator and target do not identify the same registered route."
+        )
+    try:
+        page = load_printable_response_page(root, locator.work, target.record_id)
+    except PrintableResponsePersistenceError as error:
+        raise ScanReviewResolutionError(
+            f"route target is not a valid canonical response page: {error}"
+        ) from error
+    if (
+        page.class_id != locator.class_id
+        or page.assignment_id != locator.work_id
+        or page.page_id != target.record_id
+    ):
+        raise ScanReviewResolutionError(
+            "route target contradicts the selected work identity."
+        )
+    return locator, target
+
+
+def _mapped_action(action: str) -> tuple[str, str]:
+    if action in {"defer", "deferred"}:
+        return "deferred", "deferred"
+    if action == "mixed_assignment":
+        return "resolved", "other"
+    return "resolved", action
 
 
 def _resolution_message(action: str, value: str | None) -> str:
@@ -421,8 +770,26 @@ def _resolution_id(
 
 def _relative(path: Path, root: Path) -> str:
     try:
-        return path.resolve(strict=False).relative_to(root).as_posix()
+        return path.relative_to(root).as_posix()
     except ValueError as error:
         raise ScanReviewResolutionError(
             "Scan review metadata path is outside the workspace root."
         ) from error
+
+
+def _is_link_like(path: Path) -> bool:
+    is_junction = getattr(path, "is_junction", None)
+    return path.is_symlink() or bool(is_junction is not None and is_junction())
+
+
+__all__ = [
+    "DEFAULT_RESOLUTION_MESSAGES",
+    "QUILLAN_RESOLUTION_ACTIONS",
+    "QuillanResolutionResult",
+    "QuillanReviewDiscovery",
+    "QuillanReviewItem",
+    "ScanReviewResolutionError",
+    "discover_scan_review_items",
+    "list_scan_review_items",
+    "resolve_scan_review_item",
+]

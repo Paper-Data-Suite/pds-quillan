@@ -54,6 +54,7 @@ from quillan.work_paths import (
     routed_evidence_path,
 )
 from tests.observation_test_support import successful_image_page, successful_pdf_pages
+from tests.review_test_support import _write_assignment
 
 
 def test_observation_assembly_creates_then_leaves_manifest_unchanged(
@@ -127,6 +128,11 @@ def test_new_duplicate_preserves_teacher_needs_rescan_state(tmp_path: Path) -> N
     observation = first.observation
     assembled = assemble_quillan_submission_manifests(
         tmp_path, observation.class_id, observation.assignment_id
+    )
+    _write_assignment(
+        tmp_path,
+        class_id=observation.class_id,
+        assignment_id=observation.assignment_id,
     )
     assert assembled.assembled[0].status == "created"
     mark_submission_page_needs_rescan(
@@ -553,13 +559,13 @@ def test_typed_student_stage_failures_emit_their_public_category(
     elif category == "manifest_concurrency_conflict":
         monkeypatch.setattr(
             observation_assembly,
-            "persist_submission_manifest",
+                "create_quillan_submission_manifest",
             raise_error(SubmissionManifestConcurrencyError("concurrent")),
         )
     else:
         monkeypatch.setattr(
             observation_assembly,
-            "persist_submission_manifest",
+                "create_quillan_submission_manifest",
             raise_error(SubmissionManifestPathError("write")),
         )
     result = assemble_quillan_submission_manifests(
