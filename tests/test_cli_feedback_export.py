@@ -9,8 +9,13 @@ import pytest
 from quillan.cli import main
 import quillan.cli_app.handlers.exports as cli_exports
 from quillan.feedback_export import feedback_export_path, feedback_pdf_export_path
-from tests.review_test_support import _write_manifest, _write_review
+from tests.review_test_support import _write_assignment, _write_manifest, _write_review
 from tests.review_test_support import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID, _review
+
+
+@pytest.fixture(autouse=True)
+def canonical_assignment(tmp_path: Path) -> None:
+    _write_assignment(tmp_path)
 
 
 def test_cli_exports_feedback_and_prints_summary(

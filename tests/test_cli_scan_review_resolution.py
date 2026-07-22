@@ -80,11 +80,37 @@ def test_cli_writes_only_json_resolution_metadata(
     workspace: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _write_failure(workspace)
+    evidence = (
+        workspace
+        / "classes"
+        / "english12_p3"
+        / "modules"
+        / "quillan"
+        / "work"
+        / "essay_01"
+        / "handled"
+        / "source.pdf"
+    )
+    evidence.parent.mkdir(parents=True)
+    evidence.write_bytes(b"evidence")
+    relative_evidence = evidence.relative_to(workspace).as_posix()
     assert main(
-        ["resolve-scan-review", FAILURE_ID, "--action", "evidence_filed", "--evidence-path", "handled/source.pdf"]
+        [
+            "resolve-scan-review",
+            FAILURE_ID,
+            "--action",
+            "evidence_filed",
+            "--evidence-path",
+            relative_evidence,
+        ]
     ) == 0
     capsys.readouterr()
     files = list((workspace / "scans" / "review" / "resolutions").iterdir())
     assert len(files) == 1
     assert files[0].suffix == ".json"
-    assert json.loads(files[0].read_text(encoding="utf-8"))["resolution_evidence_path"] == "handled/source.pdf"
+    assert (
+        json.loads(files[0].read_text(encoding="utf-8"))[
+            "resolution_evidence_path"
+        ]
+        == relative_evidence
+    )

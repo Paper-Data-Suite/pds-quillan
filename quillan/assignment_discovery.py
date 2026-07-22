@@ -13,6 +13,7 @@ from quillan.work_paths import (
     QuillanWorkPathError,
     _is_link_like,
     preflight_quillan_work_collection,
+    preflight_work_file_destination,
     quillan_work_paths,
 )
 
@@ -45,18 +46,33 @@ def discover_quillan_assignments(
     for entry in entries:
         try:
             validate_identifier(entry.name, "assignment_id")
-        except IdentifierValidationError:
+        except IdentifierValidationError as error:
+            discovered.append(
+                DiscoveredAssignment(
+                    entry.name,
+                    entry / "assignment.json",
+                    None,
+                    f"Invalid direct assignment child ID: {error}",
+                )
+            )
             continue
         path = quillan_work_paths(
             workspace_root, class_id, entry.name
         ).assignment_path
         try:
             if _is_link_like(entry) or not entry.is_dir():
-                continue
+                raise AssignmentConfigError(
+                    "Assignment work child is not an ordinary non-link directory."
+                )
+            preflight_work_file_destination(
+                workspace_root,
+                quillan_work_paths(workspace_root, class_id, entry.name).work_ref,
+                "assignment.json",
+            )
             if _is_link_like(path) or not path.is_file():
-                continue
+                raise AssignmentConfigError("Assignment config is missing.")
             assignment = load_assignment_config(path)
-        except (AssignmentConfigError, OSError) as error:
+        except (AssignmentConfigError, QuillanWorkPathError, OSError) as error:
             discovered.append(
                 DiscoveredAssignment(entry.name, path, None, str(error))
             )
@@ -69,6 +85,16 @@ def discover_quillan_assignments(
                     None,
                     "Path assignment_id does not match assignment config "
                     "assignment_id.",
+                )
+            )
+            continue
+        if class_id not in assignment["class_ids"]:
+            discovered.append(
+                DiscoveredAssignment(
+                    entry.name,
+                    path,
+                    None,
+                    "Assignment config class_ids does not include its containing class.",
                 )
             )
             continue

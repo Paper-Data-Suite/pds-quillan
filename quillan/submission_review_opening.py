@@ -7,15 +7,15 @@ from pathlib import Path
 from typing import Any
 
 from quillan.evidence_opening import EvidenceOpeningError, open_workspace_evidence
-from quillan.submission_manifest import (
-    SubmissionManifestError,
-    load_submission_manifest,
-)
-from quillan.submission_manifest_paths import (
-    SubmissionManifestPathError,
-    submission_manifest_path,
+from quillan.record_context import (
+    MissingSubmissionError,
+    QuillanRecordContextError,
+    ReviewLoadingPolicy,
+    load_quillan_student_review_context,
+    mutable_json_copy,
 )
 from quillan.submission_guidance import missing_submission_guidance
+from quillan.work_paths import quillan_work_ref
 
 
 class SubmissionReviewOpeningError(Exception):
@@ -86,41 +86,26 @@ def open_student_submission_for_review(
 ) -> OpenedSubmissionReview:
     """Open selected routed evidence files for one submission."""
     try:
-        resolved_workspace_root = Path(workspace_root).resolve(strict=False)
-        manifest_path = submission_manifest_path(
-            resolved_workspace_root,
-            class_id,
-            assignment_id,
+        context = load_quillan_student_review_context(
+            workspace_root,
+            quillan_work_ref(class_id, assignment_id),
             student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
         )
-    except (OSError, RuntimeError, SubmissionManifestPathError) as error:
+    except MissingSubmissionError as error:
+        raise SubmissionReviewOpeningError(missing_submission_guidance()) from error
+    except (OSError, RuntimeError, QuillanRecordContextError) as error:
         raise SubmissionReviewOpeningError(str(error)) from error
-
-    if not manifest_path.exists():
-        raise SubmissionReviewOpeningError(missing_submission_guidance())
-
-    try:
-        manifest = load_submission_manifest(manifest_path)
-    except (OSError, SubmissionManifestError) as error:
-        raise SubmissionReviewOpeningError(
-            f"Could not load submission manifest: {error}"
-        ) from error
-
-    _validate_manifest_identity(
-        manifest,
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
-    )
+    resolved_workspace_root = context.paths.workspace_root
+    manifest_path = context.paths.submission_manifest_path
+    manifest = mutable_json_copy(context.submission)
     selected_pages = selected_submission_evidence_pages(
         manifest,
         page_number=page_number,
     )
 
     try:
-        manifest_relative_path = manifest_path.resolve(strict=False).relative_to(
-            resolved_workspace_root
-        ).as_posix()
+        manifest_relative_path = context.paths.submission_relative_path
     except (EvidenceOpeningError, OSError, RuntimeError, ValueError) as error:
         raise SubmissionReviewOpeningError(
             f"Could not resolve submission manifest path: {error}"

@@ -7,7 +7,23 @@ import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from collections.abc import Mapping
 from typing import Any, Literal
+
+from pds_core.routing_models import ModuleWorkRef
+
+from quillan.atomic_record_io import (
+    AtomicRecordConcurrencyError,
+    AtomicRecordDurabilityError,
+    AtomicRecordError,
+    create_exclusive_record,
+    revision_guarded_update,
+)
+from quillan.record_context import (
+    QuillanAssignmentRecordContext,
+    QuillanStudentReviewContext,
+    student_record_paths,
+)
 
 from quillan.submission_manifest import (
     SubmissionManifestError,
@@ -18,6 +34,7 @@ from quillan.work_paths import (
     QuillanWorkPathError,
     _preflight_arbitrary_file_destination,
     quillan_work_ref,
+    initialize_student_submission_dir,
     student_submission_dir,
     submission_manifest_path as work_submission_manifest_path,
 )
@@ -25,6 +42,17 @@ from quillan.work_paths import (
 
 class SubmissionManifestPathError(ValueError):
     """Raised when a submission manifest path or write operation is invalid."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        possibly_durable_path: Path | None = None,
+        possible_lock_path: Path | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.possibly_durable_path = possibly_durable_path
+        self.possible_lock_path = possible_lock_path
 
 
 class SubmissionManifestConcurrencyError(SubmissionManifestPathError):
@@ -35,6 +63,59 @@ class SubmissionManifestConcurrencyError(SubmissionManifestPathError):
 class PersistedSubmissionManifest:
     path: Path
     status: Literal["created", "updated", "unchanged"]
+
+
+def create_quillan_submission_manifest(
+    assignment_context: QuillanAssignmentRecordContext,
+    student_id: str,
+    manifest: Mapping[str, object],
+) -> PersistedSubmissionManifest:
+    """Create only beneath a validated canonical assignment context."""
+    if type(assignment_context) is not QuillanAssignmentRecordContext:
+        raise SubmissionManifestPathError(
+            "assignment_context must be an exact QuillanAssignmentRecordContext."
+        )
+    work_ref = assignment_context.paths.work_ref
+    manifest_data = dict(manifest)
+    _validate_manifest_identity(manifest_data, work_ref, student_id)
+    initialize_student_submission_dir(
+        assignment_context.paths.workspace_root, work_ref, student_id
+    )
+    paths = student_record_paths(
+        assignment_context.paths.workspace_root, work_ref, student_id
+    )
+    return _persist_submission_manifest(
+        paths.submission_manifest_path,
+        manifest_data,
+        preflight=lambda: student_record_paths(
+            assignment_context.paths.workspace_root, work_ref, student_id
+        ),
+    )
+
+
+def update_quillan_submission_manifest(
+    context: QuillanStudentReviewContext,
+    manifest: Mapping[str, object],
+) -> PersistedSubmissionManifest:
+    """Revision-guard an update using the manifest snapshot in ``context``."""
+    if type(context) is not QuillanStudentReviewContext:
+        raise SubmissionManifestPathError(
+            "context must be an exact QuillanStudentReviewContext."
+        )
+    manifest_data = dict(manifest)
+    _validate_manifest_identity(
+        manifest_data, context.paths.work_ref, context.paths.student_id
+    )
+    return _persist_submission_manifest(
+        context.paths.submission_manifest_path,
+        manifest_data,
+        expected_original_bytes=context.submission_record.original_bytes,
+        preflight=lambda: student_record_paths(
+            context.paths.workspace_root,
+            context.paths.work_ref,
+            context.paths.student_id,
+        ),
+    )
 
 
 def submission_dir(
@@ -117,131 +198,55 @@ def persist_submission_manifest(
     *,
     expected_original_bytes: bytes | None = None,
 ) -> PersistedSubmissionManifest:
-    """Atomically create or revision-guard update a validated manifest."""
-    validate_submission_manifest(manifest)
-    manifest_path = Path(path)
-    try:
-        _preflight_arbitrary_file_destination(manifest_path)
-    except QuillanWorkPathError as error:
-        raise SubmissionManifestPathError(str(error)) from error
-    parent = manifest_path.parent
-    try:
-        parent.mkdir(parents=True, exist_ok=True)
-        _preflight_arbitrary_file_destination(manifest_path)
-    except (OSError, QuillanWorkPathError) as error:
-        raise SubmissionManifestPathError(
-            f"Could not prepare submission manifest directory {parent}: {error}"
-        ) from error
-    data = _canonical_manifest_bytes(manifest)
-    if expected_original_bytes is None:
-        if os.path.lexists(manifest_path):
-            raise SubmissionManifestPathError(
-                f"Submission manifest already exists: {manifest_path}"
-            )
-        create_temporary = _write_manifest_temporary(manifest_path, data)
-        try:
-            os.link(create_temporary, manifest_path)
-            create_temporary.unlink()
-        except FileExistsError as error:
-            raise SubmissionManifestConcurrencyError(
-                f"Submission manifest was concurrently created: {manifest_path}"
-            ) from error
-        except OSError as error:
-            raise SubmissionManifestPathError(
-                f"Could not install submission manifest {manifest_path}: {error}"
-            ) from error
-        finally:
-            try:
-                create_temporary.unlink(missing_ok=True)
-            except OSError:
-                pass
-        try:
-            _reload_compare(manifest_path, manifest, data)
-        except Exception:
-            if (
-                not _is_link_like(manifest_path)
-                and manifest_path.is_file()
-                and manifest_path.read_bytes() == data
-            ):
-                manifest_path.unlink()
-            raise
-        return PersistedSubmissionManifest(manifest_path, "created")
+    """Low-level compatibility writer; canonical services use contexts instead."""
+    manifest_path = Path(os.path.abspath(Path(path)))
+    return _persist_submission_manifest(
+        manifest_path,
+        manifest,
+        expected_original_bytes=expected_original_bytes,
+        preflight=lambda: _preflight_arbitrary_file_destination(manifest_path),
+    )
 
-    if not isinstance(expected_original_bytes, bytes):
-        raise SubmissionManifestPathError(
-            "expected_original_bytes must be bytes or None."
-        )
-    current_bytes = _read_safe_manifest_bytes(manifest_path)
-    if current_bytes == expected_original_bytes and _existing_manifest_matches(
-        manifest_path, manifest
-    ):
-        return PersistedSubmissionManifest(manifest_path, "unchanged")
-    if data == expected_original_bytes:
-        if _read_safe_manifest_bytes(manifest_path) != expected_original_bytes:
-            raise SubmissionManifestConcurrencyError(
-                "Submission manifest changed before unchanged-state verification."
-            )
-        _reload_compare(manifest_path, manifest, data)
-        return PersistedSubmissionManifest(manifest_path, "unchanged")
-    lock_path = parent / f".{manifest_path.name}.assembly.lock"
-    lock_created = False
-    temporary: Path | None = None
+
+def _persist_submission_manifest(
+    manifest_path: Path,
+    manifest: dict[str, Any],
+    *,
+    expected_original_bytes: bytes | None = None,
+    preflight: Any,
+) -> PersistedSubmissionManifest:
+    """Atomically persist a preselected destination with guarded verification."""
+    validate_submission_manifest(manifest)
     try:
-        if os.path.lexists(lock_path):
-            raise SubmissionManifestConcurrencyError(
-                f"Submission assembly lock already exists: {lock_path}"
+        preflight()
+        data = _canonical_manifest_bytes(manifest)
+        if expected_original_bytes is None:
+            result = create_exclusive_record(
+                manifest_path,
+                data,
+                preflight=preflight,
+                verify_bytes=lambda loaded: _verify_manifest_bytes(loaded, manifest),
             )
-        with lock_path.open("xb") as lock_file:
-            lock_created = True
-            lock_file.write(b"quillan-submission-assembly-v1\n")
-            lock_file.flush()
-            os.fsync(lock_file.fileno())
-        if _read_safe_manifest_bytes(manifest_path) != expected_original_bytes:
-            raise SubmissionManifestConcurrencyError(
-                "Submission manifest changed after assembly loaded it."
+        else:
+            result = revision_guarded_update(
+                manifest_path,
+                expected_original_bytes,
+                data,
+                preflight=preflight,
+                verify_bytes=lambda loaded: _verify_manifest_bytes(loaded, manifest),
+                lock_purpose="submission-update",
             )
-        temporary = _write_manifest_temporary(manifest_path, data)
-        if _read_safe_manifest_bytes(manifest_path) != expected_original_bytes:
-            raise SubmissionManifestConcurrencyError(
-                "Submission manifest changed before atomic replacement."
-            )
-        os.replace(temporary, manifest_path)
-        temporary = None
-        try:
-            _reload_compare(manifest_path, manifest, data)
-        except Exception as error:
-            try:
-                _restore_manifest_bytes(manifest_path, expected_original_bytes)
-            except Exception as rollback_error:
-                raise SubmissionManifestPathError(
-                    "Updated manifest verification failed and original-byte "
-                    f"restoration failed: {rollback_error}"
-                ) from error
-            raise
-        return PersistedSubmissionManifest(manifest_path, "updated")
-    except SubmissionManifestPathError:
-        raise
-    except OSError as error:
+    except AtomicRecordConcurrencyError as error:
+        raise SubmissionManifestConcurrencyError(str(error)) from error
+    except AtomicRecordDurabilityError as error:
         raise SubmissionManifestPathError(
-            f"Could not atomically update submission manifest {manifest_path}: {error}"
+            str(error),
+            possibly_durable_path=error.possibly_durable_path,
+            possible_lock_path=error.possible_lock_path,
         ) from error
-    finally:
-        if temporary is not None:
-            try:
-                temporary.unlink(missing_ok=True)
-            except OSError:
-                pass
-        if lock_created:
-            try:
-                if _is_link_like(lock_path) or not lock_path.is_file():
-                    raise SubmissionManifestPathError(
-                        f"Assembly lock changed filesystem type: {lock_path}"
-                    )
-                lock_path.unlink()
-            except OSError as error:
-                raise SubmissionManifestPathError(
-                    f"Could not remove submission assembly lock {lock_path}: {error}"
-                ) from error
+    except (AtomicRecordError, QuillanWorkPathError, OSError) as error:
+        raise SubmissionManifestPathError(str(error)) from error
+    return PersistedSubmissionManifest(manifest_path, result.status)
 
 
 def _canonical_manifest_bytes(manifest: dict[str, Any]) -> bytes:
@@ -262,6 +267,39 @@ def _canonical_manifest_bytes(manifest: dict[str, Any]) -> bytes:
         ) from error
 
 
+def _verify_manifest_bytes(data: bytes, expected: dict[str, Any]) -> None:
+    def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise SubmissionManifestError(f"Duplicate manifest JSON key: {key}")
+            result[key] = value
+        return result
+
+    def reject_constant(value: str) -> Any:
+        raise SubmissionManifestError(f"Invalid JSON constant: {value}")
+
+    try:
+        loaded = json.loads(
+            data.decode("utf-8"),
+            object_pairs_hook=reject_duplicates,
+            parse_constant=reject_constant,
+        )
+    except (UnicodeError, json.JSONDecodeError) as error:
+        raise SubmissionManifestPathError(
+            f"Persisted submission manifest is not strict JSON: {error}"
+        ) from error
+    if not isinstance(loaded, dict):
+        raise SubmissionManifestPathError(
+            "Persisted submission manifest is not a JSON object."
+        )
+    validate_submission_manifest(loaded)
+    if loaded != expected:
+        raise SubmissionManifestPathError(
+            "Reloaded submission manifest differs from the committed model."
+        )
+
+
 def _write_manifest_temporary(path: Path, data: bytes) -> Path:
     descriptor, name = tempfile.mkstemp(
         prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
@@ -276,6 +314,32 @@ def _write_manifest_temporary(path: Path, data: bytes) -> Path:
         temporary.unlink(missing_ok=True)
         raise
     return temporary
+
+
+def _validate_manifest_identity(
+    manifest: dict[str, Any], work_ref: ModuleWorkRef, student_id: str
+) -> None:
+    validate_submission_manifest(manifest)
+    try:
+        canonical_ref = quillan_work_ref(work_ref.class_id, work_ref.work_id)
+    except (AttributeError, ValueError) as error:
+        raise SubmissionManifestPathError(
+            "work_ref must be an exact Quillan ModuleWorkRef."
+        ) from error
+    if work_ref != canonical_ref:
+        raise SubmissionManifestPathError(
+            "work_ref must be an exact Quillan ModuleWorkRef."
+        )
+    expected = {
+        "class_id": work_ref.class_id,
+        "assignment_id": work_ref.work_id,
+        "student_id": student_id,
+    }
+    for field, value in expected.items():
+        if manifest[field] != value:
+            raise SubmissionManifestPathError(
+                f"Submission manifest {field} does not match its canonical identity."
+            )
 
 
 def _restore_manifest_bytes(path: Path, data: bytes) -> None:
@@ -333,11 +397,11 @@ def _is_link_like(path: Path) -> bool:
 
 
 __all__ = [
+    "create_quillan_submission_manifest",
     "PersistedSubmissionManifest",
     "SubmissionManifestConcurrencyError",
     "SubmissionManifestPathError",
-    "persist_submission_manifest",
     "submission_dir",
     "submission_manifest_path",
-    "write_submission_manifest",
+    "update_quillan_submission_manifest",
 ]

@@ -10,15 +10,22 @@ import pytest
 
 import quillan.cli_app.handlers.pages as page_handlers
 from quillan.cli_app.main import main
+from quillan.review_record import build_empty_review_record
 from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
 )
+from tests.review_test_support import _write_assignment
 
 CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"
 STUDENT_ID = "stu_0001"
 TIMESTAMP = "2026-07-13T12:00:00+00:00"
+
+
+@pytest.fixture(autouse=True)
+def canonical_assignment(tmp_path: Path) -> None:
+    _write_assignment(tmp_path)
 
 
 def _evidence(evidence_id: str, page_number: int, role: str) -> dict[str, Any]:
@@ -237,7 +244,14 @@ def test_cli_mutations_report_transition_and_preserve_submission_state(
 ) -> None:
     path = _write(tmp_path)
     review = path.with_name("review.json")
-    review.write_bytes(b'{"review_state":"in_progress"}\n')
+    review_record = build_empty_review_record(
+        class_id=CLASS_ID,
+        assignment_id=ASSIGNMENT_ID,
+        student_id=STUDENT_ID,
+        created_at=TIMESTAMP,
+    )
+    review_record["review_state"] = "observations_in_progress"
+    review.write_text(json.dumps(review_record), encoding="utf-8")
     review_before = review.read_bytes()
     _configure_workspace(monkeypatch, tmp_path)
     args = [CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, "--page", "1", "--yes"]

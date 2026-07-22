@@ -45,24 +45,27 @@ from quillan.response_page_observations import (
     list_quillan_page_observations,
     validate_observation_id,
 )
+from quillan.record_context import (
+    QuillanRecordContextError,
+    QuillanStudentReviewContext,
+    ReviewLoadingPolicy,
+    load_quillan_assignment_context,
+    load_quillan_student_review_context,
+    mutable_json_copy,
+)
 from quillan.submission_manifest import (
     PDS2_SUBMISSION_ENTRY_METHOD,
     SubmissionManifestError,
-    load_submission_manifest,
     validate_submission_manifest,
 )
 from quillan.submission_manifest_paths import (
     SubmissionManifestConcurrencyError,
     SubmissionManifestPathError,
-    _read_safe_manifest_bytes,
-    persist_submission_manifest,
+    create_quillan_submission_manifest,
     submission_manifest_path,
+    update_quillan_submission_manifest,
 )
 from quillan.work_paths import quillan_work_ref
-from quillan.work_paths import (
-    QuillanWorkPathError,
-    _preflight_arbitrary_file_destination,
-)
 
 ASSEMBLY_FAILURE_CATEGORIES: Final[frozenset[str]] = frozenset(
     {
@@ -436,6 +439,24 @@ def _assemble_submission_manifests_uncontained(
 ) -> QuillanSubmissionAssemblyBatch:
     """Discover observations and independently assemble affected students."""
     root = Path(workspace_root)
+    work_ref = quillan_work_ref(class_id, assignment_id)
+    try:
+        assignment_context = load_quillan_assignment_context(root, work_ref)
+    except QuillanRecordContextError as error:
+        return QuillanSubmissionAssemblyBatch(
+            (),
+            (
+                _failure(
+                    "identity_conflict",
+                    class_id,
+                    assignment_id,
+                    None,
+                    (),
+                    f"Canonical assignment context failed: {error}",
+                    error,
+                ),
+            ),
+        )
     try:
         all_observations = list_quillan_page_observations(root, class_id, assignment_id)
     except QuillanObservationDiscoveryError as error:
@@ -503,14 +524,18 @@ def _assemble_submission_manifests_uncontained(
             root, class_id, assignment_id, student_id
         )
         existing: dict[str, Any] | None = None
-        original_bytes: bytes | None = None
+        student_context: QuillanStudentReviewContext | None = None
         existing_issuance_id: str | None = None
         if os.path.lexists(manifest_path):
             try:
-                _preflight_arbitrary_file_destination(manifest_path)
-                original_bytes = _read_safe_manifest_bytes(manifest_path)
-                existing = load_submission_manifest(manifest_path)
-            except (OSError, QuillanWorkPathError, SubmissionManifestError) as error:
+                student_context = load_quillan_student_review_context(
+                    root,
+                    work_ref,
+                    student_id,
+                    review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+                )
+                existing = mutable_json_copy(student_context.submission)
+            except (OSError, QuillanRecordContextError) as error:
                 failures.append(
                     _failure(
                         "existing_manifest_invalid",
@@ -683,11 +708,17 @@ def _assemble_submission_manifests_uncontained(
                 observations=student_observations,
                 timestamp=timestamp,
             )
-            persisted = persist_submission_manifest(
-                manifest_path,
-                merged,
-                expected_original_bytes=original_bytes,
-            )
+            if student_context is None:
+                persisted = create_quillan_submission_manifest(
+                    assignment_context,
+                    student_id,
+                    merged,
+                )
+            else:
+                persisted = update_quillan_submission_manifest(
+                    student_context,
+                    merged,
+                )
         except SubmissionManifestConcurrencyError as error:
             failures.append(
                 _failure(

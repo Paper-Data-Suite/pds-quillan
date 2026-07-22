@@ -7,9 +7,10 @@ import os
 import re
 import unicodedata
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, Literal, TypeVar
 
 from pds_core.classes import ClassFolder, list_class_folders
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
@@ -26,6 +27,16 @@ from quillan.assignments import (
     AssignmentConfigError,
     load_assignment_config,
     validate_assignment_config,
+)
+from quillan.atomic_record_io import (
+    AtomicRecordDurabilityError,
+    create_exclusive_record,
+    revision_guarded_update,
+)
+from quillan.record_context import (
+    LoadedJsonRecord,
+    canonical_workspace_root,
+    load_quillan_assignment_context,
 )
 from quillan.assignment_picker import prompt_assignment_choice
 from quillan.storage import assignment_config_path
@@ -82,6 +93,29 @@ _DEFAULT_RATING_SCALE = {
     ],
 }
 _T = TypeVar("_T")
+
+
+class AssignmentBatchWriteError(AssignmentConfigError):
+    """A multi-class write failed, with conservative compensation details."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        possibly_durable_paths: tuple[Path, ...],
+        rollback_diagnostics: tuple[str, ...],
+    ) -> None:
+        super().__init__(message)
+        self.possibly_durable_paths = possibly_durable_paths
+        self.rollback_diagnostics = rollback_diagnostics
+
+
+@dataclass(slots=True)
+class _AssignmentWriteJournalEntry:
+    path: Path
+    original: LoadedJsonRecord | None
+    replacement_bytes: bytes
+    status: Literal["pending", "unchanged", "created", "updated"] = "pending"
 
 
 def suggest_assignment_id(title: str) -> str:
@@ -191,32 +225,254 @@ def write_assignment_config(
     overwrite: bool = False,
 ) -> Path:
     """Write a validated assignment config to its canonical shared path."""
+    return write_assignment_configs(
+        workspace_root, (class_id,), assignment, overwrite=overwrite
+    )[0]
+
+
+def write_assignment_configs(
+    workspace_root: str | Path,
+    class_ids: Sequence[str],
+    assignment: Mapping[str, Any],
+    *,
+    overwrite: bool = False,
+) -> tuple[Path, ...]:
+    """Preflight all copies and conservatively compensate an incomplete batch."""
     assignment_data = dict(assignment)
     validate_assignment_config(assignment_data)
-    if class_id not in assignment_data["class_ids"]:
-        raise AssignmentConfigError(
-            "Assignment class_ids must include the selected class_id."
-        )
+    selected = tuple(class_ids)
+    if not selected or len(set(selected)) != len(selected):
+        raise AssignmentConfigError("class_ids must be nonempty and unique.")
+    for class_id in selected:
+        if class_id not in assignment_data["class_ids"]:
+            raise AssignmentConfigError(
+                "Assignment class_ids must include every selected class_id."
+            )
+    root = canonical_workspace_root(workspace_root)
     assignment_id = str(assignment_data["assignment_id"])
-    paths = quillan_work_paths(workspace_root, class_id, assignment_id)
-    path = paths.assignment_path
-    if path.is_file() and not path.is_symlink() and not overwrite:
-        raise FileExistsError(f"Assignment config already exists: {path}")
-    try:
-        preflight_managed_work_layout(paths)
-        preflight_work_file_destination(
-            workspace_root, paths.work_ref, "assignment.json"
-        )
-    except QuillanWorkPathError as error:
-        raise AssignmentConfigError(str(error)) from error
-    if not overwrite and os.path.lexists(path):
-        raise FileExistsError(f"Assignment config already exists: {path}")
-    initialize_managed_work_layout(paths)
-    path.write_text(
-        json.dumps(assignment_data, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
+    bundles = tuple(
+        quillan_work_paths(root, class_id, assignment_id)
+        for class_id in selected
     )
-    return path
+    originals: dict[Path, LoadedJsonRecord | None] = {}
+    for paths in bundles:
+        try:
+            preflight_managed_work_layout(paths)
+            preflight_work_file_destination(
+                root, paths.work_ref, "assignment.json"
+            )
+        except QuillanWorkPathError as error:
+            raise AssignmentConfigError(str(error)) from error
+        path = paths.assignment_path
+        if os.path.lexists(path):
+            if not overwrite:
+                raise FileExistsError(f"Assignment config already exists: {path}")
+            originals[path] = load_quillan_assignment_context(
+                root, paths.work_ref
+            ).assignment_record
+        else:
+            originals[path] = None
+    data = (
+        json.dumps(assignment_data, indent=2, ensure_ascii=False) + "\n"
+    ).encode("utf-8")
+    journal = [
+        _AssignmentWriteJournalEntry(
+            paths.assignment_path,
+            originals[paths.assignment_path],
+            data,
+        )
+        for paths in bundles
+    ]
+    try:
+        for paths in bundles:
+            initialize_managed_work_layout(paths)
+        for paths, entry in zip(bundles, journal, strict=True):
+            path = paths.assignment_path
+
+            def preflight(paths: Any = paths) -> None:
+                preflight_managed_work_layout(paths)
+                preflight_work_file_destination(
+                    root, paths.work_ref, "assignment.json"
+                )
+
+            original = originals[path]
+            if original is None:
+                result = create_exclusive_record(
+                    path,
+                    data,
+                    preflight=preflight,
+                    verify_bytes=lambda loaded: _verify_assignment_bytes(
+                        loaded, assignment_data
+                    ),
+                )
+            else:
+                result = revision_guarded_update(
+                    path,
+                    original.original_bytes,
+                    data,
+                    preflight=preflight,
+                    verify_bytes=lambda loaded: _verify_assignment_bytes(
+                        loaded, assignment_data
+                    ),
+                    lock_purpose="assignment-update",
+                )
+            entry.status = result.status
+    except Exception as error:
+        possible_paths: list[Path] = []
+        diagnostics: list[str] = []
+        if (
+            isinstance(error, AtomicRecordDurabilityError)
+            and error.possibly_durable_path is not None
+        ):
+            possible_paths.append(error.possibly_durable_path)
+        if isinstance(error, AtomicRecordDurabilityError) and error.possible_lock_path:
+            diagnostics.append(
+                f"Possible stale record guard: {error.possible_lock_path}"
+            )
+        for paths, entry in reversed(tuple(zip(bundles, journal, strict=True))):
+            if entry.status not in {"created", "updated"}:
+                continue
+            compensation_error, preserved = _compensate_assignment_entry(
+                root,
+                paths.work_ref,
+                entry,
+            )
+            if compensation_error is not None:
+                diagnostics.append(compensation_error)
+                possible_paths.extend(preserved)
+                error.add_note(compensation_error)
+        possible = tuple(dict.fromkeys(possible_paths))
+        suffix = ""
+        if possible:
+            suffix = " Possibly durable paths: " + "; ".join(map(str, possible))
+        if diagnostics:
+            suffix += " Rollback diagnostics: " + " | ".join(diagnostics)
+        raise AssignmentBatchWriteError(
+            f"Multi-class assignment write did not complete: {error}.{suffix}",
+            possibly_durable_paths=possible,
+            rollback_diagnostics=tuple(diagnostics),
+        ) from error
+    return tuple(paths.assignment_path for paths in bundles)
+
+
+def _compensate_assignment_entry(
+    root: Path,
+    work_ref: Any,
+    entry: _AssignmentWriteJournalEntry,
+) -> tuple[str | None, tuple[Path, ...]]:
+    """Undo only bytes still proven to belong to the current batch."""
+
+    def preflight() -> None:
+        preflight_work_file_destination(root, work_ref, "assignment.json")
+
+    if entry.status == "updated":
+        if entry.original is None:
+            return (
+                f"Updated assignment has no authoritative original snapshot: {entry.path}",
+                (entry.path,),
+            )
+        original_bytes = entry.original.original_bytes
+        try:
+            revision_guarded_update(
+                entry.path,
+                entry.replacement_bytes,
+                original_bytes,
+                preflight=preflight,
+                verify_bytes=lambda loaded: _verify_exact_bytes(
+                    loaded, original_bytes
+                ),
+                lock_purpose="assignment-compensation",
+            )
+        except Exception as error:
+            return (
+                f"Could not conservatively restore updated assignment "
+                f"{entry.path}: {error}",
+                (entry.path,),
+            )
+        return None, ()
+
+    if entry.status != "created":
+        return None, ()
+    displaced = entry.path.parent / (
+        f".{entry.path.name}.assignment-compensation.{os.urandom(16).hex()}.displaced"
+    )
+    try:
+        preflight()
+        if os.path.lexists(displaced):
+            raise OSError(f"compensation displacement already exists: {displaced}")
+        os.replace(entry.path, displaced)
+        actual = displaced.read_bytes()
+        if actual == entry.replacement_bytes:
+            displaced.unlink()
+            return None, ()
+        _restore_compensation_displacement(displaced, entry.path)
+        preserved = tuple(
+            path for path in (entry.path, displaced) if os.path.lexists(path)
+        )
+        return (
+            f"Created assignment changed before compensation and was preserved: "
+            f"{entry.path}",
+            preserved or (entry.path,),
+        )
+    except Exception as error:
+        if os.path.lexists(displaced):
+            try:
+                _restore_compensation_displacement(displaced, entry.path)
+            except OSError as restore_error:
+                error.add_note(f"Compensation restore also failed: {restore_error}")
+        preserved = tuple(
+            path for path in (entry.path, displaced) if os.path.lexists(path)
+        )
+        return (
+            f"Could not conservatively remove created assignment {entry.path}: {error}",
+            preserved or (entry.path,),
+        )
+
+
+def _restore_compensation_displacement(displaced: Path, target: Path) -> None:
+    """Restore displaced concurrent bytes exclusively, never overwriting a writer."""
+    if os.path.lexists(target):
+        return
+    try:
+        os.link(displaced, target)
+    except FileExistsError:
+        return
+    displaced.unlink()
+
+
+def _verify_exact_bytes(actual: bytes, expected: bytes) -> None:
+    if actual != expected:
+        raise AssignmentConfigError("Compensated assignment bytes did not verify.")
+
+
+def _verify_assignment_bytes(data: bytes, expected: dict[str, Any]) -> None:
+    def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise AssignmentConfigError(f"Duplicate assignment JSON key: {key}")
+            result[key] = value
+        return result
+
+    try:
+        loaded = json.loads(
+            data.decode("utf-8"),
+            object_pairs_hook=reject_duplicates,
+            parse_constant=lambda value: (_ for _ in ()).throw(
+                AssignmentConfigError(f"Invalid JSON constant: {value}")
+            ),
+        )
+    except (UnicodeError, json.JSONDecodeError) as error:
+        raise AssignmentConfigError(
+            f"Persisted assignment is not strict JSON: {error}"
+        ) from error
+    if not isinstance(loaded, dict):
+        raise AssignmentConfigError("Persisted assignment is not an object.")
+    validate_assignment_config(loaded)
+    if loaded != expected:
+        raise AssignmentConfigError(
+            "Reloaded assignment differs from the committed model."
+        )
 
 
 def format_assignment_summary(
@@ -729,15 +985,14 @@ def prompt_create_assignment() -> int:
         overwrite = True
 
     try:
-        saved_paths = [
-            write_assignment_config(
+        saved_paths = list(
+            write_assignment_configs(
                 workspace_root,
-                class_id,
+                class_ids,
                 assignment,
                 overwrite=overwrite,
             )
-            for class_id in class_ids
-        ]
+        )
     except (AssignmentConfigError, OSError, FileExistsError) as error:
         print(f"Error: {error}")
         return 1

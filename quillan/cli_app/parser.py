@@ -770,7 +770,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--evidence-path",
         help=(
             "Optional workspace-relative evidence path for evidence_filed; "
-            "the file is not copied or required to exist."
+            "it must be an existing ordinary non-link file in the affected work."
         ),
     )
     resolve_scan_review_parser.set_defaults(handler=handle_resolve_scan_review)

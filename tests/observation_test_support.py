@@ -11,10 +11,16 @@ from quillan.pds2_scan_intake import QuillanScanPageOutcome
 from quillan.pds_module import get_module_profile
 from quillan.route_handler import handle_quillan_response_page_route
 from tests.test_route_handler import route_context
+from tests.review_test_support import _write_assignment
 
 
 def successful_image_page(root: Path, *, pages: int = 1) -> QuillanScanPageOutcome:
     resolution, _ = route_context(root, pages=pages)
+    _write_assignment(
+        root,
+        class_id=resolution.locator.class_id,
+        assignment_id=resolution.locator.work_id,
+    )
     write_route_registration(root, resolution.registration)
     selected = root / "selected.png"
     selected.write_bytes(b"synthetic retained image bytes")
@@ -45,6 +51,11 @@ def successful_pdf_pages(
     source_page_numbers: tuple[int, ...] = (1, 2),
 ) -> tuple[QuillanScanPageOutcome, ...]:
     resolution, _ = route_context(root)
+    _write_assignment(
+        root,
+        class_id=resolution.locator.class_id,
+        assignment_id=resolution.locator.work_id,
+    )
     write_route_registration(root, resolution.registration)
     selected = root / "selected.pdf"
     document = canvas.Canvas(str(selected), pagesize=(200, 200))

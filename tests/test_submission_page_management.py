@@ -28,11 +28,17 @@ from quillan.submission_page_management import (
     restore_excluded_submission_page,
 )
 from tests.observation_test_support import successful_pdf_pages
+from tests.review_test_support import _review, _write_assignment
 
 CLASS_ID = "english12_p3_synthetic"
 ASSIGNMENT_ID = "essay_01_synthetic"
 STUDENT_ID = "stu_0001"
 TIMESTAMP = "2026-06-22T12:00:00+00:00"
+
+
+@pytest.fixture(autouse=True)
+def canonical_assignment(tmp_path: Path) -> None:
+    _write_assignment(tmp_path)
 
 
 def _evidence(
@@ -203,7 +209,9 @@ def test_mark_page_needs_rescan_preserves_review_record(
 ) -> None:
     path = _write_manifest(tmp_path)
     review_path = path.with_name("review.json")
-    review_path.write_text('{"review_state": "in_progress"}', encoding="utf-8")
+    review_path.write_text(
+        json.dumps(_review("observations_in_progress", STUDENT_ID)), encoding="utf-8"
+    )
     before = review_path.read_bytes()
 
     result = mark_submission_page_needs_rescan(
@@ -257,7 +265,9 @@ def test_write_os_error_is_wrapped_without_partial_manifest(
     def fail_write(*_args: object, **_kwargs: object) -> Path:
         raise OSError("disk full")
 
-    monkeypatch.setattr(page_management, "write_submission_manifest", fail_write)
+    monkeypatch.setattr(
+        page_management, "update_quillan_submission_manifest", fail_write
+    )
 
     with pytest.raises(SubmissionPageManagementError, match="disk full"):
         exclude_submission_page(tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, 1)
@@ -274,6 +284,11 @@ def test_observation_backed_exclude_rescan_restore_and_needs_rescan(
     created = assemble_quillan_submission_manifests(
         tmp_path, identity.class_id, identity.assignment_id
     ).assembled[0]
+    _write_assignment(
+        tmp_path,
+        class_id=identity.class_id,
+        assignment_id=identity.assignment_id,
+    )
     assert (
         load_submission_page_context(
             tmp_path, identity.class_id, identity.assignment_id, identity.student_id

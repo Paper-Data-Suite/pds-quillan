@@ -71,10 +71,10 @@ def test_invalid_sibling_is_isolated_and_output_is_deterministic(tmp_path: Path)
     assert "invalid_review" not in _document(tmp_path)["warnings"]
 
 
-def test_orphaned_review_is_validated_independently(tmp_path: Path) -> None:
+def test_orphaned_review_is_rejected_by_canonical_context(tmp_path: Path) -> None:
     _write_assignment(tmp_path)
     _write_json(_student_dir(tmp_path, "00100") / "review.json", _review("not_started", "00100"))
     document = _document(tmp_path)
-    assert document["review"]["status"] == "valid"
+    assert document["review"]["status"] == "orphaned"
     assert document["review"]["orphaned"] is True
     assert "review_without_valid_submission" in document["warnings"]

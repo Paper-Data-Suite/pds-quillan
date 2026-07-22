@@ -30,28 +30,30 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from quillan.assignments import AssignmentConfigError, load_assignment_config
 from quillan.review_record import (
     ReviewRecordError,
-    load_review_record,
     validate_review_record,
 )
 from quillan.review_record_paths import (
     ReviewRecordPathError,
-    review_record_path,
-    write_review_record,
+    persist_quillan_review_record,
 )
-from quillan.storage import assignment_config_path
-from quillan.submission_manifest import (
-    SubmissionManifestError,
-    load_submission_manifest,
-)
-from quillan.submission_manifest_paths import (
-    SubmissionManifestPathError,
-    submission_dir,
-    submission_manifest_path,
+from quillan.record_context import (
+    MissingReviewError,
+    MissingSubmissionError,
+    QuillanRecordContextError,
+    ReviewLoadingPolicy,
+    load_quillan_student_review_context,
+    mutable_json_copy,
 )
 from quillan.submission_guidance import missing_submission_guidance
+from quillan.work_paths import (
+    QuillanWorkPathError,
+    feedback_markdown_path,
+    feedback_pdf_path,
+    preflight_work_file_destination,
+    quillan_work_ref,
+)
 
 
 class FeedbackExportError(Exception):
@@ -136,10 +138,8 @@ def feedback_export_path(
     student_id: str,
 ) -> Path:
     """Return the canonical student-facing Markdown feedback export path."""
-    return (
-        submission_dir(workspace_root, class_id, assignment_id, student_id)
-        / "exports"
-        / "feedback.md"
+    return feedback_markdown_path(
+        workspace_root, quillan_work_ref(class_id, assignment_id), student_id
     )
 
 
@@ -150,10 +150,8 @@ def feedback_pdf_export_path(
     student_id: str,
 ) -> Path:
     """Return the canonical student-facing PDF feedback export path."""
-    return (
-        submission_dir(workspace_root, class_id, assignment_id, student_id)
-        / "exports"
-        / "feedback.pdf"
+    return feedback_pdf_path(
+        workspace_root, quillan_work_ref(class_id, assignment_id), student_id
     )
 
 
@@ -173,6 +171,9 @@ def export_student_feedback(
     )
     output_path = feedback_export_path(
         context["workspace_root"], class_id, assignment_id, student_id
+    )
+    _preflight_feedback_destination(
+        context["workspace_root"], class_id, assignment_id, student_id, output_path
     )
     feedback = _assemble_student_feedback(context)
     markdown = _render_feedback_markdown(feedback)
@@ -228,6 +229,17 @@ def export_student_feedback_pdf(
         if include_markdown_companion
         else None
     )
+    _preflight_feedback_destination(
+        context["workspace_root"], class_id, assignment_id, student_id, pdf_path
+    )
+    if markdown_path is not None:
+        _preflight_feedback_destination(
+            context["workspace_root"],
+            class_id,
+            assignment_id,
+            student_id,
+            markdown_path,
+        )
     existing_paths = [
         path for path in (pdf_path, markdown_path) if path is not None and path.exists()
     ]
@@ -291,77 +303,34 @@ def _load_export_context(
     created_at: str,
 ) -> dict[str, Any]:
     try:
-        resolved_workspace_root = Path(workspace_root).resolve(strict=False)
-        manifest_path = submission_manifest_path(
-            resolved_workspace_root, class_id, assignment_id, student_id
+        work_ref = quillan_work_ref(class_id, assignment_id)
+        loaded = load_quillan_student_review_context(
+            workspace_root,
+            work_ref,
+            student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_REQUIRED,
         )
-        record_path = review_record_path(
-            resolved_workspace_root, class_id, assignment_id, student_id
-        )
-        assignment_path = assignment_config_path(
-            resolved_workspace_root, class_id, assignment_id
-        )
-    except (
-        OSError,
-        RuntimeError,
-        SubmissionManifestPathError,
-        ReviewRecordPathError,
-    ) as error:
-        raise FeedbackExportError(str(error)) from error
-
-    if not manifest_path.exists():
-        raise FeedbackExportError(missing_submission_guidance())
-    try:
-        manifest = load_submission_manifest(manifest_path)
-    except (OSError, SubmissionManifestError) as error:
-        raise FeedbackExportError(
-            f"Could not load submission manifest: {error}"
-        ) from error
-    _validate_identity(
-        manifest,
-        record_name="Submission manifest",
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
-    )
-
-    if not record_path.exists():
+    except MissingSubmissionError as error:
+        raise FeedbackExportError(missing_submission_guidance()) from error
+    except MissingReviewError as error:
         raise FeedbackExportError(
             "Review record does not exist for "
             f"class={class_id}, assignment={assignment_id}, student={student_id}."
-        )
-    try:
-        review = load_review_record(record_path)
-    except (OSError, ReviewRecordError) as error:
-        raise FeedbackExportError(f"Could not load review record: {error}") from error
-    _validate_identity(
-        review,
-        record_name="Review record",
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
-    )
-    try:
-        assignment = load_assignment_config(assignment_path)
-    except (AssignmentConfigError, OSError):
-        assignment = None
-    if assignment is not None:
-        if assignment["assignment_id"] != assignment_id:
-            raise FeedbackExportError(
-                "Assignment config assignment_id is "
-                f"{assignment['assignment_id']!r}, expected {assignment_id!r}."
-            )
-        if class_id not in assignment["class_ids"]:
-            raise FeedbackExportError(
-                f"Assignment config class_ids does not include {class_id!r}."
-            )
+        ) from error
+    except (OSError, RuntimeError, ValueError, QuillanRecordContextError) as error:
+        raise FeedbackExportError(str(error)) from error
+    assert loaded.review is not None
+    resolved_workspace_root = loaded.paths.workspace_root
+    record_path = loaded.paths.review_record_path
     return {
+        "record_context": loaded,
         "workspace_root": resolved_workspace_root,
-        "manifest_path": manifest_path,
+        "work_ref": work_ref,
+        "manifest_path": loaded.paths.submission_manifest_path,
         "record_path": record_path,
-        "manifest": manifest,
-        "review": review,
-        "assignment": assignment,
+        "manifest": mutable_json_copy(loaded.submission),
+        "review": mutable_json_copy(loaded.review),
+        "assignment": mutable_json_copy(loaded.assignment_context.assignment),
         "created_at": created_at,
         "class_id": class_id,
         "assignment_id": assignment_id,
@@ -377,11 +346,8 @@ def _assemble_student_feedback(context: dict[str, Any]) -> _StudentFeedback:
     student_id = context["student_id"]
     if review["review_state"] == "returned_without_full_review":
         unmet_requirements = _validated_returned_work_requirements(
-            context["workspace_root"],
-            class_id,
-            assignment_id,
             review,
-            assignment=assignment,
+            assignment,
         )
         returned_work = {
             "outcome": review["minimum_requirement_outcome"],
@@ -661,12 +627,8 @@ def _included_review_unit_observations(review: dict[str, Any]) -> list[dict[str,
 
 
 def _validated_returned_work_requirements(
-    workspace_root: Path,
-    class_id: str,
-    assignment_id: str,
     review: dict[str, Any],
-    *,
-    assignment: dict[str, Any] | None = None,
+    assignment: dict[str, Any],
 ) -> list[dict[str, Any]]:
     outcome = review["minimum_requirement_outcome"]
     if outcome["returned_without_full_review"] is not True:
@@ -679,15 +641,6 @@ def _validated_returned_work_requirements(
             "Returned-work export requires a non-empty outcome teacher note."
         )
 
-    if assignment is None:
-        try:
-            assignment = load_assignment_config(
-                assignment_config_path(workspace_root, class_id, assignment_id)
-            )
-        except (AssignmentConfigError, OSError) as error:
-            raise FeedbackExportError(
-                f"Could not load assignment config: {error}"
-            ) from error
     configured_keys = _configured_requirement_keys(assignment)
     unmet_requirements = [
         check
@@ -999,7 +952,7 @@ def _update_export_metadata(
     review["updated_at"] = created_at
     try:
         validate_review_record(review)
-        write_review_record(context["record_path"], review, overwrite=True)
+        persist_quillan_review_record(context["record_context"], review)
     except (ReviewRecordError, ReviewRecordPathError, OSError, ValueError) as error:
         raise FeedbackExportError(f"Could not update review export metadata: {error}") from error
 
@@ -1109,6 +1062,27 @@ def _write_feedback(path: Path, content: str, *, overwrite: bool) -> None:
                 temporary_path.unlink(missing_ok=True)
             except OSError:
                 pass
+
+
+def _preflight_feedback_destination(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    path: Path,
+) -> None:
+    work_ref = quillan_work_ref(class_id, assignment_id)
+    filename = "feedback.pdf" if path.suffix == ".pdf" else "feedback.md"
+    try:
+        expected = preflight_work_file_destination(
+            workspace_root,
+            work_ref,
+            Path("submissions") / student_id / "exports" / filename,
+        )
+    except QuillanWorkPathError as error:
+        raise FeedbackExportError(str(error)) from error
+    if path != expected:
+        raise FeedbackExportError("Feedback export path is not canonical.")
 
 
 def _normalize_timestamp(value: datetime | str | None) -> str:

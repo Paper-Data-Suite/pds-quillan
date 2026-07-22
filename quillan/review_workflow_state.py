@@ -18,12 +18,14 @@ from quillan.review_record import (
     build_empty_review_record,
     validate_review_record,
 )
-from quillan.review_record_paths import ReviewRecordPathError, write_review_record
+from quillan.review_record_paths import (
+    ReviewRecordPathError,
+    persist_quillan_review_record,
+)
 from quillan.review_unit_management import (
     ReviewUnitManagementError,
     load_review_unit_context,
 )
-
 REVIEW_WORKFLOW_STATES = (
     "not_started",
     "requirements_checked",
@@ -121,11 +123,7 @@ def set_review_workflow_state(
     updated_review["updated_at"] = normalized_updated_at
     try:
         validate_review_record(updated_review)
-        write_review_record(
-            context.review_record_path,
-            updated_review,
-            overwrite=not review_was_created,
-        )
+        persist_quillan_review_record(context.record_context, updated_review)
     except (ReviewRecordError, ReviewRecordPathError, OSError, ValueError) as error:
         raise ReviewWorkflowStateError(f"Could not write review record: {error}") from error
 

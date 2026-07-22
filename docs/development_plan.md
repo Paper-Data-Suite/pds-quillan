@@ -1,5 +1,12 @@
 # Quillan Development Plan
 
+The #340 service hard cutover centralizes assignment/student contexts, canonical
+record writers, review mutations, exports, Core-v2 scan-resolution interpretation,
+and Quillan post-dispatch occurrence storage beneath module-qualified work roots.
+It intentionally excludes the broad command, help, menu, and dashboard migration
+reserved for #341. See
+[Module-qualified record services](module_qualified_record_services.md).
+
 ## Project Definition
 
 Quillan is a local-first standards-based writing evidence capture system for teachers.

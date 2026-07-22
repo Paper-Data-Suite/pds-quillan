@@ -279,6 +279,97 @@ def review_record_path(
     )
 
 
+def student_exports_dir(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    student_id: str,
+) -> Path:
+    """Return one student's canonical export directory without filesystem I/O."""
+    validated_work = _require_quillan_work_ref(work_ref)
+    validated_student_id = validate_identifier(student_id, "student_id")
+    return safe_module_work_descendant(
+        workspace_root,
+        validated_work,
+        Path("submissions") / validated_student_id / "exports",
+    )
+
+
+def feedback_markdown_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    student_id: str,
+) -> Path:
+    """Return one student's canonical Markdown feedback path."""
+    return student_exports_dir(workspace_root, work_ref, student_id) / "feedback.md"
+
+
+def feedback_pdf_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    student_id: str,
+) -> Path:
+    """Return one student's canonical PDF feedback path."""
+    return student_exports_dir(workspace_root, work_ref, student_id) / "feedback.pdf"
+
+
+def class_summary_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+) -> Path:
+    """Return the canonical comprehensive class-summary CSV path."""
+    return safe_module_work_descendant(
+        workspace_root,
+        _require_quillan_work_ref(work_ref),
+        Path("exports") / "class_summary.csv",
+    )
+
+
+def standards_summary_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+) -> Path:
+    """Return the canonical standards-summary CSV path."""
+    return safe_module_work_descendant(
+        workspace_root,
+        _require_quillan_work_ref(work_ref),
+        Path("exports") / "standards_summary.csv",
+    )
+
+
+def student_performance_summary_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+) -> Path:
+    """Return the canonical student-performance-summary CSV path."""
+    return safe_module_work_descendant(
+        workspace_root,
+        _require_quillan_work_ref(work_ref),
+        Path("exports") / "student_performance_summary.csv",
+    )
+
+
+def post_dispatch_review_dir(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+) -> Path:
+    """Return the Quillan-owned post-dispatch review occurrence directory."""
+    return safe_module_work_descendant(
+        workspace_root,
+        _require_quillan_work_ref(work_ref),
+        Path("scans") / "review" / "post_dispatch",
+    )
+
+
+def post_dispatch_review_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    failure_id: str,
+) -> Path:
+    """Return one canonical immutable post-dispatch occurrence path."""
+    validated_id = validate_identifier(failure_id, "failure_id")
+    return post_dispatch_review_dir(workspace_root, work_ref) / f"{validated_id}.json"
+
+
 def relative_assignment_path(class_id: str, assignment_id: str) -> str:
     """Return the canonical workspace-relative assignment record path."""
     return quillan_work_paths(Path(), class_id, assignment_id).assignment_path.as_posix()
@@ -292,6 +383,36 @@ def relative_submission_manifest_path(
     """Return the canonical workspace-relative submission manifest path."""
     work_ref = quillan_work_ref(class_id, assignment_id)
     return submission_manifest_path(Path(), work_ref, student_id).as_posix()
+
+
+def relative_review_record_path(
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> str:
+    """Return the canonical workspace-relative review record path."""
+    work_ref = quillan_work_ref(class_id, assignment_id)
+    return review_record_path(Path(), work_ref, student_id).as_posix()
+
+
+def relative_feedback_markdown_path(
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> str:
+    """Return the canonical workspace-relative Markdown feedback path."""
+    work_ref = quillan_work_ref(class_id, assignment_id)
+    return feedback_markdown_path(Path(), work_ref, student_id).as_posix()
+
+
+def relative_feedback_pdf_path(
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> str:
+    """Return the canonical workspace-relative PDF feedback path."""
+    work_ref = quillan_work_ref(class_id, assignment_id)
+    return feedback_pdf_path(Path(), work_ref, student_id).as_posix()
 
 
 def preflight_managed_work_layout(paths: QuillanWorkPaths) -> QuillanWorkPaths:
@@ -489,16 +610,24 @@ def _lexists(path: Path) -> bool:
 __all__ = [
     "QuillanWorkPathError",
     "QuillanWorkPaths",
+    "class_summary_path",
+    "feedback_markdown_path",
+    "feedback_pdf_path",
     "initialize_managed_work_layout",
     "initialize_student_submission_dir",
     "preflight_managed_work_layout",
     "preflight_quillan_work_collection",
     "preflight_work_file_destination",
     "preflight_work_directory_destination",
+    "post_dispatch_review_dir",
+    "post_dispatch_review_path",
     "quillan_work_collection_dir",
     "quillan_work_paths",
     "quillan_work_ref",
     "relative_assignment_path",
+    "relative_feedback_markdown_path",
+    "relative_feedback_pdf_path",
+    "relative_review_record_path",
     "relative_submission_manifest_path",
     "response_page_observation_path",
     "response_page_observations_dir",
@@ -508,6 +637,9 @@ __all__ = [
     "routed_evidence_path",
     "routed_evidence_root",
     "review_record_path",
+    "standards_summary_path",
+    "student_exports_dir",
+    "student_performance_summary_path",
     "student_submission_dir",
     "submission_manifest_path",
 ]

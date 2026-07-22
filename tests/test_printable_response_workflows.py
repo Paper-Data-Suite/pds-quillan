@@ -194,8 +194,12 @@ def test_discovery_is_direct_deterministic_and_module_isolated(
 
     assert [choice.assignment_id for choice in choices] == [
         "A_assignment",
+        "nested",
         "z_assignment",
     ]
+    assert choices[1].title is None
+    assert choices[1].class_ids == ()
+    assert choices[1].error is not None
     assert legacy.is_file()
 
 

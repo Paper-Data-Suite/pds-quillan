@@ -1,5 +1,12 @@
 # Retained PDS2 Scan Intake
 
+Successful Quillan dispatch results persist observations, routed evidence, and
+issuance-authoritative manifests beneath the exact module-qualified work root.
+Failures in that post-dispatch layer are not converted into Core routing failures;
+they are preserved as append-only Quillan work-local occurrences. Core-v2 and
+Quillan ownership details are documented in
+[Module-qualified record services](module_qualified_record_services.md).
+
 This boundary accepts exactly `.pdf`, `.png`, `.jpg`, `.jpeg`, `.tif`, and
 `.tiff` sources. A file operation handles one source. Folder intake is
 nonrecursive, orders direct children by case-folded then exact name, skips

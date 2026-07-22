@@ -8,20 +8,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from quillan.assignments import AssignmentConfigError, load_assignment_config
-from quillan.review_record import ReviewRecordError, load_review_record, validate_review_record
+from quillan.review_record import ReviewRecordError, validate_review_record
 from quillan.review_record_paths import (
     ReviewRecordPathError,
-    review_record_path,
-    write_review_record,
+    persist_quillan_review_record,
 )
-from quillan.storage import assignment_config_path
-from quillan.submission_guidance import missing_submission_guidance
-from quillan.submission_manifest import SubmissionManifestError, load_submission_manifest
-from quillan.submission_manifest_paths import (
-    SubmissionManifestPathError,
-    submission_manifest_path,
+from quillan.record_context import (
+    QuillanRecordContextError,
+    ReviewLoadingPolicy,
+    load_quillan_student_review_context,
+    mutable_json_copy,
 )
+from quillan.work_paths import quillan_work_ref
 
 
 class ReviewRatingError(Exception):
@@ -300,54 +298,25 @@ def _load_context(
     assignment_id: str,
     student_id: str,
 ) -> dict[str, Any]:
+    work_ref = quillan_work_ref(class_id, assignment_id)
     try:
-        resolved_root = Path(workspace_root).resolve(strict=False)
-        manifest_path = submission_manifest_path(
-            resolved_root, class_id, assignment_id, student_id
+        loaded = load_quillan_student_review_context(
+            workspace_root,
+            work_ref,
+            student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_REQUIRED,
         )
-        record_path = review_record_path(
-            resolved_root, class_id, assignment_id, student_id
-        )
-        assignment_path = assignment_config_path(resolved_root, class_id, assignment_id)
-    except (
-        OSError,
-        RuntimeError,
-        SubmissionManifestPathError,
-        ReviewRecordPathError,
-    ) as error:
+    except QuillanRecordContextError as error:
         raise ReviewRatingError(str(error)) from error
-
-    if not manifest_path.exists():
-        raise ReviewRatingError(missing_submission_guidance())
-    if not record_path.exists():
-        raise ReviewRatingError("A review record must exist before recording ratings.")
-
-    try:
-        manifest = load_submission_manifest(manifest_path)
-        assignment = load_assignment_config(assignment_path)
-    except (OSError, SubmissionManifestError, AssignmentConfigError) as error:
-        raise ReviewRatingError(str(error)) from error
-
-    _validate_identity(
-        manifest,
-        record_name="Submission manifest",
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
-    )
-    if class_id not in assignment["class_ids"]:
-        raise ReviewRatingError(
-            f"Assignment config class_ids does not include {class_id!r}."
-        )
-    if assignment["assignment_id"] != assignment_id:
-        raise ReviewRatingError(
-            f"Assignment config assignment_id is {assignment['assignment_id']!r}, expected {assignment_id!r}."
-        )
+    assert loaded.review is not None
     return {
-        "workspace_root": resolved_root,
-        "manifest_path": manifest_path,
-        "record_path": record_path,
-        "assignment": assignment,
+        "record_context": loaded,
+        "workspace_root": loaded.paths.workspace_root,
+        "work_ref": work_ref,
+        "manifest_path": loaded.paths.submission_manifest_path,
+        "record_path": loaded.paths.review_record_path,
+        "assignment": mutable_json_copy(loaded.assignment_context.assignment),
+        "review": mutable_json_copy(loaded.review),
         "class_id": class_id,
         "assignment_id": assignment_id,
         "student_id": student_id,
@@ -355,24 +324,13 @@ def _load_context(
 
 
 def _load_existing_review(context: dict[str, Any]) -> dict[str, Any]:
-    try:
-        review = load_review_record(context["record_path"])
-    except (OSError, ReviewRecordError) as error:
-        raise ReviewRatingError(f"Could not load review record: {error}") from error
-    _validate_identity(
-        review,
-        record_name="Review record",
-        class_id=context["class_id"],
-        assignment_id=context["assignment_id"],
-        student_id=context["student_id"],
-    )
-    return copy.deepcopy(review)
+    return copy.deepcopy(context["review"])
 
 
 def _write_review(context: dict[str, Any], review: dict[str, Any]) -> None:
     try:
         validate_review_record(review)
-        write_review_record(context["record_path"], review, overwrite=True)
+        persist_quillan_review_record(context["record_context"], review)
     except (
         OSError,
         RuntimeError,

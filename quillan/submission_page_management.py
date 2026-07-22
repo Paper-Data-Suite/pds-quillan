@@ -5,6 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import os
 from pathlib import Path
 from typing import Any, cast
 
@@ -12,16 +13,24 @@ from pds_core.identifiers import IdentifierValidationError, validate_identifier
 
 from quillan.submission_manifest import (
     SubmissionManifestError,
-    load_submission_manifest,
     validate_submission_manifest,
 )
 from quillan.submission_manifest_paths import (
     SubmissionManifestPathError,
-    submission_manifest_path,
-    write_submission_manifest,
+    update_quillan_submission_manifest,
 )
 from quillan.plain_paper_submission import is_plain_paper_submission
 from quillan.submission_guidance import missing_submission_guidance
+from quillan.record_context import (
+    canonical_workspace_root,
+    MissingSubmissionError,
+    QuillanRecordContextError,
+    ReviewLoadingPolicy,
+    QuillanStudentReviewContext,
+    load_quillan_student_review_context,
+    mutable_json_copy,
+)
+from quillan.work_paths import quillan_work_ref
 
 _PRESERVED_EXCLUSION_KEY = "quillan_before_page_exclusion"
 
@@ -104,7 +113,7 @@ def load_submission_page_context(
     student_id: str,
 ) -> SubmissionPageContext:
     """Load one student's canonical manifest without inspecting evidence files."""
-    path, manifest = _load_manifest(
+    path, manifest, _ = _load_manifest(
         workspace_root, class_id, assignment_id, student_id
     )
     pages = tuple(
@@ -123,9 +132,9 @@ def load_submission_page_context(
             key=lambda item: int(item["page_number"]),
         )
     )
-    root = Path(workspace_root).resolve(strict=False)
+    root = canonical_workspace_root(workspace_root)
     try:
-        relative_path = path.resolve(strict=False).relative_to(root).as_posix()
+        relative_path = Path(os.path.abspath(path)).relative_to(root).as_posix()
     except (OSError, ValueError):
         relative_path = str(path)
     details = cast(dict[str, Any], manifest["module_details"])
@@ -161,7 +170,7 @@ def exclude_submission_page(
     page_number: int,
 ) -> ManagedSubmissionPage:
     """Exclude one page from active review without deleting evidence."""
-    manifest_path, manifest, page = _load_page(
+    manifest_path, manifest, page, record_context = _load_page(
         workspace_root, class_id, assignment_id, student_id, page_number
     )
     if page["page_state"] == "excluded":
@@ -176,7 +185,13 @@ def exclude_submission_page(
     for evidence in _evidence_items(updated_page):
         _preserve_evidence_state_before_exclusion(evidence)
     return _write_result(
-        manifest_path, updated, updated_page, previous_page=page, action="excluded"
+        workspace_root,
+        manifest_path,
+        updated,
+        updated_page,
+        previous_page=page,
+        action="excluded",
+        record_context=record_context,
     )
 
 
@@ -188,7 +203,7 @@ def restore_excluded_submission_page(
     page_number: int,
 ) -> ManagedSubmissionPage:
     """Return one excluded page to the active review set when unambiguous."""
-    manifest_path, manifest, page = _load_page(
+    manifest_path, manifest, page, record_context = _load_page(
         workspace_root, class_id, assignment_id, student_id, page_number
     )
     if page["page_state"] != "excluded":
@@ -224,11 +239,13 @@ def restore_excluded_submission_page(
         )
         updated_page["page_state"] = _restored_page_state(evidence)
     return _write_result(
+        workspace_root,
         manifest_path,
         updated,
         updated_page,
         previous_page=page,
         action="restored",
+        record_context=record_context,
         restore_source=(
             "preserved pre-exclusion metadata"
             if used_preserved_state
@@ -245,7 +262,7 @@ def mark_submission_page_needs_rescan(
     page_number: int,
 ) -> ManagedSubmissionPage:
     """Mark one page as needing a corrected scan without deleting evidence."""
-    manifest_path, manifest, page = _load_page(
+    manifest_path, manifest, page, record_context = _load_page(
         workspace_root, class_id, assignment_id, student_id, page_number
     )
     if page["page_state"] == "needs_rescan":
@@ -262,11 +279,13 @@ def mark_submission_page_needs_rescan(
         evidence["evidence_role"] = "candidate"
         evidence["evidence_state"] = "needs_rescan"
     return _write_result(
+        workspace_root,
         manifest_path,
         updated,
         updated_page,
         previous_page=page,
         action="marked needs rescan",
+        record_context=record_context,
     )
 
 
@@ -276,7 +295,7 @@ def _load_page(
     assignment_id: str,
     student_id: str,
     page_number: int,
-) -> tuple[Path, dict[str, Any], dict[str, Any]]:
+) -> tuple[Path, dict[str, Any], dict[str, Any], QuillanStudentReviewContext]:
     _validate_identity(class_id, assignment_id, student_id)
     if (
         isinstance(page_number, bool)
@@ -284,10 +303,10 @@ def _load_page(
         or page_number < 1
     ):
         raise SubmissionPageManagementError("Page number must be a positive integer.")
-    path, manifest = _load_manifest(
+    path, manifest, record_context = _load_manifest(
         workspace_root, class_id, assignment_id, student_id
     )
-    return path, manifest, _page_by_number(manifest, page_number)
+    return path, manifest, _page_by_number(manifest, page_number), record_context
 
 
 def _load_manifest(
@@ -295,25 +314,23 @@ def _load_manifest(
     class_id: str,
     assignment_id: str,
     student_id: str,
-) -> tuple[Path, dict[str, Any]]:
+) -> tuple[Path, dict[str, Any], QuillanStudentReviewContext]:
     _validate_identity(class_id, assignment_id, student_id)
-    path = submission_manifest_path(workspace_root, class_id, assignment_id, student_id)
     try:
-        manifest = load_submission_manifest(path)
-    except (SubmissionManifestError, OSError) as error:
-        guidance = f" {missing_submission_guidance()}" if not path.exists() else ""
-        raise SubmissionPageManagementError(
-            f"Could not load submission record: {error}{guidance}"
-        ) from error
-    if (
-        manifest["class_id"] != class_id
-        or manifest["assignment_id"] != assignment_id
-        or manifest["student_id"] != student_id
-    ):
-        raise SubmissionPageManagementError(
-            "Submission record identity does not match the selected student."
+        context = load_quillan_student_review_context(
+            workspace_root,
+            quillan_work_ref(class_id, assignment_id),
+            student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
         )
-    return path, manifest
+    except MissingSubmissionError as error:
+        raise SubmissionPageManagementError(missing_submission_guidance()) from error
+    except (QuillanRecordContextError, OSError) as error:
+        raise SubmissionPageManagementError(
+            f"Could not load submission record: {error}"
+        ) from error
+    path = context.paths.submission_manifest_path
+    return path, mutable_json_copy(context.submission), context
 
 
 def _page_by_number(manifest: dict[str, Any], page_number: int) -> dict[str, Any]:
@@ -403,18 +420,20 @@ def _restored_page_state(evidence: list[dict[str, Any]]) -> str:
 
 
 def _write_result(
+    workspace_root: str | Path,
     manifest_path: Path,
     manifest: dict[str, Any],
     page: dict[str, Any],
     *,
     previous_page: dict[str, Any],
     action: str,
+    record_context: QuillanStudentReviewContext,
     restore_source: str | None = None,
 ) -> ManagedSubmissionPage:
     manifest["updated_at"] = datetime.now(UTC).isoformat()
     try:
         validate_submission_manifest(manifest)
-        write_submission_manifest(manifest_path, manifest, overwrite=True)
+        update_quillan_submission_manifest(record_context, manifest)
     except (SubmissionManifestError, SubmissionManifestPathError, OSError) as error:
         raise SubmissionPageManagementError(
             f"Page change was not saved: {error}"

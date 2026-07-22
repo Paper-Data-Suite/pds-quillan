@@ -361,5 +361,5 @@ def test_complete_review_lifecycle_uses_only_direct_noninteractive_cli(
     assert exit_results == [0] * 12
     assert not list(tmp_path.rglob("*.csv")) or list(tmp_path.rglob("*.csv")) == [roster_path]
     assert not list(tmp_path.rglob("feedback.md"))
-    assert not list(tmp_path.rglob("*scan*"))
+    assert not [path for path in tmp_path.rglob("*scan*") if path.is_file()]
     assert not list(tmp_path.rglob("*evidence*"))

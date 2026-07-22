@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from quillan.assignments import AssignmentConfigError, load_assignment_config
 from quillan.focus_standard_comments import (
     FocusStandardCommentError,
     SavedReusableFocusStandardComment,
@@ -19,19 +18,18 @@ from quillan.focus_standard_comments import (
     load_comment_set,
     lookup_comments,
 )
-from quillan.review_record import ReviewRecordError, load_review_record, validate_review_record
+from quillan.review_record import ReviewRecordError, validate_review_record
 from quillan.review_record_paths import (
     ReviewRecordPathError,
-    review_record_path,
-    write_review_record,
+    persist_quillan_review_record,
 )
-from quillan.storage import assignment_config_path
-from quillan.submission_guidance import missing_submission_guidance
-from quillan.submission_manifest import SubmissionManifestError, load_submission_manifest
-from quillan.submission_manifest_paths import (
-    SubmissionManifestPathError,
-    submission_manifest_path,
+from quillan.record_context import (
+    QuillanRecordContextError,
+    ReviewLoadingPolicy,
+    load_quillan_student_review_context,
+    mutable_json_copy,
 )
+from quillan.work_paths import quillan_work_ref
 
 _SEQUENTIAL_FEEDBACK_COMMENT_ID = re.compile(r"^feedback_comment_(\d{4})$")
 
@@ -513,56 +511,25 @@ def _load_context(
     assignment_id: str,
     student_id: str,
 ) -> dict[str, Any]:
+    work_ref = quillan_work_ref(class_id, assignment_id)
     try:
-        resolved_root = Path(workspace_root).resolve(strict=False)
-        manifest_path = submission_manifest_path(
-            resolved_root, class_id, assignment_id, student_id
+        loaded = load_quillan_student_review_context(
+            workspace_root,
+            work_ref,
+            student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_REQUIRED,
         )
-        record_path = review_record_path(
-            resolved_root, class_id, assignment_id, student_id
-        )
-        assignment_path = assignment_config_path(resolved_root, class_id, assignment_id)
-    except (
-        OSError,
-        RuntimeError,
-        SubmissionManifestPathError,
-        ReviewRecordPathError,
-    ) as error:
+    except QuillanRecordContextError as error:
         raise ReviewFeedbackError(str(error)) from error
-    try:
-        assignment = load_assignment_config(assignment_path)
-    except (OSError, AssignmentConfigError) as error:
-        raise ReviewFeedbackError(str(error)) from error
-    if assignment["assignment_id"] != assignment_id:
-        raise ReviewFeedbackError(
-            f"Assignment config assignment_id is {assignment['assignment_id']!r}, expected {assignment_id!r}."
-        )
-    if class_id not in assignment["class_ids"]:
-        raise ReviewFeedbackError(
-            f"Assignment config class_ids does not include {class_id!r}."
-        )
-    if not manifest_path.exists():
-        raise ReviewFeedbackError(missing_submission_guidance())
-    try:
-        manifest = load_submission_manifest(manifest_path)
-    except (OSError, SubmissionManifestError) as error:
-        raise ReviewFeedbackError(str(error)) from error
-    _validate_identity(
-        manifest,
-        record_name="Submission manifest",
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
-    )
-    if not record_path.exists():
-        raise ReviewFeedbackError(
-            "A review record must exist before composing feedback."
-        )
+    assert loaded.review is not None
     return {
-        "workspace_root": resolved_root,
-        "manifest_path": manifest_path,
-        "record_path": record_path,
-        "assignment": assignment,
+        "record_context": loaded,
+        "workspace_root": loaded.paths.workspace_root,
+        "work_ref": work_ref,
+        "manifest_path": loaded.paths.submission_manifest_path,
+        "record_path": loaded.paths.review_record_path,
+        "assignment": mutable_json_copy(loaded.assignment_context.assignment),
+        "review": mutable_json_copy(loaded.review),
         "class_id": class_id,
         "assignment_id": assignment_id,
         "student_id": student_id,
@@ -570,24 +537,13 @@ def _load_context(
 
 
 def _load_existing_review(context: dict[str, Any]) -> dict[str, Any]:
-    try:
-        review = load_review_record(context["record_path"])
-    except (OSError, ReviewRecordError) as error:
-        raise ReviewFeedbackError(f"Could not load review record: {error}") from error
-    _validate_identity(
-        review,
-        record_name="Review record",
-        class_id=context["class_id"],
-        assignment_id=context["assignment_id"],
-        student_id=context["student_id"],
-    )
-    return copy.deepcopy(review)
+    return copy.deepcopy(context["review"])
 
 
 def _write_review(context: dict[str, Any], review: dict[str, Any]) -> None:
     try:
         validate_review_record(review)
-        write_review_record(context["record_path"], review, overwrite=True)
+        persist_quillan_review_record(context["record_context"], review)
     except (
         OSError,
         RuntimeError,

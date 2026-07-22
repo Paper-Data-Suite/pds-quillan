@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import math
 import re
 from dataclasses import dataclass
@@ -13,24 +12,21 @@ from typing import Any
 from quillan.review_record import (
     ReviewRecordError,
     build_empty_review_record,
-    load_review_record,
     validate_review_record,
 )
 from quillan.review_record_paths import (
     ReviewRecordPathError,
-    review_record_path,
-    write_review_record,
+    persist_quillan_review_record,
+)
+from quillan.record_context import (
+    QuillanRecordContextError,
+    QuillanStudentReviewContext,
+    ReviewLoadingPolicy,
+    load_quillan_student_review_context,
+    mutable_json_copy,
 )
 from quillan.submission_guidance import missing_submission_guidance
-from quillan.submission_manifest import (
-    SubmissionManifestError,
-    load_submission_manifest,
-)
-from quillan.submission_manifest_paths import (
-    SubmissionManifestPathError,
-    submission_manifest_path,
-)
-from quillan.work_paths import relative_assignment_path
+from quillan.work_paths import quillan_work_ref
 
 _SEQUENTIAL_REQUIREMENT_CHECK_ID = re.compile(r"^requirement_check_(\d{4})$")
 
@@ -96,60 +92,12 @@ def set_requirement_check(
     normalized_note = _normalize_optional_string(teacher_note, "teacher_note")
     normalized_updated_at = _normalize_timestamp(updated_at)
 
-    try:
-        resolved_root = Path(workspace_root).resolve(strict=False)
-        manifest_path = submission_manifest_path(
-            resolved_root,
-            class_id,
-            assignment_id,
-            student_id,
-        )
-        record_path = review_record_path(
-            resolved_root,
-            class_id,
-            assignment_id,
-            student_id,
-        )
-    except (
-        OSError,
-        RuntimeError,
-        SubmissionManifestPathError,
-        ReviewRecordPathError,
-    ) as error:
-        raise ReviewRequirementError(str(error)) from error
-
-    if not manifest_path.exists():
-        raise ReviewRequirementError(missing_submission_guidance())
-
-    try:
-        manifest = load_submission_manifest(manifest_path)
-    except (OSError, SubmissionManifestError) as error:
-        raise ReviewRequirementError(
-            f"Could not load submission manifest: {error}"
-        ) from error
-    _validate_identity(
-        manifest,
-        record_name="Submission manifest",
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
+    context = _load_mutation_context(
+        workspace_root, class_id, assignment_id, student_id
     )
-
-    if record_path.exists():
-        try:
-            review = load_review_record(record_path)
-        except (OSError, ReviewRecordError) as error:
-            raise ReviewRequirementError(
-                f"Could not load review record: {error}"
-            ) from error
-        _validate_identity(
-            review,
-            record_name="Review record",
-            class_id=class_id,
-            assignment_id=assignment_id,
-            student_id=student_id,
-        )
-        updated_review = copy.deepcopy(review)
+    record_path = context.paths.review_record_path
+    if context.review is not None:
+        updated_review = mutable_json_copy(context.review)
         if updated_review["review_state"] == "not_started":
             updated_review["review_state"] = "requirements_checked"
     else:
@@ -157,10 +105,8 @@ def set_requirement_check(
             class_id=class_id,
             assignment_id=assignment_id,
             student_id=student_id,
-            submission_manifest_path=_workspace_relative_path(
-                manifest_path, resolved_root, "submission manifest"
-            ),
-            assignment_path=relative_assignment_path(class_id, assignment_id),
+            submission_manifest_path=context.paths.submission_relative_path,
+            assignment_path=context.paths.assignment_relative_path,
             created_at=normalized_updated_at,
         )
         updated_review["review_state"] = "requirements_checked"
@@ -200,14 +146,8 @@ def set_requirement_check(
 
     try:
         validate_review_record(updated_review)
-        write_review_record(
-            record_path,
-            updated_review,
-            overwrite=record_path.exists(),
-        )
-        relative_path = _workspace_relative_path(
-            record_path, resolved_root, "review record"
-        )
+        persisted = persist_quillan_review_record(context, updated_review)
+        relative_path = persisted.relative_path
     except (
         OSError,
         RuntimeError,
@@ -268,69 +208,19 @@ def set_minimum_requirement_outcome(
             "allow_return_without_full_review must be a boolean when provided."
         )
 
-    try:
-        resolved_root = Path(workspace_root).resolve(strict=False)
-        manifest_path = submission_manifest_path(
-            resolved_root,
-            class_id,
-            assignment_id,
-            student_id,
-        )
-        record_path = review_record_path(
-            resolved_root,
-            class_id,
-            assignment_id,
-            student_id,
-        )
-    except (
-        OSError,
-        RuntimeError,
-        SubmissionManifestPathError,
-        ReviewRecordPathError,
-    ) as error:
-        raise ReviewRequirementError(str(error)) from error
-
-    if not manifest_path.exists():
-        raise ReviewRequirementError(missing_submission_guidance())
-
-    try:
-        manifest = load_submission_manifest(manifest_path)
-    except (OSError, SubmissionManifestError) as error:
-        raise ReviewRequirementError(
-            f"Could not load submission manifest: {error}"
-        ) from error
-    _validate_identity(
-        manifest,
-        record_name="Submission manifest",
-        class_id=class_id,
-        assignment_id=assignment_id,
-        student_id=student_id,
+    context = _load_mutation_context(
+        workspace_root, class_id, assignment_id, student_id
     )
-
-    if record_path.exists():
-        try:
-            review = load_review_record(record_path)
-        except (OSError, ReviewRecordError) as error:
-            raise ReviewRequirementError(
-                f"Could not load review record: {error}"
-            ) from error
-        _validate_identity(
-            review,
-            record_name="Review record",
-            class_id=class_id,
-            assignment_id=assignment_id,
-            student_id=student_id,
-        )
-        updated_review = copy.deepcopy(review)
+    record_path = context.paths.review_record_path
+    if context.review is not None:
+        updated_review = mutable_json_copy(context.review)
     else:
         updated_review = build_empty_review_record(
             class_id=class_id,
             assignment_id=assignment_id,
             student_id=student_id,
-            submission_manifest_path=_workspace_relative_path(
-                manifest_path, resolved_root, "submission manifest"
-            ),
-            assignment_path=relative_assignment_path(class_id, assignment_id),
+            submission_manifest_path=context.paths.submission_relative_path,
+            assignment_path=context.paths.assignment_relative_path,
             created_at=normalized_updated_at,
         )
 
@@ -362,14 +252,8 @@ def set_minimum_requirement_outcome(
 
     try:
         validate_review_record(updated_review)
-        write_review_record(
-            record_path,
-            updated_review,
-            overwrite=record_path.exists(),
-        )
-        relative_path = _workspace_relative_path(
-            record_path, resolved_root, "review record"
-        )
+        persisted = persist_quillan_review_record(context, updated_review)
+        relative_path = persisted.relative_path
     except (
         OSError,
         RuntimeError,
@@ -393,6 +277,25 @@ def set_minimum_requirement_outcome(
         teacher_note=normalized_note,
         updated_at=normalized_updated_at,
     )
+
+
+def _load_mutation_context(
+    workspace_root: str | Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> QuillanStudentReviewContext:
+    try:
+        return load_quillan_student_review_context(
+            workspace_root,
+            quillan_work_ref(class_id, assignment_id),
+            student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+        )
+    except QuillanRecordContextError as error:
+        if "Submission manifest not found" in str(error):
+            raise ReviewRequirementError(missing_submission_guidance()) from error
+        raise ReviewRequirementError(str(error)) from error
 
 
 def _normalize_required_string(value: str, field: str) -> str:

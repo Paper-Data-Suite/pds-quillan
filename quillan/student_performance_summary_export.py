@@ -21,7 +21,13 @@ from quillan.assignment_summary_context import (
     rating_labels,
     relative_path_for,
 )
-from quillan.work_paths import quillan_work_paths
+from quillan.work_paths import (
+    QuillanWorkPathError,
+    preflight_work_file_destination,
+    quillan_work_ref,
+    student_performance_summary_path,
+)
+from quillan.record_context import canonical_workspace_root
 
 MISSING_RATING = ""
 BASE_CSV_COLUMNS = (
@@ -62,9 +68,9 @@ def student_performance_summary_export_path(
     """Return the assignment-local student performance summary CSV path."""
     _validate_identifier(class_id, "class_id")
     _validate_identifier(assignment_id, "assignment_id")
-    return quillan_work_paths(
-        workspace_root, class_id, assignment_id
-    ).exports_dir / "student_performance_summary.csv"
+    return student_performance_summary_path(
+        workspace_root, quillan_work_ref(class_id, assignment_id)
+    )
 
 
 def export_student_performance_summary(
@@ -78,9 +84,18 @@ def export_student_performance_summary(
     """Export one compact row per rostered or discovered student."""
     timestamp = _normalize_timestamp(created_at)
     try:
-        root = Path(workspace_root).resolve(strict=False)
+        root = canonical_workspace_root(workspace_root)
         path = student_performance_summary_export_path(root, class_id, assignment_id)
         assignment = load_assignment(root, class_id, assignment_id)
+        expected_path = preflight_work_file_destination(
+            root,
+            quillan_work_ref(class_id, assignment_id),
+            Path("exports") / "student_performance_summary.csv",
+        )
+        if path != expected_path:
+            raise StudentPerformanceSummaryExportError(
+                "Student performance summary path is not canonical."
+            )
         standard_ids = list(assignment["focus_standard_ids"])
         labels = rating_labels(assignment)
         records = [
@@ -88,7 +103,13 @@ def export_student_performance_summary(
             for student in discover_students(root, class_id, assignment_id)
         ]
         headers, metadata_missing = _standard_headers(root, standard_ids)
-    except (OSError, RuntimeError, ValueError, StudentPerformanceSummaryExportError) as error:
+    except (
+        OSError,
+        RuntimeError,
+        ValueError,
+        QuillanWorkPathError,
+        StudentPerformanceSummaryExportError,
+    ) as error:
         raise StudentPerformanceSummaryExportError(str(error)) from error
 
     existed = path.exists()
