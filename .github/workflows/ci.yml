@@ -29,7 +29,8 @@ jobs:
         shell: pwsh
         run: |
           choco install poppler -y --no-progress
-          $pdftoppm = Get-ChildItem "$env:ChocolateyInstall\lib\poppler\tools" -Recurse -Filter pdftoppm.exe | Select-Object -First 1
+          $popplerRoot = Join-Path $env:ProgramData "chocolatey\lib\poppler\tools"
+          $pdftoppm = Get-ChildItem $popplerRoot -Recurse -Filter pdftoppm.exe | Select-Object -First 1
           if ($null -eq $pdftoppm) {
             throw "Chocolatey Poppler installation did not contain pdftoppm.exe."
           }
