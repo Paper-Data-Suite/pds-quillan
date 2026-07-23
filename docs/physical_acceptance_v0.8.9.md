@@ -32,7 +32,11 @@ post-dispatch occurrence.
 Record exactly `PASS`, `PASS WITH DOCUMENTED LIMITATION`, or `FAIL`. A limitation
 must state the symptom, scenario, workaround, release impact, and follow-up issue.
 
-## Owner Acceptance Record — 2026-07-23
+## Superseded Owner Acceptance Record — 2026-07-23
+
+This record remains evidence for the exact artifacts named below. It does not
+cover the current replacement artifacts because subsequent release-blocking
+runtime corrections changed packaged bytes.
 
 **Owner/tester:** Stephen Severino
 **Candidate implementation commit:** `84ceb28d13a410ecbded9d0f33c17ae192cb31b6`
@@ -60,6 +64,28 @@ The following behavior was confirmed:
 * Focus Standard feedback configuration opened on a cleared, focused child screen without retaining irrelevant parent-menu content.
 
 No release-blocking defect was observed in the exercised workflow.
+
+## Current Candidate Record — 2026-07-23
+
+**Candidate implementation commit:** `c3e57db5e0e175e61ce988e0681375d7b76ce861`
+**Automated release-candidate validation:** `PASS`
+**Physical acceptance result:** `PENDING OWNER`
+**Release authorization:** `NOT GRANTED`
+
+### Exact replacement artifacts
+
+* Wheel: `quillan-0.8.9-py3-none-any.whl`
+* Wheel SHA-256: `67536b7266770816e7d5732752167f1b77e23767ba48f34d98af48bbee7ade91`
+* Source distribution: `quillan-0.8.9.tar.gz`
+* Source-distribution SHA-256: `6ad8201224343f08edb7a6fc41d8ea6316a1ce4c95992eeeea9f96af94cb6dcd`
+* PDS Core 0.5.0 wheel SHA-256: `336676fa4b72e2b4094f654e77b5746b0d6670946cb4c5d3022c4c0be7963400`
+
+The authoritative validator passed source tests, Ruff, mypy, documentation,
+artifact inspection, Twine, separate clean wheel and sdist installation, and
+installed acceptance. CI run `30045822948` passed on Windows and Ubuntu with
+Python 3.11, 3.12, 3.13, and 3.14. The earlier visual archive and owner-observed
+results remain historical supporting evidence only; they do not grant physical
+acceptance for these replacement bytes.
 
 ### Deferred work
 
