@@ -28,7 +28,7 @@ dev = [
     "packaging",
     "pytest",
     "pypdf",
-    "ruff",
+    "ruff>=0.15.18,<0.16",
     "mypy",
     "twine",
     "types-qrcode",
