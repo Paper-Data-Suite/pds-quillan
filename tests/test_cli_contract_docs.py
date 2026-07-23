@@ -103,16 +103,7 @@ def test_active_teacher_documentation_has_only_reviewed_legacy_matches() -> None
         ("docs/cli_contract.md", "identity and path, lightweight submission state, expected page count, manifest"),
         ("docs/cli_contract.md", "or leaves unchanged each canonical student `submission.json`. Expected pages"),
         ("docs/cli_contract.md", "`validate-assignment <path>` and `open-evidence <path>` are not public"),
-        ("docs/development_plan.md", "Historically, Quillan interpreted its `PDS1` response payloads and owned the"),
-        ("docs/development_plan.md", '`quillan route-scan <source-file> --payload "<PDS1|...>"` form accepted an'),
-        ("docs/workspace_lifecycle.md", "payload mode or PDS1 fallback. Validation, naming, collision, provenance, and"),
-        ("docs/assignment_reporting_contract.md", "classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv"),
-        ("docs/assignment_reporting_contract.md", "classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv"),
-        ("docs/assignment_reporting_contract.md", "classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv"),
-        ("docs/printable_response_template.md", "PDS1 generation and interpretation have been removed. Generated pages use"),
         ("docs/printable_response_template.md", "profile; submission assembly derives expected pages from issuance membership."),
-        ("docs/pds2_scan_intake.md", "payload identity becomes a locator and there is no PDS1 fallback."),
-        ("docs/scan_routing_design.md", "the locator. There is no caller payload mode, PDS1 parser, PDS1 route planner,"),
         ("docs/scan_routing_design.md", "groups by exact issuance ID. It loads all expected pages in issuance order,"),
     }
     matches: set[tuple[str, str]] = set()

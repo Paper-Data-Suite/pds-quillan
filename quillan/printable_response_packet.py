@@ -27,8 +27,7 @@ from quillan.printable_response_records import (
     PrintableResponseRecordValidationError,
     validate_issuance_id,
 )
-from quillan.storage import assignment_config_path, assignment_templates_dir
-from quillan.work_paths import quillan_work_ref
+from quillan.work_paths import quillan_work_paths, quillan_work_ref
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,7 +82,7 @@ def plan_printable_response_packet(
     work_ref = quillan_work_ref(class_id, assignment_id)
     predecessors = select_printable_response_predecessors(root, work_ref, students)
     output_path = (
-        assignment_templates_dir(root, class_id, assignment_id)
+        quillan_work_paths(root, class_id, assignment_id).templates_dir
         / PRINTABLE_RESPONSE_FILENAME
     )
     target_exists = os.path.lexists(output_path)
@@ -144,12 +143,12 @@ def validate_printable_response_packet_plan(
         raise ValueError(f"Invalid packet work identity: {error}") from error
     if plan.work_ref != expected_work:
         raise ValueError("Packet work_ref contradicts class_id or assignment_id.")
-    expected_assignment = assignment_config_path(
+    expected_assignment = quillan_work_paths(
         root, plan.class_id, plan.assignment_id
-    )
+    ).assignment_path
     expected_roster = root / "classes" / plan.class_id / "roster.csv"
     expected_output = (
-        assignment_templates_dir(root, plan.class_id, plan.assignment_id)
+        quillan_work_paths(root, plan.class_id, plan.assignment_id).templates_dir
         / PRINTABLE_RESPONSE_FILENAME
     )
     for path_actual, path_expected, label in (

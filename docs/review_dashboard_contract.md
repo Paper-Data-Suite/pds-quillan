@@ -9,7 +9,8 @@ quillan review-dashboard <class_id> <assignment_id> [--format text|json]
 Text is the default. The command and Assignment Review Actions menu use the
 same immutable service. JSON is printed only to standard output. A successful
 dashboard may read the canonical assignment, class roster, student submission
-and review records, routed-evidence filenames and routing metadata, feedback
+and review records, response-page observations and their routed-evidence
+metadata, feedback
 export metadata and file existence, and scan-review failure and resolution
 metadata. Paths are workspace-relative POSIX strings.
 
@@ -48,17 +49,17 @@ Diagnostic conditions return success once the dashboard is safely built.
 Fatal assignment validation, identifier, discovery, or serialization failures
 return nonzero and no partial dashboard.
 
-## JSON schema version 1
+## JSON schema version 2
 
 The top-level object always contains, in stable order:
 
 ```text
 schema_version, record_type, class_id, assignment_id, assignment, summary,
 students, unassembled_routed_files, unused_duplicate_routed_files,
-skipped_routed_files, scan_review_items, warnings
+scan_review_items, warnings
 ```
 
-`schema_version` is `"1"`; `record_type` is
+`schema_version` is `"2"`; `record_type` is
 `"quillan_assignment_review_dashboard"`. `assignment` contains `title`,
 `writing_type`, `standards_profile_id`, `focus_standard_count`, and `path`.
 `summary` always contains `students`, `submissions`, `pages`,
@@ -78,3 +79,15 @@ omitted. No execution timestamp, random identifier, absolute path, or `Path`
 representation is emitted, so repeated unchanged invocations are structurally
 identical. Renaming or removing keys, changing their JSON types or meanings, or
 changing path semantics requires a dashboard schema-version change.
+
+Version 2 removes the obsolete filename/orphan-evidence compatibility
+projections that version 1 exposed as:
+
+```text
+skipped_routed_files
+summary.routed_evidence.skipped_files
+```
+
+Neither field is emitted in version 2. All other key ordering, JSON types,
+null semantics, deterministic ordering, privacy boundaries, and
+workspace-relative POSIX path semantics remain unchanged.

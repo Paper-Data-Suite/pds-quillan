@@ -44,21 +44,8 @@ class QrPayloadDetectionResult:
             raise ValueError("failed QR detection requires an Exception.")
 
     @property
-    def payload_text(self) -> str | None:
-        return self.raw_payload_text
-
-    @property
-    def successful_attempt(self) -> str | None:
-        return self.decode_method
-
-    @property
     def failure_category(self) -> str | None:
         return getattr(self.error, "failure_category", None)
-
-    @property
-    def failure_message(self) -> str | None:
-        return None if self.error is None else str(self.error)
-
 
 class QrDetectionFailure(ValueError):
     """A bounded QR detection attempt produced no usable raw text."""
@@ -66,9 +53,6 @@ class QrDetectionFailure(ValueError):
     def __init__(self, failure_category: str, message: str) -> None:
         super().__init__(message)
         self.failure_category = failure_category
-
-
-QrImageDecodeResult = QrPayloadDetectionResult
 
 
 def decode_qr_payload_from_image_path(path: str | Path) -> QrPayloadDetectionResult:
@@ -100,7 +84,7 @@ def decode_qr_payload_from_image_path(path: str | Path) -> QrPayloadDetectionRes
             "source_unreadable",
             "Image source could not be loaded as an image.",
         )
-    return decode_qr_payload_from_image(image)
+    return detect_qr_payload(image)
 
 
 def detect_qr_payload(image: object) -> QrPayloadDetectionResult:
@@ -146,11 +130,6 @@ def detect_qr_payload(image: object) -> QrPayloadDetectionResult:
         "payload_missing",
         "No QR payload could be decoded from the image.",
     )
-
-
-def decode_qr_payload_from_image(image: object) -> QrPayloadDetectionResult:
-    """Compatibility name for grammar-independent raw QR detection."""
-    return detect_qr_payload(image)
 
 
 def validate_qr_payload_detection_result(

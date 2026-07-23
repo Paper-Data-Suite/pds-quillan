@@ -12,13 +12,13 @@ import pytest
 
 from quillan.assignment_submission_assembly import (
     assemble_assignment_submissions,
-    discover_assignment_routed_evidence,
 )
 from quillan.cli import main
 import quillan.cli_app.handlers.submissions as cli_submissions
 from quillan.response_page_observation_persistence import (
     persist_quillan_page_observation,
 )
+from quillan.response_page_observations import group_response_page_observations_by_student
 from quillan.submission_manifest import load_submission_manifest
 from quillan.submission_manifest_paths import write_submission_manifest
 from tests.observation_test_support import successful_image_page
@@ -31,7 +31,7 @@ def test_assignment_discovery_groups_observations_by_stored_identity(
         tmp_path, successful_image_page(tmp_path)
     )
     observation = persisted.observation
-    discovered = discover_assignment_routed_evidence(
+    discovered = group_response_page_observations_by_student(
         tmp_path, observation.class_id, observation.assignment_id
     )
     assert discovered == {observation.student_id: (observation,)}
@@ -77,7 +77,7 @@ def test_orphan_teacher_readable_evidence_filename_is_not_identity(
         orphan
         / "response_misleading_pg_999__obs_ffffffffffffffffffffffffffffffff.png"
     ).write_bytes(b"orphan")
-    assert discover_assignment_routed_evidence(
+    assert group_response_page_observations_by_student(
         tmp_path, "class_synthetic", "assignment_synthetic"
     ) == {}
 
@@ -123,21 +123,17 @@ def test_cli_reports_two_assembled_targets_and_one_failure(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    paths = (tmp_path / "a.json", tmp_path / "c.json")
     failure = SimpleNamespace(
         student_id="response_00108",
         category="unexpected_error",
         reason="Unexpected assembly failure for response_00108: programming failure",
     )
     result = SimpleNamespace(
-        assignment_id="literary_analysis",
-        students_with_evidence=("response_00107", "response_00108", "response_00109"),
-        student_summaries=(),
-        assembled=(SimpleNamespace(status="created"), SimpleNamespace(status="created")),
-        skipped_existing_manifests=(),
-        skipped_files=(),
+        assembled=(),
+        created_count=2,
+        updated_count=0,
+        unchanged_count=0,
         failures=(failure,),
-        written_manifests=paths,
     )
     monkeypatch.setattr(cli_submissions, "resolve_workspace_root", lambda: tmp_path)
     monkeypatch.setattr(
@@ -161,7 +157,7 @@ def test_assignment_wrapper_does_not_traverse_junctioned_student_directory(
     first = assemble_assignment_submissions(
         tmp_path, observation.class_id, observation.assignment_id
     )
-    valid_manifest = first.written_manifests[0]
+    valid_manifest = first.assembled[0].manifest_path
     submissions = valid_manifest.parent.parent
     outside = tmp_path / "outside-submissions"
     outside.mkdir()
@@ -179,8 +175,8 @@ def test_assignment_wrapper_does_not_traverse_junctioned_student_directory(
         second = assemble_assignment_submissions(
             tmp_path, observation.class_id, observation.assignment_id
         )
-        assert second.skipped_existing_manifests == (valid_manifest,)
-        assert not second.written_manifests
+        assert second.assembled[0].manifest_path == valid_manifest
+        assert second.assembled[0].status == "unchanged"
         assert sentinel.read_bytes() == b"external sentinel"
     finally:
         os.rmdir(junction)
@@ -196,7 +192,7 @@ def test_assignment_wrapper_does_not_traverse_symlinked_student_directory(
     first = assemble_assignment_submissions(
         tmp_path, observation.class_id, observation.assignment_id
     )
-    valid_manifest = first.written_manifests[0]
+    valid_manifest = first.assembled[0].manifest_path
     outside = tmp_path / "outside-symlinked-submission"
     outside.mkdir()
     sentinel = outside / "submission.json"
@@ -212,7 +208,8 @@ def test_assignment_wrapper_does_not_traverse_symlinked_student_directory(
         second = assemble_assignment_submissions(
             tmp_path, observation.class_id, observation.assignment_id
         )
-        assert second.skipped_existing_manifests == (valid_manifest,)
+        assert second.assembled[0].manifest_path == valid_manifest
+        assert second.assembled[0].status == "unchanged"
         assert sentinel.read_bytes() == b"external sentinel"
     finally:
         os.rmdir(link)
@@ -236,7 +233,7 @@ def test_assignment_wrapper_reports_conflicts_only_as_failures(
     first = assemble_assignment_submissions(
         tmp_path, observation.class_id, observation.assignment_id
     )
-    manifest_path = first.written_manifests[0]
+    manifest_path = first.assembled[0].manifest_path
     if manifest_kind == "malformed":
         manifest_path.write_bytes(b"not json")
     elif manifest_kind == "different_issuance":
@@ -271,6 +268,4 @@ def test_assignment_wrapper_reports_conflicts_only_as_failures(
         tmp_path, observation.class_id, observation.assignment_id
     )
     assert not result.assembled
-    assert not result.written_manifests
-    assert not result.skipped_existing_manifests
     assert result.failures[0].category == category

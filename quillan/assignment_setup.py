@@ -21,14 +21,13 @@ from quillan.assignment_workflows import (
     normalize_writing_type,
     write_assignment_config,
 )
-from quillan.storage import assignment_config_path
 from quillan.record_context import (
     canonical_workspace_root,
     QuillanRecordContextError,
     load_quillan_assignment_context,
     mutable_json_copy,
 )
-from quillan.work_paths import quillan_work_ref
+from quillan.work_paths import quillan_work_paths, quillan_work_ref
 
 
 @dataclass(frozen=True)
@@ -83,7 +82,7 @@ def plan_assignment_creation(
         workspace_root=root,
         class_id=class_id,
         assignment_id=assignment_id,
-        path=assignment_config_path(root, class_id, assignment_id),
+        path=quillan_work_paths(root, class_id, assignment_id).assignment_path,
         assignment=assignment,
     )
 

@@ -13,14 +13,12 @@ from pds_core.classes import load_class_roster
 from pds_core.identifiers import validate_identifier
 from pds_core.rosters import RosterError, student_display_name
 
-from quillan.assignment_submission_assembly import (
-    discover_assignment_routed_evidence_status,
-)
 from quillan.assignment_summary_context import feedback_status, relative_path_for
-from quillan.storage import assignment_config_path
+from quillan.work_paths import quillan_work_paths
 from quillan.feedback_export import feedback_export_path, feedback_pdf_export_path
 from quillan.plain_paper_submission import is_plain_paper_submission
 from quillan.review_status_display import review_progress_status
+from quillan.response_page_observations import group_response_page_observations_by_student
 from quillan.record_context import (
     InvalidReviewError,
     InvalidSubmissionError,
@@ -40,7 +38,7 @@ from quillan.scan_review_resolution import (
 )
 from quillan.work_paths import _is_link_like, quillan_work_ref
 
-DASHBOARD_SCHEMA_VERSION: Final = "1"
+DASHBOARD_SCHEMA_VERSION: Final = "2"
 DASHBOARD_RECORD_TYPE: Final = "quillan_assignment_review_dashboard"
 SUBMISSION_STATES: Final = ("unreviewed", "in_progress", "needs_rescan", "reviewed")
 PAGE_STATES: Final = ("present", "missing", "duplicate", "needs_rescan", "excluded")
@@ -141,7 +139,6 @@ class AssignmentReviewDashboard:
     scan_review_categories: tuple[tuple[str, int], ...]
     unassembled_routed_files: tuple[str, ...]
     unused_duplicate_routed_files: tuple[str, ...]
-    skipped_routed_files: tuple[tuple[str, str], ...]
     scan_review_items: tuple[DashboardScanReviewItem, ...]
     warnings: tuple[DashboardWarning, ...]
 
@@ -176,14 +173,14 @@ def build_assignment_review_dashboard(
     submissions_dir = assignment_context.paths.submissions_dir
     submission_ids = _directory_ids(submissions_dir)
     try:
-        routed = discover_assignment_routed_evidence_status(
+        observations_by_student = group_response_page_observations_by_student(
             root, class_id, assignment_id
         )
     except (OSError, ValueError) as error:
         raise ReviewDashboardError(
             f"Could not discover routed evidence: {error}"
         ) from error
-    routed_ids = set(routed.evidence_by_student)
+    routed_ids = set(observations_by_student)
     ordered_ids, display_names, roster_ids = _student_population(
         roster_students, submission_ids, routed_ids
     )
@@ -378,7 +375,7 @@ def build_assignment_review_dashboard(
         )
 
     unassembled, unused_duplicates = _routed_file_status(
-        root, routed.evidence_by_student, valid_manifests, assembled_paths
+        root, observations_by_student, valid_manifests, assembled_paths
     )
     scan_available = True
     scan_items: tuple[DashboardScanReviewItem, ...] = ()
@@ -423,10 +420,6 @@ def build_assignment_review_dashboard(
         routed_ids=routed_ids,
         unassembled=unassembled,
         unused_duplicates=unused_duplicates,
-        skipped=tuple(
-            (relative_path_for(item.path, root), item.reason)
-            for item in routed.skipped_files
-        ),
         scan_available=scan_available,
         scan_warning_count=scan_warning_count,
         scan_items=scan_items,
@@ -488,9 +481,9 @@ def _dashboard(**values: Any) -> AssignmentReviewDashboard:
         standards_profile_id=assignment["standards_profile_id"],
         focus_standard_count=len(assignment["focus_standard_ids"]),
         assignment_path=relative_path_for(
-            assignment_config_path(
+            quillan_work_paths(
                 values["root"], values["class_id"], values["assignment_id"]
-            ),
+            ).assignment_path,
             values["root"],
         ),
         roster_available=roster_students is not None,
@@ -526,7 +519,6 @@ def _dashboard(**values: Any) -> AssignmentReviewDashboard:
             ("students_needing_assembly", sum(s.needs_assembly for s in students)),
             ("unassembled_files", len(values["unassembled"])),
             ("unused_duplicate_files", len(values["unused_duplicates"])),
-            ("skipped_files", len(values["skipped"])),
             (
                 "unrostered_students_discovered",
                 sum(s.roster_status == "unrostered" for s in students),
@@ -566,7 +558,6 @@ def _dashboard(**values: Any) -> AssignmentReviewDashboard:
         scan_review_categories=tuple(sorted(categories.items())),
         unassembled_routed_files=values["unassembled"],
         unused_duplicate_routed_files=values["unused_duplicates"],
-        skipped_routed_files=values["skipped"],
         scan_review_items=scan_items,
         warnings=values["warnings"],
     )
@@ -575,7 +566,7 @@ def _dashboard(**values: Any) -> AssignmentReviewDashboard:
 def assignment_review_dashboard_to_dict(
     dashboard: AssignmentReviewDashboard,
 ) -> dict[str, object]:
-    """Serialize dashboard schema version 1 using JSON-native values."""
+    """Serialize dashboard schema version 2 using JSON-native values."""
     return {
         "schema_version": DASHBOARD_SCHEMA_VERSION,
         "record_type": DASHBOARD_RECORD_TYPE,
@@ -625,10 +616,6 @@ def assignment_review_dashboard_to_dict(
         "students": [_student_to_dict(student) for student in dashboard.students],
         "unassembled_routed_files": list(dashboard.unassembled_routed_files),
         "unused_duplicate_routed_files": list(dashboard.unused_duplicate_routed_files),
-        "skipped_routed_files": [
-            {"path": path, "reason": reason}
-            for path, reason in dashboard.skipped_routed_files
-        ],
         "scan_review_items": [
             _scan_item_to_dict(item) for item in dashboard.scan_review_items
         ],
@@ -668,7 +655,6 @@ def format_assignment_review_dashboard(
         f"- Identity mismatches: {submissions['identity_mismatch']}",
         f"- Plain-paper submissions: {submissions['plain_paper']}",
         f"- Unassembled routed files: {routed['unassembled_files']}",
-        f"- Skipped routed files: {routed['skipped_files']}",
         "",
         "Submission states:",
     ]
@@ -739,11 +725,6 @@ def format_assignment_review_dashboard(
         for warning in dashboard.warnings:
             if warning.student_id is None:
                 lines.append(f"- {warning.code}: {warning.message}")
-    if dashboard.skipped_routed_files:
-        lines.extend(["", "Skipped routed files:"])
-        lines.extend(
-            f"- {path} — {reason}" for path, reason in dashboard.skipped_routed_files
-        )
     if dashboard.unassembled_routed_files:
         lines.extend(
             [

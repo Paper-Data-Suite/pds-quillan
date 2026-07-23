@@ -11,7 +11,7 @@ from pds_core.route_registrations import write_route_registration
 from pds_core.routing_models import RouteLocator
 
 from quillan.cli import main
-from quillan.assignment_submission_assembly import AssignmentSubmissionAssemblyResult
+from quillan.submission_observation_assembly import QuillanSubmissionAssemblyBatch
 import quillan.review_menu as review_menu
 import quillan.scan_review_menu as scan_review_menu
 from quillan.post_dispatch_review import (
@@ -379,18 +379,8 @@ def test_route_correction_density_uses_real_workflow(
     )
 
 
-def _successful_assembly_result() -> AssignmentSubmissionAssemblyResult:
-    return AssignmentSubmissionAssemblyResult(
-        class_id="english12_p3",
-        assignment_id="essay_01",
-        written_manifests=(),
-        skipped_existing_manifests=(),
-        skipped_files=(),
-        students_with_evidence=(),
-        student_summaries=(),
-        assembled=(),
-        failures=(),
-    )
+def _successful_assembly_result() -> QuillanSubmissionAssemblyBatch:
+    return QuillanSubmissionAssemblyBatch(assembled=(), failures=())
 
 
 def test_empty_retry_does_not_offer_resolution_confirmation(

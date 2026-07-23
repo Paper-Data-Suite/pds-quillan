@@ -8,11 +8,6 @@ from quillan.pds2_scan_intake import (
     QuillanScanSourceResult,
 )
 
-ScanIntakePageResult = QuillanScanPageOutcome
-ScanIntakeSourceResult = QuillanScanSourceResult
-ScanIntakeSummary = QuillanScanIntakeSummary
-
-
 def format_scan_intake_summary(summary: QuillanScanIntakeSummary) -> str:
     """Return stable dispatch-stage totals and actionable page diagnostics."""
     modules = summary.successful_pages_by_module
@@ -83,6 +78,5 @@ def format_scan_intake_summary(summary: QuillanScanIntakeSummary) -> str:
 
 __all__ = [
     "QuillanScanIntakeSummary", "QuillanScanPageOutcome", "QuillanScanSourceResult",
-    "ScanIntakePageResult", "ScanIntakeSourceResult", "ScanIntakeSummary",
     "format_scan_intake_summary",
 ]

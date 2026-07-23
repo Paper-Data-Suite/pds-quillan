@@ -238,7 +238,6 @@ def test_provider_import_is_silent_and_safe_outside_workspace(
         "quillan.cli",
         "quillan.cli_app",
         "quillan.payload_validation",
-        "quillan.routing_review",
         "pds_core." + "pds1",
         "pds_core." + "qr_payload",
         "cv2",

@@ -70,7 +70,7 @@ def test_dashboard_unions_students_isolates_invalid_records_and_is_read_only(
         "00900",
         "00300",
     ]
-    assert document["schema_version"] == "1"
+    assert document["schema_version"] == "2"
     assert document["record_type"] == "quillan_assignment_review_dashboard"
     assert document["summary"]["submissions"]["valid"] == 1
     assert document["summary"]["submissions"]["invalid"] == 1
@@ -97,9 +97,18 @@ def test_dashboard_json_shape_and_text_have_fixed_empty_groups(tmp_path: Path) -
         "students",
         "unassembled_routed_files",
         "unused_duplicate_routed_files",
-        "skipped_routed_files",
         "scan_review_items",
         "warnings",
+    ]
+    assert document["schema_version"] == "2"
+    assert "skipped_routed_files" not in document
+    assert "skipped_files" not in document["summary"]["routed_evidence"]
+    assert list(document["summary"]["routed_evidence"]) == [
+        "students_with_routed_evidence",
+        "students_needing_assembly",
+        "unassembled_files",
+        "unused_duplicate_files",
+        "unrostered_students_discovered",
     ]
     assert list(document["summary"]["submissions"]["states"]) == [
         "unreviewed",
@@ -124,3 +133,19 @@ def test_dashboard_json_shape_and_text_have_fixed_empty_groups(tmp_path: Path) -
     assert "Submission intake:" in text
     assert "Review progress:" in text
     assert "Scan review:" in text
+
+
+def test_dashboard_without_compatibility_projections_is_never_labeled_v1(
+    tmp_path: Path,
+) -> None:
+    _write_assignment(tmp_path)
+    document = assignment_review_dashboard_to_dict(
+        build_assignment_review_dashboard(tmp_path, CLASS_ID, ASSIGNMENT_ID)
+    )
+
+    assert "skipped_routed_files" not in document
+    summary = cast(dict[str, Any], document["summary"])
+    routed = cast(dict[str, Any], summary["routed_evidence"])
+    assert "skipped_files" not in routed
+    assert document["schema_version"] == "2"
+    assert str(document["schema_version"]) != "1"

@@ -93,7 +93,8 @@ quillan printable-responses generate <class_id> <assignment_id> [--pages-per-stu
 Only the teacher menu may offer to open an installed PDF or its folder, and
 opening remains an explicit choice.
 
-PDS1 generation and interpretation have been removed. Generated pages use
-registered PDS2 locators backed by immutable issuance, page, and route records.
+Generated pages use registered PDS2 locators backed by immutable issuance,
+page, and route records. Earlier QR schemas are unsupported and their fields
+are not parsed.
 Retained-source intake dispatches those locators through the installed module
 profile; submission assembly derives expected pages from issuance membership.

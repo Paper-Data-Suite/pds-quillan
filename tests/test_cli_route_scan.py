@@ -10,7 +10,7 @@ from quillan.cli_app.parser import build_parser
 def test_route_scan_has_no_direct_payload_option() -> None:
     parser = build_parser()
     with pytest.raises(SystemExit):
-        parser.parse_args(["route-scan", "scan.png", "--payload", "PDS1"])
+        parser.parse_args(["route-scan", "scan.png", "--payload", "PDS3"])
     args = parser.parse_args(["route-scan", "scan.png"])
     assert args.source_file.name == "scan.png"
 

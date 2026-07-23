@@ -7,9 +7,8 @@ Quillan identifies assignment work with an exact `ModuleWorkRef` whose module is
 classes/<class_id>/modules/quillan/work/<assignment_id>/
 ```
 
-The unqualified development-era `classes/<class_id>/assignments/` tree is not a
-fallback, migration source, conflict source, or write destination. Quillan does
-not inspect it. Class rosters remain Core-owned at `classes/<class_id>/roster.csv`.
+No unqualified assignment tree is inspected, read, written, discovered, or
+migrated. Class rosters remain Core-owned at `classes/<class_id>/roster.csv`.
 
 ## Records and contexts
 

@@ -79,7 +79,7 @@ quillan review-dashboard <class_id> <assignment_id> [--format text|json]
 ```
 
 `text` is the default. `json` writes exactly one JSON document to standard
-output using dashboard schema version `1`; it never names or creates an output
+output using dashboard schema version `2`; it never names or creates an output
 file. The command is direct, non-interactive, deterministic for unchanged
 workspace data, and read-only. It shares its immutable dashboard service and
 text formatter with Assignment Review Actions. See

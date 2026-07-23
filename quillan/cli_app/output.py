@@ -6,9 +6,7 @@ from pathlib import Path
 
 from pds_core.workspace import WorkspaceStatus
 
-from quillan.assignment_submission_assembly import (
-    AssignmentSubmissionAssemblyResult,
-)
+from quillan.submission_observation_assembly import QuillanSubmissionAssemblyBatch
 from quillan.class_summary_export import ExportedClassSummary
 from quillan.comment_management import (
     CreatedManualReusableComment,
@@ -16,7 +14,6 @@ from quillan.comment_management import (
     ReusableCommentSetStatus,
     ReusableCommentStatus,
 )
-from quillan.evidence_filing import EvidenceFilingError, RoutedEvidenceFile
 from quillan.feedback_export import ExportedFeedback, ExportedFeedbackPdf
 from quillan.focus_standard_comments import SavedReusableFocusStandardComment
 from quillan.cli_app.printable_response_output import (
@@ -41,7 +38,6 @@ from quillan.review_ratings import (
 )
 from quillan.review_status_display import review_status_label
 from quillan.review_workflow_state import UpdatedReviewWorkflowState
-from quillan.routing_review import RoutingReviewRecord
 from quillan.standards_summary_export import ExportedStandardsSummary
 from quillan.student_performance_summary_export import (
     ExportedStudentPerformanceSummary,
@@ -656,7 +652,6 @@ def print_assignment_submission_status(
             "Duplicate routed files not used: "
             f"{len(result.unused_duplicate_routed_files)}"
         )
-    print(f"Skipped routed files: {len(result.skipped_routed_files)}")
     print()
     print("Submission states:")
     for state in submission_states:
@@ -707,15 +702,6 @@ def print_assignment_submission_status(
             suffix = ", ".join(detail_parts) if detail_parts else "no pages"
             print(f"- {status.student_id}: {status.submission_state}; {suffix}")
 
-    if result.skipped_routed_files:
-        print()
-        print("Skipped routed files:")
-        for skipped in result.skipped_routed_files:
-            print(
-                f"- {workspace_relative_display(skipped.path, workspace_root)}"
-                f" — {skipped.reason}"
-            )
-
     if result.unassembled_routed_files:
         print()
         print("Unassembled routed files:")
@@ -730,57 +716,45 @@ def print_assignment_submission_status(
 
 
 def print_assignment_submission_assembly(
-    result: AssignmentSubmissionAssemblyResult,
+    result: QuillanSubmissionAssemblyBatch,
     workspace_root: Path,
 ) -> None:
     """Print a concise assignment assembly summary."""
     missing = sum(
-        len(summary.missing_pages) for summary in result.student_summaries
+        len(summary.missing_pages) for summary in result.assembled
     )
     duplicate = sum(
-        len(summary.duplicate_pages) for summary in result.student_summaries
+        len(summary.duplicate_pages) for summary in result.assembled
     )
     needs_rescan = sum(
-        len(summary.needs_rescan_pages) for summary in result.student_summaries
+        len(summary.needs_rescan_pages) for summary in result.assembled
     )
     excluded = sum(
-        len(summary.excluded_pages) for summary in result.student_summaries
+        len(summary.excluded_pages) for summary in result.assembled
     )
 
-    print(
-        "Assembled submission manifests for assignment "
-        f"{result.assignment_id}."
-    )
+    print("Assembled submission manifests from response-page observations.")
     print()
-    print(f"Students with persisted observations: {len(result.students_with_evidence)}")
-    print(f"Created manifests: {sum(item.status == 'created' for item in result.assembled)}")
-    print(f"Updated manifests: {sum(item.status == 'updated' for item in result.assembled)}")
-    print(f"Unchanged manifests: {sum(item.status == 'unchanged' for item in result.assembled)}")
-    print(
-        "Skipped existing manifests: "
-        f"{len(result.skipped_existing_manifests)}"
-    )
-    print(f"Skipped files: {len(result.skipped_files)}")
+    print(f"Assembled submissions: {len(result.assembled)}")
+    print(f"Created manifests: {result.created_count}")
+    print(f"Updated manifests: {result.updated_count}")
+    print(f"Unchanged manifests: {result.unchanged_count}")
     print(f"Missing pages: {missing}")
     print(f"Duplicate pages: {duplicate}")
     print(f"Needs-rescan pages: {needs_rescan}")
     print(f"Excluded pages: {excluded}")
     print(f"Failures: {len(result.failures)}")
 
-    _print_path_section("Created", result.written_manifests, workspace_root)
     _print_path_section(
-        "Skipped existing",
-        result.skipped_existing_manifests,
+        "Created",
+        tuple(item.manifest_path for item in result.assembled if item.status == "created"),
         workspace_root,
     )
-    if result.skipped_files:
-        print()
-        print("Skipped files:")
-        for skipped in result.skipped_files:
-            print(
-                f"- {workspace_relative_display(skipped.path, workspace_root)}"
-                f" — {skipped.reason}"
-            )
+    _print_path_section(
+        "Updated",
+        tuple(item.manifest_path for item in result.assembled if item.status == "updated"),
+        workspace_root,
+    )
 
     if result.failures:
         print()
@@ -797,7 +771,7 @@ def print_assignment_submission_assembly(
             summary.needs_rescan_pages,
             summary.excluded_pages,
         )
-        for summary in result.student_summaries
+        for summary in result.assembled
         if (
             summary.missing_pages
             or summary.duplicate_pages
@@ -831,42 +805,6 @@ def print_assignment_submission_assembly(
                     f"excluded={format_page_numbers(excluded_pages)}"
                 )
             print(f"- {student_id}: {', '.join(details)}")
-
-
-def print_routed_evidence(filed_evidence: RoutedEvidenceFile) -> None:
-    """Print a concise successful observation-persistence summary."""
-    observation = filed_evidence.observation
-    print("Persisted Quillan response-page observation.")
-    print(f"Observation: {observation.observation_id}")
-    print(f"Retained source: {observation.retained_source_path}")
-    print(f"Routed evidence: {filed_evidence.evidence_relative_path}")
-    print(f"Class: {observation.class_id}")
-    print(f"Assignment: {observation.assignment_id}")
-    print(f"Student: {observation.student_id}")
-    print(f"Page: {observation.logical_page}")
-    print(f"Persistence status: {filed_evidence.status}")
-
-
-def print_route_failure_review(
-    route_failure: object,
-    review_record: RoutingReviewRecord,
-) -> None:
-    """Print a safely preserved route-planning failure summary."""
-    print("Quillan response page was not routed; preserved for review.")
-    print(f"Reason: {getattr(route_failure, 'failure_message', route_failure)}")
-    print(f"Category: {getattr(route_failure, 'failure_category', 'processing_error')}")
-    print(f"Review record: {review_record.failure_metadata_relative_path}")
-
-
-def print_evidence_filing_review(
-    error: EvidenceFilingError,
-    review_record: RoutingReviewRecord,
-) -> None:
-    """Print a safely preserved evidence-filing failure summary."""
-    print("Quillan response page could not be filed; preserved for review.")
-    print(f"Reason: {error}")
-    print("Category: evidence_write_failed")
-    print(f"Review record: {review_record.failure_metadata_relative_path}")
 
 
 def print_workspace_status(status: WorkspaceStatus) -> None:

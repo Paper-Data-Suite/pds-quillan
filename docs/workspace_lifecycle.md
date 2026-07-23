@@ -161,9 +161,9 @@ The assignment-local directory for immutable page observations and routed
 evidence. It is not the canonical retained source location. The direct
 `route-scan` workflow obtains a strict PDS2 locator from the retained physical
 page, dispatches through the current registered route, and persists successful
-Quillan results under the exact module-qualified work root. There is no caller
-payload mode or PDS1 fallback. Validation, naming, collision, provenance, and
-failure-review behavior is defined in
+Quillan results under the exact module-qualified work root. Other declared QR
+schemas are rejected without field interpretation. Validation, naming,
+collision, provenance, and failure-review behavior is defined in
 [`scan_routing_design.md`](scan_routing_design.md). Quillan does not perform
 OCR or evaluate writing from scan contents.
 
@@ -178,7 +178,7 @@ ratings, feedback composition, or feedback exports.
 
 Loading, validation, canonical path computation, safe writing, and
 new-manifest assembly from immutable observation and issuance authority are
-implemented separately from the superseded text-oriented loader. The direct
+implemented as the only submission-manifest loader. The direct
 `assemble-submissions` command discovers validated observations, verifies
 routed evidence, and assembles issuance-authoritative manifests without
 caller-supplied expected-page identity. `set-review-state` provides an

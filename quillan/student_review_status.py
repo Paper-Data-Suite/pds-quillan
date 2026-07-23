@@ -12,12 +12,12 @@ from pds_core.classes import load_class_roster
 from pds_core.identifiers import validate_identifier
 from pds_core.rosters import RosterError, student_display_name
 
-from quillan.assignment_submission_assembly import discover_assignment_routed_evidence_status
 from quillan.assignment_summary_context import feedback_status, relative_path_for
 from quillan.feedback_export import feedback_export_path, feedback_pdf_export_path
 from quillan.minimum_requirement_review import configured_requirements
 from quillan.plain_paper_submission import is_plain_paper_submission
 from quillan.review_status_display import review_progress_status
+from quillan.response_page_observations import group_response_page_observations_by_student
 from quillan.record_context import (
     InvalidReviewError,
     InvalidSubmissionError,
@@ -123,8 +123,10 @@ def build_student_review_status(
     routed_available = True
     routed_count: int | None
     try:
-        routed = discover_assignment_routed_evidence_status(root, class_id, assignment_id)
-        routed_count = len(routed.evidence_by_student.get(student_id, ()))
+        observations = group_response_page_observations_by_student(
+            root, class_id, assignment_id
+        )
+        routed_count = len(observations.get(student_id, ()))
     except (OSError, ValueError):
         routed_available = False
         routed_count = None

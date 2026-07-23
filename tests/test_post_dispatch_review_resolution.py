@@ -17,7 +17,6 @@ import pytest
 
 from quillan.cli import main
 from quillan.assignment_submission_assembly import (
-    AssignmentSubmissionAssemblyResult,
     assemble_assignment_submissions,
 )
 from quillan.atomic_record_io import (
@@ -44,7 +43,10 @@ from quillan.post_dispatch_review_resolution import (
 from quillan.response_page_observation_persistence import (
     persist_quillan_page_observation,
 )
-from quillan.submission_observation_assembly import QuillanSubmissionAssemblyFailure
+from quillan.submission_observation_assembly import (
+    QuillanSubmissionAssemblyBatch,
+    QuillanSubmissionAssemblyFailure,
+)
 from quillan.submission_manifest_paths import (
     submission_manifest_path,
     write_submission_manifest,
@@ -144,7 +146,7 @@ def _retry_case(
     root: Path,
     *,
     status: str = "created",
-) -> tuple[PersistedPostDispatchReviewOccurrence, AssignmentSubmissionAssemblyResult]:
+) -> tuple[PersistedPostDispatchReviewOccurrence, QuillanSubmissionAssemblyBatch]:
     if status == "updated":
         first_outcome, second_outcome = successful_pdf_pages(root)
         persisted = persist_quillan_page_observation(root, first_outcome)
@@ -210,15 +212,15 @@ def test_generic_resolution_api_cannot_write_resolved_after_retry(
 
 
 def _assembly_failure(
-    assembly: AssignmentSubmissionAssemblyResult,
+    assembly: QuillanSubmissionAssemblyBatch,
     *,
     student_id: str,
     issuance_id: str,
 ) -> QuillanSubmissionAssemblyFailure:
     return QuillanSubmissionAssemblyFailure(
         category="unexpected_error",
-        class_id=assembly.class_id,
-        assignment_id=assembly.assignment_id,
+        class_id=assembly.assembled[0].class_id,
+        assignment_id=assembly.assembled[0].assignment_id,
         student_id=student_id,
         issuance_ids=(issuance_id,),
         observation_ids=(),
@@ -234,8 +236,6 @@ def test_empty_retry_result_does_not_prove_resolution(tmp_path: Path) -> None:
     occurrence, assembly = _retry_case(tmp_path)
     empty = replace(
         assembly,
-        written_manifests=(),
-        student_summaries=(),
         assembled=(),
     )
     with pytest.raises(PostDispatchReviewResolutionError, match="does not prove"):

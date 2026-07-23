@@ -60,7 +60,8 @@ opaque; the orchestrator does not inspect their module result.
 Non-PDS2 declarations are `payload_schema_unsupported`; oversized ASCII is
 `payload_too_large`; Core identifier/routing exception chains are
 `identifier_invalid`; other malformed PDS2 is `payload_invalid`. No partial
-payload identity becomes a locator and there is no PDS1 fallback.
+payload identity becomes a locator. Other declared schemas are rejected without
+parsing their fields or recovering routing or student identity.
 
 ## Failure occurrence persistence
 
