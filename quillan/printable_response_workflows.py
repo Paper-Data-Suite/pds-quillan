@@ -19,7 +19,7 @@ from quillan.generated_output_opening import (
 )
 from quillan.printable_response import PRINTABLE_RESPONSE_FILENAME
 from quillan.printable_response_generation import PrintableResponseGenerationError
-from quillan.storage import assignment_templates_dir
+from quillan.work_paths import quillan_work_paths
 from quillan.menu import (
     clear_screen as _clear_screen,
     pause_for_user as _pause_for_user,
@@ -88,7 +88,7 @@ def expected_printable_packet_path(
 ) -> Path:
     """Return the stable output path for a combined printable class packet."""
     return (
-        assignment_templates_dir(workspace_root, class_id, assignment_id)
+        quillan_work_paths(workspace_root, class_id, assignment_id).templates_dir
         / PRINTABLE_RESPONSE_FILENAME
     )
 

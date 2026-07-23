@@ -109,7 +109,7 @@ _PRE_DISPATCH_STAGES = frozenset(
 
 
 @dataclass(frozen=True, slots=True)
-class RoutingReviewRecord:
+class PersistedQuillanScanFailure:
     """One verified, immutable Core-v2 failure occurrence."""
 
     failure_id: str
@@ -162,23 +162,12 @@ class RoutingReviewRecord:
             raise ValueError("metadata must agree with exact retained provenance.")
 
     @property
-    def failure_metadata_path(self) -> Path:
-        return self.metadata_path
-
-    @property
-    def failure_metadata_relative_path(self) -> str:
-        return self.metadata_relative_path
-
-    @property
     def failure_category(self) -> str:
         return self.metadata.failure_category
 
     @property
     def failure_message(self) -> str:
         return self.metadata.failure_message
-
-
-PersistedQuillanScanFailure = RoutingReviewRecord
 
 
 @dataclass(frozen=True, slots=True)
@@ -209,8 +198,8 @@ class QuillanFailurePersistenceBatch:
     def __post_init__(self) -> None:
         if type(self.persisted) is not tuple or type(self.failures) is not tuple:
             raise ValueError("persistence collections must be immutable tuples.")
-        if any(not isinstance(item, RoutingReviewRecord) for item in self.persisted):
-            raise ValueError("persisted members must be RoutingReviewRecord.")
+        if any(type(item) is not PersistedQuillanScanFailure for item in self.persisted):
+            raise ValueError("persisted members must be PersistedQuillanScanFailure.")
         if any(not isinstance(item, QuillanFailurePersistenceError) for item in self.failures):
             raise ValueError("failure members have the wrong type.")
         ids = tuple(item.failure_id for item in self.persisted)
@@ -244,7 +233,7 @@ class QuillanScanPageOutcome:
     failure_stage: FailureStage | None = None
     failure_category: str | None = None
     error: Exception | None = None
-    review_record: RoutingReviewRecord | None = None
+    review_record: PersistedQuillanScanFailure | None = None
     review_error: QuillanFailurePersistenceError | None = None
 
     def __post_init__(self) -> None:
@@ -272,7 +261,7 @@ class QuillanScanPageOutcome:
             if self.dispatch_request is None:
                 raise ValueError("dispatch outcome requires a request.")
         if self.review_record is not None and not isinstance(
-            self.review_record, RoutingReviewRecord
+            self.review_record, PersistedQuillanScanFailure
         ):
             raise ValueError("review_record has the wrong type.")
         if self.review_error is not None and not isinstance(
@@ -366,7 +355,7 @@ class QuillanScanSourceResult:
     pages: tuple[QuillanScanPageOutcome, ...]
     registry_module_ids: tuple[str, ...]
     source_error: Exception | None = None
-    scan_review_record: RoutingReviewRecord | None = None
+    scan_review_record: PersistedQuillanScanFailure | None = None
     scan_review_error: QuillanFailurePersistenceError | None = None
 
     def __post_init__(self) -> None:
@@ -382,7 +371,7 @@ class QuillanScanSourceResult:
             raise ValueError("pages must be an immutable page-outcome tuple.")
         _validate_registry_ids(self.registry_module_ids)
         if self.scan_review_record is not None and not isinstance(
-            self.scan_review_record, RoutingReviewRecord
+            self.scan_review_record, PersistedQuillanScanFailure
         ):
             raise ValueError("scan_review_record has the wrong type.")
         if self.scan_review_error is not None and not isinstance(
@@ -1537,7 +1526,6 @@ __all__ = [
     "QuillanScanIntakeSummary",
     "QuillanScanPageOutcome",
     "QuillanScanSourceResult",
-    "RoutingReviewRecord",
     "SUPPORTED_SCAN_EXTENSIONS",
     "SourceType",
     "TerminalCategory",

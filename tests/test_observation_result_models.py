@@ -3,7 +3,6 @@
 from dataclasses import replace
 from pathlib import Path
 from collections.abc import Callable
-from types import MappingProxyType
 from typing import Any
 
 import pytest
@@ -11,7 +10,6 @@ import pytest
 from quillan.intake_assembly import QuillanPostDispatchPersistenceResult
 from quillan.assignment_submission_assembly import (
     assemble_assignment_submissions,
-    discover_assignment_routed_evidence_status,
 )
 from quillan.pds2_scan_intake import QuillanScanIntakeSummary, QuillanScanSourceResult
 from quillan.response_page_observation_persistence import (
@@ -254,7 +252,7 @@ def test_persistence_batch_contains_original_unexpected_exception(
     assert result.failures[0].error is original
 
 
-def test_new_public_discovery_and_assignment_models_reject_corruption(
+def test_public_discovery_and_assignment_models_reject_corruption(
     tmp_path: Path,
 ) -> None:
     persisted, _, _, _, _, _, _ = _models(tmp_path)
@@ -262,13 +260,10 @@ def test_new_public_discovery_and_assignment_models_reject_corruption(
     discovery = discover_quillan_page_observations_status(
         tmp_path, observation.class_id, observation.assignment_id
     )
-    grouped = discover_assignment_routed_evidence_status(
-        tmp_path, observation.class_id, observation.assignment_id
-    )
     assignment = assemble_assignment_submissions(
         tmp_path, observation.class_id, observation.assignment_id
     )
-    summary = assignment.student_summaries[0]
+    assembled = assignment.assembled[0]
     unsafe_replace: Any = replace
     corruptions: tuple[Callable[[], object], ...] = (
         lambda: unsafe_replace(discovery, observations=list(discovery.observations)),
@@ -278,24 +273,10 @@ def test_new_public_discovery_and_assignment_models_reject_corruption(
             observations=(discovery.observations[0], discovery.observations[0]),
             observation_paths=(discovery.observation_paths[0],) * 2,
         ),
-        lambda: unsafe_replace(grouped, evidence_by_student=dict(grouped.evidence_by_student)),
-        lambda: unsafe_replace(
-            grouped,
-            evidence_by_student=MappingProxyType(
-                {observation.student_id: [observation]}
-            ),
-        ),
-        lambda: unsafe_replace(summary, status="failed"),
-        lambda: unsafe_replace(summary, missing_pages=[1]),
-        lambda: replace(
-            assignment,
-            written_manifests=assignment.skipped_existing_manifests,
-        ),
+        lambda: unsafe_replace(assembled, status="failed"),
+        lambda: unsafe_replace(assembled, missing_pages=[1]),
         lambda: unsafe_replace(assignment, failures=list(assignment.failures)),
-        lambda: replace(
-            assignment,
-            students_with_evidence=(observation.student_id,) * 2,
-        ),
+        lambda: replace(assignment, assembled=(assembled, assembled)),
     )
     for corrupt in corruptions:
         with pytest.raises(ValueError):

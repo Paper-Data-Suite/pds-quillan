@@ -9,10 +9,6 @@ from typing import Any
 
 from pds_core.identifiers import validate_identifier
 
-from quillan.assignment_submission_assembly import (
-    SkippedRoutedEvidenceFile,
-    discover_assignment_routed_evidence_status,
-)
 from quillan.record_context import (
     ReviewLoadingPolicy,
     load_quillan_assignment_context,
@@ -25,7 +21,10 @@ from quillan.printable_response_persistence import (
     load_printable_response_record_set,
 )
 from quillan.plain_paper_submission import is_plain_paper_submission
-from quillan.response_page_observations import QuillanResponsePageObservation
+from quillan.response_page_observations import (
+    QuillanResponsePageObservation,
+    group_response_page_observations_by_student,
+)
 from quillan.work_paths import _is_link_like, quillan_work_ref
 
 
@@ -70,7 +69,6 @@ class AssignmentSubmissionStatus:
     students_without_manifests: tuple[str, ...]
     unassembled_routed_files: tuple[Path, ...]
     unused_duplicate_routed_files: tuple[Path, ...]
-    skipped_routed_files: tuple[SkippedRoutedEvidenceFile, ...]
     student_statuses: tuple[StudentSubmissionStatus, ...]
 
 
@@ -88,12 +86,12 @@ def list_assignment_submission_status(
     manifests = _load_assignment_manifests(
         root, class_id, assignment_id
     )
-    discovery = discover_assignment_routed_evidence_status(
+    observations_by_student = group_response_page_observations_by_student(
         root, class_id, assignment_id
     )
 
     manifest_students = tuple(manifests)
-    routed_students = tuple(discovery.evidence_by_student)
+    routed_students = tuple(observations_by_student)
     students_without_manifests = tuple(
         student_id
         for student_id in routed_students
@@ -107,7 +105,7 @@ def list_assignment_submission_status(
     }
     unassembled: list[Path] = []
     unused_duplicates: list[Path] = []
-    for student_id, items in discovery.evidence_by_student.items():
+    for student_id, items in observations_by_student.items():
         for item in items:
             path = _resolved_evidence_path(root, item.routed_evidence_path)
             if path in assembled_paths:
@@ -129,7 +127,7 @@ def list_assignment_submission_status(
             root,
             work_ref,
             student_id,
-            discovery.evidence_by_student[student_id],
+            observations_by_student[student_id],
         )
         for student_id in students_without_manifests
     )
@@ -143,7 +141,6 @@ def list_assignment_submission_status(
         students_without_manifests=students_without_manifests,
         unassembled_routed_files=unassembled_routed_files,
         unused_duplicate_routed_files=unused_duplicate_routed_files,
-        skipped_routed_files=discovery.skipped_files,
         student_statuses=tuple(statuses),
     )
 

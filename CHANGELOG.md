@@ -10,6 +10,9 @@ planning and do not by themselves represent releases.
 
 ### Changed
 
+- PDS1 support was removed; PDS1 QR text is rejected as unsupported without
+  interpreting its fields.
+
 - Removed legacy Quillan standards-profile files and validation before
   production use. Quillan now relies on pds-core for shared standards
   definitions, durable `standard_id` values, reusable `profile_id` values, and
@@ -39,24 +42,14 @@ planning and do not by themselves represent releases.
   and conversion-level failures under `scans/review/`, and continues after
   handled per-page failures. This adds the `pdf2image` runtime dependency;
   Poppler must be installed separately by the user.
-- Added QR-aware single-image intake to `quillan route-scan` through
-  `--decode-qr`. The command decodes one supported local image, validates the
-  decoded Quillan `doc=response` PDS1 payload, routes through existing
-  route-planning and evidence-filing layers, preserves decode, payload,
-  routing, and filing failures under scan review metadata, and keeps
-  `--payload` mode supported. Submission assembly and automatic review-record
-  creation remain out of scope.
+- Added QR-aware single-image intake for supported local images.
 - Added a decode-only `quillan decode-scan` diagnostic command that reads one
   supported local image, reports QR decode and Quillan response-page validation
   details, distinguishes decode and payload failures with exit codes, and does
   not route, preserve, or write workspace data.
-- Added a decoded QR payload validation layer that converts canonical Quillan
-  `doc=response` PDS1 text into `DecodedResponsePage` values, returns structured
-  payload failures for missing, unsupported, malformed, wrong-module, and wrong
-  document-type payloads, and leaves raw QR decoding and routing unchanged.
-- Added an internal, local OpenCV QR image decoder for supported response-page
-  image files. It returns structured decode results without routing scans,
-  validating PDS1 payloads, writing diagnostics, or mutating workspaces.
+- Added structured raw QR detection outcomes.
+- Added an internal, local OpenCV QR image detector for supported response-page
+  image files.
 
 ### Changed
 
@@ -210,18 +203,14 @@ planning and do not by themselves represent releases.
 - Added Quillan-owned helpers for canonical version `1` submission manifest
   paths and safe writing of caller-provided manifests, with validation,
   parent-directory creation, readable UTF-8 JSON, and overwrite protection.
-- Added a distinct v0.6 reviewable-evidence submission manifest loader and
-  validator with page, evidence, retained-source, selection, path, timestamp,
-  state, and identifier validation. The legacy text-oriented loader remains
-  unchanged.
+- Added the reviewable-evidence submission manifest loader and validator with
+  page, evidence, retained-source, selection, path, timestamp, state, and
+  identifier validation. The superseded text-oriented submission contract was
+  later removed.
 - Documented the draft version `1` reviewable-evidence `submission.json`
   contract, including page and evidence states, duplicate and replacement
   preservation, retained-source provenance, safe relative paths, and a fully
   synthetic three-page example.
-- Added a direct `route-scan` command for already-decoded Quillan PDS1
-  payloads, including successful evidence filing, safe review preservation,
-  concise workspace-relative summaries, and documented handled/failure exit
-  codes.
 - Added a routing failure preservation API that writes shared `pds-core`
   failure metadata exclusively under `scans/review/`, adapts route-planning and
   evidence-filing failures, and records workspace-relative retained-source
@@ -267,7 +256,6 @@ planning and do not by themselves represent releases.
   remains central.
 - Added printable writing-response PDF generation for paper-based writing
   workflows.
-- Added PDS1 Quillan response payload support for printable response pages.
 - Added synthetic paper-workflow fixtures for repository-safe tests and
   examples.
 - Added canonical synthetic roster fixture support using the shared

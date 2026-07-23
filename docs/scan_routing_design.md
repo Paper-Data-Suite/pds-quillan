@@ -44,8 +44,8 @@ Each selected supported source is preflighted and retained exactly once through
 Core. All subsequent page count, conversion, QR detection, parsing, request
 construction, and dispatch work reads only that retained event. Raw QR
 detection is grammar-independent; Core alone parses strict PDS2 and resolves
-the locator. There is no caller payload mode, PDS1 parser, PDS1 route planner,
-or legacy compatibility fallback.
+the locator. Other declared schemas are rejected without parsing their fields
+or recovering routing or student identity.
 
 Every enumerated physical page receives exactly one terminal outcome, including
 unexpected `Exception` failures at page loading, QR detection, request creation,

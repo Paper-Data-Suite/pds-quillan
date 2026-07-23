@@ -88,7 +88,7 @@ def invalid_registrations() -> tuple[object, ...]:
     target = registration.target
     fallback = registration.human_fallback
     details = registration.module_details
-    wrong_qr_locator = forged(locator, schema="PDS1")
+    wrong_qr_locator = forged(locator, schema="PDS3")
     wrong_module_locator = RouteLocator(
         schema="PDS2",
         work=ModuleWorkRef("other", locator.class_id, locator.work_id),

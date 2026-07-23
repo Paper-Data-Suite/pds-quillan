@@ -1310,28 +1310,9 @@ Quillan should not implement those broader reports.
 
 Quillan's responsibility ends at assignment-local summaries and assignment-local handoff metadata.
 
-## Historical Relationship to Legacy Runtime (superseded)
+## Active reporting model
 
-Legacy runtime exports produced:
-
-```text
-classes/<class_id>/assignments/<assignment_id>/exports/student_performance_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/class_summary.csv
-classes/<class_id>/assignments/<assignment_id>/exports/standards_summary.csv
-```
-
-from legacy schema version `1` review fields such as:
-
-```text
-review.json.tags
-review.json.scores
-review.json.comments
-```
-
-That behavior is legacy implementation history and is not the active v0.8.6
-reporting path.
-
-The active v0.8.6 reporting model uses:
+The reporting model uses:
 
 ```text
 assignment.json.focus_standard_ids

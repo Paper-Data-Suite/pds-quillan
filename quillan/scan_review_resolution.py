@@ -113,7 +113,6 @@ class QuillanReviewItem:
     source_sha256: str | None
     source_page_number: int | None
     detected_payload: str | None
-    payload_page_number: int | None
     class_id: str | None
     assignment_id: str | None
     student_id: str | None
@@ -660,7 +659,6 @@ def _review_item(
         source_sha256=failure.source_sha256,
         source_page_number=failure.source_page_number,
         detected_payload=failure.detected_payload,
-        payload_page_number=None,
         class_id=None if work_ref is None else work_ref.class_id,
         assignment_id=None if work_ref is None else work_ref.work_id,
         student_id=student_id,

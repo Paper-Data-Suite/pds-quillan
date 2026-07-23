@@ -602,6 +602,22 @@ def list_quillan_page_observations(
         ) from error
 
 
+def group_response_page_observations_by_student(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> Mapping[str, tuple[QuillanResponsePageObservation, ...]]:
+    """Group strictly verified observations by their persisted student identity."""
+    grouped: dict[str, list[QuillanResponsePageObservation]] = {}
+    for observation in list_quillan_page_observations(
+        workspace_root, class_id, assignment_id
+    ):
+        grouped.setdefault(observation.student_id, []).append(observation)
+    return MappingProxyType(
+        {student_id: tuple(grouped[student_id]) for student_id in sorted(grouped)}
+    )
+
+
 def _path_is_link_like(path: Path) -> bool:
     is_junction = getattr(path, "is_junction", None)
     return path.is_symlink() or bool(is_junction is not None and is_junction())
@@ -781,6 +797,7 @@ __all__ = [
     "derive_observation_id",
     "discover_quillan_page_observations_status",
     "generate_observation_id",
+    "group_response_page_observations_by_student",
     "load_quillan_response_page_observation",
     "load_contextual_response_page_observation",
     "load_response_page_observation",

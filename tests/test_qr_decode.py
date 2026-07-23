@@ -16,7 +16,6 @@ from quillan.qr_decode import (
     ImageArray,
     QrDetectionFailure,
     QrPayloadDetectionResult,
-    decode_qr_payload_from_image,
     decode_qr_payload_from_image_path,
     detect_qr_payload,
 )
@@ -46,7 +45,7 @@ def _pds2_payload() -> str:
 
 def test_synthetic_pds2_qr_image_decodes_successfully() -> None:
     payload = _pds2_payload()
-    result = decode_qr_payload_from_image(_make_qr_image(payload))
+    result = detect_qr_payload(_make_qr_image(payload))
     assert result.raw_payload_text == payload
     assert result.error is None
     assert result.decode_method
@@ -73,7 +72,7 @@ def test_full_page_upper_right_qr_decodes_successfully() -> None:
     page = np.full((2200, 1700, 3), 255, dtype=np.uint8)
     qr_image = cv2.resize(_make_qr_image(_pds2_payload()), (200, 200), interpolation=cv2.INTER_NEAREST)
     page[100:300, 1400:1600] = qr_image
-    assert decode_qr_payload_from_image(page).raw_payload_text == _pds2_payload()
+    assert detect_qr_payload(page).raw_payload_text == _pds2_payload()
 
 
 def test_upper_right_crop_attempt_has_diagnostic_label(monkeypatch: pytest.MonkeyPatch) -> None:

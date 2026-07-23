@@ -206,6 +206,53 @@ def test_pds1_classification_never_recovers_partial_locator() -> None:
 
 
 @pytest.mark.parametrize(
+    "raw",
+    (
+        "PDS1|",
+        "PDS1|student=001",
+        "PDS1|assignment=essay|student=001|page=1",
+        "PDS1|duplicate=one|duplicate=two",
+        "PDS1|student=%2E%2E%2Fescape",
+        "PDS1|student=private_student|assignment=private_assignment",
+    ),
+)
+def test_pds1_like_text_is_rejected_before_locator_or_dispatch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    raw: str,
+) -> None:
+    source = tmp_path / "scan.png"
+    source.write_bytes(b"synthetic")
+    retained = core_retain_source_scan(tmp_path, source)
+    monkeypatch.setattr(
+        intake, "retained_source_page_count", lambda *_args, **_kwargs: 1
+    )
+    monkeypatch.setattr(
+        intake, "load_retained_page_for_qr", lambda *_args, **_kwargs: object()
+    )
+    monkeypatch.setattr(
+        intake,
+        "detect_qr_payload",
+        lambda _image: QrPayloadDetectionResult(raw, "raw"),
+    )
+
+    def forbidden_dispatch(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("Core dispatch must not receive an unsupported schema")
+
+    monkeypatch.setattr(intake, "dispatch_routes", forbidden_dispatch)
+    result = intake.dispatch_retained_quillan_scan(
+        tmp_path, retained, registry=registry(), source_path=source
+    )
+    page = result.pages[0]
+    assert page.failure_category == "payload_schema_unsupported"
+    assert page.failure_stage == "payload_parsing"
+    assert page.locator is None
+    assert page.dispatch_request is None
+    assert page.dispatch_outcome is None
+    assert not (tmp_path / "classes").exists()
+
+
+@pytest.mark.parametrize(
     ("payload", "expected"),
     [
         ("PDS1|x=y", "payload_schema_unsupported"),

@@ -140,13 +140,11 @@ Package modules:
 * `standards.py`
 * `classes.py`
 * `assignments.py`
-* `submissions.py`
 * `requirements.py`
 * `tagging.py`
 * `scoring.py`
 * `feedback.py`
 * `reports.py`
-* `storage.py`
 * `validation.py`
 * `cli.py`
 
@@ -218,11 +216,11 @@ than canonical source retention.
 
 `pds-core` owns shared source retention, review paths, failure metadata and
 categories, copy-first behavior, no-overwrite rules, and provenance semantics.
-Historically, Quillan interpreted its `PDS1` response payloads and owned the
-then-planned routed evidence layout. That interface is superseded. Current
-intake accepts only strict Core PDS2 locators; Core parses and resolves them,
-while Quillan validates dispatched response pages, persists observations and
-routed evidence, and assembles issuance-authoritative submissions.
+Current intake accepts only strict Core PDS2 locators; other declared schemas
+are rejected without interpreting fields or recovering identity. Core parses
+and resolves PDS2 while Quillan validates dispatched response pages, persists
+observations and routed evidence, and assembles issuance-authoritative
+submissions.
 
 The first version `1` reviewable-evidence submission manifest contract is
 documented, with loading, validation, canonical Quillan-owned path helpers,
@@ -268,34 +266,9 @@ export, or report generation.
 Teacher tags, teacher comments, rubric/score entry, feedback export, and
 reporting remain likely v0.7 work rather than v0.6 scope.
 
-Historical note (superseded by the PDS2 intake and #339 observation pipeline):
-the first successful-write helper in `quillan.evidence_filing` once accepted a
-legacy route plan, retained the selected source under
-`scans/source/YYYY-MM-DD/`, and filed assignment-scan evidence. That behavior
-is no longer an active identity or assembly contract.
-
-Metadata-only failure preservation is implemented in `quillan.routing_review`.
-It writes shared `pds-core` failure records under `scans/review/`, preserves
-route failure and evidence filing context, and records workspace-relative
-retained-source provenance when available. It does not copy review artifacts.
-
-Historical implementation note (superseded): an earlier direct
-`quillan route-scan <source-file> --payload "<PDS1|...>"` form accepted an
-already-decoded legacy payload. It is not a supported command. Current
-`quillan route-scan <source>` performs retained-source PDS2 decoding, Core
-dispatch, observation/evidence persistence, submission assembly, and failure
-preservation through the shared workflow service.
-
-### `submissions.py`
-
-Current responsibility:
-
-* load and validate the earlier text-oriented submission metadata shape.
-
-The v0.6 reviewable-evidence manifest loader is implemented separately as
-`quillan.submission_manifest` in `quillan/submission_manifest.py`. The legacy
-metadata loader remains distinct and has not been repurposed into the
-page-oriented submission manifest loader.
+Current `quillan route-scan <source>` performs retained-source PDS2 detection,
+Core dispatch, observation/evidence persistence, submission assembly, and
+failure preservation through the shared workflow service.
 
 ### `requirements.py`
 
@@ -342,10 +315,10 @@ Implemented reporting responsibility is split across
 * aggregate standards-linked tags and selected comments; and
 * avoid grades, mastery conclusions, evidence inspection, or roster inference.
 
-### `storage.py`
+### Storage services
 
-Current storage responsibility is distributed across focused path and writer
-modules and shared `pds-core` services:
+Storage responsibility is distributed across `quillan.work_paths`, focused
+record writers, and shared `pds-core` services:
 
 * resolve and manage the shared Paper Data Suite workspace;
 * compute canonical submission, review, comment-bank, and export paths; and

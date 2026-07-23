@@ -28,7 +28,7 @@ def test_cli_review_dashboard_text_and_json_are_read_only(
     assert main(["review-dashboard", CLASS_ID, ASSIGNMENT_ID, "--format", "json"]) == 0
     document = json.loads((lambda captured: captured.out + captured.err)(capsys.readouterr()))
 
-    assert document["schema_version"] == "1"
+    assert document["schema_version"] == "2"
     assert document["assignment"]["path"].startswith("classes/")
     assert assignment.read_bytes() == original
     assert sorted(path.relative_to(tmp_path) for path in tmp_path.rglob("*")) == before

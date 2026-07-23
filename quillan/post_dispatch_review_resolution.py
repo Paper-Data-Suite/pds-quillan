@@ -23,7 +23,7 @@ from quillan.atomic_record_io import (
     AtomicRecordError,
     create_exclusive_record,
 )
-from quillan.assignment_submission_assembly import AssignmentSubmissionAssemblyResult
+from quillan.submission_observation_assembly import QuillanSubmissionAssemblyBatch
 from quillan.module_errors import QuillanObservationError
 from quillan.pds_contract import QUILLAN_MODULE_ID
 from quillan.post_dispatch_review import (
@@ -578,7 +578,7 @@ def open_post_dispatch_possible_path(
 
 def _matching_verified_retry_assembly(
     persisted_occurrence: PersistedPostDispatchReviewOccurrence,
-    result: AssignmentSubmissionAssemblyResult,
+    result: QuillanSubmissionAssemblyBatch,
     *,
     completed_at: datetime | str,
 ) -> AssembledQuillanSubmission | None:
@@ -587,7 +587,7 @@ def _matching_verified_retry_assembly(
         raise PostDispatchReviewResolutionError(
             "Retry proof requires an exact persisted occurrence."
         )
-    if type(result) is not AssignmentSubmissionAssemblyResult:
+    if type(result) is not QuillanSubmissionAssemblyBatch:
         raise PostDispatchReviewResolutionError(
             "Retry proof requires an exact assignment assembly result."
         )
@@ -600,9 +600,7 @@ def _matching_verified_retry_assembly(
         )
     occurrence = persisted_occurrence.occurrence
     if (
-        result.class_id != occurrence.class_id
-        or result.assignment_id != occurrence.assignment_id
-        or work_ref.class_id != occurrence.class_id
+        work_ref.class_id != occurrence.class_id
         or work_ref.work_id != occurrence.assignment_id
     ):
         raise PostDispatchReviewResolutionError(
@@ -712,7 +710,7 @@ def _matching_verified_retry_assembly(
 
 def post_dispatch_retry_proves_resolution(
     persisted_occurrence: PersistedPostDispatchReviewOccurrence,
-    result: AssignmentSubmissionAssemblyResult,
+    result: QuillanSubmissionAssemblyBatch,
     *,
     completed_at: datetime | str,
 ) -> bool:
@@ -818,7 +816,7 @@ def resolve_post_dispatch_after_successful_retry(
     work_ref: ModuleWorkRef,
     failure_id: str,
     *,
-    assembly_result: AssignmentSubmissionAssemblyResult,
+    assembly_result: QuillanSubmissionAssemblyBatch,
     completed_at: datetime | str,
     message: str | None = None,
     resolved_at: datetime | str | None = None,

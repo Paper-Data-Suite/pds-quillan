@@ -779,7 +779,7 @@ def test_legacy_pdf_without_issuances_creates_initial_pds2_records(
     write_packet_workspace(tmp_path)
     plan = plan_printable_response_packet(tmp_path, CLASS_ID, ASSIGNMENT_ID)
     plan.output_path.parent.mkdir(parents=True)
-    plan.output_path.write_bytes(b"legacy PDS1 development packet")
+    plan.output_path.write_bytes(b"obsolete pre-PDS2 development packet")
     replacement = plan_printable_response_packet(tmp_path, CLASS_ID, ASSIGNMENT_ID)
     assert replacement.target_exists and replacement.predecessor_count == 0
     result = generate_printable_response_packet(replacement, overwrite=True)

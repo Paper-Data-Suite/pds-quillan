@@ -39,7 +39,6 @@ from quillan.pds2_scan_intake import (
     QuillanFailurePersistenceError,
     QuillanScanPageOutcome,
     QuillanScanSourceResult,
-    RoutingReviewRecord,
     validate_scan_workspace,
 )
 
@@ -130,7 +129,7 @@ def _persist_occurrence(
     failures: list[QuillanFailurePersistenceError],
     page_number: int | None,
     origin: str,
-    operation: Callable[[], RoutingReviewRecord],
+    operation: Callable[[], PersistedQuillanScanFailure],
 ) -> None:
     try:
         persisted.append(operation())
@@ -158,7 +157,7 @@ def _persist_page(
     root: Path,
     page: QuillanScanPageOutcome,
     origin: str,
-) -> RoutingReviewRecord:
+) -> PersistedQuillanScanFailure:
     def build(failure_id: str, created_at: str) -> RoutingFailureMetadata:
         if (
             page.terminal_category == "core_dispatch_failure"
@@ -213,7 +212,7 @@ def _persist_page(
 def _persist_source_error(
     root: Path,
     source: QuillanScanSourceResult,
-) -> RoutingReviewRecord:
+) -> PersistedQuillanScanFailure:
     retained = source.retained_source
     if retained is None or source.source_error is None:
         raise QuillanScanReviewPersistenceError(
@@ -259,7 +258,7 @@ def _write_fresh(
     page_number: int | None,
     origin: str,
     retained_source: RetainedSourceScan,
-) -> RoutingReviewRecord:
+) -> PersistedQuillanScanFailure:
     for _ in range(_MAX_FAILURE_ID_ATTEMPTS):
         failure_id = f"failure_{uuid4().hex}"
         expected = routing_failure_metadata_path(root, failure_id).resolve(
@@ -299,7 +298,7 @@ def _write_fresh(
                 raise QuillanScanReviewPersistenceError(
                     "Reloaded failure metadata differs from the written record."
                 )
-            return RoutingReviewRecord(
+            return PersistedQuillanScanFailure(
                 failure_id,
                 metadata,
                 written,
@@ -429,7 +428,6 @@ __all__ = [
     "PersistedQuillanScanFailure",
     "QuillanFailurePersistenceBatch",
     "QuillanFailurePersistenceError",
-    "RoutingReviewRecord",
     "preserve_and_attach_quillan_scan_failures",
     "preserve_quillan_scan_failures",
 ]
