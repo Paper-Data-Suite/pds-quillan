@@ -19,10 +19,11 @@ def is_link_like(path: Path) -> bool:
     if os.name != "nt":
         return False
     try:
-        attributes = os.lstat(path).st_file_attributes
-    except (AttributeError, OSError):
+        attributes = getattr(os.lstat(path), "st_file_attributes", 0)
+    except OSError:
         return False
-    return bool(attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+    reparse_point = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    return bool(attributes & reparse_point)
 
 
 __all__ = ["is_link_like"]
