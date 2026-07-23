@@ -13,6 +13,7 @@ from pds_core.rosters import RosterError, StudentRecord, student_display_name
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
 from pds_core.routing_models import ModuleWorkRef
 
+from quillan._path_safety import is_link_like as _shared_is_link_like
 from quillan.assignments import AssignmentConfigError
 from quillan.record_context import (
     InvalidReviewError,
@@ -324,5 +325,4 @@ def _has_identity_mismatch(
 
 
 def _is_link_like(path: Path) -> bool:
-    is_junction = getattr(path, "is_junction", None)
-    return path.is_symlink() or bool(is_junction is not None and is_junction())
+    return _shared_is_link_like(path)

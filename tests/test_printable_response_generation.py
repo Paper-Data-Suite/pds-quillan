@@ -357,6 +357,30 @@ def test_temporary_open_failure_creates_no_records_or_routes(
     assert not artifact.temporary_path.exists()
 
 
+def test_temporary_ownership_witness_failure_cleans_created_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_packet_workspace(tmp_path)
+    packet_plan, artifact = artifact_plan(tmp_path)
+    monkeypatch.setattr(
+        generation.os,
+        "link",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            OSError("synthetic ownership witness failure")
+        ),
+    )
+    result = execute_printable_response_artifact(
+        artifact,
+        output_relative_path=packet_plan.output_relative_path,
+        expected_output_digest=None,
+        overwrite=False,
+    )
+    assert result.failure_stage == "preflight"
+    assert result.error == "synthetic ownership witness failure"
+    assert not artifact.temporary_path.exists()
+    assert not tuple(artifact.temporary_path.parent.glob("*.owner"))
+
+
 @pytest.mark.parametrize("cleanup_fails", [False, True])
 def test_temporary_close_failure_owns_and_cleans_created_path(
     tmp_path: Path,

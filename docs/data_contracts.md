@@ -361,9 +361,9 @@ submissions remain valid without a generation, issuance, page, route, scan, or
 evidence record.
 
 PDS2 PDF generation, route registration, retained-source intake, dispatch,
-observation persistence, evidence materialization, and issuance-based assembly
-are implemented. Scan-review resolution and broader review/CLI migration remain
-later boundaries.
+observation persistence, evidence materialization, issuance-based assembly,
+Core scan-review resolution, Quillan post-dispatch review, direct review CLI,
+and guided menu workflows are implemented in v0.8.9.
 
 ## Standards References
 

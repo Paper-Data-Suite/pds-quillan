@@ -36,6 +36,7 @@ from pds_core.routing_models import (
     RouteResolution,
     RoutingModelError,
 )
+
 from pds_core.scan_failure_metadata import (
     RoutingFailureMetadata,
     is_routing_failure_category,
@@ -46,6 +47,7 @@ from pds_core.scan_retention import (
     retain_source_scan,
 )
 
+from quillan._path_safety import is_link_like as _shared_is_link_like
 from quillan.module_errors import (
     QuillanDispatchIntegrationError,
     QuillanPayloadParsingError,
@@ -1513,8 +1515,7 @@ def _validate_path_chain(path: Path) -> None:
 
 
 def _is_link_like(path: Path) -> bool:
-    is_junction = getattr(path, "is_junction", None)
-    return path.is_symlink() or bool(is_junction is not None and is_junction())
+    return _shared_is_link_like(path)
 
 
 __all__ = [

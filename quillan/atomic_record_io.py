@@ -10,6 +10,8 @@ import sys
 import tempfile
 from typing import Literal
 
+from quillan._path_safety import is_link_like as _shared_is_link_like
+
 
 class AtomicRecordError(OSError):
     """A guarded canonical record operation failed before known completion."""
@@ -412,8 +414,7 @@ def _require_arguments(path: Path, data: bytes) -> None:
 
 
 def _is_link_like(path: Path) -> bool:
-    is_junction = getattr(path, "is_junction", None)
-    return path.is_symlink() or bool(is_junction is not None and is_junction())
+    return _shared_is_link_like(path)
 
 
 __all__: list[str] = []

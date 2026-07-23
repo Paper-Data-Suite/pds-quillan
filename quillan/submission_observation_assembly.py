@@ -16,6 +16,7 @@ from pds_core.route_registrations import (
 from pds_core.identifiers import validate_identifier
 from pds_core.routing_models import PDS2_SCHEMA, RouteLocator
 
+from quillan._path_safety import is_link_like as _shared_is_link_like
 from quillan.module_errors import (
     QuillanCategorizedAssemblyError,
     QuillanObservationDiscoveryError,
@@ -1327,8 +1328,7 @@ def _absolute_canonical_path(value: object, field_name: str) -> Path:
 
 
 def _is_link_like(path: Path) -> bool:
-    is_junction = getattr(path, "is_junction", None)
-    return path.is_symlink() or bool(is_junction is not None and is_junction())
+    return _shared_is_link_like(path)
 
 
 def _relative_posix(value: object, field_name: str) -> PurePosixPath:

@@ -96,6 +96,7 @@ from quillan.cli_app.handlers.workspace import (
 )
 from quillan.focus_standard_comments import ALLOWED_PURPOSES
 from quillan.review_workflow_state import REVIEW_WORKFLOW_STATES
+from quillan._version import __version__
 
 APP_DESCRIPTION = "Quillan: standards-based writing evidence capture"
 
@@ -103,6 +104,12 @@ APP_DESCRIPTION = "Quillan: standards-based writing evidence capture"
 def build_parser() -> argparse.ArgumentParser:
     """Build the top-level argument parser and register command handlers."""
     parser = argparse.ArgumentParser(description=APP_DESCRIPTION)
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"quillan {__version__}",
+        help="Show the installed Quillan version and exit.",
+    )
     subparsers = parser.add_subparsers(dest="command")
 
     dashboard_parser = subparsers.add_parser(

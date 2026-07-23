@@ -153,7 +153,7 @@ def test_public_observation_loader_rejects_real_external_symlink_before_read(
         return original_read_bytes(path)
 
     monkeypatch.setattr(Path, "read_bytes", guarded_read_bytes)
-    with pytest.raises(QuillanObservationValidationError, match="link-like"):
+    with pytest.raises(QuillanObservationValidationError, match="ordinary non-link"):
         load_response_page_observation(link)
     assert original_read_bytes(external) == external_bytes
     assert original_read_bytes(sentinel) == b"external sentinel"
@@ -491,7 +491,7 @@ def test_discovery_rejects_real_routed_evidence_ancestor_junction_without_read(
         assert outside.joinpath(*evidence.relative_to(ancestor).parts).is_file()
         assert not manifest.exists()
     finally:
-        os.rmdir(ancestor)
+        ancestor.unlink()
 
 
 @pytest.mark.parametrize("component", ["evidence", "issuance", "file"])
@@ -566,4 +566,4 @@ def test_discovery_rejects_routed_evidence_ancestor_symlink_without_read(
         assert persisted.observation_path.is_file()
         assert outside.joinpath(*evidence.relative_to(ancestor).parts).is_file()
     finally:
-        os.rmdir(ancestor)
+        ancestor.unlink()

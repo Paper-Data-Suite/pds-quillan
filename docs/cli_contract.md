@@ -1,5 +1,24 @@
 # Quillan CLI Contract
 
+## Authoritative machine-readable inventory
+
+The human-readable contract below explains intent and workflows. Exact argparse
+structure is recorded in
+[`cli_contract_inventory.json`](cli_contract_inventory.json), which is the
+authoritative machine-readable CLI inventory. Its schema version is `1`.
+
+The JSON document contains an ordered `nodes` array. Each node records its
+complete command `path`, ordered `aliases`, normalized command-level `short_help`
+shown in its parent's command listing, normalized parser `description`, ordered
+`arguments`, and ordered `mutex_groups`. The root command has `null` short help.
+Command-level short help is distinct from parser descriptions and argument help.
+Each argument records ordered `names`,
+`required`, ordered `choices`, the public `default`, normalized `help`, and its
+parser-local `mutex_group` number or `null`. Each mutex group records its number
+and whether the group itself is required. Release tests require bidirectional
+structural equality between this document and `inventory_parser(build_parser())`;
+extra, missing, moved, reordered, or changed nodes and arguments all fail.
+
 ## Installed module availability
 
 The profile is discoverable as
@@ -216,6 +235,7 @@ The implemented command surface currently exposed through argparse is:
 ```powershell
 quillan
 quillan --help
+quillan --version
 quillan review-dashboard <class_id> <assignment_id> [--format text|json]
 quillan review-status <class_id> <assignment_id> <student_id> [--format text|json]
 quillan review-workflow set-state <class_id> <assignment_id> <student_id> --state <state> --yes
@@ -1153,7 +1173,10 @@ records each check as `1` for met/yes or `2` for not met/no. Quillan stores
 the teacher-entered boolean in `minimum_requirement_checks` and stores the
 teacher-selected result in `minimum_requirement_outcome`. It does not count
 words or paragraphs, parse writing, run OCR, use AI, infer a result, or change
-standards ratings.
+standards ratings. The check selector stays open after each edit and reloads
+the durable statuses, allowing several requirements to be recorded without
+re-entering the parent menu. Back from a status prompt cancels that edit and
+returns to the selector; Back from the selector returns to the summary.
 
 `Review units and Focus Standard observations` lets the teacher define or
 replace review units and record teacher-entered observations for assignment
@@ -1735,9 +1758,10 @@ direct CLI handlers. It does not implement a parallel export system.
 ## Output and Error Handling
 
 Human-readable command results are the default output contract. The
-`review-dashboard` and `review-status` commands also provide stable
-schema-version-1 JSON projections through `--format json`; other prose output
-should not be treated as a machine-readable schema.
+`review-dashboard` command provides a stable schema-version-2 JSON projection
+and `review-status` provides a stable schema-version-1 JSON projection through
+`--format json`; other prose output should not be treated as a machine-readable
+schema.
 
 The intended convention is:
 
@@ -1802,25 +1826,22 @@ and this document. If they disagree, the implementation and tests describe
 executable behavior, and the mismatch should be corrected rather than treated
 as an undocumented feature.
 
-## Not Currently Part of the CLI
+## Deliberately Outside the CLI
 
-The following capabilities are implemented only as Python APIs, planned, or
-explicitly outside the current end-to-end foundation:
+The following capabilities are explicitly outside the v0.8.9 product:
 
-* printable response generation as a dedicated command;
 * submission validation as a dedicated command;
-* recursive scan folder intake, source-file archiving, inbox draining, or
-  automatic production scan routing;
+* recursive inbox draining or automatic unattended production routing;
 * OCR or handwriting interpretation;
 * PDF text extraction;
-* a direct CLI command for feedback composition;
 * AI grading, scoring, tagging, or feedback;
 * automatic grading, mastery calculation, review-state decisions, or
   duplicate-evidence selection;
 * LMS integration;
 * cloud sync;
-* email delivery; and
-* dashboard/reporting automation.
+* email delivery;
+* district dashboards; and
+* cross-assignment analytics.
 
 Their presence in design documents or Python modules does not add them to the
 CLI contract.

@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install Poppler (Ubuntu)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Install Poppler (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $url = "https://github.com/oschwartz10612/poppler-windows/releases/download/v26.02.0-0/Release-26.02.0-0.zip"
+          $archive = Join-Path $env:RUNNER_TEMP "poppler-windows-v26.02.0-0.zip"
+          $destination = Join-Path $env:RUNNER_TEMP "poppler-windows-v26.02.0-0"
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actualHash = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
+          $expectedHash = "993e4a94376ed712fafc7058d724ea0b943d118bbd2305cd9ed55174eb85cda5"
+          if ($actualHash -ne $expectedHash) {
+            throw "Poppler archive SHA-256 mismatch: $actualHash"
+          }
+          Expand-Archive -LiteralPath $archive -DestinationPath $destination
+          $pdftoppm = Get-ChildItem $destination -Recurse -Filter pdftoppm.exe | Select-Object -First 1
+          if ($null -eq $pdftoppm) {
+            throw "Authenticated Poppler archive did not contain pdftoppm.exe."
+          }
+          $pdftoppm.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & (Join-Path $pdftoppm.DirectoryName "pdfinfo.exe") -v
+      - name: Download and verify released Core 0.5.0
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+          from urllib.request import urlretrieve
+          url = "https://github.com/Paper-Data-Suite/pds-core/releases/download/v0.5.0/pds_core-0.5.0-py3-none-any.whl"
+          path = Path(os.environ["RUNNER_TEMP"]) / "pds_core-0.5.0-py3-none-any.whl"
+          urlretrieve(url, path)
+      - name: Authenticate released Core 0.5.0
+        run: python scripts/verify_core_wheel.py "${{ runner.temp }}/pds_core-0.5.0-py3-none-any.whl"
+      - name: Install
+        run: python -m pip install "${{ runner.temp }}/pds_core-0.5.0-py3-none-any.whl" ".[dev]"
+      - name: Remove local build residue
+        shell: python
+        run: |
+          from pathlib import Path
+          import shutil
+          for path in (Path("build"), Path("quillan.egg-info")):
+              if path.exists():
+                  shutil.rmtree(path)
+      - name: Verify installed Core identity
+        run: python scripts/verify_core_wheel.py "${{ runner.temp }}/pds_core-0.5.0-py3-none-any.whl" --verify-installed
+      - name: Dependency check
+        run: python -m pip check
+      - name: Full pytest
+        run: python -m pytest --basetemp "${{ runner.temp }}/pds-quillan-pytest" -ra
+      - name: Ruff
+        run: python -m ruff check .
+      - name: mypy
+        run: python -m mypy . --no-incremental
+      - name: Documentation integrity
+        run: python scripts/check_documentation.py
+      - name: Repository hard cutover
+        run: python -m pytest tests/test_pds2_only_repository_contract.py -q
+      - name: Diff cleanliness
+        shell: bash
+        run: |
+          git diff --check
+          git diff --exit-code
+          git diff --cached --exit-code
+          status="$(git status --porcelain --untracked-files=all)"
+          if [[ -n "$status" ]]; then
+            printf '%s\n' "$status"
+            exit 1
+          fi

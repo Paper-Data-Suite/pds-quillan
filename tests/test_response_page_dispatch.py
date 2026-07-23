@@ -22,7 +22,7 @@ def valid_result() -> QuillanResponsePageDispatchResult:
         original_filename="original.pdf",
         sha256_hex="a" * 64,
     )
-    retained = Path("C:/workspace/scans/source/2026-07-20") / retained_filename
+    retained = Path.cwd() / "workspace" / "scans" / "source" / "2026-07-20" / retained_filename
     return QuillanResponsePageDispatchResult(
         route_id="rt_0123456789abcdef0123456789abcdef",
         page_id="pg_0123456789abcdef0123456789abcdef",

@@ -6,7 +6,56 @@ Quillan is in early pre-1.0 development. Package versions describe the
 installable project state; GitHub issues and milestones may be used for
 planning and do not by themselves represent releases.
 
-## Unreleased
+## 0.8.9 - 2026-07-23
+
+### Added
+
+- Completed the installed PDS2 workflow from immutable per-page route
+  registration through retained-once intake, Core dispatch, observation and
+  evidence persistence, issuance-authoritative assembly, teacher review,
+  feedback, and assignment-local reports.
+- Added immutable generation, artifact, issuance, and response-page records;
+  continuation pages; regeneration with new identities; plain-paper submissions;
+  routing and post-dispatch review; dashboard schema version 2; student review
+  status schema version 1; and installed module-profile discovery.
+- Added release metadata, artifact and clean-install gates, recursive
+  CLI/documentation checks, physical-owner instructions, and nonpublishing CI.
+
+### Changed
+
+- Require PDS Core `>=0.5,<0.6`, using released Core 0.5.0 for acceptance.
+- Store assignment data only below
+  `classes/<class_id>/modules/quillan/work/<assignment_id>/`.
+
+### Fixed
+
+- Hardened temporary artifact ownership against replacement races and
+  filesystem identity reuse.
+- Enforced symlink and Windows-junction rejection consistently on Python 3.11
+  through 3.14.
+- Stabilized cross-platform release validation, authenticated Windows Poppler
+  provisioning, and clean mypy/Ruff execution in the supported CI matrix.
+
+### Validation
+
+- Passed 1,917 source tests with 17 reconciled local Windows privilege skips,
+  Ruff, mypy across 245 source files, documentation and hard-cutover checks,
+  exact wheel and sdist inspection, and separate clean installed acceptance.
+- Passed Windows and Ubuntu CI on Python 3.11, 3.12, 3.13, and 3.14.
+- Owner Stephen Severino passed physical cases A, B, and C and authorized the
+  exact validated wheel and source distribution for release on July 23, 2026.
+
+### Breaking
+
+- v0.8.9 provides no compatibility for PDS1 parsing, generation, routing, or QR
+  payloads; unqualified assignment directories; text submission metadata;
+  filename-authoritative discovery; retired compatibility modules; legacy
+  migration; or read-only legacy access. Old development workspaces may be
+  discarded. PDF scan intake requires Poppler.
+
+## Historical pre-v0.8.9 development log (superseded)
+
+The incremental entries below preserve history and are not the active contract.
 
 ### Changed
 

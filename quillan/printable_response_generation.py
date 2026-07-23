@@ -159,6 +159,7 @@ class IdentityGenerators:
 @dataclass(frozen=True, slots=True)
 class _OwnedTemporaryFile:
     path: Path
+    witness_path: Path
     device: int
     inode: int
 
@@ -657,8 +658,25 @@ def execute_printable_response_artifact(
                 os.O_CREAT | os.O_EXCL | os.O_WRONLY,
             )
             metadata = os.fstat(descriptor)
+            witness_path = validated.temporary_path.with_name(
+                f"{validated.temporary_path.name}.{secrets.token_hex(8)}.owner"
+            )
+            try:
+                os.link(validated.temporary_path, witness_path)
+            except OSError:
+                os.close(descriptor)
+                descriptor = None
+                current = os.lstat(validated.temporary_path)
+                if (
+                    stat.S_ISREG(current.st_mode)
+                    and current.st_dev == metadata.st_dev
+                    and current.st_ino == metadata.st_ino
+                ):
+                    validated.temporary_path.unlink()
+                raise
             owned_temporary = _OwnedTemporaryFile(
                 validated.temporary_path,
+                witness_path,
                 metadata.st_dev,
                 metadata.st_ino,
             )
@@ -725,6 +743,9 @@ def execute_printable_response_artifact(
         )
         _require_owned_temporary(owned_temporary, "installation")
         os.replace(validated.temporary_path, validated.output_path)
+        witness_warning = _cleanup_ownership_witness(owned_temporary, stage)
+        if witness_warning is not None:
+            warnings.append(witness_warning)
         owned_temporary = None
         installed = True
         stage = "predecessor_supersession"
@@ -799,9 +820,7 @@ def execute_printable_response_artifact(
         )
     finally:
         if owned_temporary is not None:
-            cleanup_warning = _cleanup_owned_temporary(owned_temporary, stage)
-            if cleanup_warning is not None:
-                warnings.append(cleanup_warning)
+            warnings.extend(_cleanup_owned_temporary(owned_temporary, stage))
     clean = installed and not failed_predecessors and primary_error is None
     return _result(
         validated,
@@ -838,11 +857,11 @@ def _absolute_workspace_root(value: object) -> Path:
     return Path(os.path.abspath(supplied))
 
 
-def _matches_owned_temporary(owned: _OwnedTemporaryFile) -> bool:
+def _matches_owned_identity(path: Path, owned: _OwnedTemporaryFile) -> bool:
     try:
-        if _is_link_like(owned.path):
+        if _is_link_like(path):
             return False
-        metadata = os.lstat(owned.path)
+        metadata = os.lstat(path)
     except OSError:
         return False
     return (
@@ -850,6 +869,12 @@ def _matches_owned_temporary(owned: _OwnedTemporaryFile) -> bool:
         and metadata.st_dev == owned.device
         and metadata.st_ino == owned.inode
     )
+
+
+def _matches_owned_temporary(owned: _OwnedTemporaryFile) -> bool:
+    return _matches_owned_identity(
+        owned.path, owned
+    ) and _matches_owned_identity(owned.witness_path, owned)
 
 
 def _require_owned_temporary(
@@ -863,20 +888,45 @@ def _require_owned_temporary(
 
 def _cleanup_owned_temporary(
     owned: _OwnedTemporaryFile, primary_stage: str
+) -> tuple[str, ...]:
+    warnings: list[str] = []
+    if os.path.lexists(owned.path):
+        if not _matches_owned_temporary(owned):
+            warnings.append(
+                "Temporary cleanup preserved an entry no longer owned by this "
+                f"operation after primary stage {primary_stage}: {owned.path}"
+            )
+        else:
+            try:
+                owned.path.unlink()
+            except OSError as error:
+                warnings.append(
+                    f"Temporary cleanup failed after primary stage {primary_stage} "
+                    f"for {owned.path}: {error}"
+                )
+    witness_warning = _cleanup_ownership_witness(owned, primary_stage)
+    if witness_warning is not None:
+        warnings.append(witness_warning)
+    return tuple(warnings)
+
+
+def _cleanup_ownership_witness(
+    owned: _OwnedTemporaryFile, primary_stage: str
 ) -> str | None:
-    if not os.path.lexists(owned.path):
+    if not os.path.lexists(owned.witness_path):
         return None
-    if not _matches_owned_temporary(owned):
+    if not _matches_owned_identity(owned.witness_path, owned):
         return (
-            "Temporary cleanup preserved an entry no longer owned by this operation "
-            f"after primary stage {primary_stage}: {owned.path}"
+            "Temporary ownership-witness cleanup preserved an entry no longer owned "
+            f"by this operation after primary stage {primary_stage}: "
+            f"{owned.witness_path}"
         )
     try:
-        owned.path.unlink()
+        owned.witness_path.unlink()
     except OSError as error:
         return (
-            f"Temporary cleanup failed after primary stage {primary_stage} "
-            f"for {owned.path}: {error}"
+            "Temporary ownership-witness cleanup failed after primary stage "
+            f"{primary_stage} for {owned.witness_path}: {error}"
         )
     return None
 

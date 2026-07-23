@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 from pds_core.scan_retention import RetainedSourceScan
 from pds_core.scan_routes import build_retained_source_filename
@@ -191,6 +192,7 @@ def test_real_symlinked_retained_source_is_rejected(tmp_path: Path) -> None:
     assert target.read_bytes() == b"target sentinel"
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows junction test")
 def test_real_windows_junctioned_source_ancestor_is_rejected(tmp_path: Path) -> None:
     target = tmp_path / "junction-target"
     target.mkdir()
@@ -269,6 +271,7 @@ def test_each_intermediate_retained_link_branch_is_rejected(
 
 
 @pytest.mark.parametrize("component", ["scans", "source", "date"])
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows junction test")
 def test_real_junctioned_intermediate_retained_paths_are_rejected(
     tmp_path: Path, component: str
 ) -> None:
