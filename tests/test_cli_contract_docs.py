@@ -3,9 +3,19 @@
 from __future__ import annotations
 
 import argparse
+import copy
 from pathlib import Path
 import re
+from typing import Any, Callable, cast
 
+import pytest
+
+from quillan.cli_app.inventory import (
+    CliInventoryMismatch,
+    assert_documented_inventory_matches,
+    load_documented_inventory,
+    inventory_parser,
+)
 from quillan.cli_app.parser import build_parser
 
 
@@ -28,6 +38,152 @@ def test_cli_contract_lists_every_registered_top_level_command_and_alias() -> No
 
     missing = sorted(command for command in subparsers.choices if f"quillan {command}" not in surface)
     assert missing == []
+
+
+def _documented_inventory() -> dict[str, object]:
+    return load_documented_inventory(ROOT / "docs" / "cli_contract_inventory.json")
+
+
+def test_documented_cli_inventory_equals_recursive_argparse_structure() -> None:
+    assert_documented_inventory_matches(build_parser(), _documented_inventory())
+
+
+InventoryMutation = Callable[[dict[str, Any]], None]
+
+
+def _nodes(document: dict[str, Any]) -> list[dict[str, Any]]:
+    return cast(list[dict[str, Any]], document["nodes"])
+
+
+def _wrong_nesting(document: dict[str, Any]) -> None:
+    _nodes(document)[2]["path"] = ["quillan", "wrong", "nesting"]
+
+
+def _missing_command(document: dict[str, Any]) -> None:
+    _nodes(document).pop()
+
+
+def _stale_extra_command(document: dict[str, Any]) -> None:
+    stale = copy.deepcopy(_nodes(document)[-1])
+    stale["path"] = ["quillan", "stale-extra-command"]
+    _nodes(document).append(stale)
+
+
+def _missing_alias(document: dict[str, Any]) -> None:
+    next(node for node in _nodes(document) if node["aliases"])["aliases"] = []
+
+
+def _option_on_wrong_command(document: dict[str, Any]) -> None:
+    source = next(node for node in _nodes(document) if node["arguments"])
+    target = next(node for node in _nodes(document) if node is not source)
+    target["arguments"].append(source["arguments"].pop())
+
+
+def _incorrect_required(document: dict[str, Any]) -> None:
+    argument = next(node for node in _nodes(document) if node["arguments"])["arguments"][0]
+    argument["required"] = not argument["required"]
+
+
+def _incorrect_choices(document: dict[str, Any]) -> None:
+    argument = next(
+        argument
+        for node in _nodes(document)
+        for argument in node["arguments"]
+        if argument["choices"]
+    )
+    argument["choices"] = [*argument["choices"], "stale-choice"]
+
+
+def _incorrect_default(document: dict[str, Any]) -> None:
+    argument = next(node for node in _nodes(document) if node["arguments"])["arguments"][0]
+    argument["default"] = "incorrect-public-default"
+
+
+def _incorrect_help(document: dict[str, Any]) -> None:
+    argument = next(node for node in _nodes(document) if node["arguments"])["arguments"][0]
+    argument["help"] += " Incorrect help."
+
+
+def _incorrect_mutex_membership(document: dict[str, Any]) -> None:
+    argument = next(
+        argument
+        for node in _nodes(document)
+        for argument in node["arguments"]
+        if argument["mutex_group"] is not None
+    )
+    argument["mutex_group"] = None
+
+
+def _incorrect_required_mutex(document: dict[str, Any]) -> None:
+    group = next(node for node in _nodes(document) if node["mutex_groups"])["mutex_groups"][0]
+    group["required"] = not group["required"]
+
+
+def _incorrect_argument_order(document: dict[str, Any]) -> None:
+    arguments = next(node for node in _nodes(document) if len(node["arguments"]) > 1)["arguments"]
+    arguments[0], arguments[1] = arguments[1], arguments[0]
+
+
+def _incorrect_command_short_help(document: dict[str, Any]) -> None:
+    node = next(node for node in _nodes(document) if node["short_help"] is not None)
+    node["short_help"] += " Incorrect parent-listing help."
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        _wrong_nesting,
+        _missing_command,
+        _stale_extra_command,
+        _missing_alias,
+        _option_on_wrong_command,
+        _incorrect_required,
+        _incorrect_choices,
+        _incorrect_default,
+        _incorrect_help,
+        _incorrect_mutex_membership,
+        _incorrect_required_mutex,
+        _incorrect_argument_order,
+        _incorrect_command_short_help,
+    ),
+    ids=(
+        "wrong nesting",
+        "missing command",
+        "stale extra command",
+        "missing alias",
+        "option on wrong command",
+        "required status",
+        "choices",
+        "default",
+        "help",
+        "mutex membership",
+        "required mutex",
+        "argument order",
+        "command short help",
+    ),
+)
+def test_structural_inventory_rejects_documented_parser_drift(
+    mutation: InventoryMutation,
+) -> None:
+    documented = copy.deepcopy(_documented_inventory())
+    mutation(documented)
+    with pytest.raises(CliInventoryMismatch, match="differs structurally"):
+        assert_documented_inventory_matches(build_parser(), documented)
+
+
+def test_inventory_distinguishes_only_command_level_short_help() -> None:
+    def parser_with(help_text: str) -> argparse.ArgumentParser:
+        parser = argparse.ArgumentParser()
+        subparsers = parser.add_subparsers()
+        subparsers.add_parser("child", help=help_text)
+        return parser
+
+    first = inventory_parser(parser_with("First parent-listing help."))
+    second = inventory_parser(parser_with("Second parent-listing help."))
+    assert first[1].description == second[1].description == ""
+    assert first[1].short_help == "First parent-listing help."
+    assert second[1].short_help == "Second parent-listing help."
+    assert first != second
 
 
 def test_cli_contract_surface_excludes_removed_legacy_commands() -> None:

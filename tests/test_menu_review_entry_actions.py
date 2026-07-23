@@ -11,6 +11,7 @@ import pytest
 from tests.menu_screen_recorder import MenuScreenRecorder, assert_focused_child_screen
 
 from quillan.cli import main
+from quillan.minimum_requirement_review import set_configured_requirement_check
 import quillan.review_menu as review_menu
 from quillan.review_record_paths import review_record_path
 from quillan.submission_manifest_paths import (
@@ -95,7 +96,11 @@ def _write_workspace(root: Path) -> None:
                 }
             ],
         },
-        "basic_requirements": {"paragraphs_min": 1},
+        "basic_requirements": {
+            "paragraphs_min": 1,
+            "paragraphs_max": 5,
+            "word_count_min": 100,
+        },
         "minimum_requirement_policy": {
             "allow_return_without_full_review": True,
         },
@@ -227,7 +232,24 @@ def test_review_menu_records_minimum_requirement_check(
 
     recorder = MenuScreenRecorder(
         _enter_selected_student()
-        + ["3", "1", "1", "1", "", "4"]
+        + [
+            "3",
+            "1",
+            "1",
+            "1",
+            "",
+            "",
+            "2",
+            "2",
+            "",
+            "",
+            "3",
+            "1",
+            "",
+            "",
+            "b",
+            "4",
+        ]
         + _exit_selected_student_to_main(),
     )
     recorder.install(monkeypatch)
@@ -238,7 +260,10 @@ def test_review_menu_records_minimum_requirement_check(
     assert_focused_child_screen(
         screens,
         heading="Record Requirement Check",
-        required_text=(f"Student: Avery Rivera ({STUDENT_ID})", "Recorded requirement check:"),
+        required_text=(
+            f"Student: Avery Rivera ({STUDENT_ID})",
+            "Recorded requirement check:",
+        ),
         forbidden_parent_text="3. Export returned-work feedback",
         parent_heading="Review Minimum Requirements",
         result_heading="Recorded requirement check:",
@@ -247,16 +272,173 @@ def test_review_menu_records_minimum_requirement_check(
     assert "Requirement Checks" in output
     assert "Record Requirement Check" in output
     assert "Review Minimum Requirements" in output
-    assert "Minimum paragraphs: not checked" in output
+    selector_screens = [
+        screen.output
+        for screen in screens
+        if "Record Requirement Check" in screen.output
+        and "Requirement Checks" in screen.output
+    ]
+    assert len(selector_screens) == 4
+    expected_statuses = (
+        (
+            "1. Minimum paragraphs: not checked",
+            "2. Maximum paragraphs: not checked",
+            "3. Minimum word count: not checked",
+        ),
+        (
+            "1. Minimum paragraphs: met",
+            "2. Maximum paragraphs: not checked",
+            "3. Minimum word count: not checked",
+        ),
+        (
+            "1. Minimum paragraphs: met",
+            "2. Maximum paragraphs: not met",
+            "3. Minimum word count: not checked",
+        ),
+        (
+            "1. Minimum paragraphs: met",
+            "2. Maximum paragraphs: not met",
+            "3. Minimum word count: met",
+        ),
+    )
+    for screen, expected in zip(selector_screens, expected_statuses, strict=True):
+        positions = [screen.index(text) for text in expected]
+        assert positions == sorted(positions)
     assert "Recorded requirement check:" in output
     review = json.loads(
         review_record_path(
             workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
         ).read_text(encoding="utf-8")
     )
-    assert review["minimum_requirement_checks"][0]["requirement_key"] == "paragraphs_min"
-    assert review["minimum_requirement_checks"][0]["met"] is True
+    assert [
+        (check["requirement_key"], check["met"])
+        for check in review["minimum_requirement_checks"]
+    ] == [
+        ("paragraphs_min", True),
+        ("paragraphs_max", False),
+        ("word_count_min", True),
+    ]
+    assert review["minimum_requirement_outcome"] == {
+        "status": "not_checked",
+        "returned_without_full_review": False,
+        "teacher_note": None,
+        "updated_at": None,
+    }
     assert manifest_path.read_bytes() == manifest_before
+
+
+def test_review_menu_requirement_status_back_returns_to_selector_without_mutation(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    recorder = MenuScreenRecorder(
+        _enter_selected_student()
+        + ["3", "1", "1", "b", "b", "4"]
+        + _exit_selected_student_to_main()
+    )
+    recorder.install(monkeypatch)
+
+    assert main(["menu"]) == 0
+    screens = recorder.screens(capsys.readouterr().out)
+    selector_screens = [
+        screen
+        for screen in screens
+        if "Record Requirement Check" in screen.output
+        and "Requirement Checks" in screen.output
+    ]
+    assert len(selector_screens) == 2
+    assert not review_record_path(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    ).exists()
+
+
+@pytest.mark.parametrize("invalid_choice", ["99", "invalid"])
+def test_review_menu_invalid_requirement_selection_stays_in_workflow_without_mutation(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    invalid_choice: str,
+) -> None:
+    recorder = MenuScreenRecorder(
+        _enter_selected_student()
+        + ["3", "1", invalid_choice, "", "b", "4"]
+        + _exit_selected_student_to_main()
+    )
+    recorder.install(monkeypatch)
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert "Invalid requirement selection." in output
+    assert sum(
+        "Record Requirement Check" in screen.output
+        and "Requirement Checks" in screen.output
+        for screen in screens
+    ) == 2
+    assert not review_record_path(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    ).exists()
+
+
+def test_review_menu_invalid_requirement_status_returns_to_selector_without_mutation(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    recorder = MenuScreenRecorder(
+        _enter_selected_student()
+        + ["3", "1", "1", "invalid", "", "b", "4"]
+        + _exit_selected_student_to_main()
+    )
+    recorder.install(monkeypatch)
+
+    assert main(["menu"]) == 0
+    output = capsys.readouterr().out
+    screens = recorder.screens(output)
+    assert "Invalid status." in output
+    assert sum(
+        "Record Requirement Check" in screen.output
+        and "Requirement Checks" in screen.output
+        for screen in screens
+    ) == 2
+    assert not review_record_path(
+        workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+    ).exists()
+
+
+def test_feedback_configuration_opens_focused_standard_selector(
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    set_configured_requirement_check(
+        workspace,
+        CLASS_ID,
+        ASSIGNMENT_ID,
+        STUDENT_ID,
+        requirement_key="paragraphs_min",
+        met=True,
+    )
+    recorder = MenuScreenRecorder(
+        _enter_selected_student()
+        + ["6", "1", "b", "", "b"]
+        + _exit_selected_student_to_main()
+    )
+    recorder.install(monkeypatch)
+
+    assert main(["menu"]) == 0
+    screens = recorder.screens(capsys.readouterr().out)
+    focused = [
+        screen.output
+        for screen in screens
+        if "Configure Focus Standard Feedback" in screen.output
+    ]
+    assert len(focused) == 1
+    assert f"Student: {STUDENT_ID}" in focused[0]
+    assert "Focus Standards:" in focused[0]
+    assert "1. Configure rating/rationale/observation inclusion" not in focused[0]
+    assert "2. Add custom Focus Standard comment" not in focused[0]
 
 
 def test_review_menu_returns_without_full_review_when_policy_allows(
@@ -273,6 +455,8 @@ def test_review_menu_returns_without_full_review_when_policy_allows(
             "1",
             "2",
             "Too short.",
+            "",
+            "b",
             "2",
             "2",
             "Add the required paragraph before resubmitting.",

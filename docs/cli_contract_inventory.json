@@ -1,0 +1,3488 @@
+{
+  "schema_version": "1",
+  "root_command": "quillan",
+  "nodes": [
+    {
+      "path": [
+        "quillan"
+      ],
+      "aliases": [],
+      "short_help": null,
+      "description": "Quillan: standards-based writing evidence capture",
+      "arguments": [
+        {
+          "names": [
+            "--version"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Show the installed Quillan version and exit.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "review-dashboard"
+      ],
+      "aliases": [],
+      "short_help": "Show a read-only assignment review dashboard.",
+      "description": "Combine roster, submission, page, review, feedback-export, routed-evidence, and scan-review status without creating or modifying files.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--format"
+          ],
+          "required": false,
+          "choices": [
+            "text",
+            "json"
+          ],
+          "default": "text",
+          "help": "Standard-output representation (default: text).",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "review-status"
+      ],
+      "aliases": [],
+      "short_help": "Show compact read-only review status for one student.",
+      "description": "Inspect one student's assignment, roster, routed evidence, submission, review workflow, artifact counts, and feedback-export freshness without writing files.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--format"
+          ],
+          "required": false,
+          "choices": [
+            "text",
+            "json"
+          ],
+          "default": "text",
+          "help": "Standard-output representation (default: text).",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "review-workflow"
+      ],
+      "aliases": [],
+      "short_help": "Manage standards-based review workflow state in review.json.",
+      "description": "Manage review.json.review_state. This is separate from the lightweight submission.json.submission_state model.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "review-workflow",
+        "set-state"
+      ],
+      "aliases": [],
+      "short_help": "Manually override one student's review workflow state.",
+      "description": "Manually override review.json.review_state without changing submission.json.submission_state. This workflow-only change does not infer or create review artifacts appropriate to the selected phase.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--state"
+          ],
+          "required": true,
+          "choices": [
+            "not_started",
+            "requirements_checked",
+            "returned_without_full_review",
+            "observations_in_progress",
+            "observations_complete",
+            "ratings_complete",
+            "feedback_composed",
+            "ready_for_export",
+            "exported"
+          ],
+          "default": null,
+          "help": "Requested standards-based review workflow state.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": true,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly confirm this review.json workflow-state write.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "assignment"
+      ],
+      "aliases": [],
+      "short_help": "Create, show, and validate canonical assignments.",
+      "description": "",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "assignment",
+        "create"
+      ],
+      "aliases": [],
+      "short_help": "Create a canonical workspace assignment config.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--title"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--writing-type"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--prompt"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--prompt-file"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--standards-profile-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--focus-standard-ids"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--review-unit-type"
+          ],
+          "required": false,
+          "choices": [],
+          "default": "paragraph",
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--review-unit-singular"
+          ],
+          "required": false,
+          "choices": [],
+          "default": "paragraph",
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--review-unit-plural"
+          ],
+          "required": false,
+          "choices": [],
+          "default": "paragraphs",
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--rating-scale"
+          ],
+          "required": false,
+          "choices": [
+            "default"
+          ],
+          "default": "default",
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--paragraphs-min"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--paragraphs-max"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--word-count-min"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--word-count-max"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--required-elements"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--allow-return-without-full-review"
+          ],
+          "required": false,
+          "choices": [],
+          "default": true,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--overwrite"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "",
+          "mutex_group": 2
+        },
+        {
+          "names": [
+            "--dry-run"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "",
+          "mutex_group": 2
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": true
+        },
+        {
+          "group": 2,
+          "required": false
+        }
+      ]
+    },
+    {
+      "path": [
+        "quillan",
+        "assignment",
+        "show"
+      ],
+      "aliases": [],
+      "short_help": "Show a canonical workspace assignment config.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "assignment",
+        "validate"
+      ],
+      "aliases": [],
+      "short_help": "Validate a canonical assignment and workspace standards.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "printable-responses"
+      ],
+      "aliases": [],
+      "short_help": "Generate canonical printable response class packets.",
+      "description": "",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "printable-responses",
+        "generate"
+      ],
+      "aliases": [],
+      "short_help": "Generate one combined packet from a canonical assignment and roster.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--pages-per-student"
+          ],
+          "required": false,
+          "choices": [],
+          "default": 1,
+          "help": "Number of numbered response pages per roster student (default: 1).",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--overwrite"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Replace the existing canonical packet; requires --yes.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Confirm PDF generation.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--dry-run"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Validate and report without writing files.",
+          "mutex_group": 1
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": true
+        }
+      ]
+    },
+    {
+      "path": [
+        "quillan",
+        "requirements"
+      ],
+      "aliases": [],
+      "short_help": "Review assignment minimum requirements for one assembled submission.",
+      "description": "List and record teacher-entered minimum-requirement judgments for one canonical assembled submission. These commands do not inspect student writing or infer checks or outcomes.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "requirements",
+        "list"
+      ],
+      "aliases": [],
+      "short_help": "List configured requirements and current teacher-entered status.",
+      "description": "Read the canonical assignment, assembled submission manifest, and optional review record without writing any files.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "requirements",
+        "set-check"
+      ],
+      "aliases": [],
+      "short_help": "Create or update one configured teacher-entered check.",
+      "description": "Resolve a requirement key from the canonical assignment and record the teacher's explicit met/not-met judgment in canonical review.json.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--requirement-key"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Configured key, such as paragraphs_min or required_elements:thesis.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--met"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Explicit teacher judgment: true or false.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--note"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Optional nonblank teacher note; omission clears an earlier note.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "requirements",
+        "set-outcome"
+      ],
+      "aliases": [],
+      "short_help": "Set an eligible teacher-selected overall outcome.",
+      "description": "Set met, unmet_continue_review, or returned_without_full_review after validating configured checks and canonical assignment policy.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--outcome"
+          ],
+          "required": true,
+          "choices": [
+            "met",
+            "unmet_continue_review",
+            "returned_without_full_review"
+          ],
+          "default": null,
+          "help": "Explicit teacher-selected outcome.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--note"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Optional nonblank teacher note; required when returning without full standards review.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "review-units"
+      ],
+      "aliases": [],
+      "short_help": "Display or replace review units for one assembled submission.",
+      "description": "Display or explicitly replace canonical review units without inspecting student evidence or inferring unit boundaries.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "review-units",
+        "show"
+      ],
+      "aliases": [],
+      "short_help": "Display current review units without writing files.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "review-units",
+        "set"
+      ],
+      "aliases": [],
+      "short_help": "Replace all review units from a count or JSON file.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--count"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Create canonical units with sequences 1 through COUNT.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--units"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "UTF-8 JSON file containing constrained review-unit definitions.",
+          "mutex_group": 1
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": true
+        }
+      ]
+    },
+    {
+      "path": [
+        "quillan",
+        "observations"
+      ],
+      "aliases": [],
+      "short_help": "List, record, and complete review-unit Focus Standard observations.",
+      "description": "List, record, or explicitly complete teacher-entered Focus Standard observations without inspecting evidence or inferring judgments.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "observations",
+        "list"
+      ],
+      "aliases": [],
+      "short_help": "List all current unit-standard observation pairs.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "observations",
+        "set"
+      ],
+      "aliases": [],
+      "short_help": "Create or replace one teacher-entered observation.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--unit-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--standard-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--applicable"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--evidence-present"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--rating"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Optional assignment-scale unit-level rating.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--rationale"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--include-in-feedback"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "observations",
+        "mark-complete"
+      ],
+      "aliases": [],
+      "short_help": "Explicitly complete observations, including when pairs are unobserved.",
+      "description": "Explicitly mark the observation phase complete for an existing review with defined units. Missing observations do not block completion and none are created automatically; only canonical review workflow state is changed.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": true,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly confirm completion without prompting.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "ratings"
+      ],
+      "aliases": [],
+      "short_help": "List, record, and complete overall Focus Standard ratings.",
+      "description": "Display or record explicit teacher-entered overall Focus Standard ratings without inspecting evidence or inferring judgments.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "ratings",
+        "list"
+      ],
+      "aliases": [],
+      "short_help": "List assignment Focus Standards and current overall ratings.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "ratings",
+        "set"
+      ],
+      "aliases": [],
+      "short_help": "Create or replace one teacher-entered overall rating.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--standard-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--rating"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Integer value from the assignment-owned rating scale.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--rationale"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Optional teacher rationale; omission or blank text clears it.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--include-in-feedback"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Required explicit teacher choice: true or false.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "ratings",
+        "mark-complete"
+      ],
+      "aliases": [],
+      "short_help": "Explicitly mark overall ratings complete, including when ratings are missing.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": true,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly confirm completion without prompting.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "feedback"
+      ],
+      "aliases": [],
+      "short_help": "Display and compose student-facing Focus Standard feedback.",
+      "description": "Display or explicitly compose Focus Standard feedback for one assembled submission. Composition does not inspect evidence, generate language, or export feedback.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "feedback",
+        "show"
+      ],
+      "aliases": [],
+      "short_help": "Display current feedback choices without writing files.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "feedback",
+        "set-options"
+      ],
+      "aliases": [],
+      "short_help": "Replace feedback options for one Focus Standard.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--standard-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--include-overall-rating"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--include-overall-rationale"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--observation-ids"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Comma-separated eligible observation IDs; omission clears the selection.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "feedback",
+        "add-comment"
+      ],
+      "aliases": [],
+      "short_help": "Add one exact teacher-authored feedback comment.",
+      "description": "Add exact teacher-authored text. When saving for reuse, remove all student-specific details from the separately approved reusable text.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--standard-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--text"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--include-in-feedback"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--save-for-reuse"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--reusable-label"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--reusable-text"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--purpose"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--teacher-tags"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--tag-current-rating"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "feedback",
+        "use-reusable-comment"
+      ],
+      "aliases": [],
+      "short_help": "Copy one compatible reusable comment as a stable review snapshot.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--standard-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--comment-set-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--comment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--include-in-feedback"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "feedback",
+        "mark-composed"
+      ],
+      "aliases": [],
+      "short_help": "Explicitly mark feedback composed; missing content produces warnings.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly confirm completion without prompting.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "roster"
+      ],
+      "aliases": [],
+      "short_help": "Create, show, validate, and modify canonical class rosters.",
+      "description": "Manage canonical shared class rosters non-interactively. Student IDs are strings and leading zeros are preserved.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "roster",
+        "create"
+      ],
+      "aliases": [],
+      "short_help": "Create a canonical roster and class metadata from a validated CSV.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Canonical class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--input"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Source roster CSV path.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--school-year"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Consecutive school year (YYYY-YYYY); defaults to the active year.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--overwrite"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Replace both existing roster.csv and class.json; requires --yes.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Confirm the validated write.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--dry-run"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Validate and report without writing.",
+          "mutex_group": 1
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": false
+        }
+      ]
+    },
+    {
+      "path": [
+        "quillan",
+        "roster",
+        "show"
+      ],
+      "aliases": [],
+      "short_help": "Display every canonical roster column without writing.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Canonical class identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "roster",
+        "validate"
+      ],
+      "aliases": [],
+      "short_help": "Validate canonical roster.csv and existing class.json.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Canonical class identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "roster",
+        "add-student"
+      ],
+      "aliases": [],
+      "short_help": "Append one string-ID student; leading zeros are preserved.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Canonical class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--student-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "String student ID; leading zeros remain.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--last-name"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--first-name"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--period"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--field"
+          ],
+          "required": false,
+          "choices": [],
+          "default": "[]",
+          "help": "Set an existing optional roster column; repeat for multiple columns. This cannot add columns or set required fields.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Confirm the validated write.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--dry-run"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Validate and report without writing.",
+          "mutex_group": 1
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": false
+        }
+      ]
+    },
+    {
+      "path": [
+        "quillan",
+        "roster",
+        "update-student"
+      ],
+      "aliases": [],
+      "short_help": "Update one student while preserving its stable string student_id.",
+      "description": "Update an active-roster student. The positional student_id is stable and cannot be changed.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Canonical class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Stable string student ID; leading zeros remain.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--last-name"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--first-name"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--period"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--field"
+          ],
+          "required": false,
+          "choices": [],
+          "default": "[]",
+          "help": "Set an existing optional roster column; repeat for multiple columns. This cannot add columns or set required fields.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Confirm the validated write.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--dry-run"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Validate and report without writing.",
+          "mutex_group": 1
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": false
+        }
+      ]
+    },
+    {
+      "path": [
+        "quillan",
+        "roster",
+        "remove-student"
+      ],
+      "aliases": [],
+      "short_help": "Remove one student only from the active roster.csv.",
+      "description": "Remove a student only from the active roster. Historical evidence and all other class/module data are retained.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Canonical class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact string student ID; leading zeros remain.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Confirm the validated write.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--dry-run"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Validate and report without writing.",
+          "mutex_group": 1
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": false
+        }
+      ]
+    },
+    {
+      "path": [
+        "quillan",
+        "route-scan"
+      ],
+      "aliases": [],
+      "short_help": "Retain scans once and dispatch PDS2 QR locators through Core.",
+      "description": "Retain one supported image/PDF or each supported direct child of a folder exactly once, then detect PDS2 QR text and dispatch ordered physical pages through the installed PDS Core module registry.",
+      "arguments": [
+        {
+          "names": [
+            "source_file"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Path to a supported scan file or direct-child scan folder.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "list-scan-review"
+      ],
+      "aliases": [],
+      "short_help": "List unresolved and deferred Quillan scan review items.",
+      "description": "List valid Quillan routing-review records. Resolved records are hidden unless --include-resolved is supplied.",
+      "arguments": [
+        {
+          "names": [
+            "--include-resolved"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Include review items whose latest resolution is resolved.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--limit"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Show at most this many matching review items.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Filter by class ID.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Filter by assignment ID.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--failure-category"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Filter by shared failure category.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "resolve-scan-review"
+      ],
+      "aliases": [],
+      "short_help": "Resolve or defer one Quillan scan review item.",
+      "description": "Write a new immutable shared resolution record for one valid Quillan routing-review failure.",
+      "arguments": [
+        {
+          "names": [
+            "failure_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Failure identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--action"
+          ],
+          "required": true,
+          "choices": [
+            "route_selected",
+            "route_corrected",
+            "evidence_filed",
+            "rescan_needed",
+            "cannot_route",
+            "dismissed_duplicate",
+            "deferred",
+            "other",
+            "defer",
+            "mixed_assignment"
+          ],
+          "default": null,
+          "help": "Teacher-selected resolution action.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--message"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Teacher message. Required for action 'other'; defaults otherwise.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--evidence-path"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Optional workspace-relative evidence path for evidence_filed; it must be an existing ordinary non-link file in the affected work.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--route-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Exact registered PDS2 route ID for a route action.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--route-class-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Canonical class ID for a route action; may default from a work-scoped failure.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--route-assignment-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Canonical assignment ID for a route action; may default from a work-scoped failure.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "list-post-dispatch-review"
+      ],
+      "aliases": [],
+      "short_help": "List Quillan-owned post-dispatch review occurrences.",
+      "description": "List immutable post-dispatch occurrences from one selected module-qualified Quillan assignment. Resolved occurrences are hidden unless --include-resolved is supplied; deferred occurrences remain visible.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--include-resolved"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Include occurrences whose latest resolution is resolved.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--limit"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Show at most this many matching occurrences.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--category"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Filter by exact Quillan post-dispatch category.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "resolve-post-dispatch-review"
+      ],
+      "aliases": [],
+      "short_help": "Resolve or defer one Quillan post-dispatch occurrence.",
+      "description": "Append one Quillan-owned resolution beneath the selected module-qualified work root. The immutable occurrence and all evidence, observations, scans, manifests, and reviews are retained.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "failure_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Occurrence failure ID.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--action"
+          ],
+          "required": true,
+          "choices": [
+            "rescan_needed",
+            "record_corrected",
+            "cannot_recover",
+            "dismissed_duplicate",
+            "deferred",
+            "other"
+          ],
+          "default": null,
+          "help": "Explicit teacher-selected post-dispatch resolution action. Successful retry resolution is available only from the interactive workflow after a current shared-service retry succeeds.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--message"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Teacher message; required for action 'other'.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "decode-scan"
+      ],
+      "aliases": [],
+      "short_help": "Retain and strictly decode PDS2 QR locators without routing.",
+      "description": "Retain a supported source once, decode each physical page, and display strict Core PDS2 locator fields without module resolution, dispatch, routed evidence, or submission writes.",
+      "arguments": [
+        {
+          "names": [
+            "source_file"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Path to a supported image or PDF scan file.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--show-payload"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly include sensitive raw QR payload text in diagnostics.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "assemble-submissions"
+      ],
+      "aliases": [],
+      "short_help": "Assemble assignment submissions from persisted page observations.",
+      "description": "Discover immutable response-page observations and assemble one issuance-authoritative submission manifest per student while preserving existing teacher state.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "create-plain-paper-submission"
+      ],
+      "aliases": [],
+      "short_help": "Create a review-ready submission for physical plain-paper work.",
+      "description": "Validate and create an evidence-less submission manifest and empty review record for work completed on physical plain paper.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Confirm creation without an interactive prompt.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--dry-run"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Validate and report target paths without writing files.",
+          "mutex_group": 1
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": false
+        }
+      ]
+    },
+    {
+      "path": [
+        "quillan",
+        "pages"
+      ],
+      "aliases": [],
+      "short_help": "Inspect or change one student's canonical submission pages.",
+      "description": "List or explicitly change page-management state in one canonical submission manifest. Evidence files and review data are not changed.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "pages",
+        "list"
+      ],
+      "aliases": [],
+      "short_help": "List manifest page and evidence state without writing.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "pages",
+        "exclude"
+      ],
+      "aliases": [],
+      "short_help": "Exclude a page from active review without deleting evidence.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--page"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Positive logical page number in the current manifest.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": true,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly confirm this manifest-only page change.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "pages",
+        "restore"
+      ],
+      "aliases": [],
+      "short_help": "Restore an excluded page using preserved state or safe fallback.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--page"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Positive logical page number in the current manifest.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": true,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly confirm this manifest-only page change.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "pages",
+        "mark-needs-rescan"
+      ],
+      "aliases": [],
+      "short_help": "Mark a page as requiring corrected evidence.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--page"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Positive logical page number in the current manifest.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": true,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly confirm this manifest-only page change.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "list-submissions"
+      ],
+      "aliases": [],
+      "short_help": "List read-only assignment submission and evidence status.",
+      "description": "Load existing submission manifests and discover routed response evidence without creating or modifying any files.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "open-submission"
+      ],
+      "aliases": [],
+      "short_help": "Open selected evidence pages for one student submission.",
+      "description": "Open selected evidence pages for one student submission. By default, opens all selected evidence pages in page-number order. Use --page to open one logical response page.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--page"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Open only one logical response page number.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--evidence-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Open one explicit evidence candidate belonging to this canonical submission and, when supplied, --page.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "set-review-state"
+      ],
+      "aliases": [],
+      "short_help": "Update one student's lightweight submission state.",
+      "description": "Update only submission.json.submission_state and updated_at in one canonical student submission manifest. This does not change review.json.review_state.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "state"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Lightweight submission state stored in submission.json: unreviewed, in_progress, needs_rescan, or reviewed.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "add-note"
+      ],
+      "aliases": [],
+      "short_help": "Add a teacher note to one student review record.",
+      "description": "Append one teacher-entered note to the canonical review.json for a student submission. Creates review.json when the adjacent submission.json exists and validates.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--text"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Non-empty teacher note text.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "export-feedback"
+      ],
+      "aliases": [],
+      "short_help": "Export student-facing feedback from one review record.",
+      "description": "Generate student-facing feedback from the canonical review.json for one student submission. PDF export updates feedback export metadata after a successful write.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "student_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Student identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--format"
+          ],
+          "required": false,
+          "choices": [
+            "markdown",
+            "pdf",
+            "both"
+          ],
+          "default": "markdown",
+          "help": "Feedback export format (default: markdown).",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--overwrite"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Replace existing feedback export files for the selected format.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "export-class-summary"
+      ],
+      "aliases": [
+        "export-comprehensive-class-summary"
+      ],
+      "short_help": "Export a comprehensive assignment-local class summary CSV for audit/troubleshooting.",
+      "description": "Generate a comprehensive audit/troubleshooting CSV summary from existing submission and review records for one class assignment. The export reports submission/review status, minimum-requirement outcomes, Focus Standard ratings, and feedback export status. It does not mutate canonical records or evidence.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--overwrite"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Replace an existing exports/class_summary.csv file.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "export-student-performance-summary"
+      ],
+      "aliases": [],
+      "short_help": "Export a compact student-by-Focus-Standard performance summary CSV.",
+      "description": "Generate the ordinary teacher-facing student performance report with review status, minimum requirements, and one readable rating column per assignment Focus Standard.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--overwrite"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Replace an existing exports/student_performance_summary.csv file.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "export-standards-summary"
+      ],
+      "aliases": [],
+      "short_help": "Export an assignment-local Focus Standard summary CSV.",
+      "description": "Generate a teacher-facing assignment-local CSV summary of teacher-entered overall Focus Standard ratings for one class assignment. The export includes minimum-requirement outcomes and feedback export status, and does not mutate canonical records or evidence.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--overwrite"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Replace an existing exports/standards_summary.csv file.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "comments"
+      ],
+      "aliases": [],
+      "short_help": "List, inspect, and create reusable Focus Standard comments.",
+      "description": "Manage teacher-authored reusable Focus Standard comments without an assignment or student context. Text is stored as supplied; do not include student names, IDs, or assignment-specific private details.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "comments",
+        "list"
+      ],
+      "aliases": [],
+      "short_help": "List active, student-facing reusable comments.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--profile-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--writing-type"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--standard-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--rating-value"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "comments",
+        "show"
+      ],
+      "aliases": [],
+      "short_help": "Show every comment and all metadata in one comment set.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "comment_set_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "comments",
+        "create"
+      ],
+      "aliases": [],
+      "short_help": "Create one manually authored reusable comment.",
+      "description": "Create one student-facing reusable comment. The text is preserved, not generated or rewritten. Do not include student names, IDs, or private assignment-specific details.",
+      "arguments": [
+        {
+          "names": [
+            "comment_set_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--profile-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--writing-type"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--standard-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--label"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--text"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--purpose"
+          ],
+          "required": false,
+          "choices": [
+            "clarification",
+            "conventions",
+            "evidence",
+            "general",
+            "next_step",
+            "organization",
+            "praise",
+            "reasoning",
+            "revision",
+            "style"
+          ],
+          "default": "general",
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--rating-values"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--teacher-tags"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "workspace"
+      ],
+      "aliases": [],
+      "short_help": "Manage the shared Paper Data Suite workspace.",
+      "description": "",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "workspace",
+        "show"
+      ],
+      "aliases": [],
+      "short_help": "Show the active Paper Data Suite workspace status.",
+      "description": "",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "workspace",
+        "set"
+      ],
+      "aliases": [],
+      "short_help": "Validate, create, and save a shared workspace root.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "path"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Folder to use as the shared Paper Data Suite workspace.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "workspace",
+        "validate"
+      ],
+      "aliases": [],
+      "short_help": "Validate or create the currently resolved workspace root.",
+      "description": "",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "workspace",
+        "reset"
+      ],
+      "aliases": [],
+      "short_help": "Clear the saved workspace preference without deleting files.",
+      "description": "",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "menu"
+      ],
+      "aliases": [],
+      "short_help": "Launch the teacher-facing interactive menu.",
+      "description": "",
+      "arguments": [],
+      "mutex_groups": []
+    }
+  ]
+}

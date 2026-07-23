@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install Poppler (Ubuntu)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Install Poppler (Windows)
+        if: runner.os == 'Windows'
+        run: choco install poppler -y --no-progress
+      - name: Download and verify released Core 0.5.0
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+          from urllib.request import urlretrieve
+          url = "https://github.com/Paper-Data-Suite/pds-core/releases/download/v0.5.0/pds_core-0.5.0-py3-none-any.whl"
+          path = Path(os.environ["RUNNER_TEMP"]) / "pds_core-0.5.0-py3-none-any.whl"
+          urlretrieve(url, path)
+      - name: Authenticate released Core 0.5.0
+        run: python scripts/verify_core_wheel.py "${{ runner.temp }}/pds_core-0.5.0-py3-none-any.whl"
+      - name: Install
+        run: python -m pip install "${{ runner.temp }}/pds_core-0.5.0-py3-none-any.whl" ".[dev]"
+      - name: Verify installed Core identity
+        run: python scripts/verify_core_wheel.py "${{ runner.temp }}/pds_core-0.5.0-py3-none-any.whl" --verify-installed
+      - name: Dependency check
+        run: python -m pip check
+      - name: Full pytest
+        run: python -m pytest --basetemp "${{ runner.temp }}/pds-quillan-pytest" -ra
+      - name: Ruff
+        run: python -m ruff check .
+      - name: mypy
+        run: python -m mypy . --no-incremental
+      - name: Documentation integrity
+        run: python scripts/check_documentation.py
+      - name: Repository hard cutover
+        run: python -m pytest tests/test_pds2_only_repository_contract.py -q
+      - name: Diff cleanliness
+        shell: bash
+        run: |
+          git diff --check
+          git diff --exit-code
+          git diff --cached --exit-code
+          status="$(git status --porcelain --untracked-files=all)"
+          if [[ -n "$status" ]]; then
+            printf '%s\n' "$status"
+            exit 1
+          fi

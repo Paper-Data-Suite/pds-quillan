@@ -1871,7 +1871,11 @@ def _menu_configure_standard_feedback_options(
         _print_returned_feedback_guard()
         return
     standard_id = _prompt_focus_standard_with_feedback_status(
-        workspace_root, assignment["focus_standard_ids"], record
+        workspace_root,
+        assignment["focus_standard_ids"],
+        record,
+        title="Configure Focus Standard Feedback",
+        student_id=student_id,
     )
     if standard_id is None:
         print("Feedback options update canceled.")
@@ -2974,7 +2978,6 @@ def _menu_review_minimum_requirements(
                 assignment_id,
                 student_id,
                 requirements,
-                existing,
             )
         elif selection == "2":
             _menu_finalize_minimum_requirement_outcome(
@@ -3006,36 +3009,42 @@ def _menu_record_requirement_checks(
     assignment_id: str,
     student_id: str,
     requirements: list[dict[str, Any]],
-    existing: dict[str, dict[str, Any]],
 ) -> None:
-    _print_review_action_header(
-        "Record Requirement Check", class_id, assignment_id, student_id
-    )
-    print("Requirement Checks")
-    print()
-    for index, requirement in enumerate(requirements, start=1):
-        print(
-            f"{index}. {requirement['label']}: "
-            f"{_requirement_status(existing.get(requirement['key']))}"
+    while True:
+        existing = _current_requirement_checks(
+            workspace_root, class_id, assignment_id, student_id
         )
-    print("B. Back")
-    print()
-    selection = input("Select requirement: ").strip()
-    if selection == "" or selection.casefold() == "b":
-        return
-    if not selection.isdigit() or not (1 <= int(selection) <= len(requirements)):
-        print("Invalid requirement selection. Please choose a listed item or Back.")
-        return
+        _print_review_action_header(
+            "Record Requirement Check", class_id, assignment_id, student_id
+        )
+        print("Requirement Checks")
+        print()
+        for index, requirement in enumerate(requirements, start=1):
+            print(
+                f"{index}. {requirement['label']}: "
+                f"{_requirement_status(existing.get(requirement['key']))}"
+            )
+        print("B. Back")
+        print()
+        selection = input("Select requirement: ").strip()
+        if selection == "" or selection.casefold() == "b":
+            return
+        if not selection.isdigit() or not (1 <= int(selection) <= len(requirements)):
+            print("Invalid requirement selection. Please choose a listed item or Back.")
+            input("Press Enter to continue...")
+            continue
 
-    requirement = requirements[int(selection) - 1]
-    _prompt_and_set_requirement_check(
-        workspace_root,
-        class_id,
-        assignment_id,
-        student_id,
-        requirement,
-        existing.get(requirement["key"]),
-    )
+        requirement = requirements[int(selection) - 1]
+        result = _prompt_and_set_requirement_check(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+            requirement,
+            existing.get(requirement["key"]),
+        )
+        if result is not _BACK:
+            input("Press Enter to continue...")
 
 
 def _menu_finalize_minimum_requirement_outcome(
@@ -3194,7 +3203,7 @@ def _prompt_and_set_requirement_check(
     print(f"Action: {'created' if updated.was_created else 'updated'}")
     print(f"Review state: {updated.review_state}")
     print(f"Review record: {updated.review_record_relative_path}")
-    return None
+    return result
 
 
 def _requirement_items_from_assignment(

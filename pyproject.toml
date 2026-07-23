@@ -1,14 +1,15 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "quillan"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A local-first standards-based writing evidence capture system for teachers."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "Stephen Severino" }
 ]
@@ -23,11 +24,13 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "build",
     "packaging",
     "pytest",
     "pypdf",
     "ruff",
     "mypy",
+    "twine",
     "types-qrcode",
     "types-reportlab",
 ]
@@ -63,3 +66,6 @@ follow_untyped_imports = true
 where = ["."]
 include = ["quillan*"]
 namespaces = true
+
+[tool.setuptools.dynamic]
+version = {attr = "quillan._version.__version__"}

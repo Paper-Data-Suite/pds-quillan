@@ -42,6 +42,7 @@ REMOVED_SYMBOLS = frozenset(
 )
 PDS1_ALLOWLIST = {
     "CHANGELOG.md": "concise removal history",
+    "docs/releases/v0.8.9.md": "concise release removal history",
     "tests/test_cli_decode_scan.py": "safe unsupported-schema output coverage",
     "tests/test_cli_contract_docs.py": "active-documentation rejection guard",
     "tests/test_pds2_scan_intake.py": "hostile unsupported-schema boundary coverage",

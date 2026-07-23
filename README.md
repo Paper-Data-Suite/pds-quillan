@@ -41,7 +41,7 @@ world languages, arts/humanities, and interdisciplinary writing tasks.
 
 ## Current Status
 
-Quillan is an early pre-1.0 foundation. The active v0.8.6 workflow is
+Quillan 0.8.9 is a completed pre-1.0 release candidate. Its active workflow is
 standards-based:
 
 ```text
@@ -160,7 +160,7 @@ The CLI writes only the assignment-local
 `templates/printable_response_pages.pdf` and protects existing packets unless
 `--overwrite --yes` is supplied.
 
-The v0.8.6 creation workflow prompts for class, title, assignment ID, writing
+The v0.8.9 creation workflow prompts for class, title, assignment ID, writing
 type, student prompt, pds-core standards profile, Focus Standards, review-unit
 settings, rating scale, basic requirements, and minimum-requirement policy.
 New active assignments use schema version `2` fields such as
@@ -208,7 +208,9 @@ The selected-student review menu is:
 Minimum-requirement checks are generated from assignment `basic_requirements`
 and stored as teacher-entered data in `minimum_requirement_checks` and
 `minimum_requirement_outcome`. Missing checks are not treated as unmet
-automatically.
+automatically. The requirement-check screen remains open so the teacher can
+record several configured requirements in sequence; Back returns to the
+minimum-requirements summary.
 
 Review-unit observations record teacher-entered applicability, evidence
 presence, optional ratings, rationales, and feedback-inclusion choices for a
@@ -273,7 +275,7 @@ reusable comments, or sibling review records.
 ## Direct CLI Commands
 
 The assignment-level review dashboard is available in concise teacher text or
-stable schema-version-1 JSON. Both forms are non-interactive and strictly
+stable schema-version-2 JSON. Both forms are non-interactive and strictly
 read-only:
 
 ```powershell
@@ -290,6 +292,7 @@ Common direct CLI entry points include:
 ```powershell
 quillan
 quillan --help
+quillan --version
 quillan review-dashboard <class_id> <assignment_id>
 quillan review-status <class_id> <assignment_id> <student_id> --format json
 quillan assignment --help
@@ -362,7 +365,10 @@ powershell -ExecutionPolicy Bypass `
 ```
 
 The equivalent `PDS_CORE_WHEEL` environment variable may be used instead of
-`-PdsCoreWheel`; an explicit parameter takes precedence. The isolated validation checks package metadata, editable and noneditable installation, installed import origins, CLI availability, and workspace side effects. During the v0.8.9 migration, all active Quillan runtime surfaces are being converted to PDS2 and module-qualified storage.
+`-PdsCoreWheel`; an explicit parameter takes precedence. The isolated validation
+checks package metadata, editable and noneditable installation, installed import
+origins, CLI availability, and workspace side effects. The v0.8.9 runtime is
+PDS2-only and uses module-qualified storage throughout.
 
 
 PDF scan intake uses `pdf2image` and requires Poppler installed on the user's
@@ -405,9 +411,10 @@ notes, feedback, exports, screenshots, or workspace artifacts.
 Quillan does not currently provide OCR, handwriting recognition, PDF text
 extraction, AI tagging, AI scoring, AI feedback, automatic grading, automatic
 mastery calculation, automatic evidence selection, automatic review-state
-decisions, automatic requirements evaluation, recursive raw scan intake,
-gradebook export, LMS integration, parent/admin reporting, dashboards, cloud
-sync, or hosted collaboration.
+decisions, automatic requirements evaluation, recursive inbox draining,
+gradebook export, LMS integration, parent/admin reporting, district or
+cross-assignment dashboards, cloud sync, or hosted collaboration. The
+assignment-local review dashboard is supported.
 
 Quillan's review tools record teacher decisions. They do not replace teacher
 judgment.

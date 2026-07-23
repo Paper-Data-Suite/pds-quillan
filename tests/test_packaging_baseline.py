@@ -48,13 +48,13 @@ def test_development_extras_declare_packaging_directly() -> None:
     assert isinstance(dev_dependencies, list)
 
     names = {Requirement(value).name for value in dev_dependencies}
-    assert "packaging" in names
+    assert {"build", "packaging", "twine"} <= names
 
 
 def test_setuptools_build_and_complete_namespace_discovery_are_explicit() -> None:
     configuration = _configuration()
     assert configuration["build-system"] == {
-        "requires": ["setuptools>=61"],
+        "requires": ["setuptools>=77.0.3"],
         "build-backend": "setuptools.build_meta",
     }
 
