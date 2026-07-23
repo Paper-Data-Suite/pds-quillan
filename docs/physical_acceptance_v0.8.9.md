@@ -67,10 +67,26 @@ No release-blocking defect was observed in the exercised workflow.
 
 ## Current Candidate Record — 2026-07-23
 
+**Owner/tester:** Stephen Severino
 **Candidate implementation commit:** `c3e57db5e0e175e61ce988e0681375d7b76ce861`
 **Automated release-candidate validation:** `PASS`
-**Physical acceptance result:** `PENDING OWNER`
-**Release authorization:** `NOT GRANTED`
+**Physical acceptance result:** `PASS`
+**Release authorization:** `GRANTED`
+
+### Physical environment
+
+* Acceptance date: July 23, 2026
+* Operating system: Windows 11
+* Python: 3.14.1, in a clean virtual environment outside the source repository
+* Printer: Brother HL-L2350DW
+* Scanner: Epson ES-50
+* Print scaling: Actual Size
+* Paper size: Letter
+* Scan resolution: 200 DPI
+* Scan color mode: grayscale
+* Scan mode: simplex
+* Scan source format: PDF
+* Poppler: 25.07.0
 
 ### Exact replacement artifacts
 
@@ -80,12 +96,36 @@ No release-blocking defect was observed in the exercised workflow.
 * Source-distribution SHA-256: `6ad8201224343f08edb7a6fc41d8ea6316a1ce4c95992eeeea9f96af94cb6dcd`
 * PDS Core 0.5.0 wheel SHA-256: `336676fa4b72e2b4094f654e77b5746b0d6670946cb4c5d3022c4c0be7963400`
 
+The wheel hash was verified before physical testing. `pip check` passed, and
+the installed CLI reported `quillan 0.8.9`.
+
 The authoritative validator passed source tests, Ruff, mypy, documentation,
 artifact inspection, Twine, separate clean wheel and sdist installation, and
-installed acceptance. CI run `30045822948` passed on Windows and Ubuntu with
-Python 3.11, 3.12, 3.13, and 3.14. The earlier visual archive and owner-observed
-results remain historical supporting evidence only; they do not grant physical
-acceptance for these replacement bytes.
+installed acceptance. CI push run `30046233133` and pull-request run
+`30046236657` passed on Windows and Ubuntu with Python 3.11, 3.12, 3.13, and
+3.14.
+
+### Current owner-observed behavior
+
+Case A, the golden loop, passed for two synthetic students with leading-zero
+IDs and two pages each. Packet generation, physical printing and scanning, PDF
+intake, retained-source creation, page dispatch, immutable observations, routed
+evidence, complete submission assembly, evidence opening, dashboard output,
+and student status output all behaved correctly.
+
+Case B, the duplicate-and-missing-page scenario, passed. The duplicate page 1
+remained a candidate, omitted page 2 remained visibly missing, no winner was
+selected automatically, and teacher page-management actions remained
+available.
+
+Case C, regeneration and mixed issuance, passed using the explicit overwrite
+workflow after preserving the original packet. Both QR locators resolved,
+issuance identities remained distinct, contradictory pages did not form a
+valid complete submission, and the conflict or post-dispatch condition was
+visibly surfaced.
+
+No release-blocking issue was observed. The owner explicitly authorizes release
+of the exact wheel and source distribution recorded above.
 
 ### Deferred work
 

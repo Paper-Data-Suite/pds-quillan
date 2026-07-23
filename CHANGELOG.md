@@ -6,7 +6,7 @@ Quillan is in early pre-1.0 development. Package versions describe the
 installable project state; GitHub issues and milestones may be used for
 planning and do not by themselves represent releases.
 
-## 0.8.9 - Release candidate
+## 0.8.9 - 2026-07-23
 
 ### Added
 
@@ -26,6 +26,24 @@ planning and do not by themselves represent releases.
 - Require PDS Core `>=0.5,<0.6`, using released Core 0.5.0 for acceptance.
 - Store assignment data only below
   `classes/<class_id>/modules/quillan/work/<assignment_id>/`.
+
+### Fixed
+
+- Hardened temporary artifact ownership against replacement races and
+  filesystem identity reuse.
+- Enforced symlink and Windows-junction rejection consistently on Python 3.11
+  through 3.14.
+- Stabilized cross-platform release validation, authenticated Windows Poppler
+  provisioning, and clean mypy/Ruff execution in the supported CI matrix.
+
+### Validation
+
+- Passed 1,917 source tests with 17 reconciled local Windows privilege skips,
+  Ruff, mypy across 245 source files, documentation and hard-cutover checks,
+  exact wheel and sdist inspection, and separate clean installed acceptance.
+- Passed Windows and Ubuntu CI on Python 3.11, 3.12, 3.13, and 3.14.
+- Owner Stephen Severino passed physical cases A, B, and C and authorized the
+  exact validated wheel and source distribution for release on July 23, 2026.
 
 ### Breaking
 

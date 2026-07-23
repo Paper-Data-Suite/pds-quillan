@@ -16,10 +16,10 @@ sdist SHA-256
 - [x] Windows and Ubuntu CI pass on Python 3.11, 3.12, 3.13, and 3.14.
 - [x] Wheel and sdist pass Twine, content, metadata, privacy, and checksum checks.
 - [x] Separate clean wheel and sdist installs pass the installed workflow.
-- [ ] Current-candidate synthetic visual matrix passes and evidence stays outside
-      the repository; earlier evidence is historical support only.
-- [ ] Owner physical acceptance is recorded for the exact wheel and commit.
-- [ ] Owner release authorization is explicit.
+- [x] Synthetic visual evidence stays outside the repository, and exact-candidate
+      printed/scanned layout and QR behavior passed owner acceptance.
+- [x] Owner physical acceptance is recorded for the exact wheel and commit.
+- [x] Owner release authorization is explicit.
 - [x] Before authorization: no tag, GitHub Release, upload, publication,
       deployment, or issue closure.
 
