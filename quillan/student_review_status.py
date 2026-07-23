@@ -6,7 +6,7 @@ from collections import Counter
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final, TypeAlias, cast
+from typing import Any, Final, TypeAlias, Union, cast
 
 from pds_core.classes import load_class_roster
 from pds_core.identifiers import validate_identifier
@@ -38,7 +38,14 @@ REVIEW_STATUS_RECORD_TYPE: Final = "quillan_student_review_status"
 PAGE_STATES: Final = ("present", "missing", "duplicate", "needs_rescan", "excluded")
 EXPORT_KEYS: Final = ("feedback_pdf", "feedback_markdown")
 
-FrozenValue: TypeAlias = str | int | bool | None | "FrozenMapping" | tuple["FrozenValue", ...]
+FrozenValue: TypeAlias = Union[
+    str,
+    int,
+    bool,
+    None,
+    "FrozenMapping",
+    tuple["FrozenValue", ...],
+]
 
 
 class StudentReviewStatusError(ValueError):
