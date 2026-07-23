@@ -13,6 +13,7 @@ from typing import Any
 from pds_core.classes import load_class_roster
 from pds_core.identifiers import validate_identifier
 
+from quillan._path_safety import is_link_like as _shared_is_link_like
 from quillan.record_context import (
     QuillanRecordContextError,
     load_quillan_assignment_context,
@@ -352,14 +353,9 @@ def _review_bytes(review: dict[str, Any]) -> bytes:
 def _record_state(path: Path, expected: bytes) -> str:
     """Classify one paired destination without treating uncertainty as absence."""
     try:
-        is_junction = getattr(path, "is_junction", None)
         if not os.path.lexists(path):
             return "absent"
-        if (
-            path.is_symlink()
-            or bool(is_junction is not None and is_junction())
-            or not path.is_file()
-        ):
+        if _shared_is_link_like(path) or not path.is_file():
             return "contradictory"
         return "installed" if path.read_bytes() == expected else "contradictory"
     except OSError:

@@ -13,6 +13,7 @@ from pds_core.routing_models import (
 )
 from pds_core.scan_retention import RetainedSourceScan
 
+from quillan._path_safety import is_link_like as _shared_is_link_like
 from quillan.module_errors import (
     QuillanDispatchResultError,
     QuillanIssuanceAuthorizationError,
@@ -194,8 +195,7 @@ def _validate_root_chain(workspace_root: Path, work_root: Path) -> None:
 
 
 def _is_link_like(path: Path) -> bool:
-    is_junction = getattr(path, "is_junction", None)
-    return path.is_symlink() or bool(is_junction is not None and is_junction())
+    return _shared_is_link_like(path)
 
 
 def _cross_validate_context(

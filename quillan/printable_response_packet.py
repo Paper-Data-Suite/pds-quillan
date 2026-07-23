@@ -11,6 +11,7 @@ from typing import Any, Mapping, cast
 from pds_core.rosters import StudentRecord
 from pds_core.routing_models import ModuleWorkRef
 
+from quillan._path_safety import is_link_like as _shared_is_link_like
 from quillan.assignment_setup import load_canonical_assignment
 from quillan.assignments import AssignmentConfigError, validate_assignment_config
 from quillan.printable_response import PRINTABLE_RESPONSE_FILENAME
@@ -307,8 +308,7 @@ def generate_printable_response_packet(
 
 
 def _require_ordinary_file(path: Path, label: str) -> None:
-    is_junction = getattr(path, "is_junction", None)
-    if path.is_symlink() or bool(is_junction and is_junction()) or not path.is_file():
+    if _shared_is_link_like(path) or not path.is_file():
         raise ValueError(f"{label} must be an ordinary non-link file: {path}")
 
 

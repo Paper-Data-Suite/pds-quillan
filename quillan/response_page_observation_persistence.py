@@ -11,6 +11,7 @@ from typing import Literal
 from pds_core.module_dispatch import RouteDispatchSuccess
 from pds_core.identifiers import validate_identifier
 
+from quillan._path_safety import is_link_like as _shared_is_link_like
 from quillan.module_errors import (
     QuillanObservationAuthorityError,
     QuillanObservationIntegrityError,
@@ -862,8 +863,7 @@ def _workspace_root(value: object) -> Path:
 
 
 def _is_link_like(path: Path) -> bool:
-    is_junction = getattr(path, "is_junction", None)
-    return path.is_symlink() or bool(is_junction is not None and is_junction())
+    return _shared_is_link_like(path)
 
 
 def _positive_integer(value: object, field_name: str) -> int:

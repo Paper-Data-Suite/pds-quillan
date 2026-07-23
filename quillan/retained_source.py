@@ -8,6 +8,7 @@ from pathlib import Path
 
 from pds_core.scan_retention import RetainedSourceScan
 
+from quillan._path_safety import is_link_like as _shared_is_link_like
 from quillan.module_errors import QuillanRetainedSourceError
 from quillan.retained_source_provenance import (
     validate_core_retention_event_consistency,
@@ -94,8 +95,7 @@ def _validate_file_chain(workspace_root: Path, retained_path: Path) -> None:
 
 
 def _is_link_like(path: Path) -> bool:
-    is_junction = getattr(path, "is_junction", None)
-    return path.is_symlink() or bool(is_junction is not None and is_junction())
+    return _shared_is_link_like(path)
 
 
 __all__ = [

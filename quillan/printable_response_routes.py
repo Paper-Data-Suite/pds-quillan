@@ -26,6 +26,7 @@ from pds_core.routing_models import (
     RoutingModelError,
 )
 
+from quillan._path_safety import is_link_like as _shared_is_link_like
 from quillan.pds_contract import QUILLAN_MODULE_ID
 from quillan.printable_response_persistence import (
     PersistedPrintableResponseRecordSet,
@@ -632,8 +633,7 @@ def _preflight_route_path(root: Path, target: Path, *, expect_existing_file: boo
     for index, candidate in enumerate(candidates):
         if not os.path.lexists(candidate):
             continue
-        is_junction = getattr(candidate, "is_junction", None)
-        if candidate.is_symlink() or bool(is_junction and is_junction()):
+        if _shared_is_link_like(candidate):
             raise PrintableResponseRouteDestinationError(
                 f"Route path must not contain a symlink or junction: {candidate}"
             )

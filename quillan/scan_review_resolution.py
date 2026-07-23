@@ -40,8 +40,10 @@ from pds_core.scan_resolution_metadata import (
     scan_resolution_metadata_path,
     write_scan_resolution_metadata,
 )
+
 from pds_core.scan_routes import routing_review_dir
 
+from quillan._path_safety import is_link_like as _shared_is_link_like
 from quillan.pds_contract import (
     QUILLAN_MODULE_ID,
     RESPONSE_PAGE_CONTRACT_VERSION,
@@ -868,8 +870,7 @@ def _relative(path: Path, root: Path) -> str:
 
 
 def _is_link_like(path: Path) -> bool:
-    is_junction = getattr(path, "is_junction", None)
-    return path.is_symlink() or bool(is_junction is not None and is_junction())
+    return _shared_is_link_like(path)
 
 
 __all__ = [
