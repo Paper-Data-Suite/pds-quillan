@@ -212,7 +212,7 @@ def test_assignment_wrapper_does_not_traverse_symlinked_student_directory(
         assert second.assembled[0].status == "unchanged"
         assert sentinel.read_bytes() == b"external sentinel"
     finally:
-        os.rmdir(link)
+        link.unlink()
 
 
 @pytest.mark.parametrize(

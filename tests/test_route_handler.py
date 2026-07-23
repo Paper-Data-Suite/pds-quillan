@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 from pds_core.routing_models import (
     ModuleWorkRef,
@@ -321,6 +322,7 @@ def test_real_symlinked_resolution_roots_are_rejected(
 
 
 @pytest.mark.parametrize("root_field", ["class_root", "module_root", "work_root"])
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows junction test")
 def test_real_junctioned_resolution_roots_are_rejected(
     tmp_path: Path, root_field: str
 ) -> None:
@@ -619,6 +621,7 @@ def test_each_intermediate_route_link_branch_is_rejected(
 
 
 @pytest.mark.parametrize("component", ["classes", "modules", "work"])
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows junction test")
 def test_real_junctioned_intermediate_route_paths_are_rejected(
     tmp_path: Path, component: str
 ) -> None:

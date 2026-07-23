@@ -283,7 +283,7 @@ def test_format_roster_includes_required_and_optional_columns() -> None:
     )
 
     assert "School year: not set" in output
-    assert "Class metadata path: classes\\synthetic_class\\class.json" in output
+    assert f"Class metadata path: {Path('classes/synthetic_class/class.json')}" in output
     assert "Student count: 2" in output
     assert "student_id" in output
     assert "last_name" in output
