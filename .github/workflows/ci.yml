@@ -28,13 +28,22 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          choco install poppler --version=22.11.0.20240421 -y --no-progress
-          $popplerRoot = Join-Path $env:ProgramData "chocolatey\lib\poppler\tools"
-          $pdftoppm = Get-ChildItem $popplerRoot -Recurse -Filter pdftoppm.exe | Select-Object -First 1
+          $url = "https://github.com/oschwartz10612/poppler-windows/releases/download/v26.02.0-0/Release-26.02.0-0.zip"
+          $archive = Join-Path $env:RUNNER_TEMP "poppler-windows-v26.02.0-0.zip"
+          $destination = Join-Path $env:RUNNER_TEMP "poppler-windows-v26.02.0-0"
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actualHash = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
+          $expectedHash = "993e4a94376ed712fafc7058d724ea0b943d118bbd2305cd9ed55174eb85cda5"
+          if ($actualHash -ne $expectedHash) {
+            throw "Poppler archive SHA-256 mismatch: $actualHash"
+          }
+          Expand-Archive -LiteralPath $archive -DestinationPath $destination
+          $pdftoppm = Get-ChildItem $destination -Recurse -Filter pdftoppm.exe | Select-Object -First 1
           if ($null -eq $pdftoppm) {
-            throw "Chocolatey Poppler installation did not contain pdftoppm.exe."
+            throw "Authenticated Poppler archive did not contain pdftoppm.exe."
           }
           $pdftoppm.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & (Join-Path $pdftoppm.DirectoryName "pdfinfo.exe") -v
       - name: Download and verify released Core 0.5.0
         shell: python
         run: |
@@ -48,6 +57,14 @@ jobs:
         run: python scripts/verify_core_wheel.py "${{ runner.temp }}/pds_core-0.5.0-py3-none-any.whl"
       - name: Install
         run: python -m pip install "${{ runner.temp }}/pds_core-0.5.0-py3-none-any.whl" ".[dev]"
+      - name: Remove local build residue
+        shell: python
+        run: |
+          from pathlib import Path
+          import shutil
+          for path in (Path("build"), Path("quillan.egg-info")):
+              if path.exists():
+                  shutil.rmtree(path)
       - name: Verify installed Core identity
         run: python scripts/verify_core_wheel.py "${{ runner.temp }}/pds_core-0.5.0-py3-none-any.whl" --verify-installed
       - name: Dependency check
