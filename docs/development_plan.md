@@ -1,5 +1,9 @@
 # Quillan Development Plan
 
+The pure Quillan Academic Result Manifest v1 contract now provides the base for
+later privacy, revision, Core integration, generation, publication, and reader
+work (#357–#364); this phase does not generate or publish workspace manifests.
+
 Classification: **active authority** for the v0.8.9 release candidate.
 
 ## Current status

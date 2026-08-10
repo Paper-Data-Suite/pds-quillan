@@ -1,5 +1,10 @@
 # Quillan Submission Review Record Contract
 
+The immutable producer projection of schema-v2 review meaning is
+[Academic Result Manifest v1](academic_result_manifest_v1.md). It preserves
+explicit review/non-score states and teacher-entered ratings without converting
+them to Grades or proficiency.
+
 ## Purpose and Boundary
 
 The Quillan submission review record stores teacher-entered review data for

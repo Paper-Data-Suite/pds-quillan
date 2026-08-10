@@ -1,5 +1,8 @@
 # Quillan
 
+Quillan's immutable producer-owned result contract is documented in
+[Academic Result Manifest v1](docs/academic_result_manifest_v1.md).
+
 > **Storage contract:** Quillan assignment, submission, review, feedback, and
 > assignment-report services use only
 > `classes/<class_id>/modules/quillan/work/<assignment_id>/`. See

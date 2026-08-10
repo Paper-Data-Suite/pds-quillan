@@ -1,0 +1,272 @@
+{
+  "assignment": {
+    "assignment_id": "villainy_essay",
+    "basic_requirements": {
+      "paragraphs_max": null,
+      "paragraphs_min": 4,
+      "required_elements": [
+        "claim",
+        "textual evidence"
+      ],
+      "word_count_max": 1500,
+      "word_count_min": 800
+    },
+    "focus_standard_ids": [
+      "njsls-ela:RL.CR.9-10.1",
+      "njsls-ela:W.AW.9-10.1"
+    ],
+    "minimum_requirement_policy": {
+      "allow_return_without_full_review": true
+    },
+    "rating_scale": {
+      "levels": [
+        {
+          "description": "Limited evidence.",
+          "label": "Beginning",
+          "value": 0
+        },
+        {
+          "description": "Partial evidence.",
+          "label": "Developing",
+          "value": 2
+        },
+        {
+          "description": "Consistent evidence.",
+          "label": "Secure",
+          "value": 4
+        }
+      ],
+      "scale_id": "quillan_analysis_v1"
+    },
+    "review_unit": {
+      "plural_label": "Paragraphs",
+      "singular_label": "Paragraph",
+      "type": "paragraph"
+    },
+    "standards_profile_id": "english12_2023_njsls_ela",
+    "student_prompt": "Explain how the author develops villainy.",
+    "title": "Villainy Final Essay",
+    "writing_type": "literary_analysis"
+  },
+  "contract_version": "quillan_academic_result_manifest_v1",
+  "generated_at": "2026-01-15T17:00:00Z",
+  "producer_module_id": "quillan",
+  "record_set": {
+    "record_set_id": "villainy_results",
+    "revision": 1
+  },
+  "record_type": "quillan_academic_result_manifest",
+  "source_snapshot": {
+    "contract_version": "2",
+    "relative_path": "assignment.json",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "students": [
+    {
+      "review": {
+        "assignment_id": "villainy_essay",
+        "class_id": "english12_p3",
+        "feedback": {
+          "include_overall_standard_ratings": true,
+          "include_review_unit_observations": true,
+          "standard_feedback": [
+            {
+              "comments": [
+                {
+                  "created_at": "2026-01-15T16:05:00Z",
+                  "feedback_comment_id": "feedback_comment_0001",
+                  "include_in_feedback": true,
+                  "text": {
+                    "disposition": "included",
+                    "text": "Clarify the central idea."
+                  }
+                }
+              ],
+              "include_overall_rating": true,
+              "include_overall_rationale": false,
+              "included_observation_ids": [
+                "observation_0001"
+              ],
+              "standard_id": "njsls-ela:RL.CR.9-10.1"
+            }
+          ]
+        },
+        "minimum_requirement_outcome": {
+          "returned_without_full_review": false,
+          "status": "met",
+          "teacher_note": {
+            "disposition": "withheld",
+            "text": null
+          },
+          "updated_at": "2026-01-15T15:00:00Z"
+        },
+        "overall_standard_ratings": [
+          {
+            "include_in_feedback": true,
+            "rating": 0,
+            "rationale": {
+              "disposition": "withheld",
+              "text": null
+            },
+            "standard_id": "njsls-ela:RL.CR.9-10.1",
+            "updated_at": "2026-01-15T16:00:00Z"
+          }
+        ],
+        "review_state": "ratings_complete",
+        "review_units": [
+          {
+            "label": "Paragraph 1",
+            "sequence": 1,
+            "standard_observations": [
+              {
+                "applicable": true,
+                "evidence_present": true,
+                "include_in_feedback": true,
+                "observation_id": "observation_0001",
+                "rating": 2,
+                "rationale": {
+                  "disposition": "included",
+                  "text": "The claim is present."
+                },
+                "standard_id": "njsls-ela:RL.CR.9-10.1",
+                "updated_at": "2026-01-15T15:10:00Z"
+              },
+              {
+                "applicable": false,
+                "evidence_present": null,
+                "include_in_feedback": false,
+                "observation_id": "observation_0002",
+                "rating": null,
+                "rationale": {
+                  "disposition": "absent",
+                  "text": null
+                },
+                "standard_id": "njsls-ela:W.AW.9-10.1",
+                "updated_at": "2026-01-15T15:11:00Z"
+              }
+            ],
+            "unit_id": "paragraph_1",
+            "unit_type": "paragraph"
+          },
+          {
+            "label": "Paragraph 2",
+            "sequence": 2,
+            "standard_observations": [
+              {
+                "applicable": true,
+                "evidence_present": false,
+                "include_in_feedback": false,
+                "observation_id": "observation_0003",
+                "rating": null,
+                "rationale": {
+                  "disposition": "absent",
+                  "text": null
+                },
+                "standard_id": "njsls-ela:RL.CR.9-10.1",
+                "updated_at": "2026-01-15T15:12:00Z"
+              }
+            ],
+            "unit_id": "paragraph_2",
+            "unit_type": "paragraph"
+          }
+        ],
+        "student_id": "student_001"
+      },
+      "source_snapshot": {
+        "review": {
+          "contract_version": "2",
+          "relative_path": "submissions/student_001/review.json",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "submission": {
+          "contract_version": "1",
+          "relative_path": "submissions/student_001/submission.json",
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+        }
+      },
+      "student_id": "student_001",
+      "submission": {
+        "assignment_id": "villainy_essay",
+        "class_id": "english12_p3",
+        "digital_provenance": {
+          "artifact_id": "art_00000000000000000000000000000001",
+          "evidence_references": [
+            {
+              "artifact_id": "art_00000000000000000000000000000001",
+              "evidence_id": "obs_00000000000000000000000000000001",
+              "generation_id": "gen_00000000000000000000000000000001",
+              "issuance_id": "iss_00000000000000000000000000000001",
+              "observation_id": "obs_00000000000000000000000000000001",
+              "page_id": "pg_00000000000000000000000000000001",
+              "route_id": "rt_00000000000000000000000000000001",
+              "routed_evidence_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+              "source_page_number": 1,
+              "source_scan_id": "scan_001",
+              "source_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+            }
+          ],
+          "expected_page_ids": [
+            "pg_00000000000000000000000000000001"
+          ],
+          "generation_id": "gen_00000000000000000000000000000001",
+          "issuance_id": "iss_00000000000000000000000000000001"
+        },
+        "entry_method": "pds2_response_pages",
+        "expected_pages": 1,
+        "student_id": "student_001",
+        "submission_state": "reviewed"
+      }
+    },
+    {
+      "review": {
+        "assignment_id": "villainy_essay",
+        "class_id": "english12_p3",
+        "feedback": {
+          "include_overall_standard_ratings": false,
+          "include_review_unit_observations": false,
+          "standard_feedback": []
+        },
+        "minimum_requirement_outcome": {
+          "returned_without_full_review": true,
+          "status": "returned_without_full_review",
+          "teacher_note": {
+            "disposition": "withheld",
+            "text": null
+          },
+          "updated_at": "2026-01-15T14:00:00Z"
+        },
+        "overall_standard_ratings": [],
+        "review_state": "returned_without_full_review",
+        "review_units": [],
+        "student_id": "student_002"
+      },
+      "source_snapshot": {
+        "review": {
+          "contract_version": "2",
+          "relative_path": "submissions/student_002/review.json",
+          "sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+        },
+        "submission": {
+          "contract_version": "1",
+          "relative_path": "submissions/student_002/submission.json",
+          "sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+        }
+      },
+      "student_id": "student_002",
+      "submission": {
+        "assignment_id": "villainy_essay",
+        "class_id": "english12_p3",
+        "digital_provenance": null,
+        "entry_method": "plain_paper_manual",
+        "expected_pages": null,
+        "student_id": "student_002",
+        "submission_state": "unreviewed"
+      }
+    }
+  ],
+  "work": {
+    "class_id": "english12_p3",
+    "module_id": "quillan",
+    "work_id": "villainy_essay"
+  }
+}
