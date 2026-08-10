@@ -1,5 +1,10 @@
 # Quillan Assignment Contract
 
+Publication preserves interpretation-critical v2 assignment context through
+[Academic Result Manifest v1](academic_result_manifest_v1.md). Its assignment-
+local native scale is not a Meridian proficiency scale without an explicit,
+versioned downstream mapping policy.
+
 ## Purpose
 
 This document defines the v0.8.6 Quillan assignment contract.

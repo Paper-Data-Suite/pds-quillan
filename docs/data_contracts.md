@@ -1,5 +1,10 @@
 # Quillan Data Contracts
 
+The pure `quillan_academic_result_manifest_v1` contract is defined in
+[Academic Result Manifest v1](academic_result_manifest_v1.md). Quillan preserves
+native review meaning, Core verifies publication envelopes, and an authorized
+consumer owns later grading/reporting policy.
+
 Quillan-owned assignment records and all dependent submission, review, and export
 records are rooted exclusively beneath
 `classes/<class_id>/modules/quillan/work/<assignment_id>/`. Contextual loaders
