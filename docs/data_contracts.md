@@ -5,6 +5,13 @@ The pure `quillan_academic_result_manifest_v1` contract is defined in
 native review meaning, Core verifies publication envelopes, and an authorized
 consumer owns later grading/reporting policy.
 
+The producer-owned privacy floor for manifest and later artifact projections is
+defined in
+[Quillan Publication Projection Policy v1](publication_projection_policy_v1.md).
+It uses closed allowlists, preserves `absent`/`withheld`/`included` text
+semantics, permits only authoritative selected PDS2 evidence, and keeps discovery
+separate from source or artifact authorization.
+
 Quillan-owned assignment records and all dependent submission, review, and export
 records are rooted exclusively beneath
 `classes/<class_id>/modules/quillan/work/<assignment_id>/`. Contextual loaders

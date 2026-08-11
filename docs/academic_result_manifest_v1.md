@@ -16,8 +16,9 @@ policy says so.
 The module is a pure contract: it performs no workspace, registry, catalog,
 artifact, roster, or standards-library I/O and calculates no proficiency,
 Grade, missing-work state, or portfolio policy. Construction belongs to #361;
-privacy projection to #357; revision/withdrawal policy to #358; and Core
-integration to #359–#364.
+privacy projection is defined by
+[Quillan Publication Projection Policy v1](publication_projection_policy_v1.md);
+revision/withdrawal policy belongs to #358; and Core integration to #359–#364.
 
 ## Exact schema
 
@@ -130,9 +131,12 @@ digital_provenance
 ```
 
 Identity fields must agree with their envelope. Locator paths, retained-source
-paths, filenames, and QR payloads are excluded. #357 may further restrict
-whether structurally supported references are emitted; withholding cannot be
-interpreted as weak or missing academic evidence. Discovery is not access.
+paths, filenames, and QR payloads are excluded. The
+[publication projection policy](publication_projection_policy_v1.md) restricts
+evidence references to authoritative selected evidence; candidate, unselected
+replacement, excluded, and unselected duplicate evidence are not published.
+Withholding cannot be interpreted as weak or missing academic evidence.
+Discovery is not access.
 
 PDS2 typed identities use the current native Quillan forms:
 
@@ -170,7 +174,9 @@ Minimum-requirement outcome separately preserves `status`, explicit return flag,
 nullable `updated_at`, and teacher-note publication state. Status is
 `not_checked`, `met`, `unmet_continue_review`, or
 `returned_without_full_review`; return status, flag, and review state agree.
-Individual checks remain outside v1 and are a #357 projection decision.
+Individual checks remain outside v1. The publication projection policy permits
+only a narrow configured-unmet view in the separate returned-work feedback
+artifact; it does not add individual requirement checks to this manifest.
 
 Review units have unique IDs and positive increasing sequences. Each contains
 at most one observation per assignment Focus Standard. Observations preserve
@@ -197,17 +203,19 @@ evidence remain distinct.
 otherwise null. This distinguishes absent source text from deliberate redaction.
 The value object has no default disposition and neither its constructor, mapping
 parser, validator, nor serializer examines native source text or promotes text to
-`included`. A later #357 projection must choose the disposition explicitly; the
-existence of a rationale, note, or comment in `review.json` is not permission to
-publish it.
+`included`. The
+[publication projection policy](publication_projection_policy_v1.md) chooses
+the disposition explicitly; the existence of a rationale, note, or comment in
+`review.json` is not permission to publish it.
 
 Feedback preserves global and per-standard inclusion choices, selected
 observation IDs, and bounded included comment records. Observation/overall
-rationales, minimum-outcome notes, and comment text use `PublishedText`, leaving
-#357 able to include or withhold them without changing educational meaning.
+rationales, minimum-outcome notes, and comment text use `PublishedText`; the
+publication projection policy includes, withholds, or omits them without changing
+educational meaning.
 Reusable-comment source/provenance fields are not part of the public comment
 object. Individual requirement checks and detailed evidence disclosure remain
-#357 inputs.
+bounded by the publication projection policy and later artifact-reader contracts.
 
 Always excluded: `private_notes`, roster display data, live reusable-comment
 state, arbitrary `module_details`, exception/debug text, diagnostics, absolute or
@@ -216,8 +224,9 @@ ratings nor completion, publication/Grade eligibility, or proficiency.
 
 The contract deliberately contains no workspace projection helper or default
 mapping from native review text. It can represent withheld/absent text without a
-placeholder or empty string, while #357 retains ownership of the allow/deny
-policy and later generation workflows retain responsibility for applying it.
+placeholder or empty string, while the publication projection policy owns the
+allow/deny decision and later generation workflows retain responsibility for
+applying it.
 
 ## Immutability, canonical JSON, and fixture
 
