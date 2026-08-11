@@ -60,6 +60,14 @@ This contract follows the standards-based redesign direction established in:
 * [`assignment_contract.md`](assignment_contract.md)
 * [`review_record_contract.md`](review_record_contract.md)
 * [`focus_standard_comment_contract.md`](focus_standard_comment_contract.md)
+* [`publication_projection_policy_v1.md`](publication_projection_policy_v1.md)
+
+The publication projection policy does not redefine this local student-feedback
+export contract. Instead, it uses this contract's explicit student-facing
+selection behavior as the producer privacy floor for future immutable manifest
+generation and authorized public readers. A generated feedback file remains a
+derived artifact; its existence or export metadata does not authorize publication
+or artifact access.
 
 The relevant target contracts define the following responsibilities:
 
