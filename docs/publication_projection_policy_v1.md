@@ -90,8 +90,8 @@ The policy version is independent from:
 - Meridian policy;
 - and Vitrine Profile policy.
 
-Issue #358 owns the historical/revision consequences of material future policy
-changes.
+Historical and revision consequences of material policy changes are defined by
+[Quillan Publication Revision Policy](publication_revision_policy.md).
 
 ## Closed allowlist
 
@@ -628,10 +628,12 @@ authorize source or artifact access.
 
 ## Downstream boundaries
 
-### #358 — revision, correction, and withdrawal
+### Revision, correction, and withdrawal
 
-Defines historical consequences when native data, selected evidence, approved text, or
-projection policy changes.
+[Quillan Publication Revision Policy](publication_revision_policy.md) defines
+immutable producer revision identity, exact replay, correction history, historical
+reversion, and the producer rules that later Core supersession/withdrawal workflows
+must preserve.
 
 ### #361 — immutable manifest generation
 
