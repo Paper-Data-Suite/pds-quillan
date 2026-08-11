@@ -18,7 +18,9 @@ artifact, roster, or standards-library I/O and calculates no proficiency,
 Grade, missing-work state, or portfolio policy. Construction belongs to #361;
 privacy projection is defined by
 [Quillan Publication Projection Policy v1](publication_projection_policy_v1.md);
-revision/withdrawal policy belongs to #358; and Core integration to #359–#364.
+revision, correction, and withdrawal behavior is defined by
+[Quillan Publication Revision Policy](publication_revision_policy.md); and Core
+integration belongs to #359–#364.
 
 ## Exact schema
 

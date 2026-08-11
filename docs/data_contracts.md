@@ -12,6 +12,12 @@ It uses closed allowlists, preserves `absent`/`withheld`/`included` text
 semantics, permits only authoritative selected PDS2 evidence, and keeps discovery
 separate from source or artifact authorization.
 
+The producer-owned immutable history rules are defined in
+[Quillan Publication Revision Policy](publication_revision_policy.md). Production
+Academic Result series use `record_set_id=academic_results`; exact source lineage,
+corrections, historical reversion, supersession, and withdrawal remain distinct from
+consumer grading or portfolio policy.
+
 Quillan-owned assignment records and all dependent submission, review, and export
 records are rooted exclusively beneath
 `classes/<class_id>/modules/quillan/work/<assignment_id>/`. Contextual loaders
