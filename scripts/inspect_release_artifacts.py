@@ -12,6 +12,7 @@ import tarfile
 import zipfile
 
 from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
 
 EXPECTED_VERSION = "0.8.9"
 REMOVED = {
@@ -56,10 +57,11 @@ def _metadata_contract(raw: str) -> dict[str, object]:
     assert metadata["Requires-Python"] == ">=3.11", metadata["Requires-Python"]
     assert metadata["License-Expression"] == "MIT", metadata.items()
     assert "License-File" in metadata and "LICENSE" in metadata["License-File"]
+    parsed_requirements = [Requirement(value) for value in requirements]
     core_requirements = [
-        Requirement(value)
-        for value in requirements
-        if Requirement(value).name == "pds-core"
+        requirement
+        for requirement in parsed_requirements
+        if canonicalize_name(requirement.name) == "pds-core"
     ]
     assert len(core_requirements) == 1, core_requirements
     core_requirement = core_requirements[0]

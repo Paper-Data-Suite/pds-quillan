@@ -211,11 +211,15 @@ import pathlib
 import sys
 from packaging.requirements import Requirement
 from packaging.specifiers import SpecifierSet
+from packaging.utils import canonicalize_name
 from packaging.version import Version
 
 quillan = metadata.distribution('quillan')
 requirements = [Requirement(value) for value in quillan.requires or []]
-core = [value for value in requirements if value.name == 'pds-core']
+core = [
+    value for value in requirements
+    if canonicalize_name(value.name) == 'pds-core'
+]
 assert len(core) == 1, core
 assert core[0].url is None, core[0]
 assert {str(value) for value in core[0].specifier} == {'>=0.6', '<0.7'}, core[0]
