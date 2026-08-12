@@ -10,6 +10,7 @@ import pytest
 
 from scripts.run_installed_acceptance import (
     ACADEMIC_STATE_PATHS,
+    SIDE_EFFECT_FREE_HELP_COMMANDS,
     _assert_no_academic_state,
     _compare_retained_source_inventories,
     _retained_source_inventory,
@@ -161,6 +162,10 @@ def test_retained_source_added_count_is_derived(tmp_path: Path) -> None:
         before, after, require_unchanged=False
     )
     assert result["retained_source_events_added"] == 2
+
+
+def test_installed_acceptance_probes_academic_work_help() -> None:
+    assert ("academic-work", "--help") in SIDE_EFFECT_FREE_HELP_COMMANDS
 
 
 def test_no_academic_state_accepts_ordinary_workspace(tmp_path: Path) -> None:

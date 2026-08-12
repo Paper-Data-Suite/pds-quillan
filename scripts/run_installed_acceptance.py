@@ -36,6 +36,13 @@ CORE_06_ACADEMIC_MODULES = (
     "pds_core.academic_catalog",
 )
 
+SIDE_EFFECT_FREE_HELP_COMMANDS = (
+    ("--help",),
+    ("printable-responses", "--help"),
+    ("workspace", "--help"),
+    ("academic-work", "--help"),
+)
+
 
 def _load_object(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8", errors="strict"))
@@ -510,11 +517,11 @@ def main() -> int:
 
     version = _run(_cli(["--version"]), cwd=work, env=env)
     assert version.stdout == "quillan 0.8.9\n" and version.stderr == ""
-    for arguments in (["--help"], ["printable-responses", "--help"], ["workspace", "--help"]):
-        result = _run(_cli(arguments), cwd=work, env=env)
+    for help_arguments in SIDE_EFFECT_FREE_HELP_COMMANDS:
+        result = _run(_cli(list(help_arguments)), cwd=work, env=env)
         assert result.stdout and result.stderr == ""
-    for arguments in ([], ["menu"]):
-        result = _run(_cli(arguments), cwd=work, env=env, stdin="q\n")
+    for menu_arguments in ([], ["menu"]):
+        result = _run(_cli(menu_arguments), cwd=work, env=env, stdin="q\n")
         assert "Quit" in result.stdout and result.stderr == ""
     assert not sentinel.exists()
     _assert_no_academic_state(sentinel)

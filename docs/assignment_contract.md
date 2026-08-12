@@ -950,3 +950,12 @@ assignment -> Focus Standards + review unit + rating scale -> standards-based re
 ```
 
 This contract ensures that later review records, feedback exports, and reports can all be built around the same assignment-defined standards-based structure.
+
+## Academic Work Registration boundary
+
+A valid schema-2 managed assignment may be explicitly registered through Core
+when the selected `class_id` occurs in its `class_ids`. Registration snapshots
+only the assignment title plus exact work/source identity; it does not add fields
+to `assignment.json` or automatically follow later native edits. The source
+record contract version is exactly `2`. See
+[Academic Work Registration](academic_work_registration.md).

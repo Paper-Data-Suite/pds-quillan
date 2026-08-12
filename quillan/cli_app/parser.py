@@ -6,7 +6,11 @@ import argparse
 from functools import partial
 from pathlib import Path
 
-from quillan.cli_app.arguments import nonnegative_integer, positive_integer
+from quillan.cli_app.arguments import (
+    StoreOnceAction,
+    nonnegative_integer,
+    positive_integer,
+)
 from quillan.cli_app.handlers.comments import (
     handle_comments_create,
     handle_comments_list,
@@ -82,6 +86,11 @@ from quillan.cli_app.handlers.submissions import (
     handle_open_submission,
     handle_set_review_state,
 )
+from quillan.cli_app.handlers.academic_work import (
+    handle_academic_work_register,
+    handle_academic_work_show,
+    handle_academic_work_update,
+)
 from quillan.cli_app.handlers.assignments import (
     handle_assignment_create,
     handle_assignment_show,
@@ -93,6 +102,10 @@ from quillan.cli_app.handlers.workspace import (
     handle_workspace_set,
     handle_workspace_show,
     handle_workspace_validate,
+)
+from quillan.academic_work_registration import (
+    SUPPORTED_ACADEMIC_INTENTS,
+    SUPPORTED_ACADEMIC_WORK_LIFECYCLES,
 )
 from quillan.focus_standard_comments import ALLOWED_PURPOSES
 from quillan.review_workflow_state import REVIEW_WORKFLOW_STATES
@@ -234,6 +247,77 @@ def build_parser() -> argparse.ArgumentParser:
     assignment_validate_parser.set_defaults(
         handler=handle_canonical_assignment_validate
     )
+
+    academic_work_parser = subparsers.add_parser(
+        "academic-work",
+        help="Explicitly register managed assignments as Core Academic Work.",
+        description=(
+            "Inspect, register, or update Core Academic Work Registration for one "
+            "existing canonical Quillan assignment. Registration is explicit and "
+            "does not publish results or create a Grade."
+        ),
+    )
+    academic_work_parser.set_defaults(
+        handler=partial(_print_parser_help, academic_work_parser)
+    )
+    academic_work_subparsers = academic_work_parser.add_subparsers(
+        dest="academic_work_command"
+    )
+
+    academic_work_show_parser = academic_work_subparsers.add_parser(
+        "show", help="Show the current Core Academic Work Registration."
+    )
+    _add_academic_work_identity_options(academic_work_show_parser)
+    academic_work_show_parser.set_defaults(handler=handle_academic_work_show)
+
+    academic_work_register_parser = academic_work_subparsers.add_parser(
+        "register",
+        help="Create revision 1 or exactly replay an existing registration.",
+    )
+    _add_academic_work_identity_options(academic_work_register_parser)
+    academic_work_register_parser.add_argument(
+        "--academic-intent",
+        required=True,
+        choices=SUPPORTED_ACADEMIC_INTENTS,
+        action=StoreOnceAction,
+        help="Explicit Core academic intent.",
+    )
+    academic_work_register_parser.add_argument(
+        "--lifecycle",
+        required=True,
+        choices=SUPPORTED_ACADEMIC_WORK_LIFECYCLES,
+        action=StoreOnceAction,
+        help="Explicit Core registration lifecycle.",
+    )
+    academic_work_register_parser.set_defaults(handler=handle_academic_work_register)
+
+    academic_work_update_parser = academic_work_subparsers.add_parser(
+        "update",
+        help="Update registration using an explicit expected current revision.",
+    )
+    _add_academic_work_identity_options(academic_work_update_parser)
+    academic_work_update_parser.add_argument(
+        "--academic-intent",
+        required=True,
+        choices=SUPPORTED_ACADEMIC_INTENTS,
+        action=StoreOnceAction,
+        help="Explicit Core academic intent.",
+    )
+    academic_work_update_parser.add_argument(
+        "--lifecycle",
+        required=True,
+        choices=SUPPORTED_ACADEMIC_WORK_LIFECYCLES,
+        action=StoreOnceAction,
+        help="Explicit Core registration lifecycle.",
+    )
+    academic_work_update_parser.add_argument(
+        "--expected-current-revision",
+        required=True,
+        type=positive_integer,
+        action=StoreOnceAction,
+        help="Exact Core registration revision observed before this update.",
+    )
+    academic_work_update_parser.set_defaults(handler=handle_academic_work_update)
 
     printable_responses_parser = subparsers.add_parser(
         "printable-responses",
@@ -1205,6 +1289,23 @@ def build_parser() -> argparse.ArgumentParser:
     menu_parser.set_defaults(handler=handle_menu)
 
     return parser
+
+
+def _add_academic_work_identity_options(
+    parser: argparse.ArgumentParser,
+) -> None:
+    parser.add_argument(
+        "--class-id",
+        required=True,
+        action=StoreOnceAction,
+        help="Class identifier.",
+    )
+    parser.add_argument(
+        "--assignment-id",
+        required=True,
+        action=StoreOnceAction,
+        help="Assignment identifier.",
+    )
 
 
 def _add_assignment_identity_arguments(

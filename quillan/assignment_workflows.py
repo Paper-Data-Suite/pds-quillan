@@ -1076,6 +1076,13 @@ def prompt_create_assignment() -> int:
                 f"- {class_id}: "
                 f"{saved_path.relative_to(workspace_root).as_posix()}"
             )
+    from quillan.academic_work_menu import (
+        print_registration_title_staleness_notices,
+    )
+
+    print_registration_title_staleness_notices(
+        workspace_root, class_ids, assignment_id, title
+    )
     return 0
 
 
@@ -1234,6 +1241,7 @@ def launch_assignment_menu() -> int:
             print("1. Create writing assignment")
             print("2. View/validate assignment")
             print("3. Printable Response Pages")
+            print("4. Academic Work Registration")
             print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
@@ -1253,6 +1261,12 @@ def launch_assignment_menu() -> int:
                 )
 
                 launch_printable_response_menu()
+            elif choice == "4":
+                from quillan.academic_work_menu import (
+                    launch_academic_work_registration_menu,
+                )
+
+                launch_academic_work_registration_menu()
             elif workflow is None:
                 print(f"Invalid selection. {navigation_hint()}")
             else:

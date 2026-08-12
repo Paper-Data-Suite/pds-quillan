@@ -437,3 +437,11 @@ Follow-up implementation remains:
 - #365–#366: installed acceptance and release audit.
 
 No consumer policy belongs in this revision module.
+
+## Academic Work Registration revision boundary
+
+Core Academic Work Registration revision is independent of Quillan's producer
+record-set revision. Updating registration metadata neither allocates a manifest
+revision nor rewrites an immutable manifest. Later publication workflow #363
+must preserve the exact registration revision used by each Publication Record.
+See [Academic Work Registration](academic_work_registration.md).

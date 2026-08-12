@@ -460,3 +460,17 @@ physical paper remains under the teacher's control, and the normal
 standards-based review and export actions apply after setup. This plain-paper
 workflow does not create QR, route, page, scan, or digital-evidence records.
 Never commit real student data or workspace artifacts.
+
+## Academic Work Registration (Core 0.6)
+
+Quillan can explicitly register an existing canonical managed assignment as Core
+Academic Work under producer contract `quillan_academic_work_v1`. Registration
+uses the exact Quillan work identity and one assignment source reference with
+native contract version `2`. It is never inferred from ordinary assignment,
+PDS2, submission, review, feedback, or reporting activity.
+
+Use `quillan academic-work --help` or Assignment Management -> Academic Work
+Registration. Registration is eligibility metadata only; manifest generation,
+Publication Records, Academic Period assignment, proficiency, Grades, and
+portfolio policy remain separate later workflows. See
+[`docs/academic_work_registration.md`](docs/academic_work_registration.md).
