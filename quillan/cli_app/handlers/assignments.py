@@ -90,6 +90,16 @@ def handle_assignment_create(args: argparse.Namespace) -> int:
         print(f"Class: {plan.class_id}")
         print(f"Assignment: {plan.assignment_id}")
         print(format_assignment_summary(plan.assignment, _relative(path, plan.workspace_root)))
+        from quillan.academic_work_menu import (
+            print_registration_title_staleness_notices,
+        )
+
+        print_registration_title_staleness_notices(
+            plan.workspace_root,
+            [plan.class_id],
+            plan.assignment_id,
+            plan.assignment["title"],
+        )
         return 0
     except (OSError, ValueError, WorkspaceRootError) as error:
         return _error("was not created", error)

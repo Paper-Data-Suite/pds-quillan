@@ -3,6 +3,22 @@
 from __future__ import annotations
 
 import argparse
+from typing import Any
+
+
+class StoreOnceAction(argparse.Action):
+    """Store one option value and reject repeated use of the same option."""
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: str | None = None,
+    ) -> None:
+        if getattr(namespace, self.dest, None) is not None:
+            parser.error(f"{option_string or self.dest} may not be repeated")
+        setattr(namespace, self.dest, values)
 
 
 def positive_integer(value: str) -> int:

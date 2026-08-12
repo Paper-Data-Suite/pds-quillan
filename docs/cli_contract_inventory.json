@@ -521,6 +521,190 @@
     {
       "path": [
         "quillan",
+        "academic-work"
+      ],
+      "aliases": [],
+      "short_help": "Explicitly register managed assignments as Core Academic Work.",
+      "description": "Inspect, register, or update Core Academic Work Registration for one existing canonical Quillan assignment. Registration is explicit and does not publish results or create a Grade.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "academic-work",
+        "show"
+      ],
+      "aliases": [],
+      "short_help": "Show the current Core Academic Work Registration.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "academic-work",
+        "register"
+      ],
+      "aliases": [],
+      "short_help": "Create revision 1 or exactly replay an existing registration.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--academic-intent"
+          ],
+          "required": true,
+          "choices": [
+            "formative",
+            "summative",
+            "diagnostic",
+            "practice",
+            "feedback_only",
+            "reporting_only"
+          ],
+          "default": null,
+          "help": "Explicit Core academic intent.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--lifecycle"
+          ],
+          "required": true,
+          "choices": [
+            "planned",
+            "active",
+            "closed",
+            "cancelled"
+          ],
+          "default": null,
+          "help": "Explicit Core registration lifecycle.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "academic-work",
+        "update"
+      ],
+      "aliases": [],
+      "short_help": "Update registration using an explicit expected current revision.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--academic-intent"
+          ],
+          "required": true,
+          "choices": [
+            "formative",
+            "summative",
+            "diagnostic",
+            "practice",
+            "feedback_only",
+            "reporting_only"
+          ],
+          "default": null,
+          "help": "Explicit Core academic intent.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--lifecycle"
+          ],
+          "required": true,
+          "choices": [
+            "planned",
+            "active",
+            "closed",
+            "cancelled"
+          ],
+          "default": null,
+          "help": "Explicit Core registration lifecycle.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--expected-current-revision"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact Core registration revision observed before this update.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
         "printable-responses"
       ],
       "aliases": [],

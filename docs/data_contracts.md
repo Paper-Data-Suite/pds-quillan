@@ -437,3 +437,11 @@ Its `module_details` records `submission_entry_method: "plain_paper_manual"`,
 `physical_evidence_status: "teacher_has_external_plain_paper"`, and
 `created_by_workflow: "plain_paper_submission"`. No routed evidence path or
 digital artifact is created; the physical paper remains outside Quillan.
+
+## Academic Work Registration
+
+[Academic Work Registration](academic_work_registration.md) defines Quillan's
+explicit Core registration boundary for existing managed assignments. Its stable
+producer contract is `quillan_academic_work_v1`; the registration source is the
+Quillan assignment record with contract version `2`. Core registration revision,
+Quillan manifest revision, and Publication Record identity are independent.

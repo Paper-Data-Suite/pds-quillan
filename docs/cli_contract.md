@@ -28,6 +28,28 @@ teacher CLI or menu to PDS2 intake. QR extraction, mixed-module batch dispatch,
 retained-source orchestration, routed evidence, scan review, and submission assembly
 remain #338–#339 work.
 
+## Academic Work Registration
+
+Academic Work Registration is an explicit namespace for existing managed Quillan
+assignments. It does not publish results or create a Grade:
+
+```powershell
+quillan academic-work show --class-id <class_id> --assignment-id <assignment_id>
+quillan academic-work register --class-id <class_id> --assignment-id <assignment_id> --academic-intent <intent> --lifecycle <lifecycle>
+quillan academic-work update --class-id <class_id> --assignment-id <assignment_id> --academic-intent <intent> --lifecycle <lifecycle> --expected-current-revision <revision>
+```
+
+`show` reads Core's explicit current registration. `register` creates revision 1
+or exactly replays identical metadata and never silently updates a conflicting
+registration. `update` requires an explicit expected current revision. Title is
+always read from current validated `assignment.json`; there is no title option.
+The assignment source record uses native contract `2`. Academic intent and
+lifecycle are explicit Core-controlled vocabulary values. Expected failures are
+concise and nonzero; partial success warns that durable Core state may exist.
+
+See [Quillan Academic Work Registration](academic_work_registration.md) for the
+eligibility, immutability, concurrency, and publication-boundary contract.
+
 ## Direct Student Review Status
 
 `quillan review-status <class_id> <assignment_id> <student_id> [--format text|json]`
@@ -229,6 +251,9 @@ assignment, submission manifest, roster, evidence, scans, exports, reports, or
 other suite data.
 
 ## Current Command Surface
+
+The current top-level command surface includes `quillan academic-work` for
+explicit Core Academic Work Registration of existing managed Quillan assignments.
 
 The implemented command surface currently exposed through argparse is:
 

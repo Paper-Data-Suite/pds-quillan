@@ -43,11 +43,14 @@ PDF scan intake uses `pdf2image` and requires Poppler on the host. Supported
 Python versions are CPython 3.11 through 3.14. Runtime Core compatibility is
 `pds-core>=0.6,<0.7`, with released Core 0.6.0 as the qualification baseline.
 
-Adopting Core 0.6 alone does not register Quillan Academic Work, generate
-workspace Academic Result manifests, publish results, create Publication Records
-or withdrawals, rebuild the academic catalog, assign Academic Period membership,
-calculate proficiency or Grades, or create portfolio Candidates. Those workflows
-remain owned by #360 through #365; #366 owns the final release audit.
+Quillan now supports explicit Academic Work Registration for eligible managed
+assignments through Core under `quillan_academic_work_v1`; ordinary assignment,
+PDS2, review, feedback, and reporting workflows never register work implicitly.
+Registration does not generate workspace Academic Result manifests, publish
+results, create Publication Records or withdrawals, rebuild the academic catalog,
+assign Academic Period membership, calculate proficiency or Grades, or create
+portfolio Candidates. #361 through #365 own those remaining producer workflows;
+#366 owns the final release audit.
 
 ## Release closeout
 
