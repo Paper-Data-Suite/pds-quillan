@@ -23,7 +23,7 @@ METADATA = """Metadata-Version: 2.4
 Name: quillan
 Version: 0.8.9
 Requires-Python: >=3.11
-Requires-Dist: pds-core<0.6,>=0.5
+Requires-Dist: pds-core<0.7,>=0.6
 License-Expression: MIT
 License-File: LICENSE
 """
@@ -79,3 +79,15 @@ def test_sdist_rejects_each_removed_module(tmp_path: Path, removed: str) -> None
 def test_ordinary_current_package_paths_are_accepted(tmp_path: Path) -> None:
     assert inspect_wheel(_wheel(tmp_path / "current.whl"))["version"] == "0.8.9"
     assert inspect_sdist(_sdist(tmp_path / "current.tar.gz"))["version"] == "0.8.9"
+
+
+def test_wheel_rejects_bundled_core_source(tmp_path: Path) -> None:
+    artifact = _wheel(tmp_path / "bundled-core.whl", "pds_core/routing_models.py")
+    with pytest.raises(AssertionError):
+        inspect_wheel(artifact)
+
+
+def test_sdist_rejects_bundled_core_source(tmp_path: Path) -> None:
+    artifact = _sdist(tmp_path / "bundled-core.tar.gz", "pds_core/routing_models.py")
+    with pytest.raises(AssertionError):
+        inspect_sdist(artifact)

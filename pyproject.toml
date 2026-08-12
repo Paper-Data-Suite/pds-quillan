@@ -16,7 +16,7 @@ authors = [
 dependencies = [
     "numpy<2.5",
     "opencv-python",
-    "pds-core>=0.5,<0.6",
+    "pds-core>=0.6,<0.7",
     "pdf2image",
     "qrcode[pil]",
     "reportlab",
@@ -58,7 +58,7 @@ strict = true
 explicit_package_bases = true
 
 [[tool.mypy.overrides]]
-# Core 0.5 ships inspectable source but no py.typed marker.
+# Core 0.6 ships inspectable source but no py.typed marker.
 module = ["pds_core", "pds_core.*"]
 follow_untyped_imports = true
 
