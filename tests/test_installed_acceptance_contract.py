@@ -9,6 +9,8 @@ from pathlib import Path
 import pytest
 
 from scripts.run_installed_acceptance import (
+    ACADEMIC_STATE_PATHS,
+    _assert_no_academic_state,
     _compare_retained_source_inventories,
     _retained_source_inventory,
     _verify_digital_durable_state,
@@ -159,3 +161,23 @@ def test_retained_source_added_count_is_derived(tmp_path: Path) -> None:
         before, after, require_unchanged=False
     )
     assert result["retained_source_events_added"] == 2
+
+
+def test_no_academic_state_accepts_ordinary_workspace(tmp_path: Path) -> None:
+    (tmp_path / "classes").mkdir()
+    (tmp_path / "scans" / "source").mkdir(parents=True)
+    _assert_no_academic_state(tmp_path)
+
+
+@pytest.mark.parametrize("relative_path", ACADEMIC_STATE_PATHS)
+def test_no_academic_state_rejects_each_forbidden_path(
+    tmp_path: Path, relative_path: Path
+) -> None:
+    target = tmp_path / relative_path
+    if target.suffix:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.touch()
+    else:
+        target.mkdir(parents=True)
+    with pytest.raises(AssertionError, match=relative_path.as_posix().replace(".", r"\.")):
+        _assert_no_academic_state(tmp_path)

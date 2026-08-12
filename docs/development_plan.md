@@ -9,7 +9,7 @@ Classification: **active authority** for the v0.8.9 release candidate.
 ## Current status
 
 Quillan v0.8.9 is a local-first, teacher-controlled writing-evidence module for
-PDS Core 0.5. Its supported workflow is:
+PDS Core 0.6. Its supported workflow is:
 
 ```text
 PDS2 locator -> immutable Core route -> Quillan page context
@@ -41,7 +41,13 @@ dashboards, and cross-assignment analytics are outside this milestone.
 
 PDF scan intake uses `pdf2image` and requires Poppler on the host. Supported
 Python versions are CPython 3.11 through 3.14. Runtime Core compatibility is
-`pds-core>=0.5,<0.6`, with released Core 0.5.0 as the acceptance baseline.
+`pds-core>=0.6,<0.7`, with released Core 0.6.0 as the qualification baseline.
+
+Adopting Core 0.6 alone does not register Quillan Academic Work, generate
+workspace Academic Result manifests, publish results, create Publication Records
+or withdrawals, rebuild the academic catalog, assign Academic Period membership,
+calculate proficiency or Grades, or create portfolio Candidates. Those workflows
+remain owned by #360 through #365; #366 owns the final release audit.
 
 ## Release closeout
 

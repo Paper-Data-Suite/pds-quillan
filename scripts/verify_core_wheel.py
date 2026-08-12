@@ -1,4 +1,4 @@
-"""Authenticate the exact official PDS Core 0.5.0 release wheel."""
+"""Authenticate the exact official PDS Core 0.6.0 release wheel."""
 
 from __future__ import annotations
 
@@ -15,12 +15,12 @@ from typing import Final
 import zipfile
 
 
-AUTHORITATIVE_CORE_FILENAME: Final = "pds_core-0.5.0-py3-none-any.whl"
+AUTHORITATIVE_CORE_FILENAME: Final = "pds_core-0.6.0-py3-none-any.whl"
 AUTHORITATIVE_CORE_SHA256: Final = (
-    "336676fa4b72e2b4094f654e77b5746b0d6670946cb4c5d3022c4c0be7963400"
+    "be28c061b38463ef59ebc328ed1aa443767fe7f2c626babb769c2d8e5932f308"
 )
 AUTHORITATIVE_CORE_DISTRIBUTION: Final = "pds-core"
-AUTHORITATIVE_CORE_VERSION: Final = "0.5.0"
+AUTHORITATIVE_CORE_VERSION: Final = "0.6.0"
 
 
 class CoreWheelVerificationError(ValueError):

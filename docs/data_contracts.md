@@ -1,5 +1,11 @@
 # Quillan Data Contracts
 
+Quillan requires `pds-core>=0.6,<0.7`; release qualification uses the exact
+released Core 0.6.0 wheel. This dependency upgrade preserves the routing contract
+`"1"`, PDS2 payloads, route-registration schema `"1"`, and the existing Quillan
+producer contracts. It does not itself create Academic Work Registration,
+Academic Period, manifest, Publication Record, withdrawal, or catalog state.
+
 The pure `quillan_academic_result_manifest_v1` contract is defined in
 [Academic Result Manifest v1](academic_result_manifest_v1.md). Quillan preserves
 native review meaning, Core verifies publication envelopes, and an authorized

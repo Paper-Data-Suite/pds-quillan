@@ -6,6 +6,8 @@ import tomllib
 from pathlib import Path
 
 from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+from packaging.version import Version
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 
@@ -24,19 +26,43 @@ def test_runtime_declares_one_ordinary_core_requirement() -> None:
     core_values = [
         value
         for value in dependencies
-        if Requirement(value).name == "pds-core"
+        if canonicalize_name(Requirement(value).name) == "pds-core"
     ]
-    assert core_values == ["pds-core>=0.5,<0.6"]
+    assert core_values == ["pds-core>=0.6,<0.7"]
 
     requirement = Requirement(core_values[0])
-    assert requirement.name.lower().replace("_", "-") == "pds-core"
+    assert canonicalize_name(requirement.name) == "pds-core"
     assert requirement.url is None
-    assert {str(value) for value in requirement.specifier} == {">=0.5", "<0.6"}
+    assert {str(value) for value in requirement.specifier} == {">=0.6", "<0.7"}
+    assert Version("0.6.0") in requirement.specifier
+    assert Version("0.6.9") in requirement.specifier
+    assert Version("0.5.9") not in requirement.specifier
+    assert Version("0.7.0") not in requirement.specifier
+    assert Version("0.6.0a1") not in requirement.specifier
     assert "@" not in core_values[0]
     assert not any(
         marker in core_values[0].lower()
         for marker in ("file:", "git+", "hg+", "svn+", "bzr+", "../", "..\\")
     )
+
+
+def test_core_requirement_identity_uses_standard_name_normalization() -> None:
+    requirements = [
+        Requirement("pds-core>=0.6,<0.7"),
+        Requirement("pds_core>=0.6,<0.7"),
+        Requirement("PDS.Core>=0.6,<0.7"),
+        Requirement("unrelated>=1"),
+    ]
+    core = [
+        requirement
+        for requirement in requirements
+        if canonicalize_name(requirement.name) == "pds-core"
+    ]
+    assert [requirement.name for requirement in core] == [
+        "pds-core",
+        "pds_core",
+        "PDS.Core",
+    ]
 
 
 def test_development_extras_declare_packaging_directly() -> None:

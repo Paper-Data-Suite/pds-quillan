@@ -3,7 +3,7 @@
 Classification: **active authority**.
 
 1. Begin from the approved baseline with a clean tree and use synthetic data.
-2. Supply the released PDS Core 0.5.0 wheel explicitly to the release validator.
+2. Supply the released PDS Core 0.6.0 wheel explicitly to the release validator.
 3. Run source tests, Ruff, mypy without incremental state, documentation and
    parser drift checks, repository hard-cutover checks, and `git diff --check`.
 4. Build exactly `quillan-0.8.9-py3-none-any.whl` and
@@ -27,6 +27,6 @@ Run the automated candidate gate with:
 ```powershell
 .\scripts\validate_release_candidate.ps1 `
   -Python .\.venv\Scripts\python.exe `
-  -PdsCoreWheel C:\path\to\pds_core-0.5.0-py3-none-any.whl `
+  -PdsCoreWheel C:\path\to\pds_core-0.6.0-py3-none-any.whl `
   -ArtifactOutputDirectory C:\path\outside\repository\quillan-0.8.9-candidate
 ```

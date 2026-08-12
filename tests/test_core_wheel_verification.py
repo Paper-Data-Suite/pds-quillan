@@ -26,7 +26,7 @@ def _wheel(
     *,
     filename: str = AUTHORITATIVE_CORE_FILENAME,
     distribution: str = "pds-core",
-    version: str = "0.5.0",
+    version: str = "0.6.0",
     include_metadata: bool = True,
 ) -> Path:
     path = root / filename
@@ -34,7 +34,7 @@ def _wheel(
         archive.writestr("pds_core/__init__.py", "")
         if include_metadata:
             archive.writestr(
-                "pds_core-0.5.0.dist-info/METADATA",
+                "pds_core-0.6.0.dist-info/METADATA",
                 f"Metadata-Version: 2.4\nName: {distribution}\nVersion: {version}\n",
             )
     return path
@@ -49,7 +49,7 @@ def test_correct_metadata_and_hash_contract_is_accepted(tmp_path: Path) -> None:
     verified = verify_core_wheel(wheel, _matching_contract(wheel))
     assert verified.filename == AUTHORITATIVE_CORE_FILENAME
     assert verified.distribution == "pds-core"
-    assert verified.version == "0.5.0"
+    assert verified.version == "0.6.0"
 
 
 def test_wrong_filename_is_rejected(tmp_path: Path) -> None:
@@ -60,7 +60,7 @@ def test_wrong_filename_is_rejected(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     ("field", "value", "message"),
-    (("distribution", "not-core", "distribution"), ("version", "0.5.1", "version")),
+    (("distribution", "not-core", "distribution"), ("version", "0.6.1", "version")),
 )
 def test_wrong_embedded_identity_is_rejected(
     tmp_path: Path, field: str, value: str, message: str
@@ -102,7 +102,7 @@ def _installed_identity(
     environment: Path,
     distribution_location: Path,
     import_path: Path,
-    version: str = "0.5.0",
+    version: str = "0.6.0",
 ) -> None:
     import_path.parent.mkdir(parents=True, exist_ok=True)
     import_path.touch()
@@ -127,7 +127,7 @@ def test_installed_metadata_version_mismatch_is_rejected(
         environment=environment,
         distribution_location=location,
         import_path=location / "pds_core" / "__init__.py",
-        version="0.5.1",
+        version="0.6.1",
     )
     with pytest.raises(CoreWheelVerificationError, match="version"):
         installed_core_identity()

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import importlib.metadata as metadata
 import json
 import os
@@ -17,12 +18,42 @@ EXPECTED_VERSION = "0.8.9"
 CLASS_ID = "synthetic_release_class"
 ASSIGNMENT_ID = "synthetic_release_digital"
 STANDARD_ID = "synthetic:W.RELEASE.1"
+ACADEMIC_STATE_PATHS = (
+    Path("settings/academic_periods"),
+    Path("registry/work"),
+    Path("registry/publications"),
+    Path("registry/withdrawals"),
+    Path("registry/catalog.sqlite"),
+    Path("registry/.locks"),
+)
+CORE_06_ACADEMIC_MODULES = (
+    "pds_core.academic_work_registrations",
+    "pds_core.academic_work_registration_storage",
+    "pds_core.registry_services",
+    "pds_core.publication_records",
+    "pds_core.publication_storage",
+    "pds_core.publication_compatibility",
+    "pds_core.academic_catalog",
+)
 
 
 def _load_object(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8", errors="strict"))
     assert type(value) is dict, path
     return value
+
+
+def _assert_no_academic_state(workspace: Path) -> None:
+    """Prove ordinary Quillan operations did not create Core academic state."""
+    created = [path.as_posix() for path in ACADEMIC_STATE_PATHS if (workspace / path).exists()]
+    assert not created, created
+
+
+def _module_origin(module_name: str) -> Path:
+    module = importlib.import_module(module_name)
+    raw_origin = module.__file__
+    assert raw_origin is not None, module_name
+    return Path(raw_origin).resolve()
 
 
 def _verify_digital_durable_state(
@@ -446,10 +477,23 @@ def main() -> int:
     env.pop("PYTHONPATH", None)
 
     distribution = metadata.distribution("quillan")
+    core_distribution = metadata.distribution("pds-core")
     assert distribution.version == EXPECTED_VERSION
+    assert core_distribution.version == "0.6.0"
     root = Path(str(distribution.locate_file(""))).resolve()
     import quillan
     import quillan.pds_module
+    import pds_core
+
+    assert pds_core.__version__ == core_distribution.version
+    raw_core_origin = pds_core.__file__
+    assert raw_core_origin is not None
+    core_origin = Path(raw_core_origin).resolve()
+    assert not core_origin.is_relative_to(repository), core_origin
+    academic_module_origins = {
+        name: str(_module_origin(name))
+        for name in CORE_06_ACADEMIC_MODULES
+    }
 
     origins = [Path(quillan.__file__).resolve(), Path(quillan.pds_module.__file__).resolve()]
     assert all(not path.is_relative_to(repository) for path in origins), origins
@@ -473,8 +517,12 @@ def main() -> int:
         result = _run(_cli(arguments), cwd=work, env=env, stdin="q\n")
         assert "Quit" in result.stdout and result.stderr == ""
     assert not sentinel.exists()
-    workflow = _run_full_workflow(work / "workflow-workspace", work=work, env=env) if args.full_workflow else None
-    print(json.dumps({"version": distribution.version, "distribution_root": str(root), "origins": [str(path) for path in origins], "module_count": len(modules), "module_profile": profile.module_id, "workspace_side_effects": False, "workflow": workflow}, indent=2, sort_keys=True))
+    _assert_no_academic_state(sentinel)
+    workflow_workspace = work / "workflow-workspace"
+    workflow = _run_full_workflow(workflow_workspace, work=work, env=env) if args.full_workflow else None
+    if args.full_workflow:
+        _assert_no_academic_state(workflow_workspace)
+    print(json.dumps({"version": distribution.version, "distribution_root": str(root), "origins": [str(path) for path in origins], "core_version": core_distribution.version, "core_origin": str(core_origin), "core_06_academic_modules": academic_module_origins, "module_count": len(modules), "module_profile": profile.module_id, "workspace_side_effects": False, "academic_registry_side_effects": False, "workflow": workflow}, indent=2, sort_keys=True))
     return 0
 
 

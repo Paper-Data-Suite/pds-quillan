@@ -192,7 +192,7 @@ try {
         if ($InstallExitCode -ne 0) {
             if (-not $ResolvedCoreWheel) {
                 throw (
-                    "Quillan requires pds-core>=0.5,<0.6, but no compatible " +
+                    "Quillan requires pds-core>=0.6,<0.7, but no compatible " +
                     "distribution was resolved. Supply a verified Core wheel with " +
                     "-PdsCoreWheel or PDS_CORE_WHEEL. This script will not fall " +
                     "back to a neighboring source checkout."
@@ -211,16 +211,20 @@ import pathlib
 import sys
 from packaging.requirements import Requirement
 from packaging.specifiers import SpecifierSet
+from packaging.utils import canonicalize_name
 from packaging.version import Version
 
 quillan = metadata.distribution('quillan')
 requirements = [Requirement(value) for value in quillan.requires or []]
-core = [value for value in requirements if value.name == 'pds-core']
+core = [
+    value for value in requirements
+    if canonicalize_name(value.name) == 'pds-core'
+]
 assert len(core) == 1, core
 assert core[0].url is None, core[0]
-assert {str(value) for value in core[0].specifier} == {'>=0.5', '<0.6'}, core[0]
+assert {str(value) for value in core[0].specifier} == {'>=0.6', '<0.7'}, core[0]
 installed_core = metadata.distribution('pds-core')
-assert Version(installed_core.version) in SpecifierSet('>=0.5,<0.6'), installed_core.version
+assert Version(installed_core.version) in SpecifierSet('>=0.6,<0.7'), installed_core.version
 scripts = [entry for entry in quillan.entry_points if entry.group == 'console_scripts']
 assert any(entry.name == 'quillan' and entry.value == 'quillan.cli:main' for entry in scripts), scripts
 print(json.dumps({

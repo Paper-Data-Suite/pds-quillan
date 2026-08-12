@@ -345,15 +345,15 @@ development extras:
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install "C:\path\to\pds_core-0.5.x-py3-none-any.whl"
+python -m pip install "C:\path\to\pds_core-0.6.0-py3-none-any.whl"
 python -m pip install -e ".[dev]"
 python -m pip check
 ```
 
 The configured package index did not provide a compatible PDS Core distribution
-during the Core 0.5 baseline validation, so install a verified compatible wheel
+during the Core 0.6 baseline validation, so install a verified compatible wheel
 first. Pip then confirms that wheel satisfies Quillan's declared
-`pds-core>=0.5,<0.6` runtime dependency. A sibling Core checkout is not required,
+`pds-core>=0.6,<0.7` runtime dependency. A sibling Core checkout is not required,
 and no neighboring Core source path is used. `requirements-dev.txt` is a
 convenience wrapper around `.[dev]` and may be used instead of the direct
 editable-install command.
@@ -364,7 +364,7 @@ To validate clean editable and noneditable installations, run:
 powershell -ExecutionPolicy Bypass `
     -File .\scripts\validate_development_install.ps1 `
     -Python .\.venv\Scripts\python.exe `
-    -PdsCoreWheel "C:\path\to\pds_core-0.5.x-py3-none-any.whl"
+    -PdsCoreWheel "C:\path\to\pds_core-0.6.0-py3-none-any.whl"
 ```
 
 The equivalent `PDS_CORE_WHEEL` environment variable may be used instead of
@@ -372,6 +372,11 @@ The equivalent `PDS_CORE_WHEEL` environment variable may be used instead of
 checks package metadata, editable and noneditable installation, installed import
 origins, CLI availability, and workspace side effects. The v0.8.9 runtime is
 PDS2-only and uses module-qualified storage throughout.
+
+Core 0.6 adoption is compatibility infrastructure only. It does not register
+Academic Work, generate or publish Academic Result manifests, create Publication
+Records or withdrawals, rebuild the academic catalog, assign Academic Periods,
+calculate proficiency or Grades, or create portfolio Candidates.
 
 
 PDF scan intake uses `pdf2image` and requires Poppler installed on the user's

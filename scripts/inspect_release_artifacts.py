@@ -11,6 +11,9 @@ import re
 import tarfile
 import zipfile
 
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+
 EXPECTED_VERSION = "0.8.9"
 REMOVED = {
     "quillan/submissions.py",
@@ -41,6 +44,7 @@ def _validate_names(names: set[str]) -> None:
         parts = normalized.parts
         if parts and parts[0] == f"quillan-{EXPECTED_VERSION}":
             parts = parts[1:]
+        assert not (parts and parts[0] == "pds_core"), name
         normalized_names.add(PurePosixPath(*parts).as_posix())
     assert not (REMOVED & normalized_names), names
 
@@ -53,11 +57,25 @@ def _metadata_contract(raw: str) -> dict[str, object]:
     assert metadata["Requires-Python"] == ">=3.11", metadata["Requires-Python"]
     assert metadata["License-Expression"] == "MIT", metadata.items()
     assert "License-File" in metadata and "LICENSE" in metadata["License-File"]
-    assert any(value.startswith("pds-core<0.6,>=0.5") for value in requirements)
+    parsed_requirements = [Requirement(value) for value in requirements]
+    core_requirements = [
+        requirement
+        for requirement in parsed_requirements
+        if canonicalize_name(requirement.name) == "pds-core"
+    ]
+    assert len(core_requirements) == 1, core_requirements
+    core_requirement = core_requirements[0]
+    assert core_requirement.url is None, core_requirement
+    assert core_requirement.marker is None, core_requirement
+    assert not core_requirement.extras, core_requirement
+    assert {str(value) for value in core_requirement.specifier} == {
+        ">=0.6",
+        "<0.7",
+    }, core_requirement
     return {
         "version": metadata["Version"],
         "requires_python": metadata["Requires-Python"],
-        "core_requirement": next(v for v in requirements if v.startswith("pds-core")),
+        "core_requirement": str(core_requirement),
         "license": metadata["License-Expression"],
     }
 
@@ -72,6 +90,7 @@ def inspect_wheel(path: Path) -> dict[str, object]:
         entries = archive.read(entry_name).decode("utf-8")
         assert "quillan = quillan.cli:main" in entries
         assert "quillan = quillan.pds_module:get_module_profile" in entries
+        assert "paper_data_suite.publication_producers" not in entries
         assert "quillan/_version.py" in names
         assert any(name.endswith(".dist-info/licenses/LICENSE") for name in names)
     return {"filename": path.name, "sha256": _sha256(path), **metadata}

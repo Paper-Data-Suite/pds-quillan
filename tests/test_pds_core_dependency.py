@@ -1,4 +1,10 @@
-"""Smoke tests for the installed PDS Core 0.5 routing contract."""
+"""Smoke tests for the installed PDS Core 0.6 routing contract."""
+
+import importlib.metadata as metadata
+
+import pds_core
+from packaging.specifiers import SpecifierSet
+from packaging.version import Version
 
 from pds_core.pds2 import parse_pds2_payload, serialize_pds2_payload
 from pds_core.route_ids import generate_route_id
@@ -20,3 +26,9 @@ def test_pds_core_pds2_dependency_is_available() -> None:
     assert ModuleWorkRef.__module__ == "pds_core.routing_models"
     assert RouteLocator.__module__ == "pds_core.routing_models"
     assert RouteRegistration.__module__ == "pds_core.routing_models"
+
+
+def test_installed_core_distribution_and_package_versions_agree() -> None:
+    installed_version = metadata.version("pds-core")
+    assert Version(installed_version) in SpecifierSet(">=0.6,<0.7")
+    assert pds_core.__version__ == installed_version
