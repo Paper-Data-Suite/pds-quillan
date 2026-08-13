@@ -705,6 +705,169 @@
     {
       "path": [
         "quillan",
+        "manifest"
+      ],
+      "aliases": [],
+      "short_help": "Create and inspect immutable Quillan Academic Result Manifests.",
+      "description": "List, show, validate, or explicitly generate immutable producer-owned Academic Result Manifest revisions. Generation does not publish through Core and does not create a Grade.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "manifest",
+        "list"
+      ],
+      "aliases": [],
+      "short_help": "List immutable manifest revisions with privacy-minimized metadata.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "manifest",
+        "show"
+      ],
+      "aliases": [],
+      "short_help": "Show privacy-minimized metadata for one immutable revision.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--revision"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact immutable manifest revision.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "manifest",
+        "validate"
+      ],
+      "aliases": [],
+      "short_help": "Strictly validate one immutable producer revision.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--revision"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact immutable manifest revision.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "manifest",
+        "generate"
+      ],
+      "aliases": [],
+      "short_help": "Generate the required next revision or byte-exactly replay the head.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
         "printable-responses"
       ],
       "aliases": [],

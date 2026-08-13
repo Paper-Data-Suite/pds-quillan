@@ -13,16 +13,18 @@ consumer applies grading/reporting policy. A Quillan native rating scale is not
 a Meridian proficiency scale unless an explicit downstream versioned mapping
 policy says so.
 
-The module is a pure contract: it performs no workspace, registry, catalog,
-artifact, roster, or standards-library I/O and calculates no proficiency,
-Grade, missing-work state, or portfolio policy. Construction belongs to #361;
+The manifest model and canonical serializer remain a pure contract: they
+perform no workspace, registry, catalog, artifact, roster, or standards-library
+I/O and calculate no proficiency, Grade, missing-work state, or portfolio policy.
+Explicit workspace generation and immutable storage are implemented separately by
+[Academic Result Manifest Generation](academic_result_manifest_generation.md);
 privacy projection is defined by
 [Quillan Publication Projection Policy v1](publication_projection_policy_v1.md);
 revision, correction, and withdrawal behavior is defined by
 [Quillan Publication Revision Policy](publication_revision_policy.md); explicit
 assignment eligibility and Core registration are defined by
-[Quillan Academic Work Registration](academic_work_registration.md); and manifest
-generation/publication integration remains #361–#364.
+[Quillan Academic Work Registration](academic_work_registration.md); and Core producer-profile,
+publication, and reader integration remains #362–#364.
 
 ## Exact schema
 

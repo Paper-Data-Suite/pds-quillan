@@ -1,8 +1,10 @@
 # Quillan Development Plan
 
-The pure Quillan Academic Result Manifest v1 contract now provides the base for
-later privacy, revision, Core integration, generation, publication, and reader
-work (#357–#364); this phase does not generate or publish workspace manifests.
+Quillan now has the complete producer-side foundation through #361:
+Academic Result Manifest v1, privacy projection, revision policy, Core 0.6
+compatibility, explicit Academic Work Registration, and explicit immutable
+workspace manifest generation/replay. Producer profile, Core publication
+lifecycle, and consumer-neutral reading remain #362–#364.
 
 Classification: **active authority** for the v0.8.9 release candidate.
 
@@ -28,8 +30,8 @@ regeneration, installed module-profile discovery, retained-once image/PDF/folder
 intake, Core routing review, Quillan post-dispatch review, digital and plain-paper
 submissions, teacher-controlled page management and standards-based review,
 feedback export, three assignment-local reports, dashboard schema version 2,
-student review status schema version 1, direct CLI commands, and the compact
-teacher menu.
+student review status schema version 1, explicit immutable Academic Result
+manifest generation/replay, direct CLI commands, and the compact teacher menu.
 
 ## Product boundaries
 
@@ -43,14 +45,30 @@ PDF scan intake uses `pdf2image` and requires Poppler on the host. Supported
 Python versions are CPython 3.11 through 3.14. Runtime Core compatibility is
 `pds-core>=0.6,<0.7`, with released Core 0.6.0 as the qualification baseline.
 
-Quillan now supports explicit Academic Work Registration for eligible managed
+Quillan supports explicit Academic Work Registration for eligible managed
 assignments through Core under `quillan_academic_work_v1`; ordinary assignment,
 PDS2, review, feedback, and reporting workflows never register work implicitly.
-Registration does not generate workspace Academic Result manifests, publish
-results, create Publication Records or withdrawals, rebuild the academic catalog,
+Registration itself does not generate manifests. A separate explicit #361
+workflow now validates native state and creates/replays immutable producer-owned
+Academic Result manifest revisions under
+`exports/manifests/academic_results/`. That workflow does not publish through
+Core, create Publication Records or withdrawals, rebuild the academic catalog,
 assign Academic Period membership, calculate proficiency or Grades, or create
-portfolio Candidates. #361 through #365 own those remaining producer workflows;
+portfolio Candidates. #362–#365 own the remaining producer integration;
 #366 owns the final release audit.
+
+## Core 0.6 academic-publication milestone status
+
+```text
+#359 Core 0.6 adoption                         complete
+#360 Academic Work Registration                complete
+#361 immutable manifest generation/validation complete
+#362 publication producer profile              remaining
+#363 publication lifecycle                     remaining
+#364 consumer-neutral reader                   remaining
+#365 installed end-to-end producer acceptance  remaining
+#366 release audit/version closeout             remaining
+```
 
 ## Release closeout
 

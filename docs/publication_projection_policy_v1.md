@@ -637,9 +637,11 @@ must preserve.
 
 ### #361 — immutable manifest generation
 
-Loads and validates authoritative native records, applies this pure policy, constructs
-Academic Result Manifest v1, binds exact source bytes, and writes immutable manifest
-revisions.
+Implemented by
+[Academic Result Manifest Generation](academic_result_manifest_generation.md).
+The workspace layer loads and validates authoritative native records, applies
+this pure policy, constructs Academic Result Manifest v1, binds exact source
+bytes, and creates or byte-exactly replays immutable manifest revisions.
 
 ### #364 — consumer-neutral reader
 

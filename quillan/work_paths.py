@@ -7,6 +7,10 @@ import os
 from pathlib import Path
 
 from pds_core.identifiers import validate_identifier
+from pds_core.publication_records import (
+    PublicationRecordValidationError,
+    validate_publication_manifest_path,
+)
 from pds_core.routes import (
     class_roster_path,
     module_work_collection_dir,
@@ -349,6 +353,66 @@ def student_performance_summary_path(
     )
 
 
+def manifest_exports_dir(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+) -> Path:
+    """Return the producer-owned manifest export directory without mutation."""
+    return safe_module_work_descendant(
+        workspace_root,
+        _require_quillan_work_ref(work_ref),
+        Path("exports") / "manifests",
+    )
+
+
+def academic_result_manifests_dir(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+) -> Path:
+    """Return the immutable Academic Result manifest collection."""
+    return safe_module_work_descendant(
+        workspace_root,
+        _require_quillan_work_ref(work_ref),
+        Path("exports") / "manifests" / "academic_results",
+    )
+
+
+def academic_result_manifest_revision_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    revision: int,
+) -> Path:
+    """Return one immutable revision-addressed manifest path without I/O."""
+    validated_work = _require_quillan_work_ref(work_ref)
+    if isinstance(revision, bool) or not isinstance(revision, int) or revision < 1:
+        raise QuillanWorkPathError(
+            "revision must be a positive non-Boolean integer."
+        )
+    return safe_module_work_descendant(
+        workspace_root,
+        validated_work,
+        Path("exports")
+        / "manifests"
+        / "academic_results"
+        / f"{revision}.json",
+    )
+
+
+def academic_result_manifest_relative_path(
+    work_ref: ModuleWorkRef,
+    revision: int,
+) -> str:
+    """Return and Core-validate one workspace-relative publication path."""
+    validated_work = _require_quillan_work_ref(work_ref)
+    relative = academic_result_manifest_revision_path(
+        Path(), validated_work, revision
+    ).as_posix()
+    try:
+        return validate_publication_manifest_path(validated_work, relative)
+    except PublicationRecordValidationError as error:
+        raise QuillanWorkPathError(str(error)) from error
+
+
 def post_dispatch_review_dir(
     workspace_root: str | Path,
     work_ref: ModuleWorkRef,
@@ -634,11 +698,15 @@ def _lexists(path: Path) -> bool:
 __all__ = [
     "QuillanWorkPathError",
     "QuillanWorkPaths",
+    "academic_result_manifest_relative_path",
+    "academic_result_manifest_revision_path",
+    "academic_result_manifests_dir",
     "class_summary_path",
     "feedback_markdown_path",
     "feedback_pdf_path",
     "initialize_managed_work_layout",
     "initialize_student_submission_dir",
+    "manifest_exports_dir",
     "preflight_managed_work_layout",
     "preflight_quillan_work_collection",
     "preflight_work_file_destination",

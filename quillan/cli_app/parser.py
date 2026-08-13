@@ -91,6 +91,12 @@ from quillan.cli_app.handlers.academic_work import (
     handle_academic_work_show,
     handle_academic_work_update,
 )
+from quillan.cli_app.handlers.manifest import (
+    handle_manifest_generate,
+    handle_manifest_list,
+    handle_manifest_show,
+    handle_manifest_validate,
+)
 from quillan.cli_app.handlers.assignments import (
     handle_assignment_create,
     handle_assignment_show,
@@ -318,6 +324,64 @@ def build_parser() -> argparse.ArgumentParser:
         help="Exact Core registration revision observed before this update.",
     )
     academic_work_update_parser.set_defaults(handler=handle_academic_work_update)
+
+    manifest_parser = subparsers.add_parser(
+        "manifest",
+        help="Create and inspect immutable Quillan Academic Result Manifests.",
+        description=(
+            "List, show, validate, or explicitly generate immutable producer-owned "
+            "Academic Result Manifest revisions. Generation does not publish through "
+            "Core and does not create a Grade."
+        ),
+    )
+    manifest_parser.set_defaults(
+        handler=partial(_print_parser_help, manifest_parser)
+    )
+    manifest_subparsers = manifest_parser.add_subparsers(
+        dest="manifest_command"
+    )
+
+    manifest_list_parser = manifest_subparsers.add_parser(
+        "list",
+        help="List immutable manifest revisions with privacy-minimized metadata.",
+    )
+    _add_academic_work_identity_options(manifest_list_parser)
+    manifest_list_parser.set_defaults(handler=handle_manifest_list)
+
+    manifest_show_parser = manifest_subparsers.add_parser(
+        "show",
+        help="Show privacy-minimized metadata for one immutable revision.",
+    )
+    _add_academic_work_identity_options(manifest_show_parser)
+    manifest_show_parser.add_argument(
+        "--revision",
+        required=True,
+        type=positive_integer,
+        action=StoreOnceAction,
+        help="Exact immutable manifest revision.",
+    )
+    manifest_show_parser.set_defaults(handler=handle_manifest_show)
+
+    manifest_validate_parser = manifest_subparsers.add_parser(
+        "validate",
+        help="Strictly validate one immutable producer revision.",
+    )
+    _add_academic_work_identity_options(manifest_validate_parser)
+    manifest_validate_parser.add_argument(
+        "--revision",
+        required=True,
+        type=positive_integer,
+        action=StoreOnceAction,
+        help="Exact immutable manifest revision.",
+    )
+    manifest_validate_parser.set_defaults(handler=handle_manifest_validate)
+
+    manifest_generate_parser = manifest_subparsers.add_parser(
+        "generate",
+        help="Generate the required next revision or byte-exactly replay the head.",
+    )
+    _add_academic_work_identity_options(manifest_generate_parser)
+    manifest_generate_parser.set_defaults(handler=handle_manifest_generate)
 
     printable_responses_parser = subparsers.add_parser(
         "printable-responses",

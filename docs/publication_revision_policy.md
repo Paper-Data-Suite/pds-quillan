@@ -71,9 +71,10 @@ Quillan package version
 manifest models and returns immutable planning values.
 
 It performs no workspace, filesystem, hashing, registry, catalog, publication,
-withdrawal, authorization, grading, proficiency, or portfolio work. Manifest
-filesystem history belongs to #361. Core-backed publication lifecycle belongs to
-#363.
+withdrawal, authorization, grading, proficiency, or portfolio work. The separate
+[Academic Result Manifest Generation](academic_result_manifest_generation.md)
+implementation applies this pure policy to durable producer filesystem history.
+Core-backed publication lifecycle belongs to #363.
 
 ## Revision allocation
 
@@ -289,8 +290,9 @@ Producer manifest allocation and Core publication are independent histories. A
 manifest may exist without publication, and Core may still point to an older
 published producer revision.
 
-The pure revision policy does not inspect Core state. #361 owns durable producer
-manifest history. #363 reloads canonical Core state and reconciles publication.
+The pure revision policy does not inspect Core state. The #361 manifest
+generation/storage layer owns durable producer manifest history. #363 reloads
+canonical Core state and reconciles publication.
 
 ## Supersession
 
@@ -426,11 +428,11 @@ Academic Period membership, reporting, and downstream correction consequences.
 
 Vitrine owns portfolio candidacy, selection, snapshot, and disclosure policy.
 
-Follow-up implementation remains:
+Milestone implementation status:
 
-- #359: Core 0.6 dependency upgrade;
-- #360: Academic Work Registration;
-- #361: source loading, hashing, immutable manifest generation/storage;
+- #359: Core 0.6 dependency upgrade — complete;
+- #360: Academic Work Registration — complete;
+- #361: source loading, hashing, immutable manifest generation/storage — complete;
 - #362: producer compatibility profile;
 - #363: Core publication, supersession, withdrawal, reconciliation;
 - #364: consumer-neutral reader and authorized source/artifact resolution;

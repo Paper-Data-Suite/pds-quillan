@@ -1,7 +1,9 @@
 # Quillan
 
 Quillan's immutable producer-owned result contract is documented in
-[Academic Result Manifest v1](docs/academic_result_manifest_v1.md).
+[Academic Result Manifest v1](docs/academic_result_manifest_v1.md). Explicit
+workspace generation and immutable producer storage are documented in
+[Academic Result Manifest Generation](docs/academic_result_manifest_generation.md).
 
 > **Storage contract:** Quillan assignment, submission, review, feedback, and
 > assignment-report services use only
@@ -66,6 +68,7 @@ Quillan currently supports:
 * minimum-requirements review with explicit teacher-entered outcomes;
 * review-unit Focus Standard observations;
 * overall Focus Standard ratings;
+* explicit immutable Academic Result manifest generation and byte-exact replay;
 * Focus Standard feedback composition;
 * reusable Focus Standard comments in `shared/focus_standard_comments/`;
 * student feedback export to Markdown, PDF, or both;
@@ -92,6 +95,7 @@ classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/student_performance_summary.csv
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/manifests/academic_results/<revision>.json
 shared/focus_standard_comments/<comment_set_id>.json
 shared/standards/library.json
 scans/source/YYYY-MM-DD/
@@ -138,7 +142,9 @@ Assignment Management supports:
 1. Create writing assignment
 2. View/validate assignment
 3. Printable Response Pages
-4. Back
+4. Academic Work Registration
+5. Academic Result Manifests
+B. Back
 ```
 
 Assignment creation requires an existing roster and writes:
@@ -301,6 +307,7 @@ quillan review-status <class_id> <assignment_id> <student_id> --format json
 quillan assignment --help
 quillan roster --help
 quillan printable-responses --help
+quillan manifest --help
 quillan requirements --help
 quillan review-units --help
 quillan observations --help
@@ -322,6 +329,7 @@ Primary contracts:
 
 ```text
 docs/data_contracts.md
+docs/academic_result_manifest_generation.md
 docs/assignment_contract.md
 docs/review_record_contract.md
 docs/focus_standard_comment_contract.md

@@ -11,6 +11,12 @@ The pure `quillan_academic_result_manifest_v1` contract is defined in
 native review meaning, Core verifies publication envelopes, and an authorized
 consumer owns later grading/reporting policy.
 
+Explicit native-source validation, privacy-safe projection, immutable revision
+storage, byte-exact replay, and producer digest generation are implemented in
+[Academic Result Manifest Generation](academic_result_manifest_generation.md).
+Manifest generation remains independent of Academic Work Registration and does
+not create Core publication or Grade state.
+
 The producer-owned privacy floor for manifest and later artifact projections is
 defined in
 [Quillan Publication Projection Policy v1](publication_projection_policy_v1.md).
