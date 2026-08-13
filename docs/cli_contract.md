@@ -50,6 +50,36 @@ concise and nonzero; partial success warns that durable Core state may exist.
 See [Quillan Academic Work Registration](academic_work_registration.md) for the
 eligibility, immutability, concurrency, and publication-boundary contract.
 
+## Academic Result Manifest Generation
+
+`quillan manifest` is the explicit producer-local namespace for immutable
+Quillan Academic Result Manifest revisions:
+
+```powershell
+quillan manifest list --class-id <class_id> --assignment-id <assignment_id>
+quillan manifest show --class-id <class_id> --assignment-id <assignment_id> --revision <revision>
+quillan manifest validate --class-id <class_id> --assignment-id <assignment_id> --revision <revision>
+quillan manifest generate --class-id <class_id> --assignment-id <assignment_id>
+```
+
+`list`, `show`, and `validate` are read-only producer-storage operations.
+`generate` validates current canonical native state and either creates the
+policy-selected immutable revision or returns a byte-exact replay of the
+existing producer head. The caller never supplies a revision.
+
+Routine output is privacy-minimized to work/revision metadata, path, digest,
+timestamp, and represented-student count. It does not print student IDs,
+ratings, rationales, comments, observations, evidence arrays, or raw manifest
+JSON. Expected validation, history, lock, and write failures are concise and
+nonzero without traceback. Partial success warns that an immutable revision may
+already be durable.
+
+Generation is independent of Academic Work Registration and creates no Core
+Publication Record, withdrawal, catalog, Academic Period, proficiency, Grade,
+or portfolio state. There is no overwrite, delete, repair, mutable-alias, or
+forced-revision command. See
+[Academic Result Manifest Generation](academic_result_manifest_generation.md).
+
 ## Direct Student Review Status
 
 `quillan review-status <class_id> <assignment_id> <student_id> [--format text|json]`
@@ -253,7 +283,9 @@ other suite data.
 ## Current Command Surface
 
 The current top-level command surface includes `quillan academic-work` for
-explicit Core Academic Work Registration of existing managed Quillan assignments.
+explicit Core Academic Work Registration of existing managed Quillan assignments
+and `quillan manifest` for explicit immutable producer-manifest generation and
+validation.
 
 The implemented command surface currently exposed through argparse is:
 
@@ -267,6 +299,10 @@ quillan review-workflow set-state <class_id> <assignment_id> <student_id> --stat
 quillan assignment create <class_id> <assignment_id> --title <title> --writing-type <type> (--prompt <text> | --prompt-file <path>) --standards-profile-id <profile_id> --focus-standard-ids <id,...> [--review-unit-type <type>] [--review-unit-singular <label>] [--review-unit-plural <label>] [--rating-scale default] [--paragraphs-min N] [--paragraphs-max N] [--word-count-min N] [--word-count-max N] [--required-elements <items>] [--allow-return-without-full-review true|false] [--overwrite] [--yes | --dry-run]
 quillan assignment show <class_id> <assignment_id>
 quillan assignment validate <class_id> <assignment_id>
+quillan manifest list --class-id <class_id> --assignment-id <assignment_id>
+quillan manifest show --class-id <class_id> --assignment-id <assignment_id> --revision <revision>
+quillan manifest validate --class-id <class_id> --assignment-id <assignment_id> --revision <revision>
+quillan manifest generate --class-id <class_id> --assignment-id <assignment_id>
 quillan printable-responses generate <class_id> <assignment_id> [--pages-per-student N] [--overwrite] (--yes | --dry-run)
 quillan requirements list <class_id> <assignment_id> <student_id>
 quillan requirements set-check <class_id> <assignment_id> <student_id> --requirement-key <key> --met true|false [--note <text>]

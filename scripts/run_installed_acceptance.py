@@ -41,6 +41,7 @@ SIDE_EFFECT_FREE_HELP_COMMANDS = (
     ("printable-responses", "--help"),
     ("workspace", "--help"),
     ("academic-work", "--help"),
+    ("manifest", "--help"),
 )
 
 

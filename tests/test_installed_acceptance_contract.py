@@ -164,8 +164,9 @@ def test_retained_source_added_count_is_derived(tmp_path: Path) -> None:
     assert result["retained_source_events_added"] == 2
 
 
-def test_installed_acceptance_probes_academic_work_help() -> None:
+def test_installed_acceptance_probes_academic_work_and_manifest_help() -> None:
     assert ("academic-work", "--help") in SIDE_EFFECT_FREE_HELP_COMMANDS
+    assert ("manifest", "--help") in SIDE_EFFECT_FREE_HELP_COMMANDS
 
 
 def test_no_academic_state_accepts_ordinary_workspace(tmp_path: Path) -> None:
