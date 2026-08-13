@@ -49,7 +49,10 @@ from pds_core.registry_services import (
 from pds_core.routing_models import ModuleRecordRef, ModuleWorkRef
 
 from quillan._path_safety import is_link_like
-from quillan.pds_contract import QUILLAN_MODULE_ID
+from quillan.pds_contract import (
+    QUILLAN_ACADEMIC_WORK_CONTRACT_VERSION,
+    QUILLAN_MODULE_ID,
+)
 from quillan.record_context import (
     QuillanRecordContextError,
     canonical_workspace_root,
@@ -57,7 +60,6 @@ from quillan.record_context import (
 )
 from quillan.work_paths import quillan_work_paths, quillan_work_ref
 
-QUILLAN_ACADEMIC_WORK_CONTRACT_VERSION: Final[str] = "quillan_academic_work_v1"
 QUILLAN_ACADEMIC_WORK_KIND: Final[str] = "assignment"
 QUILLAN_ASSIGNMENT_SOURCE_RECORD_KIND: Final[str] = "assignment"
 QUILLAN_ASSIGNMENT_SOURCE_CONTRACT_VERSION: Final[str] = "2"

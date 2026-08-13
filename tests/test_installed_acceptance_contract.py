@@ -169,6 +169,16 @@ def test_installed_acceptance_probes_academic_work_and_manifest_help() -> None:
     assert ("manifest", "--help") in SIDE_EFFECT_FREE_HELP_COMMANDS
 
 
+def test_installed_acceptance_probes_publication_profile_and_core_discovery() -> None:
+    source = Path("scripts/run_installed_acceptance.py").read_text(encoding="utf-8")
+    assert "import quillan.pds_publication" in source
+    assert "paper_data_suite.publication_producers" in source
+    assert "validate_publication_producer_profile" in source
+    assert "discover_publication_producer_profiles" in source
+    assert "build_publication_producer_registry" in source
+    assert 'assert not sentinel.exists()' in source
+
+
 def test_no_academic_state_accepts_ordinary_workspace(tmp_path: Path) -> None:
     (tmp_path / "classes").mkdir()
     (tmp_path / "scans" / "source").mkdir(parents=True)

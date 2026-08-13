@@ -10,6 +10,10 @@ from pds_core.routing_models import (
 
 QUILLAN_MODULE_ID: Final[str] = "quillan"
 QUILLAN_DISPLAY_NAME: Final[str] = "Quillan"
+QUILLAN_ACADEMIC_WORK_CONTRACT_VERSION: Final[str] = "quillan_academic_work_v1"
+ACADEMIC_RESULT_MANIFEST_CONTRACT_VERSION: Final[str] = (
+    "quillan_academic_result_manifest_v1"
+)
 
 RESPONSE_PAGE_RECORD_KIND: Final[str] = "response_page"
 RESPONSE_PAGE_CONTRACT_VERSION: Final[str] = "1"
@@ -24,8 +28,10 @@ SUPPORTED_ROUTE_REGISTRATION_SCHEMA_VERSIONS: Final[frozenset[str]] = frozenset(
 DISPATCHABLE_ROUTE_STATUSES: Final[frozenset[str]] = frozenset({"active"})
 
 __all__ = [
+    "ACADEMIC_RESULT_MANIFEST_CONTRACT_VERSION",
     "DISPATCHABLE_ROUTE_STATUSES",
     "QUILLAN_DISPLAY_NAME",
+    "QUILLAN_ACADEMIC_WORK_CONTRACT_VERSION",
     "QUILLAN_MODULE_ID",
     "RESPONSE_PAGE_CONTRACT_VERSION",
     "RESPONSE_PAGE_RECORD_KIND",

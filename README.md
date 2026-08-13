@@ -4,6 +4,8 @@ Quillan's immutable producer-owned result contract is documented in
 [Academic Result Manifest v1](docs/academic_result_manifest_v1.md). Explicit
 workspace generation and immutable producer storage are documented in
 [Academic Result Manifest Generation](docs/academic_result_manifest_generation.md).
+Installed publication compatibility is documented in
+[Publication Producer Profile](docs/publication_producer_profile.md).
 
 > **Storage contract:** Quillan assignment, submission, review, feedback, and
 > assignment-report services use only
@@ -19,6 +21,15 @@ Quillan registers the `quillan` entry point in `paper_data_suite.modules` throug
 `quillan.pds_module:get_module_profile`. The profile supports Core routing contract
 `1`, QR schema `PDS2`, route-registration schema `1`, and only Core route status
 `active`.
+
+Publication compatibility is discovered separately through
+`paper_data_suite.publication_producers`, with
+`quillan = quillan.pds_publication:get_publication_producer_profile`. The
+metadata-only profile declares Core Publication Record schema `1`, producer
+contract `quillan_academic_work_v1`, publication kind `academic_result_set`,
+manifest contract `quillan_academic_result_manifest_v1`, capability
+`standards_ratings`, and no Publication Record source contract. It does not read
+a workspace, publish records, expose a reader, or change routing behavior.
 
 An active route is only structurally dispatchable. The response-page handler also
 requires the immutable issuance lifecycle to be exactly `issued`. Student and page

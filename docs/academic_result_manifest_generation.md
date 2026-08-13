@@ -256,8 +256,9 @@ Later #363 publication orchestration must independently reload canonical Core
 state and bind the exact applicable Academic Work Registration revision, exact
 manifest path, and exact manifest SHA-256 in the Core Publication Record.
 
-Producer profile registration belongs to #362; Core publication/supersession/
-withdrawal to #363; consumer-neutral authorized reading to #364; installed
+The metadata-only [Publication Producer Profile](publication_producer_profile.md)
+implements #362; Core publication/supersession/withdrawal belongs to #363;
+consumer-neutral authorized reading to #364; installed
 end-to-end producer acceptance to #365; and final release audit/version work to
 #366.
 

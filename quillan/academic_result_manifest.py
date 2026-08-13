@@ -12,8 +12,9 @@ from typing import Any, Final, Literal, NoReturn, TypeAlias, cast
 
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
 
+from quillan.pds_contract import ACADEMIC_RESULT_MANIFEST_CONTRACT_VERSION
+
 ACADEMIC_RESULT_MANIFEST_RECORD_TYPE: Final = "quillan_academic_result_manifest"
-ACADEMIC_RESULT_MANIFEST_CONTRACT_VERSION: Final = "quillan_academic_result_manifest_v1"
 ACADEMIC_RESULT_MANIFEST_PRODUCER_MODULE_ID: Final = "quillan"
 ASSIGNMENT_SOURCE_CONTRACT_VERSION: Final = "2"
 SUBMISSION_SOURCE_CONTRACT_VERSION: Final = "1"

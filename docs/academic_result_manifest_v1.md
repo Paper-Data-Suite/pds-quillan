@@ -23,8 +23,9 @@ privacy projection is defined by
 revision, correction, and withdrawal behavior is defined by
 [Quillan Publication Revision Policy](publication_revision_policy.md); explicit
 assignment eligibility and Core registration are defined by
-[Quillan Academic Work Registration](academic_work_registration.md); and Core producer-profile,
-publication, and reader integration remains #362–#364.
+[Quillan Academic Work Registration](academic_work_registration.md); the installed
+[Publication Producer Profile](publication_producer_profile.md) declares metadata
+compatibility; and publication and reader integration remain #363–#364.
 
 ## Exact schema
 
