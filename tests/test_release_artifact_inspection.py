@@ -8,7 +8,11 @@ import zipfile
 
 import pytest
 
-from scripts.inspect_release_artifacts import inspect_sdist, inspect_wheel
+from scripts.inspect_release_artifacts import (
+    inspect_sdist,
+    inspect_wheel,
+    validate_entry_points_text,
+)
 
 
 REMOVED_MODULES = (
@@ -44,13 +48,16 @@ def _wheel(
 ) -> Path:
     with zipfile.ZipFile(path, "w") as archive:
         archive.writestr("quillan/_version.py", '__version__ = "0.8.9"\n')
+        archive.writestr("quillan/pds_publication.py", "")
         archive.writestr(extra_name, "")
         archive.writestr("quillan-0.8.9.dist-info/METADATA", metadata)
         archive.writestr(
             "quillan-0.8.9.dist-info/entry_points.txt",
             "[console_scripts]\nquillan = quillan.cli:main\n"
             "[paper_data_suite.modules]\n"
-            "quillan = quillan.pds_module:get_module_profile\n",
+            "quillan = quillan.pds_module:get_module_profile\n"
+            "[paper_data_suite.publication_producers]\n"
+            "quillan = quillan.pds_publication:get_publication_producer_profile\n",
         )
         archive.writestr("quillan-0.8.9.dist-info/licenses/LICENSE", "MIT\n")
     return path
@@ -71,6 +78,7 @@ def _sdist(
     (package / "quillan" / "_version.py").write_text(
         '__version__ = "0.8.9"\n', encoding="utf-8"
     )
+    (package / "quillan" / "pds_publication.py").write_text("", encoding="utf-8")
     target = package.joinpath(*extra_name.split("/"))
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("", encoding="utf-8")
@@ -96,6 +104,40 @@ def test_sdist_rejects_each_removed_module(tmp_path: Path, removed: str) -> None
 def test_ordinary_current_package_paths_are_accepted(tmp_path: Path) -> None:
     assert inspect_wheel(_wheel(tmp_path / "current.whl"))["version"] == "0.8.9"
     assert inspect_sdist(_sdist(tmp_path / "current.tar.gz"))["version"] == "0.8.9"
+
+
+@pytest.mark.parametrize(
+    "text",
+    (
+        "[paper_data_suite.modules]\nquillan = quillan.pds_module:get_module_profile\n",
+        """[paper_data_suite.modules]
+quillan = quillan.pds_module:get_module_profile
+[paper_data_suite.publication_producers]
+other = quillan.pds_publication:get_publication_producer_profile
+""",
+        """[paper_data_suite.modules]
+quillan = quillan.pds_module:get_module_profile
+[paper_data_suite.publication_producers]
+quillan = quillan.pds_publication:wrong
+""",
+        """[paper_data_suite.modules]
+quillan = quillan.pds_publication:get_publication_producer_profile
+[paper_data_suite.publication_producers]
+quillan = quillan.pds_module:get_module_profile
+""",
+        """[paper_data_suite.modules]
+quillan = quillan.pds_module:get_module_profile
+[paper_data_suite.publication_producers]
+quillan = quillan.pds_publication:get_publication_producer_profile
+alias = quillan.pds_publication:get_publication_producer_profile
+""",
+    ),
+)
+def test_entry_point_contract_rejects_missing_wrong_swapped_or_alias_entries(
+    text: str,
+) -> None:
+    with pytest.raises(AssertionError):
+        validate_entry_points_text(text)
 
 
 def test_wheel_rejects_bundled_core_source(tmp_path: Path) -> None:

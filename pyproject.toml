@@ -41,6 +41,9 @@ quillan = "quillan.cli:main"
 [project.entry-points."paper_data_suite.modules"]
 quillan = "quillan.pds_module:get_module_profile"
 
+[project.entry-points."paper_data_suite.publication_producers"]
+quillan = "quillan.pds_publication:get_publication_producer_profile"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [

@@ -491,7 +491,13 @@ def main() -> int:
     root = Path(str(distribution.locate_file(""))).resolve()
     import quillan
     import quillan.pds_module
+    import quillan.pds_publication
     import pds_core
+    from pds_core.publication_compatibility import (
+        build_publication_producer_registry,
+        discover_publication_producer_profiles,
+        validate_publication_producer_profile,
+    )
 
     assert pds_core.__version__ == core_distribution.version
     raw_core_origin = pds_core.__file__
@@ -503,12 +509,51 @@ def main() -> int:
         for name in CORE_06_ACADEMIC_MODULES
     }
 
-    origins = [Path(quillan.__file__).resolve(), Path(quillan.pds_module.__file__).resolve()]
+    origins = [
+        Path(quillan.__file__).resolve(),
+        Path(quillan.pds_module.__file__).resolve(),
+        Path(quillan.pds_publication.__file__).resolve(),
+    ]
     assert all(not path.is_relative_to(repository) for path in origins), origins
-    profiles = [entry for entry in distribution.entry_points if entry.group == "paper_data_suite.modules"]
-    assert [(entry.name, entry.value) for entry in profiles] == [("quillan", "quillan.pds_module:get_module_profile")]
-    profile = profiles[0].load()()
-    assert profile.module_id == "quillan"
+    routing_entries = [
+        entry
+        for entry in distribution.entry_points
+        if entry.group == "paper_data_suite.modules"
+    ]
+    assert [(entry.name, entry.value) for entry in routing_entries] == [
+        ("quillan", "quillan.pds_module:get_module_profile")
+    ]
+    routing_profile = routing_entries[0].load()()
+    assert routing_profile.module_id == "quillan"
+    publication_entries = [
+        entry
+        for entry in distribution.entry_points
+        if entry.group == "paper_data_suite.publication_producers"
+    ]
+    assert [(entry.name, entry.value) for entry in publication_entries] == [
+        (
+            "quillan",
+            "quillan.pds_publication:get_publication_producer_profile",
+        )
+    ]
+    publication_profile = validate_publication_producer_profile(
+        publication_entries[0].load()()
+    )
+    assert publication_profile == (
+        quillan.pds_publication.get_publication_producer_profile()
+    )
+    discovered = tuple(
+        profile
+        for profile in discover_publication_producer_profiles()
+        if profile.module_id == "quillan"
+    )
+    assert discovered == (publication_profile,)
+    registry = build_publication_producer_registry()
+    registry_profile = registry.get("quillan")
+    assert registry_profile is not None
+    assert registry_profile == publication_profile
+    assert not sentinel.exists()
+    _assert_no_academic_state(sentinel)
 
     modules = sorted(module.name for module in pkgutil.walk_packages(quillan.__path__, "quillan."))
     for module in modules:
@@ -530,7 +575,7 @@ def main() -> int:
     workflow = _run_full_workflow(workflow_workspace, work=work, env=env) if args.full_workflow else None
     if args.full_workflow:
         _assert_no_academic_state(workflow_workspace)
-    print(json.dumps({"version": distribution.version, "distribution_root": str(root), "origins": [str(path) for path in origins], "core_version": core_distribution.version, "core_origin": str(core_origin), "core_06_academic_modules": academic_module_origins, "module_count": len(modules), "module_profile": profile.module_id, "workspace_side_effects": False, "academic_registry_side_effects": False, "workflow": workflow}, indent=2, sort_keys=True))
+    print(json.dumps({"version": distribution.version, "distribution_root": str(root), "origins": [str(path) for path in origins], "core_version": core_distribution.version, "core_origin": str(core_origin), "core_06_academic_modules": academic_module_origins, "module_count": len(modules), "module_profile": routing_profile.module_id, "publication_profile": publication_profile.module_id, "publication_profiles_discovered": len(discovered), "publication_registry_profile": registry_profile.module_id, "workspace_side_effects": False, "academic_registry_side_effects": False, "workflow": workflow}, indent=2, sort_keys=True))
     return 0
 
 

@@ -17,6 +17,13 @@ storage, byte-exact replay, and producer digest generation are implemented in
 Manifest generation remains independent of Academic Work Registration and does
 not create Core publication or Grade state.
 
+Installed publication compatibility is declared independently by the
+[Publication Producer Profile](publication_producer_profile.md). It advertises
+only Core Publication Record schema `1`, `quillan_academic_work_v1`,
+`academic_result_set`, `quillan_academic_result_manifest_v1`, and
+`standards_ratings`, with `source_record=None`. Discovery is metadata-only and
+does not read manifests, authorize consumers, or create publication state.
+
 The producer-owned privacy floor for manifest and later artifact projections is
 defined in
 [Quillan Publication Projection Policy v1](publication_projection_policy_v1.md).

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import configparser
 from email.parser import Parser
 import hashlib
 import json
@@ -25,6 +26,19 @@ FORBIDDEN_PARTS = {
     ".git", ".venv", ".pytest-tmp", "build", "dist", "__pycache__",
     ".mypy_cache", ".ruff_cache",
 }
+EXPECTED_ENTRY_POINTS = {
+    "paper_data_suite.modules": {
+        "quillan": "quillan.pds_module:get_module_profile",
+    },
+    "paper_data_suite.publication_producers": {
+        "quillan": "quillan.pds_publication:get_publication_producer_profile",
+    },
+}
+
+
+class _EntryPointParser(configparser.ConfigParser):
+    def optionxform(self, optionstr: str) -> str:
+        return optionstr
 
 
 def _sha256(path: Path) -> str:
@@ -80,6 +94,18 @@ def _metadata_contract(raw: str) -> dict[str, object]:
     }
 
 
+def validate_entry_points_text(raw: str) -> None:
+    """Require exact, independent Quillan routing and publication providers."""
+    parser = _EntryPointParser(interpolation=None, strict=True)
+    try:
+        parser.read_string(raw)
+    except configparser.Error as error:
+        raise AssertionError(str(error)) from error
+    for group, expected in EXPECTED_ENTRY_POINTS.items():
+        assert parser.has_section(group), group
+        assert dict(parser.items(group)) == expected, dict(parser.items(group))
+
+
 def inspect_wheel(path: Path) -> dict[str, object]:
     with zipfile.ZipFile(path) as archive:
         names = set(archive.namelist())
@@ -89,8 +115,8 @@ def inspect_wheel(path: Path) -> dict[str, object]:
         metadata = _metadata_contract(archive.read(metadata_name).decode("utf-8"))
         entries = archive.read(entry_name).decode("utf-8")
         assert "quillan = quillan.cli:main" in entries
-        assert "quillan = quillan.pds_module:get_module_profile" in entries
-        assert "paper_data_suite.publication_producers" not in entries
+        validate_entry_points_text(entries)
+        assert "quillan/pds_publication.py" in names
         assert "quillan/_version.py" in names
         assert any(name.endswith(".dist-info/licenses/LICENSE") for name in names)
     return {"filename": path.name, "sha256": _sha256(path), **metadata}
@@ -107,6 +133,7 @@ def inspect_sdist(path: Path) -> dict[str, object]:
         assert any(name.endswith("/LICENSE") for name in names)
         assert any(name.endswith("/README.md") for name in names)
         assert any(name.endswith("/quillan/_version.py") for name in names)
+        assert any(name.endswith("/quillan/pds_publication.py") for name in names)
     return {"filename": path.name, "sha256": _sha256(path), **metadata}
 
 
