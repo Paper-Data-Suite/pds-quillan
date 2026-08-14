@@ -5,7 +5,10 @@ Quillan's immutable producer-owned result contract is documented in
 workspace generation and immutable producer storage are documented in
 [Academic Result Manifest Generation](docs/academic_result_manifest_generation.md).
 Installed publication compatibility is documented in
-[Publication Producer Profile](docs/publication_producer_profile.md).
+[Publication Producer Profile](docs/publication_producer_profile.md). Explicit
+Core publication, supersession, withdrawal, republication, and catalog
+reconciliation are documented in
+[Academic Result Publication Lifecycle](docs/academic_result_publication.md).
 
 > **Storage contract:** Quillan assignment, submission, review, feedback, and
 > assignment-report services use only
@@ -80,6 +83,8 @@ Quillan currently supports:
 * review-unit Focus Standard observations;
 * overall Focus Standard ratings;
 * explicit immutable Academic Result manifest generation and byte-exact replay;
+* explicit Core Academic Result publication, supersession, withdrawal, republication,
+  and catalog reconciliation;
 * Focus Standard feedback composition;
 * reusable Focus Standard comments in `shared/focus_standard_comments/`;
 * student feedback export to Markdown, PDF, or both;
@@ -155,6 +160,7 @@ Assignment Management supports:
 3. Printable Response Pages
 4. Academic Work Registration
 5. Academic Result Manifests
+6. Academic Result Publications
 B. Back
 ```
 
@@ -170,6 +176,13 @@ Printable response packets can also be generated non-interactively:
 quillan printable-responses generate <class_id> <assignment_id> --dry-run
 quillan printable-responses generate <class_id> <assignment_id> --pages-per-student 2 --yes
 ```
+
+Academic Result publication is a separate explicit workflow. Use
+`quillan publication --help` for read-only status/list/show plus explicit publish,
+supersede, republish-after-withdrawal, withdraw, and full-catalog rebuild operations.
+Publication management does not require a roster for assignment discovery and does
+not calculate Grades. See
+[Academic Result Publication Lifecycle](docs/academic_result_publication.md).
 
 The CLI and menu share the same canonical assignment/roster planning and packet
 transaction. Dry runs allocate no identities and write nothing. `--overwrite`

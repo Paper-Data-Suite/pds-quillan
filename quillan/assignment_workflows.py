@@ -1243,6 +1243,7 @@ def launch_assignment_menu() -> int:
             print("3. Printable Response Pages")
             print("4. Academic Work Registration")
             print("5. Academic Result Manifests")
+            print("6. Academic Result Publications")
             print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
@@ -1274,6 +1275,12 @@ def launch_assignment_menu() -> int:
                 )
 
                 launch_academic_result_manifest_menu()
+            elif choice == "6":
+                from quillan.publication_menu import (
+                    launch_academic_result_publication_menu,
+                )
+
+                launch_academic_result_publication_menu()
             elif workflow is None:
                 print(f"Invalid selection. {navigation_hint()}")
             else:

@@ -164,9 +164,10 @@ def test_retained_source_added_count_is_derived(tmp_path: Path) -> None:
     assert result["retained_source_events_added"] == 2
 
 
-def test_installed_acceptance_probes_academic_work_and_manifest_help() -> None:
+def test_installed_acceptance_probes_academic_work_manifest_and_publication_help() -> None:
     assert ("academic-work", "--help") in SIDE_EFFECT_FREE_HELP_COMMANDS
     assert ("manifest", "--help") in SIDE_EFFECT_FREE_HELP_COMMANDS
+    assert ("publication", "--help") in SIDE_EFFECT_FREE_HELP_COMMANDS
 
 
 def test_installed_acceptance_probes_publication_profile_and_core_discovery() -> None:

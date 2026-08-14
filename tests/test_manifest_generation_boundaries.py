@@ -8,11 +8,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 QUILLAN = ROOT / "quillan"
 
-_ALLOWED_RUNTIME_REFERENCES = {
+_EXPLICIT_MANIFEST_GENERATION_REFERENCES = {
     Path("academic_result_manifest_generation.py"),
     Path("cli_app/handlers/manifest.py"),
     Path("manifest_menu.py"),
 }
+_REPUBLICATION_LIFECYCLE_REFERENCE = Path("academic_result_publication.py")
+_ALLOWED_RUNTIME_REFERENCES = (
+    _EXPLICIT_MANIFEST_GENERATION_REFERENCES
+    | {_REPUBLICATION_LIFECYCLE_REFERENCE}
+)
 
 
 def test_durable_manifest_generation_has_only_explicit_runtime_references() -> None:
@@ -25,6 +30,14 @@ def test_durable_manifest_generation_has_only_explicit_runtime_references() -> N
         if relative not in _ALLOWED_RUNTIME_REFERENCES:
             references.append(relative.as_posix())
     assert references == []
+
+
+def test_publication_lifecycle_generation_reference_is_republication_only() -> None:
+    source = (QUILLAN / _REPUBLICATION_LIFECYCLE_REFERENCE).read_text(
+        encoding="utf-8"
+    )
+    assert source.count("generate_academic_result_manifest(") == 1
+    assert "republish_after_withdrawal=True" in source
 
 
 def test_manifest_generation_never_uses_mutable_revision_update_primitive() -> None:

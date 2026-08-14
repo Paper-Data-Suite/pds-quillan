@@ -1,10 +1,11 @@
 # Quillan Development Plan
 
-Quillan now has the complete producer-side foundation through #362:
+Quillan now has the complete producer-side foundation through #363:
 Academic Result Manifest v1, privacy projection, revision policy, Core 0.6
 compatibility, explicit Academic Work Registration, explicit immutable workspace
-manifest generation/replay, and installed publication-producer compatibility.
-Core publication lifecycle and consumer-neutral reading remain #363–#364.
+manifest generation/replay, installed publication-producer compatibility, and
+explicit Core publication/supersession/withdrawal/republication with full catalog
+reconciliation. Consumer-neutral reading remains #364.
 
 Classification: **active authority** for the v0.8.9 release candidate.
 

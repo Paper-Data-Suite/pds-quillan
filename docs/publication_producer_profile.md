@@ -57,10 +57,12 @@ Routing remains independently discoverable through `paper_data_suite.modules`.
 Its `ModuleProfile` owns PDS2 schemas, dispatch status, the route handler, and the
 registration validator; none appears in the publication profile.
 
-Issue #363 owns Publication Record creation, supersession, withdrawal, and
-reconciliation. Issue #364 owns the consumer-neutral authorized reader. Meridian
-owns proficiency and Grade policy; Vitrine owns Candidate, Selection, Snapshot,
-and portfolio policy. Compatibility metadata performs none of those operations.
+Publication Record creation, supersession, withdrawal, republication, and
+catalog reconciliation are implemented separately in
+[Academic Result Publication Lifecycle](academic_result_publication.md). The
+metadata-only producer profile performs none of those operations. Issue #364 owns
+the consumer-neutral authorized reader. Meridian owns proficiency and Grade policy;
+Vitrine owns Candidate, Selection, Snapshot, and portfolio policy.
 
 Core's package version, Publication Record schema, routing contract, registration
 schema, Quillan producer contract, manifest contract, and package version are

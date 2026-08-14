@@ -74,7 +74,8 @@ It performs no workspace, filesystem, hashing, registry, catalog, publication,
 withdrawal, authorization, grading, proficiency, or portfolio work. The separate
 [Academic Result Manifest Generation](academic_result_manifest_generation.md)
 implementation applies this pure policy to durable producer filesystem history.
-Core-backed publication lifecycle belongs to #363.
+Core-backed lifecycle orchestration is implemented separately in
+[Academic Result Publication Lifecycle](academic_result_publication.md).
 
 ## Revision allocation
 
@@ -290,8 +291,9 @@ Producer manifest allocation and Core publication are independent histories. A
 manifest may exist without publication, and Core may still point to an older
 published producer revision.
 
-The pure revision policy does not inspect Core state. The #361 manifest
-generation/storage layer owns durable producer manifest history. #363 reloads
+The pure revision policy does not inspect Core state. The manifest
+generation/storage layer owns durable producer manifest history. The
+[Academic Result Publication Lifecycle](academic_result_publication.md) reloads
 canonical Core state and reconciles publication.
 
 ## Supersession
@@ -433,8 +435,8 @@ Milestone implementation status:
 - #359: Core 0.6 dependency upgrade — complete;
 - #360: Academic Work Registration — complete;
 - #361: source loading, hashing, immutable manifest generation/storage — complete;
-- #362: producer compatibility profile;
-- #363: Core publication, supersession, withdrawal, reconciliation;
+- #362: producer compatibility profile — complete;
+- #363: Core publication, supersession, withdrawal, republication, reconciliation — complete;
 - #364: consumer-neutral reader and authorized source/artifact resolution;
 - #365–#366: installed acceptance and release audit.
 

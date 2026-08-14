@@ -80,6 +80,29 @@ or portfolio state. There is no overwrite, delete, repair, mutable-alias, or
 forced-revision command. See
 [Academic Result Manifest Generation](academic_result_manifest_generation.md).
 
+## Academic Result Publication Lifecycle
+
+`quillan publication` is the explicit Core-backed lifecycle namespace for immutable
+Quillan Academic Result Manifest revisions. `status`, `list`, and `show` are
+read-only and do not create a missing catalog. `publish` and `supersede` require an
+already-existing producer head; supersession requires the exact expected Core head.
+A withdrawn head requires the explicit `republish-after-withdrawal` workflow.
+Withdrawal writes a separate immutable Core withdrawal and remains available when a
+bound historical manifest is missing or damaged.
+
+New Publication Records bind the exact current non-cancelled Academic Work
+Registration. Exact replay preserves the historical registration revision already
+bound by the existing Publication Record. Successful or replayed lifecycle writes
+reload canonical state, verify exact manifest path/digest and producer compatibility,
+then fully rebuild and reconcile Core's disposable academic catalog.
+
+Routine output is privacy-minimized and does not print student IDs, ratings,
+rationales, feedback text, private notes, observations, evidence arrays, withdrawal
+reasons, private source/evidence paths, or raw Core exception dumps. Publication does
+not calculate a Grade.
+
+See [Academic Result Publication Lifecycle](academic_result_publication.md).
+
 ## Direct Student Review Status
 
 `quillan review-status <class_id> <assignment_id> <student_id> [--format text|json]`
@@ -303,6 +326,14 @@ quillan manifest list --class-id <class_id> --assignment-id <assignment_id>
 quillan manifest show --class-id <class_id> --assignment-id <assignment_id> --revision <revision>
 quillan manifest validate --class-id <class_id> --assignment-id <assignment_id> --revision <revision>
 quillan manifest generate --class-id <class_id> --assignment-id <assignment_id>
+quillan publication status --class-id <class_id> --assignment-id <assignment_id>
+quillan publication list --class-id <class_id> --assignment-id <assignment_id>
+quillan publication show --class-id <class_id> --assignment-id <assignment_id> --publication-id <publication_id>
+quillan publication publish --class-id <class_id> --assignment-id <assignment_id> --revision <revision>
+quillan publication supersede --class-id <class_id> --assignment-id <assignment_id> --revision <revision> --expected-current-publication-id <publication_id>
+quillan publication republish-after-withdrawal --class-id <class_id> --assignment-id <assignment_id> --expected-current-publication-id <publication_id>
+quillan publication withdraw --class-id <class_id> --assignment-id <assignment_id> --publication-id <publication_id> --reason <reason>
+quillan publication rebuild-catalog
 quillan printable-responses generate <class_id> <assignment_id> [--pages-per-student N] [--overwrite] (--yes | --dry-run)
 quillan requirements list <class_id> <assignment_id> <student_id>
 quillan requirements set-check <class_id> <assignment_id> <student_id> --requirement-key <key> --met true|false [--note <text>]

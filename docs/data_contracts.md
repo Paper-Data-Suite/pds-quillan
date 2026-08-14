@@ -37,6 +37,14 @@ Academic Result series use `record_set_id=academic_results`; exact source lineag
 corrections, historical reversion, supersession, and withdrawal remain distinct from
 consumer grading or portfolio policy.
 
+Explicit Core-backed publication lifecycle is implemented in
+[Academic Result Publication Lifecycle](academic_result_publication.md). Quillan
+publishes only the producer head, preserves each Publication Record's exact historical
+Academic Work Registration revision on replay, derives the canonical predecessor from
+the full supersession chain, treats withdrawal as a separate immutable Core record,
+uses explicit republication after a withdrawn head, and fully rebuilds/reconciles the
+derived Core academic catalog after successful or replayed lifecycle writes.
+
 Quillan-owned assignment records and all dependent submission, review, and export
 records are rooted exclusively beneath
 `classes/<class_id>/modules/quillan/work/<assignment_id>/`. Contextual loaders

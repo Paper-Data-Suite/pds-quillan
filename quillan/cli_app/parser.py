@@ -91,6 +91,16 @@ from quillan.cli_app.handlers.academic_work import (
     handle_academic_work_show,
     handle_academic_work_update,
 )
+from quillan.cli_app.handlers.publication import (
+    handle_publication_list,
+    handle_publication_publish,
+    handle_publication_rebuild_catalog,
+    handle_publication_republish_after_withdrawal,
+    handle_publication_show,
+    handle_publication_status,
+    handle_publication_supersede,
+    handle_publication_withdraw,
+)
 from quillan.cli_app.handlers.manifest import (
     handle_manifest_generate,
     handle_manifest_list,
@@ -324,6 +334,123 @@ def build_parser() -> argparse.ArgumentParser:
         help="Exact Core registration revision observed before this update.",
     )
     academic_work_update_parser.set_defaults(handler=handle_academic_work_update)
+
+    publication_parser = subparsers.add_parser(
+        "publication",
+        help="Manage explicit Core publication lifecycle state.",
+        description=(
+            "Inspect, publish, supersede, republish, withdraw, or reconcile Core "
+            "publication state for immutable Quillan Academic Result Manifests. "
+            "Publication is explicit and does not calculate a Grade."
+        ),
+    )
+    publication_parser.set_defaults(
+        handler=partial(_print_parser_help, publication_parser)
+    )
+    publication_subparsers = publication_parser.add_subparsers(
+        dest="publication_command"
+    )
+
+    publication_status_parser = publication_subparsers.add_parser(
+        "status",
+        help="Show privacy-safe producer/Core publication-series status.",
+    )
+    _add_academic_work_identity_options(publication_status_parser)
+    publication_status_parser.set_defaults(handler=handle_publication_status)
+
+    publication_list_parser = publication_subparsers.add_parser(
+        "list",
+        help="List canonical Core publications with privacy-safe metadata.",
+    )
+    _add_academic_work_identity_options(publication_list_parser)
+    publication_list_parser.set_defaults(handler=handle_publication_list)
+
+    publication_show_parser = publication_subparsers.add_parser(
+        "show",
+        help="Show one exact canonical Core publication.",
+    )
+    _add_academic_work_identity_options(publication_show_parser)
+    publication_show_parser.add_argument(
+        "--publication-id",
+        required=True,
+        action=StoreOnceAction,
+        help="Exact Core Publication Record identifier.",
+    )
+    publication_show_parser.set_defaults(handler=handle_publication_show)
+
+    publication_publish_parser = publication_subparsers.add_parser(
+        "publish",
+        help="Publish or exactly replay the selected immutable producer head.",
+    )
+    _add_academic_work_identity_options(publication_publish_parser)
+    publication_publish_parser.add_argument(
+        "--revision",
+        required=True,
+        type=positive_integer,
+        action=StoreOnceAction,
+        help="Exact immutable producer-head revision.",
+    )
+    publication_publish_parser.set_defaults(handler=handle_publication_publish)
+
+    publication_supersede_parser = publication_subparsers.add_parser(
+        "supersede",
+        help="Supersede one exact nonwithdrawn canonical Core head.",
+    )
+    _add_academic_work_identity_options(publication_supersede_parser)
+    publication_supersede_parser.add_argument(
+        "--revision",
+        required=True,
+        type=positive_integer,
+        action=StoreOnceAction,
+        help="Exact immutable producer-head successor revision.",
+    )
+    publication_supersede_parser.add_argument(
+        "--expected-current-publication-id",
+        required=True,
+        action=StoreOnceAction,
+        help="Exact canonical Core series head observed before supersession.",
+    )
+    publication_supersede_parser.set_defaults(handler=handle_publication_supersede)
+
+    publication_republish_parser = publication_subparsers.add_parser(
+        "republish-after-withdrawal",
+        help="Explicitly resume publication after one withdrawn canonical head.",
+    )
+    _add_academic_work_identity_options(publication_republish_parser)
+    publication_republish_parser.add_argument(
+        "--expected-current-publication-id",
+        required=True,
+        action=StoreOnceAction,
+        help="Exact withdrawn canonical Core head observed before republication.",
+    )
+    publication_republish_parser.set_defaults(
+        handler=handle_publication_republish_after_withdrawal
+    )
+
+    publication_withdraw_parser = publication_subparsers.add_parser(
+        "withdraw",
+        help="Withdraw one exact canonical Core publication.",
+    )
+    _add_academic_work_identity_options(publication_withdraw_parser)
+    publication_withdraw_parser.add_argument(
+        "--publication-id",
+        required=True,
+        action=StoreOnceAction,
+        help="Exact Core Publication Record identifier to withdraw.",
+    )
+    publication_withdraw_parser.add_argument(
+        "--reason",
+        required=True,
+        action=StoreOnceAction,
+        help="Required withdrawal reason; it is accepted but not echoed.",
+    )
+    publication_withdraw_parser.set_defaults(handler=handle_publication_withdraw)
+
+    publication_rebuild_parser = publication_subparsers.add_parser(
+        "rebuild-catalog",
+        help="Rebuild Core's full disposable academic catalog.",
+    )
+    publication_rebuild_parser.set_defaults(handler=handle_publication_rebuild_catalog)
 
     manifest_parser = subparsers.add_parser(
         "manifest",

@@ -42,6 +42,7 @@ SIDE_EFFECT_FREE_HELP_COMMANDS = (
     ("workspace", "--help"),
     ("academic-work", "--help"),
     ("manifest", "--help"),
+    ("publication", "--help"),
 )
 
 
