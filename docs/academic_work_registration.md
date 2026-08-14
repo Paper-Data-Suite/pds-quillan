@@ -177,7 +177,7 @@ managed Quillan assignment
 -> Core Publication Record references registration revision N
 ```
 
-A later registration revision never rewrites an older manifest or Publication Record. Explicit manifest generation is implemented independently under #361; see [Academic Result Manifest Generation](academic_result_manifest_generation.md). The [Publication Producer Profile](publication_producer_profile.md) declares compatible registration metadata without loading it. Publication/supersession/withdrawal orchestration belongs to #363.
+A later registration revision never rewrites an older manifest or Publication Record. Explicit manifest generation is implemented independently; see [Academic Result Manifest Generation](academic_result_manifest_generation.md). The [Publication Producer Profile](publication_producer_profile.md) declares compatible registration metadata without loading it. [Academic Result Publication Lifecycle](academic_result_publication.md) binds the exact current registration for a new Publication Record and preserves each existing Publication Record's exact historical registration revision on replay.
 
 ## Explicit-only boundary
 

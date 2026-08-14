@@ -705,6 +705,330 @@
     {
       "path": [
         "quillan",
+        "publication"
+      ],
+      "aliases": [],
+      "short_help": "Manage explicit Core publication lifecycle state.",
+      "description": "Inspect, publish, supersede, republish, withdraw, or reconcile Core publication state for immutable Quillan Academic Result Manifests. Publication is explicit and does not calculate a Grade.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "publication",
+        "status"
+      ],
+      "aliases": [],
+      "short_help": "Show privacy-safe producer/Core publication-series status.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "publication",
+        "list"
+      ],
+      "aliases": [],
+      "short_help": "List canonical Core publications with privacy-safe metadata.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "publication",
+        "show"
+      ],
+      "aliases": [],
+      "short_help": "Show one exact canonical Core publication.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--publication-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact Core Publication Record identifier.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "publication",
+        "publish"
+      ],
+      "aliases": [],
+      "short_help": "Publish or exactly replay the selected immutable producer head.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--revision"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact immutable producer-head revision.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "publication",
+        "supersede"
+      ],
+      "aliases": [],
+      "short_help": "Supersede one exact nonwithdrawn canonical Core head.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--revision"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact immutable producer-head successor revision.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--expected-current-publication-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact canonical Core series head observed before supersession.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "publication",
+        "republish-after-withdrawal"
+      ],
+      "aliases": [],
+      "short_help": "Explicitly resume publication after one withdrawn canonical head.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--expected-current-publication-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact withdrawn canonical Core head observed before republication.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "publication",
+        "withdraw"
+      ],
+      "aliases": [],
+      "short_help": "Withdraw one exact canonical Core publication.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--publication-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact Core Publication Record identifier to withdraw.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--reason"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Required withdrawal reason; it is accepted but not echoed.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "publication",
+        "rebuild-catalog"
+      ],
+      "aliases": [],
+      "short_help": "Rebuild Core's full disposable academic catalog.",
+      "description": "",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
         "manifest"
       ],
       "aliases": [],

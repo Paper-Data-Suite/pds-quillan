@@ -252,12 +252,14 @@ Academic Work Registration and manifest generation are independent explicit
 operations. A manifest can exist without a registration, and a registration
 change alone does not allocate a manifest revision.
 
-Later #363 publication orchestration must independently reload canonical Core
-state and bind the exact applicable Academic Work Registration revision, exact
-manifest path, and exact manifest SHA-256 in the Core Publication Record.
+[Academic Result Publication Lifecycle](academic_result_publication.md)
+independently reloads canonical Core state and binds the exact applicable Academic
+Work Registration revision, exact manifest path, and exact manifest SHA-256 in the
+Core Publication Record. Existing publication replay preserves the historical
+registration revision already bound by that Publication Record.
 
 The metadata-only [Publication Producer Profile](publication_producer_profile.md)
-implements #362; Core publication/supersession/withdrawal belongs to #363;
+remains independent from lifecycle orchestration;
 consumer-neutral authorized reading to #364; installed
 end-to-end producer acceptance to #365; and final release audit/version work to
 #366.
