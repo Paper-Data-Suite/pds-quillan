@@ -6,6 +6,40 @@ Quillan is in early pre-1.0 development. Package versions describe the
 installable project state; GitHub issues and milestones may be used for
 planning and do not by themselves represent releases.
 
+## 0.9.0 - Unreleased
+
+### Added
+
+- Added explicit Core-owned Academic Work Registration under
+  `quillan_academic_work_v1`, independent of ordinary Quillan workflows and
+  immutable result-manifest revision.
+- Added privacy-safe immutable Academic Result Manifest v1 generation and replay
+  under `exports/manifests/academic_results/<revision>.json`.
+- Added the `paper_data_suite.publication_producers` profile, Core publication,
+  replay, supersession, withdrawal, and republication lifecycle, plus full
+  installed producer acceptance.
+- Added the consumer-neutral `quillan.academic_result_reader` and separately
+  authorized student-work and feedback artifact resolver.
+
+### Changed
+
+- Changed the Quillan distribution, runtime, CLI, and artifact identity from the
+  historical Core 0.5 `0.8.9` release to `0.9.0` for the Core 0.6 academic-
+  publication boundary.
+- Require PDS Core `>=0.6,<0.7`; release qualification authenticates the exact
+  released Core 0.6.0 wheel.
+
+### Compatibility
+
+- Preserved the PDS2 routing contract and the exact publication identity:
+  producer `quillan`, kind `academic_result_set`, record set `academic_results`,
+  missing source record, and capability `standards_ratings` only.
+- Preserved native ratings and non-score states without calculating Grades,
+  proficiency, attempt selection, or portfolio policy.
+- The release remains pending final post-merge qualification, owner physical
+  acceptance, and explicit release authorization. No final artifact hashes,
+  release date, or publication claim is recorded here yet.
+
 ## 0.8.9 - 2026-07-23
 
 ### Added

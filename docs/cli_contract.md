@@ -1920,7 +1920,7 @@ as an undocumented feature.
 
 ## Deliberately Outside the CLI
 
-The following capabilities are explicitly outside the v0.8.9 product:
+The following capabilities are explicitly outside the v0.9.0 product:
 
 * submission validation as a dedicated command;
 * recursive inbox draining or automatic unattended production routing;

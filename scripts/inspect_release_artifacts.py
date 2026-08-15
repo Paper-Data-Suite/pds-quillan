@@ -15,7 +15,17 @@ import zipfile
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
-EXPECTED_VERSION = "0.8.9"
+EXPECTED_VERSION = "0.9.0"
+REQUIRED_PACKAGE_FILES = {
+    "quillan/pds_module.py",
+    "quillan/pds_publication.py",
+    "quillan/academic_work_registration.py",
+    "quillan/academic_result_manifest.py",
+    "quillan/academic_result_manifest_generation.py",
+    "quillan/academic_result_publication.py",
+    "quillan/academic_result_reader.py",
+    "quillan/academic_result_artifacts.py",
+}
 REMOVED = {
     "quillan/submissions.py",
     "quillan/evidence_filing.py",
@@ -25,6 +35,14 @@ REMOVED = {
 FORBIDDEN_PARTS = {
     ".git", ".venv", ".pytest-tmp", "build", "dist", "__pycache__",
     ".mypy_cache", ".ruff_cache",
+}
+FORBIDDEN_BUNDLED_PACKAGE_ROOTS = {
+    "pds_core",
+    "meridian", "pds_meridian",
+    "vitrine", "pds_vitrine",
+    "scoreform", "pds_scoreform",
+    "concord", "pds_concord",
+    "portia", "pds_portia",
 }
 EXPECTED_ENTRY_POINTS = {
     "paper_data_suite.modules": {
@@ -58,7 +76,9 @@ def _validate_names(names: set[str]) -> None:
         parts = normalized.parts
         if parts and parts[0] == f"quillan-{EXPECTED_VERSION}":
             parts = parts[1:]
-        assert not (parts and parts[0] == "pds_core"), name
+        assert not (
+            parts and parts[0] in FORBIDDEN_BUNDLED_PACKAGE_ROOTS
+        ), name
         normalized_names.add(PurePosixPath(*parts).as_posix())
     assert not (REMOVED & normalized_names), names
 
@@ -116,7 +136,7 @@ def inspect_wheel(path: Path) -> dict[str, object]:
         entries = archive.read(entry_name).decode("utf-8")
         assert "quillan = quillan.cli:main" in entries
         validate_entry_points_text(entries)
-        assert "quillan/pds_publication.py" in names
+        assert REQUIRED_PACKAGE_FILES <= names
         assert "quillan/_version.py" in names
         assert any(name.endswith(".dist-info/licenses/LICENSE") for name in names)
     return {"filename": path.name, "sha256": _sha256(path), **metadata}
@@ -133,7 +153,11 @@ def inspect_sdist(path: Path) -> dict[str, object]:
         assert any(name.endswith("/LICENSE") for name in names)
         assert any(name.endswith("/README.md") for name in names)
         assert any(name.endswith("/quillan/_version.py") for name in names)
-        assert any(name.endswith("/quillan/pds_publication.py") for name in names)
+        required_names = {
+            f"quillan-{EXPECTED_VERSION}/{relative}"
+            for relative in REQUIRED_PACKAGE_FILES
+        }
+        assert required_names <= names
     return {"filename": path.name, "sha256": _sha256(path), **metadata}
 
 

@@ -1,4 +1,4 @@
-"""Generate and mechanically inspect the installed v0.8.9 layout matrix."""
+"""Generate and mechanically inspect the installed v0.9.0 layout matrix."""
 
 from __future__ import annotations
 
@@ -188,7 +188,7 @@ def main() -> int:
         ("long-assignment-title", dict(students=basic(), pages=1, title="A Very Long Synthetic Assignment Title Designed to Exercise Safe Header Truncation Without Overlap or Clipping")),
         ("long-student-name", dict(students=basic(first="Alexandria-Cassandra", last="Longsyntheticfamilyname-Withsuffix"), pages=1)),
         ("class-label-differs", dict(students=basic(), pages=1, class_id="english_10_period_2", class_label="English 10 Period 2")),
-        ("long-valid-identifiers", dict(students=basic(), pages=1, class_id="synthetic_class_identifier_2026_period_03", assignment_id="synthetic_assignment_identifier_release_0089")),
+        ("long-valid-identifiers", dict(students=basic(), pages=1, class_id="synthetic_class_identifier_2026_period_03", assignment_id="synthetic_assignment_identifier_release_0090")),
         ("regenerated-identities", dict(students=basic(), pages=1, regenerate=True)),
     )
     results: list[dict[str, object]] = []

@@ -63,7 +63,7 @@ world languages, arts/humanities, and interdisciplinary writing tasks.
 
 ## Current Status
 
-Quillan 0.8.9 is a completed pre-1.0 release candidate. Its active workflow is
+Quillan 0.9.0 is the Core 0.6 academic-publication release candidate. Its active workflow is
 standards-based:
 
 ```text
@@ -198,7 +198,7 @@ The CLI writes only the assignment-local
 `templates/printable_response_pages.pdf` and protects existing packets unless
 `--overwrite --yes` is supplied.
 
-The v0.8.9 creation workflow prompts for class, title, assignment ID, writing
+The v0.9.0 creation workflow prompts for class, title, assignment ID, writing
 type, student prompt, pds-core standards profile, Focus Standards, review-unit
 settings, rating scale, basic requirements, and minimum-requirement policy.
 New active assignments use schema version `2` fields such as
@@ -407,7 +407,7 @@ powershell -ExecutionPolicy Bypass `
 The equivalent `PDS_CORE_WHEEL` environment variable may be used instead of
 `-PdsCoreWheel`; an explicit parameter takes precedence. The isolated validation
 checks package metadata, editable and noneditable installation, installed import
-origins, CLI availability, and workspace side effects. The v0.8.9 runtime is
+origins, CLI availability, and workspace side effects. The v0.9.0 runtime is
 PDS2-only and uses module-qualified storage throughout.
 
 Release-candidate validation also runs the dedicated
