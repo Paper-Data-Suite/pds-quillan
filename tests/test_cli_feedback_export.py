@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -67,7 +68,6 @@ def test_cli_exports_feedback_and_prints_summary(
         }
     )
     review_path = _write_review(tmp_path, review)
-    review_before = review_path.read_bytes()
     monkeypatch.setattr(cli_exports, "resolve_workspace_root", lambda: tmp_path)
 
     assert main(
@@ -95,7 +95,12 @@ def test_cli_exports_feedback_and_prints_summary(
     assert "### synthetic:W.A" in content
     assert "Rating: 3" in content
     assert "Rationale:\nUses evidence." in content
-    assert review_path.read_bytes() == review_before
+    review_after = json.loads(review_path.read_text(encoding="utf-8"))
+    assert review_after["review_state"] == "exported"
+    metadata = review_after["exports"]["feedback_markdown"]
+    assert metadata["path"] == relative
+    assert metadata["generated_at"] == review_after["updated_at"]
+    assert metadata["source_review_updated_at"] == review_after["updated_at"]
 
 
 def test_cli_missing_review_returns_one(
@@ -158,10 +163,16 @@ def test_cli_overwrite_flag_controls_replacement(
 
     assert main(command) == 1
     assert output_path.read_text(encoding="utf-8") == "manual edit"
+    assert review_path.read_bytes() == review_before
     assert main([*command, "--overwrite"]) == 0
 
     output = (lambda captured: captured.out + captured.err)(capsys.readouterr())
     assert "Use --overwrite" in output
     assert "Overwrote existing: yes" in output
     assert output_path.read_text(encoding="utf-8").startswith("# Feedback")
-    assert review_path.read_bytes() == review_before
+    review_after = json.loads(review_path.read_text(encoding="utf-8"))
+    assert review_after["review_state"] == "exported"
+    metadata = review_after["exports"]["feedback_markdown"]
+    assert metadata["path"] == output_path.relative_to(tmp_path).as_posix()
+    assert metadata["generated_at"] == review_after["updated_at"]
+    assert metadata["source_review_updated_at"] == review_after["updated_at"]

@@ -13,6 +13,7 @@ from scripts.run_installed_acceptance import (
     SIDE_EFFECT_FREE_HELP_COMMANDS,
     _assert_no_academic_state,
     _compare_retained_source_inventories,
+    _verify_installed_academic_result_reader,
     _retained_source_inventory,
     _verify_digital_durable_state,
     _verify_plain_paper_absence,
@@ -178,6 +179,32 @@ def test_installed_acceptance_probes_publication_profile_and_core_discovery() ->
     assert "discover_publication_producer_profiles" in source
     assert "build_publication_producer_registry" in source
     assert 'assert not sentinel.exists()' in source
+
+
+def test_installed_acceptance_probes_public_reader_and_artifact_modules() -> None:
+    source = Path("scripts/run_installed_acceptance.py").read_text(encoding="utf-8")
+    assert "import quillan.academic_result_reader" in source
+    assert "import quillan.academic_result_artifacts" in source
+    assert "_verify_installed_academic_result_reader()" in source
+    assert "read_academic_result_manifest(canonical)" in source
+    assert "lookup_academic_result_student" in source
+    assert "lookup_academic_result_source" in source
+    assert "lookup_academic_result_overall_rating" in source
+    assert 'canonical + b" "' in source
+    assert "tests/fixtures" not in source
+
+
+def test_installed_reader_probe_is_side_effect_free(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sentinel = tmp_path / "must-not-exist"
+    monkeypatch.setenv("PDS_WORKSPACE_ROOT", str(sentinel))
+    result = _verify_installed_academic_result_reader()
+    assert result["student_lookup"] == "student_installed"
+    assert result["assignment_source"] == "assignment.json"
+    assert result["native_rating"] == 0
+    assert result["noncanonical_rejected"] is True
+    assert not sentinel.exists()
 
 
 def test_no_academic_state_accepts_ordinary_workspace(tmp_path: Path) -> None:

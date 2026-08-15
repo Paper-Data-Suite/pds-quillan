@@ -111,7 +111,7 @@ def _write_standards_library(root: Path) -> None:
     )
 
 
-def test_exports_ordered_student_content_without_mutating_sources(
+def test_exports_ordered_student_content_and_records_markdown_metadata(
     tmp_path: Path,
 ) -> None:
     manifest_path = _write_manifest(tmp_path)
@@ -207,7 +207,6 @@ def test_exports_ordered_student_content_without_mutating_sources(
     retained_path.write_bytes(b"source")
     originals = {
         manifest_path: manifest_path.read_bytes(),
-        review_path: review_path.read_bytes(),
         evidence_path: evidence_path.read_bytes(),
         retained_path: retained_path.read_bytes(),
     }
@@ -263,6 +262,16 @@ def test_exports_ordered_student_content_without_mutating_sources(
         assert private_text not in content
     for path, original in originals.items():
         assert path.read_bytes() == original
+    review_after = json.loads(review_path.read_text(encoding="utf-8"))
+    assert review_after["review_state"] == "exported"
+    assert review_after["updated_at"] == TIMESTAMP
+    assert review_after["exports"]["feedback_pdf"] is None
+    assert review_after["exports"]["feedback_markdown"] == {
+        "path": expected_path.relative_to(tmp_path).as_posix(),
+        "generated_at": TIMESTAMP,
+        "source_review_updated_at": TIMESTAMP,
+        "module_details": {},
+    }
 
 
 def test_empty_scores_and_comments_have_clear_messages(tmp_path: Path) -> None:
@@ -509,10 +518,10 @@ def test_identity_mismatch_is_rejected(
 def test_overwrite_policy(tmp_path: Path) -> None:
     _write_manifest(tmp_path)
     review_path = _write_review(tmp_path, _review())
-    original_review = review_path.read_bytes()
     first = export_student_feedback(
         tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
     )
+    review_after_first = review_path.read_bytes()
     first.feedback_path.write_text("manually edited", encoding="utf-8")
 
     with pytest.raises(FeedbackExportError, match="--overwrite"):
@@ -520,6 +529,7 @@ def test_overwrite_policy(tmp_path: Path) -> None:
             tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID, created_at=TIMESTAMP
         )
     assert first.feedback_path.read_text(encoding="utf-8") == "manually edited"
+    assert review_path.read_bytes() == review_after_first
 
     second = export_student_feedback(
         tmp_path,
@@ -531,7 +541,9 @@ def test_overwrite_policy(tmp_path: Path) -> None:
     )
     assert second.overwrote_existing is True
     assert second.feedback_path.read_text(encoding="utf-8").startswith("# Feedback")
-    assert review_path.read_bytes() == original_review
+    review_after_second = json.loads(review_path.read_text(encoding="utf-8"))
+    assert review_after_second["exports"]["feedback_markdown"]["generated_at"] == TIMESTAMP
+    assert review_after_second["updated_at"] == TIMESTAMP
 
 
 @pytest.mark.parametrize(

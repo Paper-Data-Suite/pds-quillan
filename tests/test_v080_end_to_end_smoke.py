@@ -315,7 +315,7 @@ def test_v080_scan_review_export_end_to_end_smoke(
 
     class_summary_text = class_summary_path.read_text(encoding="utf-8")
     assert STUDENT_ID in class_summary_text
-    assert "not_started" in class_summary_text
+    assert "exported" in class_summary_text
 
     standards_summary_text = standards_summary_path.read_text(encoding="utf-8")
     assert "students_expected" in standards_summary_text

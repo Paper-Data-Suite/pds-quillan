@@ -431,9 +431,10 @@ because one student appears in them.
 
 ### Structured feedback
 
-A future structured feedback reader may return only content approved by this policy.
-It must not return complete `review.json`, unselected comments, withheld rationales,
-private notes, or arbitrary requirement history.
+The public consumer-neutral reader returns only manifest content already approved by
+this policy. It does not open `review.json` and cannot recover unselected comments,
+withheld rationales, private notes, or arbitrary requirement history. See
+[Academic Result Reader and Authorized Artifacts](academic_result_reader.md).
 
 ### Feedback PDF and Markdown
 
@@ -441,18 +442,21 @@ The existing PDF and Markdown exports are derived student-facing artifacts, not
 canonical review state. Their existence or metadata in `review.json.exports` does
 not grant publication or access permission.
 
-A later artifact reader may expose an exact feedback export only after verifying its
-relationship, source/projection provenance, applicable historical state, and
-separate artifact-access authorization.
+The authorized artifact reader exposes an exact feedback export only after verifying
+its manifest-bound review source, exact export metadata relationship, applicable
+historical state, canonical path, and separate artifact-access authorization. Its
+observed artifact SHA-256 is not the Core Publication Record manifest digest.
 
 ### Original student work
 
-A later student-work artifact projection may resolve only producer-confirmed selected
-evidence. It must not fall back to candidate evidence, duplicate alternatives,
-excluded evidence, unrelated replacement history, complete retained scans, another
-student's pages, or arbitrary source bytes.
+The authorized student-work artifact reader resolves only producer-confirmed selected
+PDS2 evidence after exact manifest-bound submission-source verification. It does not
+fall back to candidate evidence, duplicate alternatives, excluded evidence, unrelated
+replacement history, complete retained scans, another student's pages, or arbitrary
+source bytes. Plain paper receives no fabricated digital artifact.
 
-Artifact resolution belongs to #364, not this policy module.
+Artifact resolution is implemented by `quillan.academic_result_artifacts`; this
+policy module remains pure and does no artifact I/O.
 
 ## Discovery is not authorization
 
