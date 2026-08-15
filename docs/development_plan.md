@@ -1,11 +1,12 @@
 # Quillan Development Plan
 
-Quillan now has the complete producer-side foundation through #363:
+Quillan now has the complete producer-side foundation through #365:
 Academic Result Manifest v1, privacy projection, revision policy, Core 0.6
 compatibility, explicit Academic Work Registration, explicit immutable workspace
 manifest generation/replay, installed publication-producer compatibility, and
 explicit Core publication/supersession/withdrawal/republication with full catalog
-reconciliation, and consumer-neutral manifest/artifact reading through #364.
+reconciliation, consumer-neutral manifest/artifact reading through #364, and
+clean-wheel installed producer lifecycle acceptance through #365.
 
 Classification: **active authority** for the v0.8.9 release candidate.
 
@@ -33,8 +34,8 @@ submissions, teacher-controlled page management and standards-based review,
 feedback export, three assignment-local reports, dashboard schema version 2,
 student review status schema version 1, explicit immutable Academic Result
 manifest generation/replay, a pure installed manifest reader, separately authorized
-selected student-work/feedback artifact resolution, direct CLI commands, and the
-compact teacher menu.
+selected student-work/feedback artifact resolution, clean-wheel end-to-end producer
+acceptance, direct CLI commands, and the compact teacher menu.
 
 ## Product boundaries
 
@@ -56,8 +57,9 @@ validates native state and creates/replays immutable producer-owned Academic Res
 manifest revisions under `exports/manifests/academic_results/`. #363 owns explicit
 Core publication lifecycle and #364 owns consumer-neutral parsing plus separately
 authorized producer artifact lookup. These boundaries do not assign Academic Period
-membership, calculate proficiency or Grades, or create portfolio Candidates. #365
-owns installed end-to-end producer acceptance; #366 owns the final release audit.
+membership, calculate proficiency or Grades, or create portfolio Candidates. #365's
+installed end-to-end producer acceptance is complete; #366 owns the final release
+audit.
 
 ## Core 0.6 academic-publication milestone status
 
@@ -68,7 +70,7 @@ owns installed end-to-end producer acceptance; #366 owns the final release audit
 #362 publication producer profile              complete
 #363 publication lifecycle                     complete
 #364 consumer-neutral reader                   complete
-#365 installed end-to-end producer acceptance  remaining
+#365 installed end-to-end producer acceptance  complete
 #366 release audit/version closeout             remaining
 ```
 

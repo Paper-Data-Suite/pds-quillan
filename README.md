@@ -410,6 +410,16 @@ checks package metadata, editable and noneditable installation, installed import
 origins, CLI availability, and workspace side effects. The v0.8.9 runtime is
 PDS2-only and uses module-qualified storage throughout.
 
+Release-candidate validation also runs the dedicated
+[`installed producer acceptance`](docs/installed_producer_acceptance.md) once
+against the built Quillan wheel and exact released Core 0.6.0 wheel. The ordinary
+installed workflow first proves that assignment, PDS2, review, feedback, and report
+operations create no academic registry state. A separate explicit phase then
+registers, generates immutable manifests, publishes, discovers, Core-verifies,
+reads, resolves separately authorized artifacts, corrects, supersedes, withdraws,
+and audits the synthetic result lifecycle. This acceptance neither grants release
+authorization nor adds grading, proficiency, or portfolio policy.
+
 Core 0.6 adoption is compatibility infrastructure only. It does not register
 Academic Work, generate or publish Academic Result manifests, create Publication
 Records or withdrawals, rebuild the academic catalog, assign Academic Periods,
