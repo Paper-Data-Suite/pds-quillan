@@ -130,7 +130,20 @@ try {
             '--repository', $Repository
         )
         if ($Mode -eq 'wheel') { $AcceptanceArguments += '--full-workflow' }
-        Invoke-Required "Installed acceptance ($Mode)" $EnvironmentPython $AcceptanceArguments
+        Push-Location $Work
+        try {
+            Invoke-Required "Installed acceptance ($Mode)" $EnvironmentPython $AcceptanceArguments
+            if ($Mode -eq 'wheel') {
+                Invoke-Required "Installed producer acceptance (wheel)" $EnvironmentPython @(
+                    (Join-Path $PSScriptRoot 'verify_installed_producer_acceptance.py'),
+                    '--workspace', (Join-Path $ModeRoot 'acceptance\workflow-workspace'),
+                    '--repository', $Repository,
+                    '--version', '0.8.9',
+                    '--expected-core-version', '0.6.0'
+                )
+            }
+        }
+        finally { Pop-Location }
     }
     Invoke-Required "Persist exact tested artifacts" $ResolvedPython @(
         $ArtifactPersister,

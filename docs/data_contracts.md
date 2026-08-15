@@ -53,6 +53,15 @@ exact manifest-bound native source bytes before exposing only authoritative sele
 PDS2 student work or exact metadata-backed feedback PDF/Markdown bytes. Manifest,
 student-work, feedback, and underlying-source authorization remain distinct.
 
+The clean-wheel composition of these producer contracts is proved by
+[Installed Producer Acceptance](installed_producer_acceptance.md). The release
+harness first proves that ordinary installed PDS2/review workflows create no
+academic registry state, then explicitly registers, generates, publishes,
+discovers, verifies, reads, authorizes artifacts, updates registration metadata,
+corrects native review state, supersedes, withdraws, and audits through installed
+Quillan and released Core 0.6.0 APIs. This is integration evidence, not a new data
+contract or consumer policy.
+
 Quillan-owned assignment records and all dependent submission, review, and export
 records are rooted exclusively beneath
 `classes/<class_id>/modules/quillan/work/<assignment_id>/`. Contextual loaders
