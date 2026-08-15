@@ -77,6 +77,8 @@ jobs:
         run: python -m mypy . --no-incremental
       - name: Documentation integrity
         run: python scripts/check_documentation.py
+      - name: Release compatibility
+        run: python scripts/verify_release_compatibility.py
       - name: Repository hard cutover
         run: python -m pytest tests/test_pds2_only_repository_contract.py -q
       - name: Diff cleanliness

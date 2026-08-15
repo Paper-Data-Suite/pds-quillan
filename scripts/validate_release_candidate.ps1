@@ -99,14 +99,15 @@ try {
         Invoke-Required "Ruff" $ResolvedPython @('-m', 'ruff', 'check', '.')
         Invoke-Required "mypy" $ResolvedPython @('-m', 'mypy', '.', '--no-incremental')
         Invoke-Required "Documentation" $ResolvedPython @('scripts\check_documentation.py')
+        Invoke-Required "Release compatibility" $ResolvedPython @('scripts\verify_release_compatibility.py')
         Invoke-Required "Diff whitespace" 'git' @('-c', 'core.safecrlf=false', 'diff', '--check')
         Invoke-Required "Build wheel and sdist" $ResolvedPython @('-m', 'build', '--wheel', '--sdist', '--outdir', $ArtifactRoot)
         Invoke-Required "Twine" $ResolvedPython @('-m', 'twine', 'check', (Join-Path $ArtifactRoot '*'))
     }
     finally { Pop-Location }
 
-    $Wheel = Join-Path $ArtifactRoot 'quillan-0.8.9-py3-none-any.whl'
-    $Sdist = Join-Path $ArtifactRoot 'quillan-0.8.9.tar.gz'
+    $Wheel = Join-Path $ArtifactRoot 'quillan-0.9.0-py3-none-any.whl'
+    $Sdist = Join-Path $ArtifactRoot 'quillan-0.9.0.tar.gz'
     Invoke-Required "Artifact inspection" $ResolvedPython @((Join-Path $PSScriptRoot 'inspect_release_artifacts.py'), $Wheel, $Sdist)
 
     foreach ($Mode in @('wheel', 'sdist')) {
@@ -138,7 +139,7 @@ try {
                     (Join-Path $PSScriptRoot 'verify_installed_producer_acceptance.py'),
                     '--workspace', (Join-Path $ModeRoot 'acceptance\workflow-workspace'),
                     '--repository', $Repository,
-                    '--version', '0.8.9',
+                    '--version', '0.9.0',
                     '--expected-core-version', '0.6.0'
                 )
             }

@@ -48,6 +48,9 @@ try {
     Invoke-Check "Documentation integrity" {
         & $ResolvedPython scripts\check_documentation.py
     }
+    Invoke-Check "Release compatibility" {
+        & $ResolvedPython scripts\verify_release_compatibility.py
+    }
     Invoke-Check "Diff whitespace" {
         $PreviousPreference = $ErrorActionPreference
         $ErrorActionPreference = "Continue"

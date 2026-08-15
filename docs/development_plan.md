@@ -8,11 +8,11 @@ explicit Core publication/supersession/withdrawal/republication with full catalo
 reconciliation, consumer-neutral manifest/artifact reading through #364, and
 clean-wheel installed producer lifecycle acceptance through #365.
 
-Classification: **active authority** for the v0.8.9 release candidate.
+Classification: **active authority** for the v0.9.0 release candidate.
 
 ## Current status
 
-Quillan v0.8.9 is a local-first, teacher-controlled writing-evidence module for
+Quillan v0.9.0 is a local-first, teacher-controlled writing-evidence module for
 PDS Core 0.6. Its supported workflow is:
 
 ```text
@@ -76,7 +76,7 @@ audit.
 
 ## Release closeout
 
-The remaining v0.8.9 work is release evidence rather than a new domain feature:
+The remaining v0.9.0 work is release evidence rather than a new domain feature:
 
 1. keep package, runtime, CLI, documentation, and artifact versions aligned;
 2. run source, documentation, path-safety, packaging, and clean-install gates;

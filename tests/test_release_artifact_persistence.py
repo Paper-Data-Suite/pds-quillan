@@ -18,8 +18,8 @@ def _fixture(root: Path) -> tuple[Path, Path, Path, Path]:
     output = root / "persistent-candidate"
     repository.mkdir()
     tested.mkdir()
-    wheel = tested / "quillan-0.8.9-py3-none-any.whl"
-    sdist = tested / "quillan-0.8.9.tar.gz"
+    wheel = tested / "quillan-0.9.0-py3-none-any.whl"
+    sdist = tested / "quillan-0.9.0.tar.gz"
     wheel.write_bytes(b"synthetic tested wheel bytes")
     sdist.write_bytes(b"synthetic tested sdist bytes")
     return repository, output, wheel, sdist

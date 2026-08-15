@@ -425,7 +425,7 @@ evidence record.
 PDS2 PDF generation, route registration, retained-source intake, dispatch,
 observation persistence, evidence materialization, issuance-based assembly,
 Core scan-review resolution, Quillan post-dispatch review, direct review CLI,
-and guided menu workflows are implemented in v0.8.9.
+and guided menu workflows are implemented in v0.9.0.
 
 ## Standards References
 

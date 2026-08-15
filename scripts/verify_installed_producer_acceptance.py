@@ -1168,7 +1168,7 @@ def main() -> int:
     )
     parser.add_argument("--workspace", type=Path, required=True)
     parser.add_argument("--repository", type=Path, required=True)
-    parser.add_argument("--version", default="0.8.9")
+    parser.add_argument("--version", default="0.9.0")
     parser.add_argument("--expected-core-version", default="0.6.0")
     args = parser.parse_args()
     try:

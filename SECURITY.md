@@ -2,10 +2,10 @@
 
 ## Project Status and Supported Versions
 
-Quillan 0.8.9 is the currently supported pre-1.0 release candidate. It is a
+Quillan 0.9.0 is the currently supported pre-1.0 release candidate. It is a
 local-first, teacher-controlled project; pre-1.0 support does not imply a
 long-term-support commitment or compatibility for earlier development versions.
-Security fixes target the current 0.8.9 line. Older development versions and
+Security fixes target the current 0.9.0 line. Older development versions and
 workspaces receive no compatibility guarantee.
 
 ## Reporting Security or Privacy Concerns

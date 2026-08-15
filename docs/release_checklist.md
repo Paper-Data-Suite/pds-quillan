@@ -1,26 +1,36 @@
-# Release Checklist
+# v0.9.0 Release Checklist
 
-Classification: **acceptance procedure**.
+Classification: **acceptance procedure**. No final release evidence is claimed
+until the corresponding event occurs.
 
-Current exact candidate: implementation commit
-`c3e57db5e0e175e61ce988e0681375d7b76ce861`; wheel SHA-256
-`67536b7266770816e7d5732752167f1b77e23767ba48f34d98af48bbee7ade91`;
-sdist SHA-256
-`6ad8201224343f08edb7a6fc41d8ea6316a1ce4c95992eeeea9f96af94cb6dcd`.
+## Pre-merge
 
-- [x] Source commit and required baseline recorded.
-- [x] Version is 0.8.9 in runtime, CLI, distribution, docs, wheel, and sdist.
-- [x] Released Core 0.5.0 wheel filename, origin, hash, and import path recorded.
-- [x] Full pytest, Ruff, mypy, ordinary validation, docs, CLI drift, and hard
-      cutover gates pass with every skip and warning reconciled.
-- [x] Windows and Ubuntu CI pass on Python 3.11, 3.12, 3.13, and 3.14.
-- [x] Wheel and sdist pass Twine, content, metadata, privacy, and checksum checks.
-- [x] Separate clean wheel and sdist installs pass the installed workflow.
-- [x] Synthetic visual evidence stays outside the repository, and exact-candidate
-      printed/scanned layout and QR behavior passed owner acceptance.
-- [x] Owner physical acceptance is recorded for the exact wheel and commit.
-- [x] Owner release authorization is explicit.
-- [x] Before authorization: no tag, GitHub Release, upload, publication,
-      deployment, or issue closure.
+- [x] Starting `main` and branch reconciled; exact commit recorded.
+- [x] Runtime dependency remains exactly `pds-core>=0.6,<0.7`.
+- [x] Released Core 0.6.0 wheel filename and SHA-256 authenticated.
+- [x] Version-bearing runtime, CLI, tooling, documentation, and tests identify
+      Quillan 0.9.0 while v0.8.9 history remains unchanged.
+- [x] Routing, publication, reader, privacy, artifact, and consumer-neutrality
+      contracts are covered by focused audit tests.
+- [ ] Full source, static, documentation, development-install, artifact,
+      installed-lifecycle, visual, and menu/CLI qualification complete.
+- [ ] Exact pre-merge wheel/sdist sizes and SHA-256 values recorded in the
+      reviewed #366 pre-staging qualification report.
+- [ ] Complete pre-staging report reviewed.
 
-Use [the acceptance matrix](releases/v0.8.9_acceptance_matrix.md) for evidence.
+## Post-merge and owner gates
+
+- [ ] Exact reconciled final `main` commit recorded and requalified from scratch.
+- [ ] Final visual acceptance complete using the exact final wheel.
+- [ ] Owner-only physical cases A, B, and C recorded as `PASS`,
+      `PASS WITH DOCUMENTED LIMITATION`, or `FAIL`.
+- [ ] Owner release authorization explicitly says `RELEASE AUTHORIZATION: GRANTED`
+      and binds the exact commit and all artifact hashes.
+- [ ] Only after authorization: tag `v0.9.0`, push tag, create GitHub Release,
+      upload the tested artifacts, and record hashes. No package-index publication.
+- [ ] Downloaded release assets pass clean-install, profile/import/no-side-effect,
+      producer-lifecycle, and sdist-smoke verification.
+- [ ] Only after all preceding gates: close #366, #355, and the milestone.
+
+Before owner authorization there is no tag, GitHub Release, upload, publication,
+deployment, or issue closure.
