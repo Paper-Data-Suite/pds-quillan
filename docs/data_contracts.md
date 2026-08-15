@@ -45,6 +45,14 @@ the full supersession chain, treats withdrawal as a separate immutable Core reco
 uses explicit republication after a withdrawn head, and fully rebuilds/reconciles the
 derived Core academic catalog after successful or replayed lifecycle writes.
 
+Consumer-neutral exact manifest reading and separately authorization-gated producer
+artifact lookup are defined in
+[Academic Result Reader and Authorized Artifacts](academic_result_reader.md). The pure
+reader performs no workspace or Core publication I/O. Artifact resolution verifies
+exact manifest-bound native source bytes before exposing only authoritative selected
+PDS2 student work or exact metadata-backed feedback PDF/Markdown bytes. Manifest,
+student-work, feedback, and underlying-source authorization remain distinct.
+
 Quillan-owned assignment records and all dependent submission, review, and export
 records are rooted exclusively beneath
 `classes/<class_id>/modules/quillan/work/<assignment_id>/`. Contextual loaders

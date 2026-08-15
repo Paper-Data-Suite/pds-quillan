@@ -9,6 +9,9 @@ Installed publication compatibility is documented in
 Core publication, supersession, withdrawal, republication, and catalog
 reconciliation are documented in
 [Academic Result Publication Lifecycle](docs/academic_result_publication.md).
+Consumer-neutral manifest reading and separately authorized student-work/feedback
+artifact resolution are documented in
+[Academic Result Reader and Authorized Artifacts](docs/academic_result_reader.md).
 
 > **Storage contract:** Quillan assignment, submission, review, feedback, and
 > assignment-report services use only
@@ -85,6 +88,8 @@ Quillan currently supports:
 * explicit immutable Academic Result manifest generation and byte-exact replay;
 * explicit Core Academic Result publication, supersession, withdrawal, republication,
   and catalog reconciliation;
+* a pure consumer-neutral Academic Result manifest reader with exact native lookup;
+* separately authorization-gated selected student-work and feedback artifact lookup;
 * Focus Standard feedback composition;
 * reusable Focus Standard comments in `shared/focus_standard_comments/`;
 * student feedback export to Markdown, PDF, or both;

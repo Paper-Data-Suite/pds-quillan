@@ -25,7 +25,10 @@ revision, correction, and withdrawal behavior is defined by
 assignment eligibility and Core registration are defined by
 [Quillan Academic Work Registration](academic_work_registration.md); the installed
 [Publication Producer Profile](publication_producer_profile.md) declares metadata
-compatibility; and publication and reader integration remain #363–#364.
+compatibility; explicit Core publication lifecycle is documented in
+[Academic Result Publication Lifecycle](academic_result_publication.md); and exact
+consumer-neutral reading plus separately authorized artifact resolution are documented
+in [Academic Result Reader and Authorized Artifacts](academic_result_reader.md).
 
 ## Exact schema
 

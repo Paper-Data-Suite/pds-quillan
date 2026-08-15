@@ -187,6 +187,12 @@ def export_student_feedback(
         )
 
     _write_feedback(output_path, markdown, overwrite=overwrite)
+    _update_export_metadata(
+        context,
+        created_at=normalized_created_at,
+        feedback_pdf_path=None,
+        feedback_markdown_path=output_path,
+    )
     return ExportedFeedback(
         class_id=class_id,
         assignment_id=assignment_id,
@@ -923,19 +929,22 @@ def _update_export_metadata(
     context: dict[str, Any],
     *,
     created_at: str,
-    feedback_pdf_path: Path,
+    feedback_pdf_path: Path | None,
     feedback_markdown_path: Path | None,
 ) -> None:
+    if feedback_pdf_path is None and feedback_markdown_path is None:
+        raise FeedbackExportError("At least one feedback export path is required.")
     review = dict(context["review"])
     review["exports"] = dict(review["exports"])
-    review["exports"]["feedback_pdf"] = {
-        "path": _workspace_relative_path(
-            feedback_pdf_path, context["workspace_root"], "feedback PDF"
-        ),
-        "generated_at": created_at,
-        "source_review_updated_at": created_at,
-        "module_details": {},
-    }
+    if feedback_pdf_path is not None:
+        review["exports"]["feedback_pdf"] = {
+            "path": _workspace_relative_path(
+                feedback_pdf_path, context["workspace_root"], "feedback PDF"
+            ),
+            "generated_at": created_at,
+            "source_review_updated_at": created_at,
+            "module_details": {},
+        }
     if feedback_markdown_path is not None:
         review["exports"]["feedback_markdown"] = {
             "path": _workspace_relative_path(

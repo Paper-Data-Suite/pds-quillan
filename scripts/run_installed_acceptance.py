@@ -471,6 +471,160 @@ def _run_full_workflow(workspace: Path, *, work: Path, env: dict[str, str]) -> d
     }
 
 
+def _verify_installed_academic_result_reader() -> dict[str, object]:
+    # Exercise the installed public reader without source-checkout fixture access.
+    import quillan.academic_result_artifacts as artifacts
+    import quillan.academic_result_reader as reader
+    from quillan.academic_result_manifest import (
+        manifest_from_mapping,
+        manifest_to_canonical_json_bytes,
+    )
+
+    raw = {
+        "record_type": "quillan_academic_result_manifest",
+        "contract_version": "quillan_academic_result_manifest_v1",
+        "producer_module_id": "quillan",
+        "generated_at": "2026-08-14T20:00:00Z",
+        "record_set": {"record_set_id": "installed_results", "revision": 1},
+        "work": {
+            "module_id": "quillan",
+            "class_id": "installed_class",
+            "work_id": "installed_assignment",
+        },
+        "source_snapshot": {
+            "relative_path": "assignment.json",
+            "sha256": "0" * 64,
+            "contract_version": "2",
+        },
+        "assignment": {
+            "assignment_id": "installed_assignment",
+            "title": "Installed Reader",
+            "writing_type": "argument",
+            "student_prompt": "Write.",
+            "standards_profile_id": "installed_profile",
+            "focus_standard_ids": ["synthetic:W.1"],
+            "review_unit": {
+                "type": "paragraph",
+                "singular_label": "Paragraph",
+                "plural_label": "Paragraphs",
+            },
+            "rating_scale": {
+                "scale_id": "installed_scale",
+                "levels": [
+                    {
+                        "value": 0,
+                        "label": "Beginning",
+                        "description": "Beginning evidence.",
+                    },
+                    {
+                        "value": 2,
+                        "label": "Secure",
+                        "description": "Secure evidence.",
+                    },
+                ],
+            },
+            "basic_requirements": {
+                "paragraphs_min": None,
+                "paragraphs_max": None,
+                "word_count_min": None,
+                "word_count_max": None,
+                "required_elements": [],
+            },
+            "minimum_requirement_policy": {
+                "allow_return_without_full_review": True
+            },
+        },
+        "students": [
+            {
+                "student_id": "student_installed",
+                "source_snapshot": {
+                    "submission": {
+                        "relative_path": "submissions/student_installed/submission.json",
+                        "sha256": "1" * 64,
+                        "contract_version": "1",
+                    },
+                    "review": {
+                        "relative_path": "submissions/student_installed/review.json",
+                        "sha256": "2" * 64,
+                        "contract_version": "2",
+                    },
+                },
+                "submission": {
+                    "class_id": "installed_class",
+                    "assignment_id": "installed_assignment",
+                    "student_id": "student_installed",
+                    "submission_state": "reviewed",
+                    "entry_method": "plain_paper_manual",
+                    "expected_pages": None,
+                    "digital_provenance": None,
+                },
+                "review": {
+                    "class_id": "installed_class",
+                    "assignment_id": "installed_assignment",
+                    "student_id": "student_installed",
+                    "review_state": "ratings_complete",
+                    "minimum_requirement_outcome": {
+                        "status": "met",
+                        "returned_without_full_review": False,
+                        "teacher_note": {
+                            "disposition": "absent",
+                            "text": None,
+                        },
+                        "updated_at": "2026-08-14T19:00:00Z",
+                    },
+                    "review_units": [],
+                    "overall_standard_ratings": [
+                        {
+                            "standard_id": "synthetic:W.1",
+                            "rating": 0,
+                            "rationale": {
+                                "disposition": "withheld",
+                                "text": None,
+                            },
+                            "include_in_feedback": False,
+                            "updated_at": "2026-08-14T19:30:00Z",
+                        }
+                    ],
+                    "feedback": {
+                        "include_review_unit_observations": False,
+                        "include_overall_standard_ratings": True,
+                        "standard_feedback": [],
+                    },
+                },
+            }
+        ],
+    }
+    canonical = manifest_to_canonical_json_bytes(manifest_from_mapping(raw))
+    parsed = reader.read_academic_result_manifest(canonical)
+    assert reader.validate_academic_result_manifest(parsed) is parsed
+    student = reader.lookup_academic_result_student(parsed, "student_installed")
+    assert student is parsed.students[0]
+    assignment_source = reader.lookup_academic_result_source(parsed, "assignment")
+    assert assignment_source is parsed.source_snapshot
+    rating = reader.lookup_academic_result_overall_rating(
+        parsed, "student_installed", "synthetic:W.1"
+    )
+    assert rating.rating == 0
+    try:
+        reader.read_academic_result_manifest(canonical + b" ")
+    except reader.QuillanAcademicResultReaderValidationError:
+        pass
+    else:
+        raise AssertionError("Installed reader accepted noncanonical manifest bytes.")
+    artifact_kinds = str(artifacts.AcademicResultArtifactKind)
+    assert "student_work" in artifact_kinds
+    assert "feedback_pdf" in artifact_kinds
+    assert "feedback_markdown" in artifact_kinds
+    return {
+        "canonical_bytes": len(canonical),
+        "student_lookup": student.student_id,
+        "assignment_source": assignment_source.relative_path,
+        "native_rating": rating.rating,
+        "noncanonical_rejected": True,
+        "artifact_module": "quillan.academic_result_artifacts",
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--work", type=Path, required=True)
@@ -491,6 +645,8 @@ def main() -> int:
     assert core_distribution.version == "0.6.0"
     root = Path(str(distribution.locate_file(""))).resolve()
     import quillan
+    import quillan.academic_result_artifacts
+    import quillan.academic_result_reader
     import quillan.pds_module
     import quillan.pds_publication
     import pds_core
@@ -512,6 +668,8 @@ def main() -> int:
 
     origins = [
         Path(quillan.__file__).resolve(),
+        Path(quillan.academic_result_artifacts.__file__).resolve(),
+        Path(quillan.academic_result_reader.__file__).resolve(),
         Path(quillan.pds_module.__file__).resolve(),
         Path(quillan.pds_publication.__file__).resolve(),
     ]
@@ -555,6 +713,9 @@ def main() -> int:
     assert registry_profile == publication_profile
     assert not sentinel.exists()
     _assert_no_academic_state(sentinel)
+    reader_probe = _verify_installed_academic_result_reader()
+    assert not sentinel.exists()
+    _assert_no_academic_state(sentinel)
 
     modules = sorted(module.name for module in pkgutil.walk_packages(quillan.__path__, "quillan."))
     for module in modules:
@@ -576,7 +737,7 @@ def main() -> int:
     workflow = _run_full_workflow(workflow_workspace, work=work, env=env) if args.full_workflow else None
     if args.full_workflow:
         _assert_no_academic_state(workflow_workspace)
-    print(json.dumps({"version": distribution.version, "distribution_root": str(root), "origins": [str(path) for path in origins], "core_version": core_distribution.version, "core_origin": str(core_origin), "core_06_academic_modules": academic_module_origins, "module_count": len(modules), "module_profile": routing_profile.module_id, "publication_profile": publication_profile.module_id, "publication_profiles_discovered": len(discovered), "publication_registry_profile": registry_profile.module_id, "workspace_side_effects": False, "academic_registry_side_effects": False, "workflow": workflow}, indent=2, sort_keys=True))
+    print(json.dumps({"version": distribution.version, "distribution_root": str(root), "origins": [str(path) for path in origins], "core_version": core_distribution.version, "core_origin": str(core_origin), "core_06_academic_modules": academic_module_origins, "module_count": len(modules), "module_profile": routing_profile.module_id, "publication_profile": publication_profile.module_id, "publication_profiles_discovered": len(discovered), "publication_registry_profile": registry_profile.module_id, "academic_result_reader": reader_probe, "workspace_side_effects": False, "academic_registry_side_effects": False, "workflow": workflow}, indent=2, sort_keys=True))
     return 0
 
 

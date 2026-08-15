@@ -49,6 +49,13 @@ authorities.
 `quillan.pds_publication` remains metadata-only. It contains no publication,
 supersession, withdrawal, catalog, CLI, menu, reader, or authorization callback.
 
+After a consumer has selected and authorized a canonical Core publication and Core has
+verified the exact producer manifest path and SHA-256, the immutable bytes may be
+parsed through `quillan.academic_result_reader`. Separately authorized student-work or
+feedback lookup is handled by `quillan.academic_result_artifacts`; neither reader
+selects Core publications or queries the academic catalog. See
+[Academic Result Reader and Authorized Artifacts](academic_result_reader.md).
+
 ## Producer head selection
 
 Initial publication and ordinary supersession require the caller-selected manifest

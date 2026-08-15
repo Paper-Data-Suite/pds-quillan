@@ -447,7 +447,6 @@ def test_menu_export_student_feedback_creates_feedback_file(
         ASSIGNMENT_ID,
         STUDENT_ID,
     )
-    review_before = review_path.read_bytes()
 
     recorder = MenuScreenRecorder(
         _enter_selected_student()
@@ -480,7 +479,12 @@ def test_menu_export_student_feedback_creates_feedback_file(
     assert "- Good work." in feedback_text
     assert "This should not appear in student feedback." not in feedback_text
     assert manifest_path.read_bytes() == manifest_before
-    assert review_path.read_bytes() == review_before
+    review_after = json.loads(review_path.read_text(encoding="utf-8"))
+    assert review_after["review_state"] == "exported"
+    metadata = review_after["exports"]["feedback_markdown"]
+    assert metadata["path"] == feedback_path.relative_to(workspace).as_posix()
+    assert metadata["generated_at"] == review_after["updated_at"]
+    assert metadata["source_review_updated_at"] == review_after["updated_at"]
 
 
 def test_menu_export_student_feedback_pdf_creates_pdf_and_updates_metadata(
