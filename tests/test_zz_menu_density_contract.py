@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import asdict
 import inspect
+import json
+import os
 
 import pytest
 
-from tests.menu_screen_recorder import recorder_events
+from tests.menu_screen_recorder import recorder_events, workflow_audit_metrics
 from tests.test_menu_density_matrix import (
     MENU_DENSITY_ACCEPTANCE_MATRIX,
     REQUIRED_MENU_DENSITY_WORKFLOWS,
@@ -42,6 +45,7 @@ def test_menu_density_matrix_collected_and_executed_exactly_once(
     expected_events = frozenset(
         {"instantiated", "installed", "screens", "asserted"}
     )
+    audit_rows: list[dict[str, object]] = []
     for label, node_id in MENU_DENSITY_ACCEPTANCE_MATRIX.items():
         item = collected[node_id]
         marker = item.get_closest_marker("menu_density_workflow")
@@ -53,3 +57,13 @@ def test_menu_density_matrix_collected_and_executed_exactly_once(
         assert ".screens(" in source
         assert "assert_focused_child_screen(" in source
         assert "RecordedScreen(" not in source
+
+        metrics = workflow_audit_metrics(node_id)
+        assert metrics is not None
+        audit_rows.append({"label": label, **asdict(metrics)})
+
+    if os.environ.get("QUILLAN_TEACHER_WORKFLOW_AUDIT") == "1":
+        print("=== QUILLAN TEACHER WORKFLOW AUDIT METRICS BEGIN ===")
+        for row in audit_rows:
+            print(json.dumps(row, sort_keys=True))
+        print("=== QUILLAN TEACHER WORKFLOW AUDIT METRICS END ===")

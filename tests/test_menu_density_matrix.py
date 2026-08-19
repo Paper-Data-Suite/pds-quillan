@@ -6,6 +6,7 @@ from __future__ import annotations
 MENU_DENSITY_ACCEPTANCE_MATRIX = {
     "assignment creation": "tests/test_assignment_workflows.py::test_assignment_creation_density_uses_real_workflow",
     "assignment validation": "tests/test_assignment_workflows.py::test_assignment_validation_density_uses_real_workflow",
+    "repeated assignment creation": "tests/test_teacher_workflow_audit_issue379.py::test_repeated_assignment_creation_audit_uses_real_workflow",
     "printable-response generation": "tests/test_printable_response_workflows.py::test_printable_response_density_uses_real_workflow",
     "complete scan intake": "tests/test_menu_scan_intake.py::test_complete_scan_intake_density_uses_real_workflow",
     "partial scan intake": "tests/test_menu_scan_intake.py::test_partial_scan_intake_density_uses_real_workflow",
@@ -16,6 +17,8 @@ MENU_DENSITY_ACCEPTANCE_MATRIX = {
     "assignment dashboard": "tests/test_menu_export_actions.py::test_assignment_review_actions_menu_includes_export_choices",
     "full diagnostic dashboard": "tests/test_menu_export_actions.py::test_assignment_review_dashboard_hides_unused_duplicate_files",
     "student selection": "tests/test_menu_review_student_work.py::test_review_workflow_selects_context_and_shows_read_only_summary",
+    "class-set student handoff": "tests/test_teacher_workflow_audit_issue379.py::test_class_set_student_handoff_audit_uses_real_workflow",
+    "complete individual review": "tests/test_teacher_workflow_audit_issue379.py::test_complete_individual_review_audit_uses_one_real_teacher_session",
     "plain-paper creation": "tests/test_menu_review_student_work.py::test_review_menu_creates_plain_paper_submission_and_shows_review_actions",
     "evidence opening": "tests/test_menu_review_student_work.py::test_review_menu_open_submission_uses_existing_safe_opening",
     "page selection and page management": "tests/test_menu_review_student_work.py::test_review_menu_excludes_submission_page_without_touching_review_record",
