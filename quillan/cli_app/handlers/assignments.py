@@ -12,6 +12,7 @@ from quillan.assignment_setup import (
     create_assignment,
     load_canonical_assignment,
     plan_assignment_creation,
+    plan_assignment_creation_from_preset,
     validate_canonical_assignment,
 )
 from quillan.assignment_workflows import (
@@ -19,6 +20,9 @@ from quillan.assignment_workflows import (
     parse_comma_separated_values,
 )
 
+from quillan.review_configuration_presets import (
+    require_current_review_configuration_preset_matches,
+)
 
 def _relative(path: Path, root: Path) -> str:
     try:
@@ -46,50 +50,128 @@ def handle_assignment_create(args: argparse.Namespace) -> int:
         prompt = args.prompt
         if args.prompt_file is not None:
             prompt = args.prompt_file.read_text(encoding="utf-8")
-        requirements = {
-            key: value
-            for key, value in {
-                "paragraphs_min": args.paragraphs_min,
-                "paragraphs_max": args.paragraphs_max,
-                "word_count_min": args.word_count_min,
-                "word_count_max": args.word_count_max,
-            }.items()
-            if value is not None
+
+        manual_values = {
+            "--writing-type": args.writing_type,
+            "--standards-profile-id": args.standards_profile_id,
+            "--focus-standard-ids": args.focus_standard_ids,
+            "--review-unit-type": args.review_unit_type,
+            "--review-unit-singular": args.review_unit_singular,
+            "--review-unit-plural": args.review_unit_plural,
+            "--rating-scale": args.rating_scale,
+            "--paragraphs-min": args.paragraphs_min,
+            "--paragraphs-max": args.paragraphs_max,
+            "--word-count-min": args.word_count_min,
+            "--word-count-max": args.word_count_max,
+            "--required-elements": args.required_elements,
+            "--allow-return-without-full-review": (
+                args.allow_return_without_full_review
+            ),
         }
-        elements = parse_comma_separated_values(args.required_elements or "")
-        if elements:
-            requirements["required_elements"] = elements
-        plan = plan_assignment_creation(
-            resolve_workspace_root(),
-            class_id=args.class_id,
-            assignment_id=args.assignment_id,
-            title=args.title,
-            writing_type=args.writing_type,
-            student_prompt=prompt,
-            standards_profile_id=args.standards_profile_id,
-            focus_standard_ids=parse_comma_separated_values(args.focus_standard_ids),
-            review_unit={
-                "type": args.review_unit_type,
-                "singular_label": args.review_unit_singular,
-                "plural_label": args.review_unit_plural,
-            },
-            basic_requirements=requirements,
-            allow_return_without_full_review=args.allow_return_without_full_review,
-        )
+        preset = None
+        if args.preset_id is not None:
+            conflicts = [
+                name for name, value in manual_values.items() if value is not None
+            ]
+            if conflicts:
+                raise ValueError(
+                    "--preset-id cannot be combined with manual "
+                    "review-configuration options: "
+                    + ", ".join(conflicts)
+                    + "."
+                )
+            plan, preset = plan_assignment_creation_from_preset(
+                resolve_workspace_root(),
+                class_id=args.class_id,
+                assignment_id=args.assignment_id,
+                title=args.title,
+                student_prompt=prompt,
+                preset_id=args.preset_id,
+            )
+        else:
+            required = {
+                "--writing-type": args.writing_type,
+                "--standards-profile-id": args.standards_profile_id,
+                "--focus-standard-ids": args.focus_standard_ids,
+            }
+            missing = [name for name, value in required.items() if value is None]
+            if missing:
+                raise ValueError(
+                    "manual assignment creation requires "
+                    + ", ".join(missing)
+                    + ", or use --preset-id."
+                )
+            requirements = {
+                key: value
+                for key, value in {
+                    "paragraphs_min": args.paragraphs_min,
+                    "paragraphs_max": args.paragraphs_max,
+                    "word_count_min": args.word_count_min,
+                    "word_count_max": args.word_count_max,
+                }.items()
+                if value is not None
+            }
+            elements = parse_comma_separated_values(args.required_elements or "")
+            if elements:
+                requirements["required_elements"] = elements
+            plan = plan_assignment_creation(
+                resolve_workspace_root(),
+                class_id=args.class_id,
+                assignment_id=args.assignment_id,
+                title=args.title,
+                writing_type=args.writing_type,
+                student_prompt=prompt,
+                standards_profile_id=args.standards_profile_id,
+                focus_standard_ids=parse_comma_separated_values(
+                    args.focus_standard_ids
+                ),
+                review_unit={
+                    "type": args.review_unit_type or "paragraph",
+                    "singular_label": (
+                        args.review_unit_singular or "paragraph"
+                    ),
+                    "plural_label": args.review_unit_plural or "paragraphs",
+                },
+                basic_requirements=requirements,
+                allow_return_without_full_review=(
+                    True
+                    if args.allow_return_without_full_review is None
+                    else args.allow_return_without_full_review
+                ),
+            )
+
         relative_path = _relative(plan.path, plan.workspace_root)
         if args.dry_run:
             print("Assignment creation dry run:")
             print(f"Class: {plan.class_id}")
             print(f"Assignment: {plan.assignment_id}")
+            if preset is not None:
+                print(
+                    "Review preset: "
+                    f"{preset['title']} ({preset['preset_id']})"
+                )
             print(f"Would write: {relative_path}")
             print(format_assignment_summary(plan.assignment, relative_path))
             print("No files were written.")
             return 0
+        if preset is not None:
+            require_current_review_configuration_preset_matches(
+                plan.workspace_root, preset
+            )
         path = create_assignment(plan, overwrite=args.overwrite)
         print("Created assignment:")
         print(f"Class: {plan.class_id}")
         print(f"Assignment: {plan.assignment_id}")
-        print(format_assignment_summary(plan.assignment, _relative(path, plan.workspace_root)))
+        if preset is not None:
+            print(
+                "Review preset applied by value: "
+                f"{preset['title']} ({preset['preset_id']})"
+            )
+        print(
+            format_assignment_summary(
+                plan.assignment, _relative(path, plan.workspace_root)
+            )
+        )
         from quillan.academic_work_menu import (
             print_registration_title_staleness_notices,
         )

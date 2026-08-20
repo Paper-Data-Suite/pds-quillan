@@ -491,3 +491,44 @@ Safe assignment copying is an application workflow over assignment schema versio
 allowlist and creates no submission, review, evidence, export, route, Academic Work,
 manifest, or publication state. See
 [`assignment_copying.md`](assignment_copying.md).
+
+
+## Review configuration preset v1
+
+Quillan owns the workspace-level
+`review_configuration_preset` record family at:
+
+```text
+shared/review_configuration_presets/<preset_id>.json
+```
+
+Its fixed identity is:
+
+```text
+schema_version = "1"
+module = "quillan"
+record_type = "review_configuration_preset"
+```
+
+The configuration payload is an explicit positive allowlist:
+
+```text
+writing_type
+standards_profile_id
+focus_standard_ids
+review_unit
+rating_scale
+basic_requirements
+minimum_requirement_policy
+```
+
+Metadata is limited to `preset_id`, `title`, `description`, `created_at`,
+`updated_at`, and `module_details`. The record contains no class/assignment
+identity, student data, evidence, review state, teacher judgment, feedback
+composition/text, exports, Core Academic Work state, result manifests, or
+publication state.
+
+Standards/profile definitions remain Core-owned; the preset stores references
+only. Applying a preset snapshots values into schema-v2 `assignment.json`;
+assignments never inherit live preset state. Reusable feedback text remains the
+separate `focus_standard_comment_set` record family.

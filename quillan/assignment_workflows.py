@@ -933,6 +933,7 @@ def prompt_create_assignment() -> int:
         return 1
     class_ids = [folder.class_id for folder in class_folders]
 
+    selected_preset: dict[str, Any] | None = None
     try:
         _print_assignment_section_header(
             "Assignment Identity",
@@ -948,46 +949,70 @@ def prompt_create_assignment() -> int:
             assignment_id = suggested_id
         validate_identifier(assignment_id, "assignment_id")
 
+        from quillan.review_preset_workflows import (
+            prompt_assignment_review_configuration,
+        )
+
+        review_configuration = prompt_assignment_review_configuration(
+            workspace_root
+        )
+        if review_configuration is None:
+            print("Canceled: assignment creation was not continued.")
+            return 0
+
         _print_assignment_section_header(
             "Writing Prompt",
             class_ids=class_ids,
             assignment_id=assignment_id,
         )
-        writing_type = _prompt_writing_type()
-        student_prompt = _prompt_student_prompt()
-        _print_assignment_section_header(
-            "Standards Profile",
-            class_ids=class_ids,
-            assignment_id=assignment_id,
-        )
-        standards_selection = _prompt_standards_selection(workspace_root)
-        if standards_selection is None:
-            return 1
-        standards_profile_id, focus_standard_ids = standards_selection
-        _print_assignment_section_header(
-            "Review Unit Setup",
-            class_ids=class_ids,
-            assignment_id=assignment_id,
-        )
-        review_unit = _prompt_review_unit()
-        _print_assignment_section_header(
-            "Rating Scale Setup",
-            class_ids=class_ids,
-            assignment_id=assignment_id,
-        )
-        rating_scale = _prompt_rating_scale()
-        _print_assignment_section_header(
-            "Basic Requirements",
-            class_ids=class_ids,
-            assignment_id=assignment_id,
-        )
-        basic_requirements = _prompt_basic_requirements()
-        _print_assignment_section_header(
-            "Minimum Requirement Policy",
-            class_ids=class_ids,
-            assignment_id=assignment_id,
-        )
-        minimum_requirement_policy = _prompt_minimum_requirement_policy()
+        if review_configuration is False:
+            writing_type = _prompt_writing_type()
+            student_prompt = _prompt_student_prompt()
+            _print_assignment_section_header(
+                "Standards Profile",
+                class_ids=class_ids,
+                assignment_id=assignment_id,
+            )
+            standards_selection = _prompt_standards_selection(workspace_root)
+            if standards_selection is None:
+                return 1
+            standards_profile_id, focus_standard_ids = standards_selection
+            _print_assignment_section_header(
+                "Review Unit Setup",
+                class_ids=class_ids,
+                assignment_id=assignment_id,
+            )
+            review_unit = _prompt_review_unit()
+            _print_assignment_section_header(
+                "Rating Scale Setup",
+                class_ids=class_ids,
+                assignment_id=assignment_id,
+            )
+            rating_scale = _prompt_rating_scale()
+            _print_assignment_section_header(
+                "Basic Requirements",
+                class_ids=class_ids,
+                assignment_id=assignment_id,
+            )
+            basic_requirements = _prompt_basic_requirements()
+            _print_assignment_section_header(
+                "Minimum Requirement Policy",
+                class_ids=class_ids,
+                assignment_id=assignment_id,
+            )
+            minimum_requirement_policy = _prompt_minimum_requirement_policy()
+        else:
+            selected_preset = review_configuration
+            student_prompt = _prompt_student_prompt()
+            writing_type = selected_preset["writing_type"]
+            standards_profile_id = selected_preset["standards_profile_id"]
+            focus_standard_ids = selected_preset["focus_standard_ids"]
+            review_unit = selected_preset["review_unit"]
+            rating_scale = selected_preset["rating_scale"]
+            basic_requirements = selected_preset["basic_requirements"]
+            minimum_requirement_policy = selected_preset[
+                "minimum_requirement_policy"
+            ]
 
         assignment = build_assignment_config(
             assignment_id=assignment_id,
@@ -1019,6 +1044,12 @@ def prompt_create_assignment() -> int:
         class_ids=class_ids,
         assignment_id=assignment_id,
     )
+    if selected_preset is not None:
+        print(
+            "Review preset applied by value: "
+            f"{selected_preset['title']} ({selected_preset['preset_id']})"
+        )
+        print()
     print(format_assignment_summary(assignment, output_paths[0], workspace_root))
     print()
     class_count = len(class_ids)
@@ -1057,6 +1088,19 @@ def prompt_create_assignment() -> int:
             print("Canceled: existing assignments were not changed.")
             return 1
         overwrite = True
+
+    if selected_preset is not None:
+        try:
+            from quillan.review_configuration_presets import (
+                require_current_review_configuration_preset_matches,
+            )
+
+            require_current_review_configuration_preset_matches(
+                workspace_root, selected_preset
+            )
+        except (OSError, ValueError) as error:
+            print(f"Error: review preset changed or became stale before save: {error}")
+            return 1
 
     try:
         saved_paths = list(
@@ -1255,6 +1299,7 @@ def launch_assignment_menu() -> int:
             print("5. Academic Work Registration")
             print("6. Academic Result Manifests")
             print("7. Academic Result Publications")
+            print("8. Review Configuration Presets")
             print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
@@ -1296,6 +1341,12 @@ def launch_assignment_menu() -> int:
                 )
 
                 launch_academic_result_publication_menu()
+            elif choice == "8":
+                from quillan.review_preset_workflows import (
+                    launch_review_configuration_preset_menu,
+                )
+
+                launch_review_configuration_preset_menu()
             elif workflow is None:
                 print(f"Invalid selection. {navigation_hint()}")
             else:

@@ -28,6 +28,9 @@ from quillan.record_context import (
     mutable_json_copy,
 )
 from quillan.work_paths import quillan_work_paths, quillan_work_ref
+from quillan.review_configuration_presets import (
+    load_current_review_configuration_preset,
+)
 
 
 @dataclass(frozen=True)
@@ -86,6 +89,50 @@ def plan_assignment_creation(
         assignment=assignment,
     )
 
+
+
+def plan_assignment_creation_from_preset(
+    workspace_root: str | Path,
+    *,
+    class_id: str,
+    assignment_id: str,
+    title: str,
+    student_prompt: str,
+    preset_id: str,
+) -> tuple[AssignmentPlan, dict[str, Any]]:
+    """Plan an ordinary schema-v2 assignment from one exact current preset."""
+    root = canonical_workspace_root(workspace_root)
+    validate_identifier(class_id, "class_id")
+    validate_identifier(assignment_id, "assignment_id")
+    load_class_roster(root, class_id)
+    preset, _preset_path = load_current_review_configuration_preset(
+        root, preset_id
+    )
+    assignment = build_assignment_config(
+        assignment_id=assignment_id,
+        title=title,
+        class_id=class_id,
+        writing_type=preset["writing_type"],
+        student_prompt=student_prompt,
+        standards_profile_id=preset["standards_profile_id"],
+        focus_standard_ids=preset["focus_standard_ids"],
+        review_unit=preset["review_unit"],
+        rating_scale=preset["rating_scale"],
+        basic_requirements=preset["basic_requirements"],
+        minimum_requirement_policy=preset["minimum_requirement_policy"],
+    )
+    library = load_workspace_standards_library(root)
+    validate_assignment_standards_selection(assignment, library)
+    return (
+        AssignmentPlan(
+            workspace_root=root,
+            class_id=class_id,
+            assignment_id=assignment_id,
+            path=quillan_work_paths(root, class_id, assignment_id).assignment_path,
+            assignment=assignment,
+        ),
+        preset,
+    )
 
 def create_assignment(plan: AssignmentPlan, *, overwrite: bool = False) -> Path:
     """Write one prevalidated assignment to its canonical path."""

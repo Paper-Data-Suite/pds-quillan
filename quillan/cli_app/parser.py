@@ -113,6 +113,13 @@ from quillan.cli_app.handlers.assignments import (
     handle_assignment_validate as handle_canonical_assignment_validate,
 )
 from quillan.cli_app.handlers.assignment_copy import handle_assignment_copy
+from quillan.cli_app.handlers.review_presets import (
+    handle_review_preset_create,
+    handle_review_preset_list,
+    handle_review_preset_save_from_assignment,
+    handle_review_preset_show,
+    handle_review_preset_validate,
+)
 from quillan.cli_app.handlers.workspace import (
     handle_menu,
     handle_workspace_reset,
@@ -226,17 +233,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_assignment_identity_arguments(assignment_create_parser)
     assignment_create_parser.add_argument("--title", required=True)
-    assignment_create_parser.add_argument("--writing-type", required=True)
+    assignment_create_parser.add_argument(
+        "--preset-id",
+        action=StoreOnceAction,
+        help=(
+            "Use one exact reusable review-configuration preset. "
+            "Do not combine with manual review-configuration flags."
+        ),
+    )
+    assignment_create_parser.add_argument("--writing-type")
     prompt_group = assignment_create_parser.add_mutually_exclusive_group(required=True)
     prompt_group.add_argument("--prompt")
     prompt_group.add_argument("--prompt-file", type=Path)
-    assignment_create_parser.add_argument("--standards-profile-id", required=True)
-    assignment_create_parser.add_argument("--focus-standard-ids", required=True)
-    assignment_create_parser.add_argument("--review-unit-type", default="paragraph")
-    assignment_create_parser.add_argument("--review-unit-singular", default="paragraph")
-    assignment_create_parser.add_argument("--review-unit-plural", default="paragraphs")
+    assignment_create_parser.add_argument("--standards-profile-id")
+    assignment_create_parser.add_argument("--focus-standard-ids")
+    assignment_create_parser.add_argument("--review-unit-type")
+    assignment_create_parser.add_argument("--review-unit-singular")
+    assignment_create_parser.add_argument("--review-unit-plural")
     assignment_create_parser.add_argument(
-        "--rating-scale", choices=("default",), default="default"
+        "--rating-scale", choices=("default",)
     )
     assignment_create_parser.add_argument("--paragraphs-min", type=nonnegative_integer)
     assignment_create_parser.add_argument("--paragraphs-max", type=nonnegative_integer)
@@ -244,7 +259,7 @@ def build_parser() -> argparse.ArgumentParser:
     assignment_create_parser.add_argument("--word-count-max", type=nonnegative_integer)
     assignment_create_parser.add_argument("--required-elements")
     assignment_create_parser.add_argument(
-        "--allow-return-without-full-review", type=_boolean, default=True
+        "--allow-return-without-full-review", type=_boolean
     )
     assignment_create_parser.add_argument("--overwrite", action="store_true")
     confirmation = assignment_create_parser.add_mutually_exclusive_group()
@@ -326,6 +341,126 @@ def build_parser() -> argparse.ArgumentParser:
     _add_assignment_identity_arguments(assignment_validate_parser)
     assignment_validate_parser.set_defaults(
         handler=handle_canonical_assignment_validate
+    )
+
+
+    review_preset_parser = subparsers.add_parser(
+        "review-preset",
+        help="Create, inspect, and validate reusable review configuration.",
+        description=(
+            "Manage Quillan workspace-level review-configuration presets. "
+            "Presets contain assignment review configuration only; they do not "
+            "contain student work, review judgments, feedback, or exports."
+        ),
+    )
+    review_preset_parser.set_defaults(
+        handler=partial(_print_parser_help, review_preset_parser)
+    )
+    review_preset_subparsers = review_preset_parser.add_subparsers(
+        dest="review_preset_command"
+    )
+
+    review_preset_list_parser = review_preset_subparsers.add_parser(
+        "list", help="List valid, invalid, and stale preset files."
+    )
+    review_preset_list_parser.set_defaults(handler=handle_review_preset_list)
+
+    review_preset_show_parser = review_preset_subparsers.add_parser(
+        "show", help="Show one exact current preset."
+    )
+    review_preset_show_parser.add_argument(
+        "--preset-id", required=True, action=StoreOnceAction
+    )
+    review_preset_show_parser.set_defaults(handler=handle_review_preset_show)
+
+    review_preset_validate_parser = review_preset_subparsers.add_parser(
+        "validate", help="Validate one preset against current Core standards."
+    )
+    review_preset_validate_parser.add_argument(
+        "--preset-id", required=True, action=StoreOnceAction
+    )
+    review_preset_validate_parser.set_defaults(
+        handler=handle_review_preset_validate
+    )
+
+    review_preset_create_parser = review_preset_subparsers.add_parser(
+        "create", help="Create a preset from explicit reusable configuration."
+    )
+    review_preset_create_parser.add_argument(
+        "--preset-id", required=True, action=StoreOnceAction
+    )
+    review_preset_create_parser.add_argument(
+        "--title", required=True, action=StoreOnceAction
+    )
+    review_preset_create_parser.add_argument(
+        "--description", required=True, action=StoreOnceAction
+    )
+    review_preset_create_parser.add_argument(
+        "--writing-type", required=True, action=StoreOnceAction
+    )
+    review_preset_create_parser.add_argument(
+        "--standards-profile-id", required=True, action=StoreOnceAction
+    )
+    review_preset_create_parser.add_argument(
+        "--focus-standard-ids", required=True, action=StoreOnceAction
+    )
+    review_preset_create_parser.add_argument("--review-unit-type")
+    review_preset_create_parser.add_argument("--review-unit-singular")
+    review_preset_create_parser.add_argument("--review-unit-plural")
+    review_preset_create_parser.add_argument(
+        "--rating-scale", choices=("default",), default="default"
+    )
+    review_preset_create_parser.add_argument(
+        "--paragraphs-min", type=nonnegative_integer
+    )
+    review_preset_create_parser.add_argument(
+        "--paragraphs-max", type=nonnegative_integer
+    )
+    review_preset_create_parser.add_argument(
+        "--word-count-min", type=nonnegative_integer
+    )
+    review_preset_create_parser.add_argument(
+        "--word-count-max", type=nonnegative_integer
+    )
+    review_preset_create_parser.add_argument("--required-elements")
+    review_preset_create_parser.add_argument(
+        "--allow-return-without-full-review", type=_boolean
+    )
+    preset_create_confirmation = (
+        review_preset_create_parser.add_mutually_exclusive_group()
+    )
+    preset_create_confirmation.add_argument("--yes", action="store_true")
+    preset_create_confirmation.add_argument("--dry-run", action="store_true")
+    review_preset_create_parser.set_defaults(
+        handler=handle_review_preset_create
+    )
+
+    review_preset_source_parser = review_preset_subparsers.add_parser(
+        "save-from-assignment",
+        help="Create a preset from one exact canonical assignment.",
+    )
+    review_preset_source_parser.add_argument(
+        "--source-class-id", required=True, action=StoreOnceAction
+    )
+    review_preset_source_parser.add_argument(
+        "--source-assignment-id", required=True, action=StoreOnceAction
+    )
+    review_preset_source_parser.add_argument(
+        "--preset-id", required=True, action=StoreOnceAction
+    )
+    review_preset_source_parser.add_argument(
+        "--title", required=True, action=StoreOnceAction
+    )
+    review_preset_source_parser.add_argument(
+        "--description", required=True, action=StoreOnceAction
+    )
+    preset_source_confirmation = (
+        review_preset_source_parser.add_mutually_exclusive_group()
+    )
+    preset_source_confirmation.add_argument("--yes", action="store_true")
+    preset_source_confirmation.add_argument("--dry-run", action="store_true")
+    review_preset_source_parser.set_defaults(
+        handler=handle_review_preset_save_from_assignment
     )
 
     academic_work_parser = subparsers.add_parser(

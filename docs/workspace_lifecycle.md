@@ -333,3 +333,30 @@ That evidence is not review-ready until explicit assembly writes
 `submissions/<student_id>/submission.json`. Assembly skips existing submission
 files by default; regenerating an existing submission is an explicit destructive
 choice because it can replace the submission record.
+
+
+## Reusable review-configuration preset lifecycle
+
+Quillan review-configuration presets are optional workspace-level teacher
+configuration:
+
+```text
+shared/review_configuration_presets/<preset_id>.json
+```
+
+A workspace with no preset directory is valid. Planning and dry-run do not
+create it. The directory is created only when a preset is successfully
+persisted.
+
+Issue #381 supports create-only preset persistence. An existing preset identity
+blocks creation; v1 does not silently replace, edit, migrate, or delete it.
+Preset creation may be direct or may extract the explicit reusable allowlist
+from one exact canonical assignment. Source-assignment plans bind exact source
+bytes and fail closed if that source changes before save.
+
+Preset discovery is tolerant of independent bad files: valid, structurally
+invalid, and current-standards-stale records are reported independently.
+Assignment creation may use only an explicitly selected current valid preset and
+rechecks the exact reviewed preset before saving. After an assignment is saved,
+its materialized schema-v2 configuration is authoritative and does not depend on
+the preset remaining present.
