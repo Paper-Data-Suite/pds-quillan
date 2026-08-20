@@ -396,7 +396,7 @@ def test_assignment_management_opens_printable_response_submenu(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["1", "3", "b", "", "b", "q"])
+    _menu_input(monkeypatch, ["1", "4", "b", "", "b", "q"])
 
     assert main(["menu"]) == 0
     output = (lambda captured: captured.out + captured.err)(capsys.readouterr())

@@ -97,7 +97,7 @@ def test_repeated_assignment_creation_audit_uses_real_workflow(
             "Assignment creation requires an existing PDS Core standards profile.",
             "Standards profiles found: 1",
         ),
-        forbidden_parent_text="3. Printable Response Pages",
+        forbidden_parent_text="4. Printable Response Pages",
         parent_heading="Assignment Management",
         result_heading="Assignment Saved",
         unrelated_previous_text="View/validate assignment",

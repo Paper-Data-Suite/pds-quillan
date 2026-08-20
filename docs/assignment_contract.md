@@ -959,3 +959,15 @@ only the assignment title plus exact work/source identity; it does not add field
 to `assignment.json` or automatically follow later native edits. The source
 record contract version is exactly `2`. See
 [Academic Work Registration](academic_work_registration.md).
+
+## Safe Writing-Assignment Copying
+
+Issue #380 adds a workflow over the existing schema-v2 assignment contract; it does
+not add assignment fields or a new schema version. A copy constructs a fresh record
+from the reusable configuration allowlist and fresh target identity/timestamps.
+`module_details` starts as `{}`. The copy is create-only and never clones the source
+work directory or its submissions, evidence, printable-page identity, routes,
+reviews, exports, manifests, Academic Work Registration, or publication state.
+
+See [Safe Writing-Assignment Copying](assignment_copying.md) for the complete
+planning, destination-cleanliness, concurrency, menu, and CLI contract.

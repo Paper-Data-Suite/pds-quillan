@@ -144,7 +144,7 @@ def test_manifest_menu_requires_generate_and_reports_success(
     assert "Manifest SHA-256:" in output
 
 
-def test_assignment_management_routes_option_five_to_manifest_menu(
+def test_assignment_management_routes_option_six_to_manifest_menu(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     called = 0
@@ -160,7 +160,7 @@ def test_assignment_management_routes_option_five_to_manifest_menu(
     monkeypatch.setattr(root_menu, "clear_screen", lambda: None)
     monkeypatch.setattr(root_menu, "pause_for_user", lambda: None)
     monkeypatch.setattr(root_menu, "print_menu_header", lambda _title=None: None)
-    responses = iter(["5", "B"])
+    responses = iter(["6", "B"])
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(responses))
 
     assert assignment_workflows.launch_assignment_menu() == 0

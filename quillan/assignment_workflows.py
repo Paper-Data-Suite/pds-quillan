@@ -366,7 +366,17 @@ def write_assignment_configs(
             isinstance(error, AtomicRecordDurabilityError)
             and error.possibly_durable_path is not None
         ):
-            possible_paths.append(error.possibly_durable_path)
+            durable_path = error.possibly_durable_path
+            matched_pending_entry = False
+            for entry in journal:
+                if entry.path == durable_path and entry.status == "pending":
+                    entry.status = (
+                        "created" if entry.original is None else "updated"
+                    )
+                    matched_pending_entry = True
+                    break
+            if not matched_pending_entry:
+                possible_paths.append(durable_path)
         if isinstance(error, AtomicRecordDurabilityError) and error.possible_lock_path:
             diagnostics.append(
                 f"Possible stale record guard: {error.possible_lock_path}"
@@ -1239,11 +1249,12 @@ def launch_assignment_menu() -> int:
             clear_screen()
             print_menu_header("Assignment Management")
             print("1. Create writing assignment")
-            print("2. View/validate assignment")
-            print("3. Printable Response Pages")
-            print("4. Academic Work Registration")
-            print("5. Academic Result Manifests")
-            print("6. Academic Result Publications")
+            print("2. Copy writing assignment")
+            print("3. View/validate assignment")
+            print("4. Printable Response Pages")
+            print("5. Academic Work Registration")
+            print("6. Academic Result Manifests")
+            print("7. Academic Result Publications")
             print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
@@ -1254,28 +1265,32 @@ def launch_assignment_menu() -> int:
                 return 0
             workflows = {
                 "1": prompt_create_assignment,
-                "2": prompt_view_validate_assignment,
+                "3": prompt_view_validate_assignment,
             }
             workflow = workflows.get(choice)
-            if choice == "3":
+            if choice == "2":
+                from quillan.assignment_copy_workflows import prompt_copy_assignment
+
+                prompt_copy_assignment()
+            elif choice == "4":
                 from quillan.printable_response_workflows import (
                     launch_printable_response_menu,
                 )
 
                 launch_printable_response_menu()
-            elif choice == "4":
+            elif choice == "5":
                 from quillan.academic_work_menu import (
                     launch_academic_work_registration_menu,
                 )
 
                 launch_academic_work_registration_menu()
-            elif choice == "5":
+            elif choice == "6":
                 from quillan.manifest_menu import (
                     launch_academic_result_manifest_menu,
                 )
 
                 launch_academic_result_manifest_menu()
-            elif choice == "6":
+            elif choice == "7":
                 from quillan.publication_menu import (
                     launch_academic_result_publication_menu,
                 )

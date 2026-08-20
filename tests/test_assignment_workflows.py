@@ -1245,12 +1245,20 @@ def test_assignment_menu_displays_options_and_dispatches(
         "prompt_view_validate_assignment",
         lambda: record("view"),
     )
-    _inputs(monkeypatch, ["1", "", "2", "", "b"])
+    import quillan.assignment_copy_workflows as copy_workflows
+
+    monkeypatch.setattr(
+        copy_workflows,
+        "prompt_copy_assignment",
+        lambda: record("copy"),
+    )
+    _inputs(monkeypatch, ["1", "", "2", "", "3", "", "b"])
 
     assert workflows.launch_assignment_menu() == 0
     output = capsys.readouterr().out
-    assert calls == ["create", "view"]
+    assert calls == ["create", "copy", "view"]
     assert "Create writing assignment" in output
+    assert "Copy writing assignment" in output
     assert "View/validate assignment" in output
     assert "Printable Response Pages" in output
     assert "Back" in output
@@ -1314,7 +1322,7 @@ def test_assignment_creation_density_uses_real_workflow(
         screens,
         heading="Create Writing Assignment",
         required_text="Assignment creation requires an existing PDS Core standards profile.",
-        forbidden_parent_text="3. Printable Response Pages",
+        forbidden_parent_text="4. Printable Response Pages",
         parent_heading="Assignment Management",
         result_heading="Assignment Saved",
         unrelated_previous_text="View/validate assignment",
@@ -1330,7 +1338,7 @@ def test_assignment_validation_density_uses_real_workflow(
     _write_roster(tmp_path)
     workflows.write_assignment_config(tmp_path, "english_12_p3", _assignment())
     monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
-    recorder = MenuScreenRecorder(["2", "1", "1", "", "b"])
+    recorder = MenuScreenRecorder(["3", "1", "1", "", "b"])
     recorder.install(monkeypatch)
 
     assert workflows.launch_assignment_menu() == 0
@@ -1340,7 +1348,7 @@ def test_assignment_validation_density_uses_real_workflow(
         screens,
         heading="View/Validate Assignment",
         required_text="english_12_p3",
-        forbidden_parent_text="3. Printable Response Pages",
+        forbidden_parent_text="4. Printable Response Pages",
         parent_heading="Assignment Management",
         result_heading="Assignment Validation Result",
         unrelated_previous_text="Create writing assignment",

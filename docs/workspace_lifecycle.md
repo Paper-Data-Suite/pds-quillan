@@ -117,12 +117,17 @@ existing assignment validation contract and the shared assignment route:
 <PDS workspace root>/classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
 ```
 
-The menu can also select, load, validate, and summarize a canonical assignment
-by class and assignment identity without rewriting it. Existing configs require exact `OVERWRITE`
-confirmation before replacement. This workflow does not edit or delete
-assignments and does not perform scoring, feedback, reporting, scan routing,
-OCR, AI, or printable packet
-generation.
+The menu can also copy, select, load, validate, and summarize canonical
+assignments by exact class and assignment identity. Ordinary creation retains its
+exact `OVERWRITE` confirmation for intentional replacement. Assignment copying is
+stricter: it constructs a fresh schema-v2 record from an approved reusable-field
+allowlist, has no overwrite mode, and rejects a target identity that already contains
+Quillan work state or Core Academic Work Registration. Copying does not clone
+submissions, evidence, printable-page identity, routes, reviews, exports, manifests,
+or publication state. See [Safe Writing-Assignment Copying](assignment_copying.md).
+
+These assignment-management workflows do not perform scoring, feedback, reporting,
+scan routing, OCR, AI, or printable packet generation.
 
 ### `templates/`
 
