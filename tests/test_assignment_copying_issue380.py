@@ -1183,3 +1183,35 @@ def test_teacher_copy_workflow_reports_collision_without_overwrite(
     output = capsys.readouterr().out
     assert "already contains assignment state" in output
     assert "Traceback" not in output
+
+
+def test_teacher_copy_keeps_source_summary_visible_during_target_selection(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _workspace(tmp_path, "english10_p2", "english10_p4")
+    _write_source(tmp_path)
+    monkeypatch.setattr(workflows, "resolve_workspace_root", lambda: tmp_path)
+    recorder = MenuScreenRecorder(
+        [
+            "1",  # source class
+            "1",  # source assignment
+            "b",  # cancel at target-class selection
+        ]
+    )
+    recorder.install(monkeypatch)
+
+    assert copy_workflows.prompt_copy_assignment() == 0
+
+    screens = recorder.screens(capsys.readouterr().out)
+    source_screens = tuple(
+        screen for screen in screens if "Source Assignment" in screen.output
+    )
+    assert len(source_screens) == 1
+    source_screen = source_screens[0].output
+    assert "Source class: english10_p2" in source_screen
+    assert "Source assignment: literary_analysis" in source_screen
+    assert "Literary Analysis" in source_screen
+    assert "Select Copy Target Classes" in source_screen
+    assert "Available classes:" in source_screen

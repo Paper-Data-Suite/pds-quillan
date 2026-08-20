@@ -76,8 +76,8 @@ def _prompt_copy_assignment(workspace_root: Path) -> int:
     print(format_assignment_summary(source.assignment, source.path, workspace_root))
     print()
 
-    clear_screen()
-    print_menu_header("Select Copy Target Classes")
+    print("Select Copy Target Classes")
+    print()
     target_folders = _prompt_assignment_class_folders(workspace_root)
     if target_folders is None:
         return 0
