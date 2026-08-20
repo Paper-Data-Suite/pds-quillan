@@ -91,6 +91,7 @@ Quillan currently supports:
 * a pure consumer-neutral Academic Result manifest reader with exact native lookup;
 * separately authorization-gated selected student-work and feedback artifact lookup;
 * Focus Standard feedback composition;
+* reusable review-configuration presets in `shared/review_configuration_presets/`;
 * reusable Focus Standard comments in `shared/focus_standard_comments/`;
 * student feedback export to Markdown, PDF, or both;
 * assignment-local Student Performance Summary export;
@@ -117,6 +118,7 @@ classes/<class_id>/modules/quillan/work/<assignment_id>/exports/student_performa
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/manifests/academic_results/<revision>.json
+shared/review_configuration_presets/<preset_id>.json
 shared/focus_standard_comments/<comment_set_id>.json
 shared/standards/library.json
 scans/source/YYYY-MM-DD/
@@ -167,6 +169,7 @@ Assignment Management supports:
 5. Academic Work Registration
 6. Academic Result Manifests
 7. Academic Result Publications
+8. Review Configuration Presets
 B. Back
 ```
 
@@ -211,6 +214,22 @@ Academic Work Registration, result manifests, or publication state. See
 New active assignments use schema version `2` fields such as
 `student_prompt`, `focus_standard_ids`, `review_unit`, `rating_scale`,
 `basic_requirements`, and `minimum_requirement_policy`.
+
+
+The v0.10.0 review-configuration preset workflow stores teacher-named reusable
+configuration at
+`shared/review_configuration_presets/<preset_id>.json`. Presets contain exactly
+`writing_type`, `standards_profile_id`, `focus_standard_ids`, `review_unit`,
+`rating_scale`, `basic_requirements`, and `minimum_requirement_policy`, plus
+preset identity/metadata. They contain no class/assignment identity, student
+prompt, student work, review judgments, feedback composition, exports, routes,
+manifests, or publication state.
+
+Assignment creation can explicitly select and review a current valid preset.
+Preset values are then materialized by value into the ordinary schema-v2
+`assignment.json`; the assignment retains no `preset_id` and has no live
+dependency on the preset. Manual assignment configuration remains available.
+See [Reusable Review-Configuration Presets](docs/review_configuration_presets.md).
 
 ### Review Student Work
 

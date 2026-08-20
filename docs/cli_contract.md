@@ -320,8 +320,14 @@ quillan review-dashboard <class_id> <assignment_id> [--format text|json]
 quillan review-status <class_id> <assignment_id> <student_id> [--format text|json]
 quillan review-workflow set-state <class_id> <assignment_id> <student_id> --state <state> --yes
 quillan assignment create <class_id> <assignment_id> --title <title> --writing-type <type> (--prompt <text> | --prompt-file <path>) --standards-profile-id <profile_id> --focus-standard-ids <id,...> [--review-unit-type <type>] [--review-unit-singular <label>] [--review-unit-plural <label>] [--rating-scale default] [--paragraphs-min N] [--paragraphs-max N] [--word-count-min N] [--word-count-max N] [--required-elements <items>] [--allow-return-without-full-review true|false] [--overwrite] [--yes | --dry-run]
+quillan assignment create <class_id> <assignment_id> --title <title> (--prompt <text> | --prompt-file <path>) --preset-id <preset_id> [--overwrite] (--yes | --dry-run)
 quillan assignment show <class_id> <assignment_id>
 quillan assignment validate <class_id> <assignment_id>
+quillan review-preset list
+quillan review-preset show --preset-id <preset_id>
+quillan review-preset validate --preset-id <preset_id>
+quillan review-preset create --preset-id <preset_id> --title <title> --description <description> --writing-type <type> --standards-profile-id <profile_id> --focus-standard-ids <id,...> [--review-unit-type <type>] [--review-unit-singular <label>] [--review-unit-plural <label>] [--rating-scale default] [--paragraphs-min N] [--paragraphs-max N] [--word-count-min N] [--word-count-max N] [--required-elements <items>] [--allow-return-without-full-review true|false] (--yes | --dry-run)
+quillan review-preset save-from-assignment --source-class-id <class_id> --source-assignment-id <assignment_id> --preset-id <preset_id> --title <title> --description <description> (--yes | --dry-run)
 quillan manifest list --class-id <class_id> --assignment-id <assignment_id>
 quillan manifest show --class-id <class_id> --assignment-id <assignment_id> --revision <revision>
 quillan manifest validate --class-id <class_id> --assignment-id <assignment_id> --revision <revision>
@@ -1967,3 +1973,69 @@ copy-time `--overwrite`. Planning and `--dry-run` create no files or directories
 commit rechecks the exact source snapshot, current standards, target rosters, and
 clean target identities before create-only persistence. See
 [Safe Writing-Assignment Copying](assignment_copying.md).
+
+
+## Direct Review-Configuration Presets
+
+`quillan review-preset` manages Quillan-owned workspace-level reusable
+assignment-review configuration:
+
+```powershell
+quillan review-preset list
+quillan review-preset show --preset-id <preset_id>
+quillan review-preset validate --preset-id <preset_id>
+
+quillan review-preset create `
+  --preset-id <preset_id> `
+  --title "<title>" `
+  --description "<description>" `
+  --writing-type <writing_type> `
+  --standards-profile-id <profile_id> `
+  --focus-standard-ids <id1,id2,...> `
+  [review-unit/rating-scale/basic-requirement/policy options] `
+  (--yes | --dry-run)
+
+quillan review-preset save-from-assignment `
+  --source-class-id <class_id> `
+  --source-assignment-id <assignment_id> `
+  --preset-id <preset_id> `
+  --title "<title>" `
+  --description "<description>" `
+  (--yes | --dry-run)
+```
+
+`list` isolates malformed files and reports each preset as `valid`, `invalid`,
+or `stale`. `show` displays an exact structurally valid preset even when its
+current Core standards references are stale; `validate` requires current
+standards validity and fails nonzero for stale state. Creation is create-only;
+there is no preset overwrite flag. `--dry-run` validates and previews without
+creating `shared/` or the preset directory.
+
+`save-from-assignment` reads one exact canonical assignment and extracts only
+the seven reusable review-configuration fields. Its reviewed plan is bound to
+the source `assignment.json` revision and fails if the source changes,
+disappears, or becomes invalid before commit.
+
+Ordinary direct assignment creation also supports:
+
+```powershell
+quillan assignment create `
+  <class_id> <assignment_id> `
+  --title "<title>" `
+  (--prompt "<text>" | --prompt-file <path>) `
+  --preset-id <preset_id> `
+  (--yes | --dry-run)
+```
+
+Preset mode cannot be combined with manual review-configuration flags. The
+preset is revalidated before persistence and its values are copied by value into
+a normal schema-v2 `assignment.json`; no `preset_id` is stored. Existing
+assignment `--overwrite` semantics remain unchanged.
+
+The interactive Assignment Management menu adds `8. Review Configuration
+Presets` without renumbering options 1–7. When at least one current valid preset
+exists, Create Writing Assignment explicitly offers saved-preset or manual
+configuration. The teacher reviews the complete preset and still receives the
+normal final assignment preview/save boundary.
+
+See [Reusable Review-Configuration Presets](review_configuration_presets.md).

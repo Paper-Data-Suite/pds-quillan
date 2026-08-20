@@ -971,3 +971,36 @@ reviews, exports, manifests, Academic Work Registration, or publication state.
 
 See [Safe Writing-Assignment Copying](assignment_copying.md) for the complete
 planning, destination-cleanliness, concurrency, menu, and CLI contract.
+
+
+## Reusable review-configuration presets
+
+Quillan v0.10.0 may populate the assignment-review fields from an explicitly
+selected workspace-level
+`review_configuration_preset` schema-v1 record. The preset is not part of
+assignment identity and is not a runtime dependency.
+
+The reusable fields are exactly:
+
+```text
+writing_type
+standards_profile_id
+focus_standard_ids
+review_unit
+rating_scale
+basic_requirements
+minimum_requirement_policy
+```
+
+`assignment_id`, `class_ids`, `title`, `student_prompt`, assignment timestamps,
+and `module_details` remain fresh assignment values. Preset application builds
+and validates the same schema-v2 assignment described by this document and
+persists no required `preset_id` or inheritance link.
+
+Before a preset-backed assignment is saved, Quillan verifies that the exact
+teacher-reviewed preset model is still current and that its Core-owned standards
+references remain valid. If the preset changed or became stale after review, the
+save fails and the teacher must select/review it again. Once the assignment is
+successfully created, later preset changes or removal do not change it.
+
+See [Reusable Review-Configuration Presets](review_configuration_presets.md).

@@ -260,9 +260,19 @@
         },
         {
           "names": [
+            "--preset-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Use one exact reusable review-configuration preset. Do not combine with manual review-configuration flags.",
+          "mutex_group": null
+        },
+        {
+          "names": [
             "--writing-type"
           ],
-          "required": true,
+          "required": false,
           "choices": [],
           "default": null,
           "help": "",
@@ -292,7 +302,7 @@
           "names": [
             "--standards-profile-id"
           ],
-          "required": true,
+          "required": false,
           "choices": [],
           "default": null,
           "help": "",
@@ -302,7 +312,7 @@
           "names": [
             "--focus-standard-ids"
           ],
-          "required": true,
+          "required": false,
           "choices": [],
           "default": null,
           "help": "",
@@ -314,7 +324,7 @@
           ],
           "required": false,
           "choices": [],
-          "default": "paragraph",
+          "default": null,
           "help": "",
           "mutex_group": null
         },
@@ -324,7 +334,7 @@
           ],
           "required": false,
           "choices": [],
-          "default": "paragraph",
+          "default": null,
           "help": "",
           "mutex_group": null
         },
@@ -334,7 +344,7 @@
           ],
           "required": false,
           "choices": [],
-          "default": "paragraphs",
+          "default": null,
           "help": "",
           "mutex_group": null
         },
@@ -346,7 +356,7 @@
           "choices": [
             "default"
           ],
-          "default": "default",
+          "default": null,
           "help": "",
           "mutex_group": null
         },
@@ -406,7 +416,7 @@
           ],
           "required": false,
           "choices": [],
-          "default": true,
+          "default": null,
           "help": "",
           "mutex_group": null
         },
@@ -629,6 +639,363 @@
         }
       ],
       "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "review-preset"
+      ],
+      "aliases": [],
+      "short_help": "Create, inspect, and validate reusable review configuration.",
+      "description": "Manage Quillan workspace-level review-configuration presets. Presets contain assignment review configuration only; they do not contain student work, review judgments, feedback, or exports.",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "review-preset",
+        "list"
+      ],
+      "aliases": [],
+      "short_help": "List valid, invalid, and stale preset files.",
+      "description": "",
+      "arguments": [],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "review-preset",
+        "show"
+      ],
+      "aliases": [],
+      "short_help": "Show one exact current preset.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--preset-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "review-preset",
+        "validate"
+      ],
+      "aliases": [],
+      "short_help": "Validate one preset against current Core standards.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--preset-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "review-preset",
+        "create"
+      ],
+      "aliases": [],
+      "short_help": "Create a preset from explicit reusable configuration.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--preset-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--title"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--description"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--writing-type"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--standards-profile-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--focus-standard-ids"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--review-unit-type"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--review-unit-singular"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--review-unit-plural"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--rating-scale"
+          ],
+          "required": false,
+          "choices": [
+            "default"
+          ],
+          "default": "default",
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--paragraphs-min"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--paragraphs-max"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--word-count-min"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--word-count-max"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--required-elements"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--allow-return-without-full-review"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--dry-run"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "",
+          "mutex_group": 1
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": false
+        }
+      ]
+    },
+    {
+      "path": [
+        "quillan",
+        "review-preset",
+        "save-from-assignment"
+      ],
+      "aliases": [],
+      "short_help": "Create a preset from one exact canonical assignment.",
+      "description": "",
+      "arguments": [
+        {
+          "names": [
+            "--source-class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--source-assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--preset-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--title"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--description"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--dry-run"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "",
+          "mutex_group": 1
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": false
+        }
+      ]
     },
     {
       "path": [
