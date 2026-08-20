@@ -14,7 +14,11 @@ from pds_core.standards_selection import (
 )
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
-from quillan.assignment_picker import prompt_assignment_choice
+from quillan.assignment_picker import (
+    AssignmentChoice,
+    prompt_assignment_choice,
+    prompt_assignment_choice_for_class,
+)
 from quillan.assignment_submission_assembly import assemble_assignment_submissions
 from quillan.class_summary_export import (
     ClassSummaryExportError,
@@ -144,6 +148,13 @@ from quillan.student_review_status import (
     build_student_review_status,
     student_review_status_to_dict,
 )
+from quillan.menu_context import (
+    MenuSessionContext,
+    exact_assignment_choice,
+    print_active_context,
+    print_session_context,
+    revalidate_menu_context,
+)
 from quillan.menu_navigation import (
     NavigationChoice,
     navigation_hint,
@@ -161,16 +172,21 @@ _BACK = object()
 _CANCEL = object()
 
 
-def launch_review_student_work_menu() -> int:
-    """Launch the read-only teacher review navigation workflow."""
+def launch_review_student_work_menu(
+    session_context: MenuSessionContext | None = None,
+) -> int:
+    """Launch the teacher-facing review navigation workflow."""
     from quillan.menu import clear_screen, pause_for_user, print_menu_header
 
+    context = session_context if session_context is not None else MenuSessionContext()
     try:
         while True:
             clear_screen()
             print_menu_header("Review Student Work")
+            print_session_context(context)
             print("1. Assignment Review Actions")
             print("2. Scan Intake / Route Paper Responses")
+            print("C. Manage active context")
             print("R. Resolve Scan Review Items")
             print_navigation_options()
             print()
@@ -182,13 +198,15 @@ def launch_review_student_work_menu() -> int:
                 return 0
             if choice == "1":
                 clear_screen()
-                _run_review_selection_workflow()
+                _run_review_selection_workflow(context)
                 print()
                 pause_for_user()
             elif choice == "2":
                 from quillan.menu import launch_scan_intake_workflow
 
-                launch_scan_intake_workflow()
+                launch_scan_intake_workflow(context)
+            elif choice.casefold() == "c":
+                _manage_active_context(context)
             elif choice.casefold() == "r":
                 workspace_root = _workspace_root()
                 if workspace_root is not None:
@@ -206,7 +224,28 @@ def launch_review_student_work_menu() -> int:
         return 0
 
 
-def _run_review_selection_workflow() -> int:
+def _select_review_assignment(
+    workspace_root: Path,
+    context: MenuSessionContext,
+) -> AssignmentChoice | None:
+    validation = revalidate_menu_context(context, workspace_root)
+    if validation.message is not None:
+        print(validation.message)
+        print()
+    if validation.assignment is not None:
+        return validation.assignment
+
+    assignment = (
+        prompt_assignment_choice_for_class(workspace_root, context.class_id)
+        if context.class_id is not None
+        else prompt_assignment_choice(workspace_root)
+    )
+    if assignment is not None:
+        context.activate_assignment(assignment.class_id, assignment.assignment_id)
+    return assignment
+
+
+def _run_review_selection_workflow(context: MenuSessionContext) -> int:
     from quillan.menu import print_menu_header
 
     print_menu_header("Review Student Work")
@@ -214,7 +253,7 @@ def _run_review_selection_workflow() -> int:
     if workspace_root is None:
         return 1
 
-    assignment = prompt_assignment_choice(workspace_root)
+    assignment = _select_review_assignment(workspace_root, context)
     if assignment is None:
         return 0
 
@@ -225,12 +264,93 @@ def _run_review_selection_workflow() -> int:
     )
 
 
+def _manage_active_context(context: MenuSessionContext) -> None:
+    from quillan.menu import clear_screen, pause_for_user, print_menu_header
+
+    workspace_root = _workspace_root()
+    if workspace_root is None:
+        return
+    validation = revalidate_menu_context(context, workspace_root)
+    if validation.message is not None:
+        print(validation.message)
+        print()
+        pause_for_user()
+
+    while True:
+        clear_screen()
+        print_menu_header("Manage Active Context")
+        print_session_context(context)
+        if context.class_id is None:
+            print("Active class: none")
+            print()
+        print("1. Switch assignment within current class")
+        print("2. Switch class and assignment")
+        print("3. Clear assignment; retain class")
+        print("4. Clear class and assignment")
+        print_navigation_options()
+        print()
+        choice = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(choice)
+        if choice == "" or navigation is NavigationChoice.BACK:
+            return
+        if choice == "1":
+            if context.class_id is None:
+                print("No active class. Select class and assignment first.")
+                pause_for_user()
+                continue
+            assignment = prompt_assignment_choice_for_class(
+                workspace_root, context.class_id
+            )
+            if assignment is not None:
+                context.activate_assignment(
+                    assignment.class_id, assignment.assignment_id
+                )
+                print("Active assignment updated.")
+                pause_for_user()
+        elif choice == "2":
+            assignment = prompt_assignment_choice(workspace_root)
+            if assignment is not None:
+                context.activate_assignment(
+                    assignment.class_id, assignment.assignment_id
+                )
+                print("Active class and assignment updated.")
+                pause_for_user()
+        elif choice == "3":
+            if context.class_id is None:
+                print("No active class or assignment to change.")
+            else:
+                context.clear_assignment()
+                print("Active assignment cleared; active class retained.")
+            pause_for_user()
+        elif choice == "4":
+            context.clear_selection()
+            print("Active class and assignment cleared.")
+            pause_for_user()
+        else:
+            print(f"Invalid selection. {navigation_hint()}")
+            pause_for_user()
+
+
 def launch_assignment_review_actions(
     workspace_root: Path,
     class_id: str,
     assignment_id: str,
+    *,
+    session_context: MenuSessionContext | None = None,
 ) -> int:
-    """Launch review actions for a known class assignment."""
+    """Launch review actions for a known exact class assignment."""
+    if session_context is not None:
+        validation = revalidate_menu_context(session_context, workspace_root)
+        if validation.message is not None:
+            print(validation.message)
+        choice = exact_assignment_choice(workspace_root, class_id, assignment_id)
+        if choice is None:
+            print(
+                "Review target is not a valid canonical assignment: "
+                f"{class_id}/{assignment_id}."
+            )
+            return 1
+        session_context.activate_assignment(class_id, assignment_id)
     return _launch_assignment_review_actions(
         workspace_root,
         class_id,
@@ -291,9 +411,7 @@ def _prompt_student_id(
 
     clear_screen()
     print_menu_header("Select Student/Submission")
-    print(f"Class: {class_id}")
-    print(f"Assignment: {assignment_id}")
-    print()
+    print_active_context(workspace_root, class_id, assignment_id)
 
     status_items = (
         status.students
@@ -398,6 +516,7 @@ def _launch_selected_student_review(
     while True:
         clear_screen()
         print_menu_header("Selected Student Review")
+        print_active_context(workspace_root, class_id, assignment_id)
         _print_review_summary(
             workspace_root,
             class_id,
@@ -614,9 +733,11 @@ def _print_assignment_action_header(
 
     clear_screen()
     print_menu_header(title)
-    print(f"Class: {class_id}")
-    print(f"Assignment: {assignment_id}")
-    print()
+    try:
+        active_workspace = resolve_workspace_root()
+    except WorkspaceRootError:
+        active_workspace = None
+    print_active_context(active_workspace, class_id, assignment_id)
 
 
 def _print_review_action_header(
@@ -629,14 +750,15 @@ def _print_review_action_header(
 
     clear_screen()
     print_menu_header(title)
-    print(f"Class: {class_id}")
-    print(f"Assignment: {assignment_id}")
     try:
-        workspace_root = resolve_workspace_root()
+        workspace_root: Path | None = resolve_workspace_root()
     except WorkspaceRootError:
+        workspace_root = None
+    if workspace_root is None:
         student_label = student_id
     else:
         student_label = student_review_label(workspace_root, class_id, student_id)
+    print_active_context(workspace_root, class_id, assignment_id)
     print(f"Student: {student_label}")
     print()
 
@@ -3788,6 +3910,7 @@ def _launch_assignment_review_actions(
     while True:
         clear_screen()
         print_menu_header("Assignment Review Actions")
+        print_active_context(workspace_root, class_id, assignment_id)
 
         dashboard = _load_review_dashboard(
             workspace_root,
@@ -3830,6 +3953,7 @@ def _launch_assignment_review_actions(
         elif choice == "2":
             clear_screen()
             print_menu_header("Assignment Submission Status")
+            print_active_context(workspace_root, class_id, assignment_id)
             status = _load_submission_status(
                 workspace_root, class_id, assignment_id
             )
@@ -3851,6 +3975,7 @@ def _launch_assignment_review_actions(
         elif choice == "5":
             clear_screen()
             print_menu_header("Full Assignment Diagnostic Dashboard")
+            print_active_context(workspace_root, class_id, assignment_id)
             print(
                 format_assignment_review_dashboard(
                     dashboard, show_unused_duplicate_files=False
@@ -3912,9 +4037,7 @@ def _menu_export_assignment_reports(
     while True:
         clear_screen()
         print_menu_header("Assignment Reports")
-        print(f"Class: {class_id}")
-        print(f"Assignment: {assignment_id}")
-        print()
+        print_active_context(workspace_root, class_id, assignment_id)
         print("1. Comprehensive Class Summary")
         print("2. Focus Standard Summary")
         print("3. Student Performance Summary")
@@ -3926,12 +4049,15 @@ def _menu_export_assignment_reports(
         clear_screen()
         if choice == "1":
             print_menu_header("Export Comprehensive Class Summary")
+            print_active_context(workspace_root, class_id, assignment_id)
             _menu_export_class_summary(workspace_root, class_id, assignment_id)
         elif choice == "2":
             print_menu_header("Export Focus Standard Summary")
+            print_active_context(workspace_root, class_id, assignment_id)
             _menu_export_standards_summary(workspace_root, class_id, assignment_id)
         elif choice == "3":
             print_menu_header("Export Student Performance Summary")
+            print_active_context(workspace_root, class_id, assignment_id)
             _menu_export_student_performance_summary(
                 workspace_root, class_id, assignment_id
             )

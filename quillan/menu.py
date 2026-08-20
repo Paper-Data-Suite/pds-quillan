@@ -18,6 +18,7 @@ from quillan.intake_assembly import (
     IntakeAssemblyTarget,
     QuillanPostDispatchPersistenceResult,
 )
+from quillan.menu_context import MenuSessionContext, print_session_context
 from quillan.menu_navigation import (
     NavigationChoice,
     QuitQuillan,
@@ -252,6 +253,7 @@ def _print_post_route_action_header(
 def _launch_post_route_review(
     workspace_root: Path,
     target: IntakeAssemblyTarget,
+    session_context: MenuSessionContext | None = None,
 ) -> None:
     from quillan.review_menu import launch_assignment_review_actions
 
@@ -259,6 +261,7 @@ def _launch_post_route_review(
         workspace_root,
         target.class_id,
         target.assignment_id,
+        session_context=session_context,
     )
 
 
@@ -266,6 +269,7 @@ def _handle_single_post_route_target(
     workspace_root: Path,
     target: IntakeAssemblyTarget,
     status: PostRouteTargetStatus,
+    session_context: MenuSessionContext | None = None,
 ) -> bool:
     if status.status_error is not None:
         print("Submission status could not be loaded.")
@@ -315,7 +319,7 @@ def _handle_single_post_route_target(
             return True
         if choice == "3":
             _print_post_route_action_header("Review Student Work", target)
-            _launch_post_route_review(workspace_root, target)
+            _launch_post_route_review(workspace_root, target, session_context)
             return True
         print(f"Invalid selection. {navigation_hint()}")
         return True
@@ -340,7 +344,7 @@ def _handle_single_post_route_target(
             return True
         if choice == "2":
             _print_post_route_action_header("Review Student Work", target)
-            _launch_post_route_review(workspace_root, target)
+            _launch_post_route_review(workspace_root, target, session_context)
             return True
         if choice == "3":
             _print_post_route_action_header("Assemble Submissions", target)
@@ -379,6 +383,7 @@ def _handle_single_post_route_target(
 def handle_scan_post_route_menu(
     workspace_root: Path,
     workflow: QuillanPostDispatchPersistenceResult | Sequence[IntakeAssemblyTarget],
+    session_context: MenuSessionContext | None = None,
 ) -> None:
     """Show status-aware follow-up actions after scan intake routes evidence."""
     if isinstance(workflow, QuillanPostDispatchPersistenceResult):
@@ -479,6 +484,7 @@ def handle_scan_post_route_menu(
                 workspace_root,
                 targets[0],
                 statuses[0],
+                session_context,
             )
             if not should_redraw:
                 return
@@ -496,12 +502,15 @@ def handle_scan_post_route_menu(
                 workspace_root,
                 targets[index],
                 statuses[index],
+                session_context,
             )
             continue
         print(f"Invalid selection. {navigation_hint()}")
 
 
-def launch_scan_intake_workflow() -> None:
+def launch_scan_intake_workflow(
+    session_context: MenuSessionContext | None = None,
+) -> None:
     """Route scans from the shared inbox, with a power-user path fallback."""
     from quillan.cli_app.handlers import routing
 
@@ -582,14 +591,21 @@ def launch_scan_intake_workflow() -> None:
             print()
             pause_for_user()
             continue
-        handle_scan_post_route_menu(workspace_root, result)
+        if session_context is None:
+            handle_scan_post_route_menu(workspace_root, result)
+        else:
+            handle_scan_post_route_menu(
+                workspace_root, result, session_context
+            )
 
 
-def launch_review_student_work_menu() -> None:
+def launch_review_student_work_menu(
+    session_context: MenuSessionContext | None = None,
+) -> None:
     """Launch the teacher-facing review navigation workflow."""
     from quillan.review_menu import launch_review_student_work_menu as launch
 
-    launch()
+    launch(session_context)
 
 
 def launch_workspace_menu(
@@ -597,6 +613,7 @@ def launch_workspace_menu(
     workspace_set: WorkspaceSetHandler,
     workspace_validate: WorkspaceActionHandler,
     workspace_reset: WorkspaceActionHandler,
+    session_context: MenuSessionContext | None = None,
 ) -> None:
     """Launch the shared Paper Data Suite workspace settings submenu."""
     while True:
@@ -627,7 +644,9 @@ def launch_workspace_menu(
             ).strip()
             print()
             if path:
-                workspace_set(path)
+                result = workspace_set(path)
+                if result == 0:
+                    _rebind_session_workspace(session_context)
             else:
                 print("Workspace selection canceled. No preference was changed.")
             print()
@@ -641,7 +660,9 @@ def launch_workspace_menu(
         elif choice == "4":
             clear_screen()
             print_menu_header("Reset Workspace Preference")
-            workspace_reset()
+            result = workspace_reset()
+            if result == 0:
+                _rebind_session_workspace(session_context)
             print()
             pause_for_user()
         elif navigation is NavigationChoice.BACK:
@@ -652,17 +673,42 @@ def launch_workspace_menu(
             pause_for_user()
 
 
+
+def _rebind_session_workspace(
+    session_context: MenuSessionContext | None,
+) -> None:
+    if session_context is None:
+        return
+    from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
+
+    had_active_context = session_context.class_id is not None
+    try:
+        workspace_root = resolve_workspace_root()
+    except WorkspaceRootError:
+        return
+    if session_context.bind_workspace(workspace_root) and had_active_context:
+        print()
+        print(
+            "Active class/assignment context was cleared because the "
+            "resolved workspace changed."
+        )
+
+
 def launch_menu(
     workspace_show: WorkspaceShowHandler,
     workspace_set: WorkspaceSetHandler,
     workspace_validate: WorkspaceActionHandler,
     workspace_reset: WorkspaceActionHandler,
+    session_context: MenuSessionContext | None = None,
 ) -> int:
     """Launch the Quillan teacher-facing menu skeleton."""
+    context = session_context if session_context is not None else MenuSessionContext()
     try:
         while True:
             clear_screen()
             print_menu_header()
+            _rebind_session_workspace(context)
+            print_session_context(context)
             print("1. Assignment Management")
             print("2. Review Student Work")
             print("3. Roster Management")
@@ -680,7 +726,7 @@ def launch_menu(
             if choice == "1":
                 launch_assignment_menu()
             elif choice == "2":
-                launch_review_student_work_menu()
+                launch_review_student_work_menu(context)
             elif choice == "3":
                 launch_roster_menu()
             elif choice == "4":
@@ -689,6 +735,7 @@ def launch_menu(
                     workspace_set,
                     workspace_validate,
                     workspace_reset,
+                    context,
                 )
             elif choice == "5":
                 clear_screen()
@@ -708,6 +755,7 @@ def launch_menu(
             workspace_set,
             workspace_validate,
             workspace_reset,
+            context,
         )
     except QuitQuillan:
         print("Goodbye.")

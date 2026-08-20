@@ -26,8 +26,8 @@ class AssignmentChoice:
     path: Path
 
 
-def prompt_assignment_choice(workspace_root: Path) -> AssignmentChoice | None:
-    """Let a teacher choose a roster class and its canonical assignment."""
+def prompt_class_choice(workspace_root: Path) -> str | None:
+    """Let a teacher choose one exact roster-backed class."""
     folders = list_class_folders(workspace_root, require_roster=True)
     if not folders:
         print("No classes found in the current workspace.")
@@ -45,16 +45,20 @@ def prompt_assignment_choice(workspace_root: Path) -> AssignmentChoice | None:
             print("Class selection canceled.")
             return None
         if selection.isdigit() and 1 <= int(selection) <= len(folders):
-            class_id = folders[int(selection) - 1].class_id
-            break
+            return folders[int(selection) - 1].class_id
         class_matches = [
             folder for folder in folders if folder.class_id == selection
         ]
         if class_matches:
-            class_id = class_matches[0].class_id
-            break
+            return class_matches[0].class_id
         print(f"Invalid class selection. {navigation_hint()}")
 
+
+def prompt_assignment_choice_for_class(
+    workspace_root: Path,
+    class_id: str,
+) -> AssignmentChoice | None:
+    """Let a teacher choose one canonical assignment in an exact class."""
     from quillan.menu import clear_screen, print_menu_header
 
     clear_screen()
@@ -88,6 +92,14 @@ def prompt_assignment_choice(workspace_root: Path) -> AssignmentChoice | None:
         if assignment_matches:
             return assignment_matches[0]
         print(f"Invalid assignment selection. {navigation_hint()}")
+
+
+def prompt_assignment_choice(workspace_root: Path) -> AssignmentChoice | None:
+    """Let a teacher choose a roster class and its canonical assignment."""
+    class_id = prompt_class_choice(workspace_root)
+    if class_id is None:
+        return None
+    return prompt_assignment_choice_for_class(workspace_root, class_id)
 
 
 def available_assignments(

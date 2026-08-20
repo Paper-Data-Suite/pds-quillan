@@ -2039,3 +2039,10 @@ configuration. The teacher reviews the complete preset and still receives the
 normal final assignment preview/save boundary.
 
 See [Reusable Review-Configuration Presets](review_configuration_presets.md).
+
+## Interactive session context boundary
+
+Recent class/assignment context is an interactive-menu convenience only. Direct CLI
+commands remain stateless and continue to require the explicit identifiers defined by
+their existing arguments. Issue #382 adds no `--recent`-style argument, no persistent
+context record, and no CLI inventory entry. See `teacher_session_context.md`.
