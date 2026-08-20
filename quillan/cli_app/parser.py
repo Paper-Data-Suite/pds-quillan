@@ -112,6 +112,7 @@ from quillan.cli_app.handlers.assignments import (
     handle_assignment_show,
     handle_assignment_validate as handle_canonical_assignment_validate,
 )
+from quillan.cli_app.handlers.assignment_copy import handle_assignment_copy
 from quillan.cli_app.handlers.workspace import (
     handle_menu,
     handle_workspace_reset,
@@ -214,7 +215,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     assignment_parser = subparsers.add_parser(
-        "assignment", help="Create, show, and validate canonical assignments."
+        "assignment", help="Create, copy, show, and validate canonical assignments."
     )
     assignment_parser.set_defaults(
         handler=partial(_print_parser_help, assignment_parser)
@@ -250,6 +251,69 @@ def build_parser() -> argparse.ArgumentParser:
     confirmation.add_argument("--yes", action="store_true")
     confirmation.add_argument("--dry-run", action="store_true")
     assignment_create_parser.set_defaults(handler=handle_assignment_create)
+
+    assignment_copy_parser = assignment_subparsers.add_parser(
+        "copy",
+        help="Copy reusable configuration into a fresh assignment identity.",
+        description=(
+            "Build a new schema-v2 assignment from an exact canonical source "
+            "assignment without copying submissions, evidence, reviews, exports, "
+            "routes, manifests, registrations, or publication state."
+        ),
+    )
+    assignment_copy_parser.add_argument(
+        "--source-class-id",
+        required=True,
+        action=StoreOnceAction,
+        help="Exact source class identifier.",
+    )
+    assignment_copy_parser.add_argument(
+        "--source-assignment-id",
+        required=True,
+        action=StoreOnceAction,
+        help="Exact source assignment identifier.",
+    )
+    assignment_copy_parser.add_argument(
+        "--target-class-id",
+        required=True,
+        action="append",
+        help="Target class identifier; repeat for multiple classes.",
+    )
+    assignment_copy_parser.add_argument(
+        "--assignment-id",
+        required=True,
+        action=StoreOnceAction,
+        help="Fresh target assignment identifier.",
+    )
+    assignment_copy_parser.add_argument(
+        "--title",
+        action=StoreOnceAction,
+        help="Target title; omission reuses the source title.",
+    )
+    copy_prompt_group = assignment_copy_parser.add_mutually_exclusive_group()
+    copy_prompt_group.add_argument(
+        "--prompt",
+        action=StoreOnceAction,
+        help="Target student prompt; omission reuses the source prompt.",
+    )
+    copy_prompt_group.add_argument(
+        "--prompt-file",
+        type=Path,
+        action=StoreOnceAction,
+        help="Read the target student prompt from a UTF-8 file.",
+    )
+    copy_confirmation = assignment_copy_parser.add_mutually_exclusive_group()
+    copy_confirmation.add_argument(
+        "--yes",
+        action="store_true",
+        help="Explicitly confirm create-only persistence.",
+    )
+    copy_confirmation.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Fully validate and preview without writing files.",
+    )
+    assignment_copy_parser.set_defaults(handler=handle_assignment_copy)
 
     assignment_show_parser = assignment_subparsers.add_parser(
         "show", help="Show a canonical workspace assignment config."

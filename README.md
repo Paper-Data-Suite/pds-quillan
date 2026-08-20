@@ -161,11 +161,12 @@ Assignment Management supports:
 
 ```text
 1. Create writing assignment
-2. View/validate assignment
-3. Printable Response Pages
-4. Academic Work Registration
-5. Academic Result Manifests
-6. Academic Result Publications
+2. Copy writing assignment
+3. View/validate assignment
+4. Printable Response Pages
+5. Academic Work Registration
+6. Academic Result Manifests
+7. Academic Result Publications
 B. Back
 ```
 
@@ -201,6 +202,12 @@ The CLI writes only the assignment-local
 The v0.9.0 creation workflow prompts for class, title, assignment ID, writing
 type, student prompt, pds-core standards profile, Focus Standards, review-unit
 settings, rating scale, basic requirements, and minimum-requirement policy.
+
+The v0.10.0 assignment-copy workflow can instead construct a fresh assignment from
+one exact existing assignment while reusing only approved configuration. It never
+copies student work, evidence, reviews, exports, printable-page identity, routes,
+Academic Work Registration, result manifests, or publication state. See
+[Safe Writing-Assignment Copying](docs/assignment_copying.md).
 New active assignments use schema version `2` fields such as
 `student_prompt`, `focus_standard_ids`, `review_unit`, `rating_scale`,
 `basic_requirements`, and `minimum_requirement_policy`.

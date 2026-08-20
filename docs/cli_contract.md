@@ -865,10 +865,11 @@ submission manifests, reviews, scans, printable PDFs, evidence, notes,
 observations, ratings, feedback, exports, reports, historical results, or other
 module data.
 
-### `assignment create`, `show`, and `validate`
+### `assignment create`, `copy`, `show`, and `validate`
 
 ```powershell
 quillan assignment create <class_id> <assignment_id> ...
+quillan assignment copy --source-class-id <class_id> --source-assignment-id <assignment_id> --target-class-id <class_id> --assignment-id <new_assignment_id> (--yes | --dry-run)
 quillan assignment show <class_id> <assignment_id>
 quillan assignment validate <class_id> <assignment_id>
 ```
@@ -1035,9 +1036,13 @@ Assignment Management provides:
 
 ```text
 1. Create writing assignment
-2. View/validate assignment
-3. Printable Response Pages
-4. Back
+2. Copy writing assignment
+3. View/validate assignment
+4. Printable Response Pages
+5. Academic Work Registration
+6. Academic Result Manifests
+7. Academic Result Publications
+B. Back
 ```
 
 Creation selects one class with an existing canonical roster, prompts for the
@@ -1946,3 +1951,19 @@ manual submission. It requires `y` or `yes` confirmation. Existing manifests,
 existing orphan review records, and routed-evidence-only students are not
 converted. Opening evidence for a manual submission reports that no digital
 evidence is attached instead of invoking an evidence opener.
+
+## Safe Assignment Copying
+
+The `assignment copy` command creates a fresh canonical assignment from one exact
+canonical schema-v2 source while copying only approved reusable configuration:
+
+```powershell
+quillan assignment copy --source-class-id <source_class_id> --source-assignment-id <source_assignment_id> --target-class-id <target_class_id> --assignment-id <target_assignment_id> (--yes | --dry-run)
+```
+
+`--target-class-id` may be repeated. `--title` and `--prompt`/`--prompt-file`
+override the otherwise reused source title and prompt. There is deliberately no
+copy-time `--overwrite`. Planning and `--dry-run` create no files or directories;
+commit rechecks the exact source snapshot, current standards, target rosters, and
+clean target identities before create-only persistence. See
+[Safe Writing-Assignment Copying](assignment_copying.md).

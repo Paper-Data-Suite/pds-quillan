@@ -483,3 +483,11 @@ explicit Core registration boundary for existing managed assignments. Its stable
 producer contract is `quillan_academic_work_v1`; the registration source is the
 Quillan assignment record with contract version `2`. Core registration revision,
 Quillan manifest revision, and Publication Record identity are independent.
+
+### Assignment Copy Workflow
+
+Safe assignment copying is an application workflow over assignment schema version
+`2`, not a stored record family. It constructs a new assignment from a closed
+allowlist and creates no submission, review, evidence, export, route, Academic Work,
+manifest, or publication state. See
+[`assignment_copying.md`](assignment_copying.md).

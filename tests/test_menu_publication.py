@@ -135,7 +135,7 @@ def test_publication_menu_withdrawal_does_not_echo_reason(
     assert "Withdrawn: yes" in output
 
 
-def test_assignment_management_routes_option_six_to_publication_menu(
+def test_assignment_management_routes_option_seven_to_publication_menu(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     called = 0
@@ -151,7 +151,7 @@ def test_assignment_management_routes_option_six_to_publication_menu(
     monkeypatch.setattr(root_menu, "clear_screen", lambda: None)
     monkeypatch.setattr(root_menu, "pause_for_user", lambda: None)
     monkeypatch.setattr(root_menu, "print_menu_header", lambda _title=None: None)
-    responses = iter(("6", "B"))
+    responses = iter(("7", "B"))
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(responses))
 
     assert assignment_workflows.launch_assignment_menu() == 0

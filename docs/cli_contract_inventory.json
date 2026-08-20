@@ -213,7 +213,7 @@
         "assignment"
       ],
       "aliases": [],
-      "short_help": "Create, show, and validate canonical assignments.",
+      "short_help": "Create, copy, show, and validate canonical assignments.",
       "description": "",
       "arguments": [],
       "mutex_groups": []
@@ -445,6 +445,118 @@
         {
           "group": 1,
           "required": true
+        },
+        {
+          "group": 2,
+          "required": false
+        }
+      ]
+    },
+    {
+      "path": [
+        "quillan",
+        "assignment",
+        "copy"
+      ],
+      "aliases": [],
+      "short_help": "Copy reusable configuration into a fresh assignment identity.",
+      "description": "Build a new schema-v2 assignment from an exact canonical source assignment without copying submissions, evidence, reviews, exports, routes, manifests, registrations, or publication state.",
+      "arguments": [
+        {
+          "names": [
+            "--source-class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact source class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--source-assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact source assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--target-class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Target class identifier; repeat for multiple classes.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Fresh target assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--title"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Target title; omission reuses the source title.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--prompt"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Target student prompt; omission reuses the source prompt.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--prompt-file"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Read the target student prompt from a UTF-8 file.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly confirm create-only persistence.",
+          "mutex_group": 2
+        },
+        {
+          "names": [
+            "--dry-run"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Fully validate and preview without writing files.",
+          "mutex_group": 2
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": false
         },
         {
           "group": 2,

@@ -97,7 +97,7 @@ def print_menu_help() -> None:
     print("Do not commit or post real student data.")
     print()
     print("Assignment setup:")
-    print("  Create, show, or validate an assignment from Assignment Management.")
+    print("  Create, copy, show, or validate an assignment from Assignment Management.")
     print()
     print("Academic Work Registration:")
     print("  Explicitly register eligible managed assignments through Core.")
