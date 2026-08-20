@@ -360,3 +360,11 @@ Assignment creation may use only an explicitly selected current valid preset and
 rechecks the exact reviewed preset before saving. After an assignment is saved,
 its materialized schema-v2 configuration is authoritative and does not depend on
 the preset remaining present.
+
+## Interactive teacher session context
+
+The interactive Quillan menu may retain the current exact class and assignment for
+the life of one process. This state is ephemeral and is not part of the workspace
+contract. It is never serialized. If the canonically resolved workspace root changes,
+Quillan clears class and assignment context before it can be reused. Rebinding to the
+same canonical root preserves it. See `teacher_session_context.md`.
