@@ -103,6 +103,23 @@ not calculate a Grade.
 
 See [Academic Result Publication Lifecycle](academic_result_publication.md).
 
+## Direct Review Work Queue
+
+`quillan review-queue <class_id> <assignment_id> [--format text|json]`
+prints the deterministic roster-ordered work classification for one exact
+assignment. Text is the default. JSON emits schema version `1` with fixed
+category-count order, exact student IDs, bounded reason/warning codes, and
+unrostered diagnostic IDs kept outside the normal roster queue.
+
+The command is strictly read-only. It rebuilds from current canonical state on
+every invocation and does not persist queue state, assemble submissions, create
+reviews, infer teacher judgments, generate feedback, export artifacts, or choose a
+next student. Missing/invalid assignment state or an unavailable canonical roster
+is concise and nonzero. Invalid student records that can be isolated safely remain
+visible as `attention_required` queue items. See
+[`review_work_queue.md`](review_work_queue.md) for classification precedence and
+privacy boundaries.
+
 ## Direct Student Review Status
 
 `quillan review-status <class_id> <assignment_id> <student_id> [--format text|json]`
@@ -117,7 +134,8 @@ This command is strictly read-only and performs no automated judgment. It does
 not inspect evidence or student writing, assemble submissions, create reviews,
 mutate workflow, or generate exports. It excludes teacher-entered and student
 prose. Current Review Details remains the content-oriented teacher view;
-`review-dashboard` remains the assignment-wide overview.
+`review-dashboard` remains the assignment-wide diagnostic overview, while
+`review-queue` remains the roster-ordered mechanical work classification.
 
 ## Purpose and Status
 
@@ -317,6 +335,7 @@ quillan
 quillan --help
 quillan --version
 quillan review-dashboard <class_id> <assignment_id> [--format text|json]
+quillan review-queue <class_id> <assignment_id> [--format text|json]
 quillan review-status <class_id> <assignment_id> <student_id> [--format text|json]
 quillan review-workflow set-state <class_id> <assignment_id> <student_id> --state <state> --yes
 quillan assignment create <class_id> <assignment_id> --title <title> --writing-type <type> (--prompt <text> | --prompt-file <path>) --standards-profile-id <profile_id> --focus-standard-ids <id,...> [--review-unit-type <type>] [--review-unit-singular <label>] [--review-unit-plural <label>] [--rating-scale default] [--paragraphs-min N] [--paragraphs-max N] [--word-count-min N] [--word-count-max N] [--required-elements <items>] [--allow-return-without-full-review true|false] [--overwrite] [--yes | --dry-run]
@@ -1214,15 +1233,30 @@ menu provides:
 
 ```text
 1. Select student/submission
-2. Assemble routed submissions
-3. Export Comprehensive Class Summary
-4. Export Standards Summary
-5. Export Student Performance Summary
-6. Back
+2. View submission status
+3. Review scan problems
+4. Export reports
+5. View full diagnostic dashboard
+6. Refresh
+7. View review work queue
+B. Back
+M. Main Menu
+Q. Quit
 ```
 
-Selecting a student/submission lets the teacher pick a student by number. The
-selected-student view shows a compact current review summary with class,
+`View review work queue` rebuilds #383's deterministic roster-ordered queue from
+current canonical state. It shows the exact active class/assignment context,
+complete/needs-work counts, and one bounded mechanical category/reason for each
+roster student. `R. Refresh` rebuilds the queue without persisting it. Back and Main
+Menu preserve the #382 active class/assignment context; Quit ends the process. The
+queue screen does not select or open a student and adds no next/previous/continue
+behavior.
+
+Selecting a student/submission lets the teacher pick a student by number. Roster
+students retain concise submission details and also show the same canonical #383
+`work=` category used by the review queue; unrostered diagnostic records remain
+explicitly outside the normal roster queue. The selected-student view shows a compact
+current review summary with class,
 assignment, student, submission/evidence status, review state, and existing
 `review.json` counts when a valid review record is already present. Long file
 paths are reserved for detail/output actions.

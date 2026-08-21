@@ -71,6 +71,51 @@
     {
       "path": [
         "quillan",
+        "review-queue"
+      ],
+      "aliases": [],
+      "short_help": "Show the deterministic roster-ordered review work queue.",
+      "description": "Classify each roster student from current canonical assignment, submission, review, and feedback-export state without writing files.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--format"
+          ],
+          "required": false,
+          "choices": [
+            "text",
+            "json"
+          ],
+          "default": "text",
+          "help": "Standard-output representation (default: text).",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
         "review-status"
       ],
       "aliases": [],
