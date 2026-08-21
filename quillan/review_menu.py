@@ -110,10 +110,16 @@ from quillan.review_status_display import (
     review_progress_status,
     review_status_label,
 )
+from quillan.review_student_navigation import (
+    ReviewStudentNavigation,
+    ReviewStudentNavigationError,
+    build_review_student_navigation,
+)
 from quillan.review_work_queue import (
     CATEGORY_LABELS,
     AssignmentReviewWorkQueue,
     ReviewWorkQueueError,
+    ReviewWorkQueueItem,
     build_assignment_review_work_queue,
 )
 from quillan.review_snapshot import current_review_details_text
@@ -538,6 +544,106 @@ def _student_status_label(
     )
 
 
+def _load_review_student_navigation(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> ReviewStudentNavigation | None:
+    try:
+        return build_review_student_navigation(
+            workspace_root,
+            class_id,
+            assignment_id,
+            student_id,
+        )
+    except (ReviewStudentNavigationError, OSError) as error:
+        print(f"Class-set navigation unavailable: {error}")
+        return None
+
+
+def _review_student_navigation_item_label(
+    item: ReviewWorkQueueItem | None,
+    *,
+    none_label: str,
+) -> str:
+    if item is None:
+        return none_label
+    if item.display_name == item.student_id:
+        return item.student_id
+    return f"{item.display_name} ({item.student_id})"
+
+
+def _print_review_student_navigation(
+    navigation: ReviewStudentNavigation | None,
+) -> None:
+    if navigation is None:
+        print("Class-set navigation: unavailable")
+        return
+
+    print(f"Position: {navigation.position} of {navigation.roster_count}")
+    print(f"Work state: {CATEGORY_LABELS[navigation.current.category]}")
+    print(f"Students needing work: {navigation.needs_work_count}")
+    print(
+        "Students needing work after this position: "
+        f"{navigation.needs_work_after_current_count}"
+    )
+    print()
+    print(
+        "P. Previous student — "
+        + _review_student_navigation_item_label(
+            navigation.previous,
+            none_label="none (first roster student)",
+        )
+    )
+    print(
+        "N. Next student — "
+        + _review_student_navigation_item_label(
+            navigation.next,
+            none_label="none (final roster student)",
+        )
+    )
+    print(
+        "W. Next student needing review — "
+        + _review_student_navigation_item_label(
+            navigation.next_needing_review,
+            none_label="none later in roster",
+        )
+    )
+
+
+def _review_student_navigation_choice(
+    choice: str,
+    navigation: ReviewStudentNavigation | None,
+) -> tuple[bool, str | None]:
+    normalized = choice.strip().casefold()
+    if normalized not in {"p", "n", "w"}:
+        return False, None
+    if navigation is None:
+        return True, None
+
+    target = {
+        "p": navigation.previous,
+        "n": navigation.next,
+        "w": navigation.next_needing_review,
+    }[normalized]
+    return True, None if target is None else target.student_id
+
+
+def _review_student_navigation_unavailable_message(
+    choice: str,
+    navigation: ReviewStudentNavigation | None,
+) -> str:
+    if navigation is None:
+        return "Class-set navigation is unavailable for this selected student."
+    normalized = choice.strip().casefold()
+    if normalized == "p":
+        return "No previous roster student; this is the first roster student."
+    if normalized == "n":
+        return "No next roster student; this is the final roster student."
+    return "No later roster student currently needs review work."
+
+
 def _launch_selected_student_review(
     workspace_root: Path,
     class_id: str,
@@ -546,6 +652,7 @@ def _launch_selected_student_review(
 ) -> int:
     from quillan.menu import clear_screen, print_menu_header
 
+    current_student_id = student_id
     while True:
         clear_screen()
         print_menu_header("Selected Student Review")
@@ -554,17 +661,26 @@ def _launch_selected_student_review(
             workspace_root,
             class_id,
             assignment_id,
-            student_id,
+            current_student_id,
         )
         print()
+        class_set_navigation = _load_review_student_navigation(
+            workspace_root,
+            class_id,
+            assignment_id,
+            current_student_id,
+        )
+        _print_review_student_navigation(class_set_navigation)
+        print()
+
         status = _load_submission_status(workspace_root, class_id, assignment_id)
-        student_status = _student_submission_status(status, student_id)
+        student_status = _student_submission_status(status, current_student_id)
         if student_status is None:
             print("No digital submission evidence has been found for this student.")
             print()
             try:
                 plan_plain_paper_submission(
-                    workspace_root, class_id, assignment_id, student_id
+                    workspace_root, class_id, assignment_id, current_student_id
                 )
             except (PlainPaperSubmissionError, OSError, ValueError) as error:
                 plain_paper_available = False
@@ -585,9 +701,23 @@ def _launch_selected_student_review(
             print()
             if choice == "" or navigation is NavigationChoice.BACK:
                 return 0
+            handled, target_student_id = _review_student_navigation_choice(
+                choice, class_set_navigation
+            )
+            if handled:
+                if target_student_id is None:
+                    print(
+                        _review_student_navigation_unavailable_message(
+                            choice, class_set_navigation
+                        )
+                    )
+                    input("Press Enter to continue...")
+                else:
+                    current_student_id = target_student_id
+                continue
             if choice == "1" and plain_paper_available:
                 _create_plain_paper_submission_menu(
-                    workspace_root, class_id, assignment_id, student_id
+                    workspace_root, class_id, assignment_id, current_student_id
                 )
                 input("Press Enter to continue...")
                 continue
@@ -601,9 +731,7 @@ def _launch_selected_student_review(
                 "This student has routed evidence, but the review-ready "
                 "submission record has not been assembled yet."
             )
-            print(
-                "Assemble submissions before reviewing, rating, or exporting."
-            )
+            print("Assemble submissions before reviewing, rating, or exporting.")
             print()
             print("1. Assemble this assignment now")
             print("2. View routed evidence status")
@@ -615,13 +743,27 @@ def _launch_selected_student_review(
             print()
             if choice == "" or navigation is NavigationChoice.BACK:
                 return 0
+            handled, target_student_id = _review_student_navigation_choice(
+                choice, class_set_navigation
+            )
+            if handled:
+                if target_student_id is None:
+                    print(
+                        _review_student_navigation_unavailable_message(
+                            choice, class_set_navigation
+                        )
+                    )
+                    input("Press Enter to continue...")
+                else:
+                    current_student_id = target_student_id
+                continue
             if choice == "1":
                 _assemble_assignment(workspace_root, class_id, assignment_id)
                 input("Press Enter to continue...")
             elif choice in {"2", "3"}:
                 continue
             else:
-                print("Invalid selection. Please enter a number from 1 to 4.")
+                print("Invalid selection. Please choose a listed action.")
                 input("Press Enter to continue...")
             continue
         print("1. Open submission evidence")
@@ -644,12 +786,26 @@ def _launch_selected_student_review(
 
         if choice == "" or navigation is NavigationChoice.BACK:
             return 0
+        handled, target_student_id = _review_student_navigation_choice(
+            choice, class_set_navigation
+        )
+        if handled:
+            if target_student_id is None:
+                print(
+                    _review_student_navigation_unavailable_message(
+                        choice, class_set_navigation
+                    )
+                )
+                input("Press Enter to continue...")
+            else:
+                current_student_id = target_student_id
+            continue
         if choice == "1":
             _open_submission_evidence(
                 workspace_root,
                 class_id,
                 assignment_id,
-                student_id,
+                current_student_id,
             )
             input("Press Enter to continue...")
         elif choice == "2":
@@ -657,7 +813,7 @@ def _launch_selected_student_review(
                 workspace_root,
                 class_id,
                 assignment_id,
-                student_id,
+                current_student_id,
             )
             input("Press Enter to continue...")
         elif choice == "3":
@@ -665,35 +821,35 @@ def _launch_selected_student_review(
                 workspace_root,
                 class_id,
                 assignment_id,
-                student_id,
+                current_student_id,
             )
         elif choice == "4":
             _menu_review_unit_observations(
                 workspace_root,
                 class_id,
                 assignment_id,
-                student_id,
+                current_student_id,
             )
         elif choice == "5":
             _menu_overall_focus_standard_ratings(
                 workspace_root,
                 class_id,
                 assignment_id,
-                student_id,
+                current_student_id,
             )
         elif choice == "6":
             _menu_compose_focus_standard_feedback(
                 workspace_root,
                 class_id,
                 assignment_id,
-                student_id,
+                current_student_id,
             )
         elif choice == "7":
             _menu_manage_submission_pages(
                 workspace_root,
                 class_id,
                 assignment_id,
-                student_id,
+                current_student_id,
             )
             input("Press Enter to continue...")
         elif choice == "8":
@@ -701,7 +857,7 @@ def _launch_selected_student_review(
                 workspace_root,
                 class_id,
                 assignment_id,
-                student_id,
+                current_student_id,
             )
             input("Press Enter to continue...")
         elif choice == "9":
@@ -709,7 +865,7 @@ def _launch_selected_student_review(
                 workspace_root,
                 class_id,
                 assignment_id,
-                student_id,
+                current_student_id,
             )
             input("Press Enter to continue...")
         elif choice == "10":
@@ -717,16 +873,14 @@ def _launch_selected_student_review(
                 workspace_root,
                 class_id,
                 assignment_id,
-                student_id,
+                current_student_id,
             )
             input("Press Enter to continue...")
         elif choice == "11":
             continue
         else:
-            print("Invalid selection. Please enter a number from 1 to 12.")
+            print("Invalid selection. Please choose a listed action.")
             input("Press Enter to continue...")
-
-
 def _student_submission_status(
     status: AssignmentSubmissionStatus | None, student_id: str
 ) -> StudentSubmissionStatus | None:
@@ -1231,7 +1385,6 @@ def _print_review_summary(
         print(f"Status unavailable: {error}")
         return
     data = student_review_status_to_dict(status)
-    student = cast(dict[str, Any], data["student"])
     routed = cast(dict[str, Any], data["routed_evidence"])
     submission = cast(dict[str, Any], data["submission"])
     review = cast(dict[str, Any], data["review"])
@@ -1240,7 +1393,9 @@ def _print_review_summary(
     export_summary = cast(dict[str, Any], exports["summary"])
     print(f"Class: {class_id}")
     print(f"Assignment: {assignment_id}")
-    print(f"Student: {student['display_name']}")
+    print(
+        f"Student: {student_review_label(workspace_root, class_id, student_id)}"
+    )
     print(f"Submission: {submission['status']}")
     print(f"Routed evidence files: {routed['file_count']}")
     print(f"Needs assembly: {_format_yes_no(routed['needs_assembly'] is True)}")

@@ -1277,7 +1277,8 @@ fuller context restored. Prior menu options, parent dashboard blocks, and
 debug-style details should not remain on screen merely because the terminal
 transcript stacked them there.
 
-The selected-student review menu provides:
+The selected-student review menu provides the existing numbered review actions plus
+#384's local class-set navigation controls:
 
 ```text
 1. Open submission evidence
@@ -1291,8 +1292,21 @@ The selected-student review menu provides:
 9. Update review workflow state
 10. Export student feedback
 11. Refresh summary
-12. Back
+P. Previous student — <previous roster identity or boundary>
+N. Next student — <next roster identity or boundary>
+W. Next student needing review — <first later non-complete identity or none>
+B. Back
+M. Main Menu
+Q. Quit
 ```
+
+The selected-student root rebuilds #384 navigation from the current #383 queue on
+every redraw. Position and remaining-work counts therefore reflect explicit durable
+state after a completed child action. `P` and `N` use immediate canonical roster
+neighbors; `W` searches strictly forward for the first queue category other than
+`complete`. None of these actions wraps, persists current-student state, or enters a
+review stage automatically. The commands are intentionally available at the clean
+selected-student root rather than inside judgment-bearing child input prompts.
 
 Opening submission evidence delegates to the same existing safe selected
 evidence-opening path as:
