@@ -118,7 +118,7 @@ def test_class_set_student_handoff_audit_uses_real_workflow(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Measure the current parent-menu round trip required between students."""
+    """Verify the improved direct handoff removes the parent/picker round trip."""
     _write_workspace(tmp_path)
     monkeypatch.setattr(review_menu, "resolve_workspace_root", lambda: tmp_path)
     original_files = {
@@ -134,10 +134,8 @@ def test_class_set_student_handoff_audit_uses_real_workflow(
             "1",  # Assignment selection.
             "1",  # Assignment Review Actions -> Select student/submission.
             "1",  # First roster student.
-            "b",  # Back from first student's review.
-            "1",  # Re-enter Select student/submission from assignment dashboard.
-            "2",  # Second roster student, which currently has no digital submission.
-            "b",  # Back from second student's review.
+            "n",  # Directly navigate to the next roster student.
+            "b",  # Back from the selected-student review.
             "b",  # Back from Assignment Review Actions.
             "",  # Pause before redrawing Review Student Work.
             "b",  # Back to Quillan main menu.
@@ -163,11 +161,14 @@ def test_class_set_student_handoff_audit_uses_real_workflow(
         unrelated_previous_text="Assembly needed:",
     )
 
-    assert output.count("Select Student/Submission") >= 2
+    assert output.count("Select Student/Submission") == 1
     assert f"Assignment: {ASSIGNMENT_ID}" in output
     assert f"Class: {CLASS_ID}" in output
     assert "Student: Avery Rivera" in output
     assert "Student: Mina Patel" in output
+    assert f"N. Next student — Mina Patel ({SECOND_STUDENT_ID})" in output
+    assert "Position: 1 of 2" in output
+    assert "Position: 2 of 2" in output
     assert "No digital submission evidence has been found for this student." in output
     assert {
         path.relative_to(tmp_path).as_posix(): path.read_bytes()
