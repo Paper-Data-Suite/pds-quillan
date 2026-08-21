@@ -110,6 +110,12 @@ from quillan.review_status_display import (
     review_progress_status,
     review_status_label,
 )
+from quillan.review_work_queue import (
+    CATEGORY_LABELS,
+    AssignmentReviewWorkQueue,
+    ReviewWorkQueueError,
+    build_assignment_review_work_queue,
+)
 from quillan.review_snapshot import current_review_details_text
 from quillan.review_targets import (
     ReviewTargetError,
@@ -396,6 +402,20 @@ def _load_review_dashboard(
         return None
 
 
+def _load_review_work_queue(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> AssignmentReviewWorkQueue | None:
+    try:
+        return build_assignment_review_work_queue(
+            workspace_root, class_id, assignment_id
+        )
+    except (ReviewWorkQueueError, OSError) as error:
+        print(f"Error: could not build review work queue: {error}")
+        return None
+
+
 def _prompt_student_id(
     workspace_root: Path,
     class_id: str,
@@ -413,6 +433,11 @@ def _prompt_student_id(
     print_menu_header("Select Student/Submission")
     print_active_context(workspace_root, class_id, assignment_id)
 
+    queue = _load_review_work_queue(workspace_root, class_id, assignment_id)
+    queue_by_student = (
+        {} if queue is None else {item.student_id: item for item in queue.items}
+    )
+
     status_items = (
         status.students
         if isinstance(status, AssignmentReviewDashboard)
@@ -422,9 +447,17 @@ def _prompt_student_id(
     student_labels = student_display_lookup(workspace_root, class_id)
     print("Select student/submission:")
     for index, student_id in enumerate(student_ids, start=1):
+        queue_item = queue_by_student.get(student_id)
+        if queue is None:
+            work_label = "queue unavailable"
+        elif queue_item is None:
+            work_label = "unrostered diagnostic"
+        else:
+            work_label = CATEGORY_LABELS[queue_item.category]
         print(
             f"{index}. {student_labels.get(student_id, student_id)}: "
-            f"{_student_status_label(status_by_student.get(student_id))}"
+            f"{_student_status_label(status_by_student.get(student_id))}; "
+            f"work={work_label}"
         )
     print_navigation_options()
     print()
@@ -3930,6 +3963,7 @@ def _launch_assignment_review_actions(
         print("4. Export reports")
         print("5. View full diagnostic dashboard")
         print("6. Refresh")
+        print("7. View review work queue")
         print_navigation_options()
         print()
 
@@ -3984,9 +4018,64 @@ def _launch_assignment_review_actions(
             input("Press Enter to continue...")
         elif choice == "6":
             continue
+        elif choice == "7":
+            _menu_review_work_queue(workspace_root, class_id, assignment_id)
         else:
             print("Invalid selection. Please choose a listed action.")
             input("Press Enter to continue...")
+
+
+def _menu_review_work_queue(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    from quillan.menu import clear_screen, print_menu_header
+
+    while True:
+        clear_screen()
+        print_menu_header("Review Work Queue")
+        print_active_context(workspace_root, class_id, assignment_id)
+
+        queue = _load_review_work_queue(workspace_root, class_id, assignment_id)
+        if queue is not None:
+            print(f"Complete: {queue.complete_count} / {queue.roster_count}")
+            print(f"Needs work: {queue.needs_work_count}")
+            print()
+            print("Students:")
+            if not queue.items:
+                print("- none")
+            for index, item in enumerate(queue.items, start=1):
+                identity = (
+                    f"{item.display_name} ({item.student_id})"
+                    if item.display_name != item.student_id
+                    else item.student_id
+                )
+                print(
+                    f"{index}. {identity} — {CATEGORY_LABELS[item.category]} "
+                    f"[{item.reason_code}]"
+                )
+            if queue.unrostered_student_ids:
+                print()
+                print(
+                    "Unrostered diagnostic records excluded: "
+                    f"{len(queue.unrostered_student_ids)}"
+                )
+            if queue.warnings:
+                print(f"Queue warnings: {len(queue.warnings)}")
+
+        print()
+        print("R. Refresh")
+        print_navigation_options()
+        print()
+        choice = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(choice)
+        if choice == "" or navigation is NavigationChoice.BACK:
+            return
+        if choice.casefold() == "r":
+            continue
+        print(f"Invalid selection. {navigation_hint()}")
+        input("Press Enter to continue...")
 
 
 def _print_compact_assignment_dashboard(
