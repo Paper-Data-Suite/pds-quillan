@@ -120,6 +120,36 @@ visible as `attention_required` queue items. See
 [`review_work_queue.md`](review_work_queue.md) for classification precedence and
 privacy boundaries.
 
+## Selected Student Review — Continue Review
+
+The teacher-facing `Selected Student Review` root includes:
+
+```text
+C. Continue Review — <current continuation label>
+```
+
+This is an interactive-menu convenience route, not a new direct CLI command. Its
+state is derived only from the fresh #383 `ReviewWorkQueueItem` already resolved
+for the exact selected student through #384 class-set navigation. The projection
+is read-only and is rebuilt on every root redraw; it is not cached or persisted.
+
+Available states route to the existing minimum-requirements, review-unit
+observations, overall Focus Standard ratings, Focus Standard feedback, or feedback
+export child workflow. `complete`, missing-submission, needs-assembly,
+`attention_required`, and unavailable canonical-queue states do not guess a stage
+and write nothing. In particular, `Continue Review` never creates a plain-paper
+submission, assembles routed evidence, changes `student_id`, infers a teacher
+judgment, or advances a phase merely because optional content is absent.
+
+`P`, `N`, and `W` remain independent student-navigation actions. The existing
+numbered review actions remain directly reachable. Evidence opening, review-detail
+viewing, page management, private notes, manual workflow-state management, and
+refresh are not continuation stages.
+
+See [Review Continuation](review_continuation.md) for the exact #383 category
+mapping, returned-without-full-review behavior, explicit-completion semantics,
+export freshness, cancellation safety, and privacy boundary.
+
 ## Direct Student Review Status
 
 `quillan review-status <class_id> <assignment_id> <student_id> [--format text|json]`

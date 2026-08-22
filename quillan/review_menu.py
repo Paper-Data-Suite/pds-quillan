@@ -106,6 +106,11 @@ from quillan.review_dashboard import (
     build_assignment_review_dashboard,
     format_assignment_review_dashboard,
 )
+from quillan.review_continuation import (
+    ReviewContinuation,
+    ReviewContinuationError,
+    derive_review_continuation,
+)
 from quillan.review_status_display import (
     review_progress_status,
     review_status_label,
@@ -644,6 +649,92 @@ def _review_student_navigation_unavailable_message(
     return "No later roster student currently needs review work."
 
 
+def _review_continuation_for_selected_student(
+    navigation: ReviewStudentNavigation | None,
+    *,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> ReviewContinuation | None:
+    """Project #383 state for the exact selected student without another read."""
+    if navigation is None:
+        return None
+    try:
+        continuation = derive_review_continuation(navigation.current)
+    except ReviewContinuationError:
+        return None
+    if (
+        continuation.class_id != class_id
+        or continuation.assignment_id != assignment_id
+        or continuation.student_id != student_id
+    ):
+        return None
+    return continuation
+
+
+def _print_review_continuation(
+    continuation: ReviewContinuation | None,
+) -> None:
+    label = "unavailable" if continuation is None else continuation.label
+    print(f"C. Continue Review — {label}")
+
+
+def _review_continuation_unavailable_message(
+    continuation: ReviewContinuation | None,
+) -> str:
+    if continuation is None:
+        return (
+            "Continue Review is unavailable because canonical review work state "
+            "could not be resolved."
+        )
+    if continuation.status == "complete":
+        return "No incomplete review stage remains for this student."
+    return f"Continue Review is {continuation.label}."
+
+
+def _run_review_continuation(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    continuation: ReviewContinuation | None,
+) -> None:
+    """Enter one existing child workflow or report a bounded no-write state."""
+    if (
+        continuation is None
+        or continuation.status != "available"
+        or continuation.target is None
+    ):
+        print(_review_continuation_unavailable_message(continuation))
+        input("Press Enter to continue...")
+        return
+
+    target = continuation.target
+    if target == "minimum_requirements":
+        _menu_review_minimum_requirements(
+            workspace_root, class_id, assignment_id, student_id
+        )
+    elif target == "review_unit_observations":
+        _menu_review_unit_observations(
+            workspace_root, class_id, assignment_id, student_id
+        )
+    elif target == "overall_focus_standard_ratings":
+        _menu_overall_focus_standard_ratings(
+            workspace_root, class_id, assignment_id, student_id
+        )
+    elif target == "focus_standard_feedback":
+        _menu_compose_focus_standard_feedback(
+            workspace_root, class_id, assignment_id, student_id
+        )
+    elif target == "feedback_export":
+        _menu_export_student_feedback(
+            workspace_root, class_id, assignment_id, student_id
+        )
+        input("Press Enter to continue...")
+    else:
+        raise AssertionError(f"Unhandled Continue Review target: {target!r}")
+
+
 def _launch_selected_student_review(
     workspace_root: Path,
     class_id: str,
@@ -671,6 +762,12 @@ def _launch_selected_student_review(
             current_student_id,
         )
         _print_review_student_navigation(class_set_navigation)
+        review_continuation = _review_continuation_for_selected_student(
+            class_set_navigation,
+            class_id=class_id,
+            assignment_id=assignment_id,
+            student_id=current_student_id,
+        )
         print()
 
         status = _load_submission_status(workspace_root, class_id, assignment_id)
@@ -694,6 +791,7 @@ def _launch_selected_student_review(
             else:
                 print("1. View routed evidence status")
                 print("2. Refresh summary")
+            _print_review_continuation(review_continuation)
             print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
@@ -701,6 +799,15 @@ def _launch_selected_student_review(
             print()
             if choice == "" or navigation is NavigationChoice.BACK:
                 return 0
+            if choice.casefold() == "c":
+                _run_review_continuation(
+                    workspace_root,
+                    class_id,
+                    assignment_id,
+                    current_student_id,
+                    review_continuation,
+                )
+                continue
             handled, target_student_id = _review_student_navigation_choice(
                 choice, class_set_navigation
             )
@@ -736,6 +843,7 @@ def _launch_selected_student_review(
             print("1. Assemble this assignment now")
             print("2. View routed evidence status")
             print("3. Refresh summary")
+            _print_review_continuation(review_continuation)
             print_navigation_options()
             print()
             choice = input("Select an option: ").strip()
@@ -743,6 +851,15 @@ def _launch_selected_student_review(
             print()
             if choice == "" or navigation is NavigationChoice.BACK:
                 return 0
+            if choice.casefold() == "c":
+                _run_review_continuation(
+                    workspace_root,
+                    class_id,
+                    assignment_id,
+                    current_student_id,
+                    review_continuation,
+                )
+                continue
             handled, target_student_id = _review_student_navigation_choice(
                 choice, class_set_navigation
             )
@@ -777,6 +894,7 @@ def _launch_selected_student_review(
         print("9. Update review workflow state")
         print("10. Export student feedback")
         print("11. Refresh summary")
+        _print_review_continuation(review_continuation)
         print_navigation_options()
         print()
 
@@ -786,6 +904,15 @@ def _launch_selected_student_review(
 
         if choice == "" or navigation is NavigationChoice.BACK:
             return 0
+        if choice.casefold() == "c":
+            _run_review_continuation(
+                workspace_root,
+                class_id,
+                assignment_id,
+                current_student_id,
+                review_continuation,
+            )
+            continue
         handled, target_student_id = _review_student_navigation_choice(
             choice, class_set_navigation
         )
