@@ -424,7 +424,7 @@ def test_review_menu_defines_review_units(
             "1",
             "1",
             "1",
-            "4",
+            "a", "3",
             "1",
             "2",
             "1",
@@ -479,7 +479,7 @@ def test_review_menu_records_applicable_focus_standard_observation(
             "1",
             "1",
             "1",
-            "4",
+            "a", "3",
             "1",
             "1",
             "1",
@@ -642,7 +642,7 @@ def test_review_menu_marks_observations_complete(
             "1",
             "1",
             "1",
-            "4",
+            "a", "3",
             "3",
             "1",
             "",
@@ -700,7 +700,7 @@ def test_review_menu_records_and_completes_overall_focus_standard_rating(
             "1",
             "1",
             "1",
-            "5",
+            "a", "4",
             "2",
             "1",
             "1",
@@ -918,7 +918,7 @@ def test_review_menu_blocks_observations_for_returned_without_full_review(
             "1",
             "1",
             "1",
-            "4",
+            "a", "3",
             "1",
             "1",
             "1",
@@ -1000,7 +1000,7 @@ def test_review_menu_views_current_review_details_read_only(
 
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "2", "", "b", "b", "", "b", "q"],
+        ["2", "1", "1", "1", "1", "1", "a", "1", "", "b", "b", "", "b", "q"],
     )
 
     assert main(["menu"]) == 0
@@ -1061,7 +1061,7 @@ def test_review_menu_open_submission_uses_existing_safe_opening(
         open_submission,
     )
     recorder = MenuScreenRecorder(
-        ["2", "1", "1", "1", "1", "1", "1", "1", "1", "y", "", "b", "b", "", "b", "q"],
+        ["2", "1", "1", "1", "1", "1", "o", "1", "1", "y", "", "b", "b", "", "b", "q"],
     )
     recorder.install(monkeypatch)
 
@@ -1130,7 +1130,7 @@ def test_review_menu_multi_page_open_submission_selects_one_page(
     )
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "2", "1", "y", "", "b", "b", "", "b", "q"],
+        ["2", "1", "1", "1", "1", "1", "o", "2", "1", "y", "", "b", "b", "", "b", "q"],
     )
 
     assert main(["menu"]) == 0
@@ -1192,7 +1192,7 @@ def test_review_menu_multi_page_open_submission_opens_all_pages(
     )
     _menu_input(
         monkeypatch,
-        ["2", "1", "1", "1", "1", "1", "1", "A", "", "b", "b", "", "b", "q"],
+        ["2", "1", "1", "1", "1", "1", "o", "A", "", "b", "b", "", "b", "q"],
     )
 
     assert main(["menu"]) == 0
@@ -1249,8 +1249,10 @@ def test_review_menu_creates_plain_paper_submission_and_shows_review_actions(
         unrelated_previous_text="No digital submission evidence",
     )
     assert "Plain-Paper Submission Created" in output
-    assert "1. Open submission evidence" in output
-    assert "5. Overall Focus Standard ratings" in output
+    assert "O. Open Evidence" in output
+    assert "C. Continue Review — Review minimum requirements" in output
+    assert "E. Export Feedback" in output
+    assert "A. Advanced Actions" in output
     student_dir = (
         workspace
         / "classes"
@@ -1283,7 +1285,7 @@ def test_review_menu_adds_teacher_note_to_review_record(
             "1",
             "1",
             "1",
-            "8",
+            "a", "7",
             "This is a test note.",
             "",
             "b", "b", "", "b", "q",
@@ -1335,7 +1337,7 @@ def test_review_menu_updates_review_workflow_state(
             "1",
             "1",
             "1",
-            "9",
+            "a", "8",
             "4",
             "1",
             "",
@@ -1391,7 +1393,7 @@ def test_review_menu_adds_custom_focus_standard_feedback_comment(
             "1",
             "1",
             "1",
-            "6",
+            "a", "5",
             "2",
             "1",
             "Focused feedback text.",
@@ -1443,7 +1445,7 @@ def test_review_menu_saves_default_custom_comment_text_for_reuse(
     _menu_input(
         monkeypatch,
         [
-            "2", "1", "1", "1", "1", "1", "6", "2", "1",
+            "2", "1", "1", "1", "1", "1", "a", "5", "2", "1",
             "Student-specific feedback text.",
             "1", "",  # Reject invalid default-yes input, then accept its default.
             "1", "y",  # Reject invalid default-no input, then choose yes.
@@ -1489,7 +1491,7 @@ def test_review_menu_keeps_revised_reusable_text_separate(
     _menu_input(
         monkeypatch,
         [
-            "2", "1", "1", "1", "1", "1", "6", "2", "1",
+            "2", "1", "1", "1", "1", "1", "a", "5", "2", "1",
             "Avery, revise paragraph 2.", "", "y", "General revision", "2",
             "Revise the relevant paragraph.", "",
             "Character, Scene Development, dialogue", "1",
@@ -1536,7 +1538,7 @@ def test_review_menu_back_while_saving_reusable_comment_writes_nothing(
     _menu_input(
         monkeypatch,
         [
-            "2", "1", "1", "1", "1", "1", "6", "2", "1",
+            "2", "1", "1", "1", "1", "1", "a", "5", "2", "1",
             *reusable_steps,
             "", "5", "b", "b", "", "b", "q",
         ],
@@ -1606,7 +1608,7 @@ def test_review_menu_selects_reusable_focus_standard_feedback_comment(
             "1",
             "1",
             "1",
-            "6",
+            "a", "5",
             "3",
             "1",
             "1",
@@ -1662,7 +1664,7 @@ def test_review_menu_excludes_submission_page_without_touching_review_record(
             "1",
             "1",
             "1",
-            "7",
+            "a", "6",
             "1",
             "1",
             "1",

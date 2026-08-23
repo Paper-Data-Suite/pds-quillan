@@ -141,10 +141,16 @@ and write nothing. In particular, `Continue Review` never creates a plain-paper
 submission, assembles routed evidence, changes `student_id`, infers a teacher
 judgment, or advances a phase merely because optional content is absent.
 
-`P`, `N`, and `W` remain independent student-navigation actions. The existing
-numbered review actions remain directly reachable. Evidence opening, review-detail
-viewing, page management, private notes, manual workflow-state management, and
-refresh are not continuation stages.
+`P`, `N`, and `W` remain independent student-navigation actions. On a review-ready
+student, #386 places `Open Evidence`, `Continue Review`, single-student `Export
+Feedback`, `Next Student`, and `Advanced Actions` on the compact root. Earlier
+review stages and less-common record-management operations remain directly
+reachable through `Advanced Actions`. Evidence opening, review-detail viewing,
+page management, private notes, manual workflow-state management, and refresh are
+not continuation stages.
+
+See [Routine Student Review Screen](routine_review_screen.md) for the compact-menu
+hierarchy and recovery-screen exceptions.
 
 See [Review Continuation](review_continuation.md) for the exact #383 category
 mapping, returned-without-full-review behavior, explicit-completion semantics,

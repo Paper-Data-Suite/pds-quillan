@@ -387,7 +387,7 @@ def test_queue_navigation_failure_makes_continue_review_bounded_and_unavailable(
     assert _snapshot(tmp_path) == before
 
 
-def test_continue_review_keeps_numbered_and_class_set_navigation_controls_visible(
+def test_continue_review_remains_visible_on_compact_review_ready_root(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -401,6 +401,19 @@ def test_continue_review_keeps_numbered_and_class_set_navigation_controls_visibl
 
     output = capsys.readouterr().out
     for expected in (
+        "O. Open Evidence",
+        "C. Continue Review — Review minimum requirements",
+        "E. Export Feedback",
+        f"N. Next Student — Mina Patel ({SECOND_STUDENT_ID})",
+        "A. Advanced Actions",
+        "P. Previous Student — none (first roster student)",
+        f"W. Next Student Needing Review — Mina Patel ({SECOND_STUDENT_ID})",
+        "B. Back",
+        "M. Main Menu",
+        "Q. Quit",
+    ):
+        assert expected in output
+    for old_action in (
         "1. Open submission evidence",
         "2. View current review details",
         "3. Review minimum requirements",
@@ -412,15 +425,8 @@ def test_continue_review_keeps_numbered_and_class_set_navigation_controls_visibl
         "9. Update review workflow state",
         "10. Export student feedback",
         "11. Refresh summary",
-        "C. Continue Review — Review minimum requirements",
-        f"N. Next student — Mina Patel ({SECOND_STUDENT_ID})",
-        "P. Previous student — none (first roster student)",
-        f"W. Next student needing review — Mina Patel ({SECOND_STUDENT_ID})",
-        "B. Back",
-        "M. Main Menu",
-        "Q. Quit",
     ):
-        assert expected in output
+        assert old_action not in output
 
 
 def test_student_navigation_recalculates_continue_review_for_new_exact_student(

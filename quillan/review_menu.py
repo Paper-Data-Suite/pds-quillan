@@ -617,6 +617,75 @@ def _print_review_student_navigation(
     )
 
 
+def _print_compact_review_student_navigation(
+    navigation: ReviewStudentNavigation | None,
+) -> None:
+    """Render bounded class-set state without the recovery-screen controls."""
+    if navigation is None:
+        print("Position: unavailable")
+        print("Work state: unavailable")
+        print("Students needing work: unavailable")
+        return
+
+    print(f"Position: {navigation.position} of {navigation.roster_count}")
+    print(f"Work state: {CATEGORY_LABELS[navigation.current.category]}")
+    print(f"Students needing work: {navigation.needs_work_count}")
+    if navigation.current.category == "attention_required":
+        print(f"Attention: {navigation.current.reason_code}")
+    for warning in navigation.current.warnings:
+        print(f"Warning: {warning}")
+
+
+def _print_compact_review_actions(
+    navigation: ReviewStudentNavigation | None,
+    continuation: ReviewContinuation | None,
+) -> None:
+    navigation_unavailable = navigation is None
+    previous = None if navigation is None else navigation.previous
+    next_student = None if navigation is None else navigation.next
+    next_needing_review = (
+        None if navigation is None else navigation.next_needing_review
+    )
+
+    print("O. Open Evidence")
+    _print_review_continuation(continuation)
+    print("E. Export Feedback")
+    print(
+        "N. Next Student — "
+        + _review_student_navigation_item_label(
+            next_student,
+            none_label=(
+                "unavailable"
+                if navigation_unavailable
+                else "none (final roster student)"
+            ),
+        )
+    )
+    print("A. Advanced Actions")
+    print()
+    print(
+        "P. Previous Student — "
+        + _review_student_navigation_item_label(
+            previous,
+            none_label=(
+                "unavailable"
+                if navigation_unavailable
+                else "none (first roster student)"
+            ),
+        )
+    )
+    print(
+        "W. Next Student Needing Review — "
+        + _review_student_navigation_item_label(
+            next_needing_review,
+            none_label=(
+                "unavailable" if navigation_unavailable else "none later in roster"
+            ),
+        )
+    )
+    print_navigation_options()
+
+
 def _review_student_navigation_choice(
     choice: str,
     navigation: ReviewStudentNavigation | None,
@@ -735,6 +804,84 @@ def _run_review_continuation(
         raise AssertionError(f"Unhandled Continue Review target: {target!r}")
 
 
+def _menu_advanced_review_actions(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+) -> None:
+    """Route one less-common exact-student action, then return to the fresh root."""
+    while True:
+        _print_review_action_header(
+            "Advanced Review Actions", class_id, assignment_id, student_id
+        )
+        print("1. View current review details")
+        print("2. Review minimum requirements")
+        print("3. Review units and Focus Standard observations")
+        print("4. Overall Focus Standard ratings")
+        print("5. Compose Focus Standard feedback")
+        print("6. Manage submission pages")
+        print("7. Add teacher note")
+        print("8. Update review workflow state")
+        print("9. Refresh summary")
+        print_navigation_options()
+        print()
+
+        choice = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(choice)
+        print()
+        if choice == "" or navigation is NavigationChoice.BACK:
+            return
+        if choice == "1":
+            _menu_view_current_review_details(
+                workspace_root, class_id, assignment_id, student_id
+            )
+            input("Press Enter to continue...")
+            return
+        if choice == "2":
+            _menu_review_minimum_requirements(
+                workspace_root, class_id, assignment_id, student_id
+            )
+            return
+        if choice == "3":
+            _menu_review_unit_observations(
+                workspace_root, class_id, assignment_id, student_id
+            )
+            return
+        if choice == "4":
+            _menu_overall_focus_standard_ratings(
+                workspace_root, class_id, assignment_id, student_id
+            )
+            return
+        if choice == "5":
+            _menu_compose_focus_standard_feedback(
+                workspace_root, class_id, assignment_id, student_id
+            )
+            return
+        if choice == "6":
+            _menu_manage_submission_pages(
+                workspace_root, class_id, assignment_id, student_id
+            )
+            input("Press Enter to continue...")
+            return
+        if choice == "7":
+            _menu_add_review_note(
+                workspace_root, class_id, assignment_id, student_id
+            )
+            input("Press Enter to continue...")
+            return
+        if choice == "8":
+            _menu_update_review_workflow_state(
+                workspace_root, class_id, assignment_id, student_id
+            )
+            input("Press Enter to continue...")
+            return
+        if choice == "9":
+            return
+        print("Invalid selection. Please choose a listed action.")
+        input("Press Enter to continue...")
+
+
 def _launch_selected_student_review(
     workspace_root: Path,
     class_id: str,
@@ -761,7 +908,6 @@ def _launch_selected_student_review(
             assignment_id,
             current_student_id,
         )
-        _print_review_student_navigation(class_set_navigation)
         review_continuation = _review_continuation_for_selected_student(
             class_set_navigation,
             class_id=class_id,
@@ -773,6 +919,8 @@ def _launch_selected_student_review(
         status = _load_submission_status(workspace_root, class_id, assignment_id)
         student_status = _student_submission_status(status, current_student_id)
         if student_status is None:
+            _print_review_student_navigation(class_set_navigation)
+            print()
             print("No digital submission evidence has been found for this student.")
             print()
             try:
@@ -834,6 +982,8 @@ def _launch_selected_student_review(
             input("Press Enter to continue...")
             continue
         if student_status.manifest_path is None:
+            _print_review_student_navigation(class_set_navigation)
+            print()
             print(
                 "This student has routed evidence, but the review-ready "
                 "submission record has not been assembled yet."
@@ -883,19 +1033,9 @@ def _launch_selected_student_review(
                 print("Invalid selection. Please choose a listed action.")
                 input("Press Enter to continue...")
             continue
-        print("1. Open submission evidence")
-        print("2. View current review details")
-        print("3. Review minimum requirements")
-        print("4. Review units and Focus Standard observations")
-        print("5. Overall Focus Standard ratings")
-        print("6. Compose Focus Standard feedback")
-        print("7. Manage submission pages")
-        print("8. Add teacher note")
-        print("9. Update review workflow state")
-        print("10. Export student feedback")
-        print("11. Refresh summary")
-        _print_review_continuation(review_continuation)
-        print_navigation_options()
+        _print_compact_review_student_navigation(class_set_navigation)
+        print()
+        _print_compact_review_actions(class_set_navigation, review_continuation)
         print()
 
         choice = input("Select an option: ").strip()
@@ -927,7 +1067,7 @@ def _launch_selected_student_review(
             else:
                 current_student_id = target_student_id
             continue
-        if choice == "1":
+        if choice.casefold() == "o":
             _open_submission_evidence(
                 workspace_root,
                 class_id,
@@ -935,67 +1075,7 @@ def _launch_selected_student_review(
                 current_student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "2":
-            _menu_view_current_review_details(
-                workspace_root,
-                class_id,
-                assignment_id,
-                current_student_id,
-            )
-            input("Press Enter to continue...")
-        elif choice == "3":
-            _menu_review_minimum_requirements(
-                workspace_root,
-                class_id,
-                assignment_id,
-                current_student_id,
-            )
-        elif choice == "4":
-            _menu_review_unit_observations(
-                workspace_root,
-                class_id,
-                assignment_id,
-                current_student_id,
-            )
-        elif choice == "5":
-            _menu_overall_focus_standard_ratings(
-                workspace_root,
-                class_id,
-                assignment_id,
-                current_student_id,
-            )
-        elif choice == "6":
-            _menu_compose_focus_standard_feedback(
-                workspace_root,
-                class_id,
-                assignment_id,
-                current_student_id,
-            )
-        elif choice == "7":
-            _menu_manage_submission_pages(
-                workspace_root,
-                class_id,
-                assignment_id,
-                current_student_id,
-            )
-            input("Press Enter to continue...")
-        elif choice == "8":
-            _menu_add_review_note(
-                workspace_root,
-                class_id,
-                assignment_id,
-                current_student_id,
-            )
-            input("Press Enter to continue...")
-        elif choice == "9":
-            _menu_update_review_workflow_state(
-                workspace_root,
-                class_id,
-                assignment_id,
-                current_student_id,
-            )
-            input("Press Enter to continue...")
-        elif choice == "10":
+        elif choice.casefold() == "e":
             _menu_export_student_feedback(
                 workspace_root,
                 class_id,
@@ -1003,8 +1083,13 @@ def _launch_selected_student_review(
                 current_student_id,
             )
             input("Press Enter to continue...")
-        elif choice == "11":
-            continue
+        elif choice.casefold() == "a":
+            _menu_advanced_review_actions(
+                workspace_root,
+                class_id,
+                assignment_id,
+                current_student_id,
+            )
         else:
             print("Invalid selection. Please choose a listed action.")
             input("Press Enter to continue...")

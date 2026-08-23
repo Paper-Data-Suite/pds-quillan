@@ -67,7 +67,7 @@ def test_next_student_moves_directly_without_picker_and_writes_nothing(
     assert f"Student: Avery Rivera ({STUDENT_ID})" in output
     assert f"Student: Mina Patel ({SECOND_STUDENT_ID})" in output
     assert "Position: 1 of 2" in output
-    assert f"N. Next student — Mina Patel ({SECOND_STUDENT_ID})" in output
+    assert f"N. Next Student — Mina Patel ({SECOND_STUDENT_ID})" in output
     assert "Position: 2 of 2" in output
     assert f"P. Previous student — Avery Rivera ({STUDENT_ID})" in output
     assert "Select Student/Submission" not in output
@@ -90,7 +90,7 @@ def test_previous_student_moves_directly_in_roster_order(
     assert "Position: 2 of 2" in output
     assert f"P. Previous student — Avery Rivera ({STUDENT_ID})" in output
     assert "Position: 1 of 2" in output
-    assert f"N. Next student — Mina Patel ({SECOND_STUDENT_ID})" in output
+    assert f"N. Next Student — Mina Patel ({SECOND_STUDENT_ID})" in output
 
 
 def test_next_needing_review_uses_same_forward_queue_semantics(
@@ -107,7 +107,7 @@ def test_next_needing_review_uses_same_forward_queue_semantics(
 
     output = capsys.readouterr().out
     assert (
-        f"W. Next student needing review — Mina Patel ({SECOND_STUDENT_ID})"
+        f"W. Next Student Needing Review — Mina Patel ({SECOND_STUDENT_ID})"
         in output
     )
     assert "Position: 2 of 2" in output
@@ -164,31 +164,31 @@ def test_navigation_rebuilds_from_current_queue_on_every_root_redraw(
     assert calls == [STUDENT_ID, SECOND_STUDENT_ID, STUDENT_ID]
 
 
-def test_existing_review_actions_keep_their_numbers(
+def test_existing_review_actions_remain_reachable_through_advanced_actions(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _prepare(tmp_path, monkeypatch)
-    _inputs(monkeypatch, ("b",))
+    _inputs(monkeypatch, ("a", "b", "b"))
 
     assert review_menu._launch_selected_student_review(
         tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
     ) == 0
 
     output = capsys.readouterr().out
+    assert "A. Advanced Actions" in output
+    assert "Advanced Review Actions" in output
     for expected in (
-        "1. Open submission evidence",
-        "2. View current review details",
-        "3. Review minimum requirements",
-        "4. Review units and Focus Standard observations",
-        "5. Overall Focus Standard ratings",
-        "6. Compose Focus Standard feedback",
-        "7. Manage submission pages",
-        "8. Add teacher note",
-        "9. Update review workflow state",
-        "10. Export student feedback",
-        "11. Refresh summary",
+        "1. View current review details",
+        "2. Review minimum requirements",
+        "3. Review units and Focus Standard observations",
+        "4. Overall Focus Standard ratings",
+        "5. Compose Focus Standard feedback",
+        "6. Manage submission pages",
+        "7. Add teacher note",
+        "8. Update review workflow state",
+        "9. Refresh summary",
     ):
         assert expected in output
 
@@ -200,7 +200,7 @@ def test_canceled_teacher_note_is_not_written_or_carried_to_next_student(
 ) -> None:
     _prepare(tmp_path, monkeypatch)
     before = _snapshot(tmp_path)
-    _inputs(monkeypatch, ("8", "b", "", "n", "b"))
+    _inputs(monkeypatch, ("a", "7", "b", "", "n", "b"))
 
     assert review_menu._launch_selected_student_review(
         tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
@@ -345,7 +345,7 @@ def test_completed_child_write_is_reflected_by_fresh_navigation_redraw(
         state_sensitive_builder,
     )
     monkeypatch.setattr(review_menu, "_menu_add_review_note", explicit_child_write)
-    _inputs(monkeypatch, ("8", "", "b"))
+    _inputs(monkeypatch, ("a", "7", "", "b"))
 
     assert review_menu._launch_selected_student_review(
         tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
@@ -400,7 +400,7 @@ def test_plain_paper_student_participates_in_adjacent_navigation(
 
     output = capsys.readouterr().out
     assert "Position: 2 of 2" in output
-    assert f"P. Previous student — Avery Rivera ({STUDENT_ID})" in output
+    assert f"P. Previous Student — Avery Rivera ({STUDENT_ID})" in output
     assert "Position: 1 of 2" in output
     assert _snapshot(tmp_path) == before
 
@@ -422,7 +422,10 @@ def test_completed_teacher_note_save_is_retained_once_when_navigation_follows(
     first_review_path.parent.mkdir(parents=True, exist_ok=True)
     first_review_path.write_text(json.dumps(record), encoding="utf-8")
     assert not second_review_path.exists()
-    _inputs(monkeypatch, ("8", "Saved exactly once.", "", "n", "b"))
+    _inputs(
+        monkeypatch,
+        ("a", "7", "Saved exactly once.", "", "n", "b"),
+    )
 
     assert review_menu._launch_selected_student_review(
         tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
