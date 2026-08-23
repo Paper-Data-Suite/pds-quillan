@@ -23,6 +23,7 @@ from quillan.cli_app.handlers.review_workflow import handle_review_workflow_set_
 from quillan.cli_app.handlers.exports import (
     handle_export_class_summary,
     handle_export_feedback,
+    handle_export_feedback_batch,
     handle_export_student_performance_summary,
     handle_export_standards_summary,
 )
@@ -1552,6 +1553,56 @@ def build_parser() -> argparse.ArgumentParser:
         help="Replace existing feedback export files for the selected format.",
     )
     export_feedback_parser.set_defaults(handler=handle_export_feedback)
+
+    export_feedback_batch_parser = subparsers.add_parser(
+        "export-feedback-batch",
+        help="Plan or execute assignment-level student feedback export.",
+        description=(
+            "Preview and explicitly execute a roster-ordered batch using existing "
+            "single-student feedback export services. The command never creates "
+            "missing teacher judgments or publishes results."
+        ),
+    )
+    _add_assignment_identity_arguments(export_feedback_batch_parser)
+    batch_scope = export_feedback_batch_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    batch_scope.add_argument(
+        "--completed",
+        action="store_true",
+        help="Use roster students in #383 export_pending or complete state.",
+    )
+    batch_scope.add_argument(
+        "--student-id",
+        action="append",
+        help="Exact roster student ID; repeat for an explicit selection.",
+    )
+    export_feedback_batch_parser.add_argument(
+        "--format",
+        required=True,
+        choices=("pdf", "markdown", "both"),
+        help="Requested batch artifact format.",
+    )
+    export_feedback_batch_parser.add_argument(
+        "--overwrite-policy",
+        choices=("none", "stale", "all"),
+        default="none",
+        help="Replacement authorization for existing requested artifacts.",
+    )
+    batch_execution = export_feedback_batch_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    batch_execution.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Fully validate and print the plan without writing files.",
+    )
+    batch_execution.add_argument(
+        "--yes",
+        action="store_true",
+        help="Explicitly authorize execution of the displayed deterministic plan.",
+    )
+    export_feedback_batch_parser.set_defaults(handler=handle_export_feedback_batch)
 
     export_class_summary_parser = subparsers.add_parser(
         "export-class-summary",

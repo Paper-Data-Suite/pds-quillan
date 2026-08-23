@@ -1392,3 +1392,40 @@ At the time this target contract is introduced, current runtime workflows may st
 This document defines the target student feedback export contract for the v0.8.6 standards-based redesign. It does not by itself update runtime validators, export services, menu workflows, CLI commands, tests, examples, or migration behavior.
 
 You’ll also want to add a short link entry for this file in `docs/data_contracts.md` after the review-record / Focus Standard comments entries.
+
+## Assignment-Level Batch Orchestration (v0.10.0)
+
+Issue #387 adds assignment-level batch orchestration without changing the
+student-feedback rendering contract defined above.
+
+The batch layer is a teacher-facing planner/executor over existing canonical
+state. It consumes #383 review-work classification, evaluates the requested
+PDF/Markdown artifact state independently, previews create/replace/skip/block
+behavior, requires explicit authorization, delegates rendering to the existing
+single-student exporters, and reload-verifies each successful write.
+
+The default completed scope includes roster students in `export_pending` or
+`complete`. `complete` is not interpreted as “all formats current”; a requested
+companion artifact may still be missing or stale. Explicit student selection
+controls scope only and never makes an incomplete review exportable.
+
+Overwrite policy is explicit (`none`, `stale`, or `all`). Combined PDF +
+Markdown is a coupled operation so the batch layer never performs a hidden
+partial update that makes the companion stale. Relevant state is re-read before
+each authorized write; a change after preview fails closed for that student.
+Failures are isolated by student, and renderer success is followed by canonical
+file/metadata/freshness verification.
+
+Batch planning and results do not persist a new canonical record family.
+Per-student export provenance remains exactly the existing
+`review.json.exports.feedback_pdf` and `review.json.exports.feedback_markdown`
+metadata. No minimum-requirement outcome, observation, rating, rationale,
+feedback comment, inclusion choice, or completion judgment is created or
+repaired by batching.
+
+The batch workflow is local export only. It does not authorize publication,
+create Academic Result Manifests, share with Meridian, calculate Grade, or infer
+proficiency.
+
+See [`batch_feedback_export.md`](batch_feedback_export.md) for the active #387
+service, menu, direct-CLI, overwrite, race-detection, and verification rules.

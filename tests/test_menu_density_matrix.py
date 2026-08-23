@@ -30,6 +30,7 @@ MENU_DENSITY_ACCEPTANCE_MATRIX = {
     "teacher notes": "tests/test_menu_review_student_work.py::test_review_menu_adds_teacher_note_to_review_record",
     "workflow-state changes": "tests/test_menu_review_student_work.py::test_review_menu_updates_review_workflow_state",
     "feedback export": "tests/test_menu_export_actions.py::test_menu_export_student_feedback_creates_feedback_file",
+    "batch feedback export": "tests/test_menu_batch_feedback_export_issue387.py::test_menu_completed_batch_previews_once_then_executes_once",
     "assignment-report export": "tests/test_menu_export_actions.py::test_menu_export_class_summary_creates_summary_file",
     "help": "tests/test_menu_help.py::test_help_density_recorder_captures_focus_and_parent_redraw",
 }
