@@ -20,12 +20,22 @@ from quillan.assignment_picker import (
     prompt_assignment_choice_for_class,
 )
 from quillan.assignment_submission_assembly import assemble_assignment_submissions
+from quillan.batch_feedback_export import (
+    BatchFeedbackExportError,
+    BatchScope,
+    FeedbackFormat,
+    OverwritePolicy,
+    build_batch_feedback_export_plan,
+    execute_batch_feedback_export,
+)
 from quillan.class_summary_export import (
     ClassSummaryExportError,
     export_class_review_summary,
 )
 from quillan.cli_app.output import (
     print_added_review_note,
+    print_batch_feedback_export_plan,
+    print_batch_feedback_export_result,
     print_exported_class_summary,
     print_exported_feedback,
     print_exported_feedback_pdf,
@@ -4331,6 +4341,7 @@ def _launch_assignment_review_actions(
         print("5. View full diagnostic dashboard")
         print("6. Refresh")
         print("7. View review work queue")
+        print("F. Batch Feedback Export")
         print_navigation_options()
         print()
 
@@ -4387,9 +4398,205 @@ def _launch_assignment_review_actions(
             continue
         elif choice == "7":
             _menu_review_work_queue(workspace_root, class_id, assignment_id)
+        elif choice.casefold() == "f":
+            _menu_batch_feedback_export(workspace_root, class_id, assignment_id)
         else:
             print("Invalid selection. Please choose a listed action.")
             input("Press Enter to continue...")
+
+
+def _menu_batch_feedback_export(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    """Guide one explicit assignment-level batch preview and execution."""
+    _print_assignment_action_header("Batch Feedback Export", class_id, assignment_id)
+    print("Choose the exact batch scope.")
+    print("1. All export-capable completed reviews")
+    print("2. Select roster students")
+    print_navigation_options()
+    print()
+    scope_choice = input("Select scope: ").strip()
+    navigation = parse_navigation_choice(scope_choice)
+    if scope_choice == "" or navigation is NavigationChoice.BACK:
+        return
+    scope: BatchScope
+    student_ids: tuple[str, ...] = ()
+    if scope_choice == "1":
+        scope = "completed"
+    elif scope_choice == "2":
+        scope = "selected"
+        queue = _load_review_work_queue(workspace_root, class_id, assignment_id)
+        if queue is None:
+            input("Press Enter to continue...")
+            return
+        selected = _prompt_batch_feedback_student_ids(queue)
+        if selected is None:
+            return
+        student_ids = selected
+    else:
+        print(f"Invalid selection. {navigation_hint()}")
+        input("Press Enter to continue...")
+        return
+
+    feedback_format = _prompt_batch_feedback_format(class_id, assignment_id)
+    if feedback_format is None:
+        return
+    overwrite_policy = _prompt_batch_feedback_overwrite_policy(
+        class_id, assignment_id
+    )
+    if overwrite_policy is None:
+        return
+
+    try:
+        plan = build_batch_feedback_export_plan(
+            workspace_root,
+            class_id,
+            assignment_id,
+            scope=scope,
+            student_ids=student_ids,
+            feedback_format=feedback_format,
+            overwrite_policy=overwrite_policy,
+        )
+    except (BatchFeedbackExportError, OSError, ValueError) as error:
+        print(f"Error: could not plan batch feedback export: {error}")
+        input("Press Enter to continue...")
+        return
+
+    _print_assignment_action_header(
+        "Batch Feedback Export Preview", class_id, assignment_id
+    )
+    print_batch_feedback_export_plan(plan)
+    if plan.writable_count == 0:
+        print()
+        print("No authorized batch writes are planned.")
+        input("Press Enter to continue...")
+        return
+    print()
+    confirmation = input("Execute this batch? (y/yes): ").strip()
+    confirmation_navigation = parse_navigation_choice(confirmation)
+    if confirmation_navigation is NavigationChoice.BACK:
+        print("Batch feedback export canceled; no batch write was started.")
+        return
+    if confirmation.casefold() not in {"y", "yes"}:
+        print("Batch feedback export canceled; no batch write was started.")
+        return
+
+    try:
+        result = execute_batch_feedback_export(workspace_root, plan)
+    except BatchFeedbackExportError as error:
+        print(f"Error: could not start batch feedback export: {error}")
+        input("Press Enter to continue...")
+        return
+    _print_assignment_action_header(
+        "Batch Feedback Export Result", class_id, assignment_id
+    )
+    print_batch_feedback_export_result(result)
+    input("Press Enter to continue...")
+
+
+def _prompt_batch_feedback_student_ids(
+    queue: AssignmentReviewWorkQueue,
+) -> tuple[str, ...] | None:
+    """Collect an exact roster-only multi-selection without name matching."""
+    while True:
+        print()
+        print("Roster students:")
+        for index, item in enumerate(queue.items, start=1):
+            identity = (
+                f"{item.display_name} ({item.student_id})"
+                if item.display_name != item.student_id
+                else item.student_id
+            )
+            print(f"{index}. {identity} — {CATEGORY_LABELS[item.category]}")
+        print_navigation_options()
+        print()
+        raw = input(
+            "Select students by comma-separated number or exact student ID: "
+        ).strip()
+        navigation = parse_navigation_choice(raw)
+        if raw == "" or navigation is NavigationChoice.BACK:
+            return None
+        selected: list[str] = []
+        invalid: list[str] = []
+        by_id = {item.student_id: item.student_id for item in queue.items}
+        for part in raw.split(","):
+            token = part.strip()
+            if token.isdigit() and 1 <= int(token) <= len(queue.items):
+                student_id = queue.items[int(token) - 1].student_id
+            elif token in by_id:
+                student_id = token
+            else:
+                invalid.append(token)
+                continue
+            if student_id in selected:
+                invalid.append(token)
+                continue
+            selected.append(student_id)
+        if invalid:
+            print(
+                "Invalid or duplicate roster selection: " + ", ".join(invalid)
+            )
+            continue
+        if not selected:
+            print("Select at least one roster student.")
+            continue
+        return tuple(selected)
+
+
+def _prompt_batch_feedback_format(
+    class_id: str, assignment_id: str
+) -> FeedbackFormat | None:
+    _print_assignment_action_header(
+        "Batch Feedback Export Format", class_id, assignment_id
+    )
+    print("1. PDF")
+    print("2. Markdown")
+    print("3. PDF + Markdown")
+    print_navigation_options()
+    print()
+    choice = input("Select format: ").strip()
+    navigation = parse_navigation_choice(choice)
+    if choice == "" or navigation is NavigationChoice.BACK:
+        return None
+    formats: dict[str, FeedbackFormat] = {
+        "1": "pdf",
+        "2": "markdown",
+        "3": "both",
+    }
+    if choice not in formats:
+        print(f"Invalid selection. {navigation_hint()}")
+        input("Press Enter to continue...")
+        return None
+    return formats[choice]
+
+
+def _prompt_batch_feedback_overwrite_policy(
+    class_id: str, assignment_id: str
+) -> OverwritePolicy | None:
+    _print_assignment_action_header(
+        "Batch Feedback Export Overwrite Policy", class_id, assignment_id
+    )
+    print("1. None — create missing output only; replace nothing")
+    print("2. Stale — replace stale requested output sets")
+    print("3. All — replace any existing requested output set")
+    print_navigation_options()
+    print()
+    choice = input("Select overwrite policy: ").strip()
+    navigation = parse_navigation_choice(choice)
+    if choice == "" or navigation is NavigationChoice.BACK:
+        return None
+    policies: dict[str, OverwritePolicy] = {
+        "1": "none",
+        "2": "stale",
+        "3": "all",
+    }
+    if choice not in policies:
+        print(f"Invalid selection. {navigation_hint()}")
+        input("Press Enter to continue...")
+        return None
+    return policies[choice]
 
 
 def _menu_review_work_queue(

@@ -440,6 +440,7 @@ quillan open-submission <class_id> <assignment_id> <student_id> [--page N] [--ev
 quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan export-feedback <class_id> <assignment_id> <student_id> [--format markdown|pdf|both] [--overwrite]
+quillan export-feedback-batch <class_id> <assignment_id> (--completed | --student-id <student_id> [--student-id <student_id> ...]) --format pdf|markdown|both [--overwrite-policy none|stale|all] (--dry-run | --yes)
 quillan export-student-performance-summary <class_id> <assignment_id> [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
 quillan export-comprehensive-class-summary <class_id> <assignment_id> [--overwrite]
@@ -2130,3 +2131,66 @@ Recent class/assignment context is an interactive-menu convenience only. Direct 
 commands remain stateless and continue to require the explicit identifiers defined by
 their existing arguments. Issue #382 adds no `--recent`-style argument, no persistent
 context record, and no CLI inventory entry. See `teacher_session_context.md`.
+
+## Direct Batch Feedback Export
+
+Issue #387 adds one assignment-level, non-interactive batch command:
+
+```powershell
+quillan export-feedback-batch <class_id> <assignment_id> `
+  --completed --format pdf --dry-run
+
+quillan export-feedback-batch <class_id> <assignment_id> `
+  --student-id <student_id> --student-id <student_id> `
+  --format both --overwrite-policy stale --yes
+```
+
+Exactly one scope is required: `--completed` or one-or-more repeated
+`--student-id` arguments. `--completed` consumes the authoritative #383
+`export_pending` and `complete` categories in canonical roster order. Explicit
+selection accepts exact roster IDs only and does not bypass review readiness.
+Unknown or duplicate IDs fail safely.
+
+`--format` is required and accepts `pdf`, `markdown`, or `both`.
+`--overwrite-policy` accepts `none`, `stale`, or `all` and defaults to `none`.
+`both` is a coupled per-student operation; Quillan does not generate one
+companion in a way that immediately makes the other newly generated artifact
+stale.
+
+Exactly one of `--dry-run` and `--yes` is required. Dry-run resolves the active
+workspace, validates class/assignment/roster/review/export state, prints the full
+privacy-bounded plan, and writes nothing. `--yes` executes only the displayed
+plan. The confirmed student set is fixed; a student whose category, review
+update timestamp, roster membership, or requested export state changes after
+preview is reported as `state_changed` instead of being silently re-planned.
+
+Planning distinguishes requested artifact state from coarse #383 completion.
+A `complete` student can still require a requested format that is missing or
+stale. Planned actions distinguish `create`, `replace`, `skip_current`,
+`blocked_incomplete`, `blocked_attention`, `blocked_conflict`, and
+`blocked_unknown_state`.
+
+Execution reuses the existing single-student Markdown/PDF exporters. Each
+student is isolated: one export failure does not prevent later confirmed
+students from being attempted. After every reported renderer success, Quillan
+reloads canonical status and verifies requested files, metadata, and
+`source_review_updated_at` freshness. A failed verification is reported as
+`verification_failed`, never as success.
+
+Per-student provenance remains in canonical `review.json.exports`; the batch
+command creates no batch-history record. It does not assemble submissions,
+create plain-paper records, infer or repair teacher judgments, compose feedback,
+open evidence, run OCR/AI, calculate grades/proficiency, generate Academic Result
+Manifests, or publish/share through Core or Meridian.
+
+Executed commands return nonzero for unsafe/ineligible explicit selections,
+state changes, export failures, and verification failures. Ordinary intentional
+policy outcomes such as current-output skips remain visible without being
+reported as successful writes.
+
+The teacher-facing assignment menu uses the same service through
+`F. Batch Feedback Export`. The compact selected-student `E. Export Feedback`
+remains the intentional one-student workflow.
+
+See [`batch_feedback_export.md`](batch_feedback_export.md) for the complete
+planning, overwrite, freshness, verification, privacy, and ownership contract.

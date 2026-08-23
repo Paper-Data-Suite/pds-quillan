@@ -7,6 +7,10 @@ from pathlib import Path
 from pds_core.workspace import WorkspaceStatus
 
 from quillan.submission_observation_assembly import QuillanSubmissionAssemblyBatch
+from quillan.batch_feedback_export import (
+    BatchFeedbackExportPlan,
+    BatchFeedbackExportResult,
+)
 from quillan.class_summary_export import ExportedClassSummary
 from quillan.comment_management import (
     CreatedManualReusableComment,
@@ -494,6 +498,93 @@ def print_saved_reusable_focus_standard_comment(
     print(f"Reusable comment: {saved.comment_id}")
     print(f"Standard: {saved.standard_id}")
     print(f"Purpose: {saved.purpose}")
+
+
+def print_batch_feedback_export_plan(plan: BatchFeedbackExportPlan) -> None:
+    """Print a privacy-bounded deterministic batch preview."""
+    action_counts: dict[str, int] = {}
+    for item in plan.items:
+        action_counts[item.action] = action_counts.get(item.action, 0) + 1
+    print("Batch Feedback Export Preview")
+    print(f"Class: {plan.class_id}")
+    print(f"Assignment: {plan.assignment_title} ({plan.assignment_id})")
+    print(f"Scope: {plan.scope}")
+    print(f"Format: {plan.feedback_format}")
+    print(f"Overwrite policy: {plan.overwrite_policy}")
+    print(f"Roster students: {plan.roster_count}")
+    print(f"Selected students: {len(plan.items)}")
+    print(f"Writable students: {plan.writable_count}")
+    if plan.scope == "completed":
+        print(f"Excluded incomplete: {plan.excluded_incomplete_count}")
+        print(f"Excluded attention: {plan.excluded_attention_count}")
+    print("Planned actions:")
+    for action in (
+        "create",
+        "replace",
+        "skip_current",
+        "blocked_incomplete",
+        "blocked_attention",
+        "blocked_conflict",
+        "blocked_unknown_state",
+    ):
+        print(f"- {action}: {action_counts.get(action, 0)}")
+    print("Students:")
+    if not plan.items:
+        print("- none")
+    for item in plan.items:
+        identity = (
+            f"{item.display_name} ({item.student_id})"
+            if item.display_name != item.student_id
+            else item.student_id
+        )
+        requested = ", ".join(
+            f"{key}={status}" for key, status in item.requested_export_statuses
+        ) or "not inspected"
+        print(
+            f"- {identity} — review={item.category}; requested={requested}; "
+            f"action={item.action}; reason={item.reason_code}"
+        )
+        for warning in item.warnings:
+            print(f"  warning: {warning}")
+
+
+def print_batch_feedback_export_result(result: BatchFeedbackExportResult) -> None:
+    """Print deterministic per-student execution and verification outcomes."""
+    outcome_counts: dict[str, int] = {}
+    for item in result.items:
+        outcome_counts[item.outcome] = outcome_counts.get(item.outcome, 0) + 1
+    print("Batch Feedback Export Result")
+    print(f"Class: {result.class_id}")
+    print(f"Assignment: {result.assignment_id}")
+    print(f"Format: {result.feedback_format}")
+    print(f"Overwrite policy: {result.overwrite_policy}")
+    print(f"Failures: {result.failure_count}")
+    print("Outcomes:")
+    for outcome in (
+        "created",
+        "replaced",
+        "skipped_current",
+        "skipped_by_policy",
+        "blocked_incomplete",
+        "blocked_attention",
+        "blocked_unknown_state",
+        "state_changed",
+        "export_failed",
+        "verification_failed",
+    ):
+        print(f"- {outcome}: {outcome_counts.get(outcome, 0)}")
+    print("Students:")
+    if not result.items:
+        print("- none")
+    for item in result.items:
+        identity = (
+            f"{item.display_name} ({item.student_id})"
+            if item.display_name != item.student_id
+            else item.student_id
+        )
+        print(f"- {identity} — {item.outcome}: {item.message}")
+        for path in item.artifact_paths:
+            print(f"  artifact: {path}")
 
 
 def print_exported_feedback(exported: ExportedFeedback) -> None:

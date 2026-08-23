@@ -4272,6 +4272,115 @@
     {
       "path": [
         "quillan",
+        "export-feedback-batch"
+      ],
+      "aliases": [],
+      "short_help": "Plan or execute assignment-level student feedback export.",
+      "description": "Preview and explicitly execute a roster-ordered batch using existing single-student feedback export services. The command never creates missing teacher judgments or publishes results.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--completed"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Use roster students in #383 export_pending or complete state.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--student-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Exact roster student ID; repeat for an explicit selection.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--format"
+          ],
+          "required": true,
+          "choices": [
+            "pdf",
+            "markdown",
+            "both"
+          ],
+          "default": null,
+          "help": "Requested batch artifact format.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--overwrite-policy"
+          ],
+          "required": false,
+          "choices": [
+            "none",
+            "stale",
+            "all"
+          ],
+          "default": "none",
+          "help": "Replacement authorization for existing requested artifacts.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--dry-run"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Fully validate and print the plan without writing files.",
+          "mutex_group": 2
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly authorize execution of the displayed deterministic plan.",
+          "mutex_group": 2
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": true
+        },
+        {
+          "group": 2,
+          "required": true
+        }
+      ]
+    },
+    {
+      "path": [
+        "quillan",
         "export-class-summary"
       ],
       "aliases": [

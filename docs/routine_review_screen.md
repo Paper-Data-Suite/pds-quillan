@@ -70,8 +70,9 @@ overwrite behavior, current/stale/missing artifact semantics, and export metadat
 remain owned by that workflow.
 
 `E` does not batch students, auto-overwrite, synthesize missing review judgments,
-auto-advance to another student, or publish results. Batch export belongs to
-#387.
+auto-advance to another student, or publish results. Issue #387 adds a separate
+assignment-level `F. Batch Feedback Export` workflow; it does not change the
+selected-student `E` semantics.
 
 ### Next Student
 
@@ -219,3 +220,18 @@ pds-core>=0.6,<0.7
 The #379 audit remains the historical before-state. Active recorder-backed tests may
 change their current menu selections as the interface improves, but the historical
 report and its recorded baseline are not rewritten.
+
+## Relationship to batch feedback export
+
+Issue #387 adds `F. Batch Feedback Export` to Assignment Review Actions rather
+than expanding the compact selected-student root. The class-set workflow uses
+#383 `export_pending`/`complete` state, exact roster identity, explicit format and
+overwrite policy, a read-only preview, one confirmation, isolated per-student
+execution, and post-write verification.
+
+The selected-student screen remains responsible for intentional one-student
+review and recovery. Batch export does not auto-navigate students, repair an
+incomplete review, create plain-paper submissions, assemble evidence, or alter
+#384/#385 navigation/continuation semantics.
+
+See [`batch_feedback_export.md`](batch_feedback_export.md).

@@ -4,14 +4,25 @@ from __future__ import annotations
 
 import argparse
 import sys
+from typing import cast
 
 from pds_core.workspace import WorkspaceRootError, resolve_workspace_root
 
+from quillan.batch_feedback_export import (
+    BatchFeedbackExportError,
+    BatchScope,
+    FeedbackFormat,
+    OverwritePolicy,
+    build_batch_feedback_export_plan,
+    execute_batch_feedback_export,
+)
 from quillan.class_summary_export import (
     ClassSummaryExportError,
     export_class_review_summary,
 )
 from quillan.cli_app.output import (
+    print_batch_feedback_export_plan,
+    print_batch_feedback_export_result,
     print_exported_class_summary,
     print_exported_feedback,
     print_exported_feedback_pdf,
@@ -72,6 +83,46 @@ def handle_export_feedback(args: argparse.Namespace) -> int:
 
     print_exported_feedback(exported)
     return 0
+
+
+def handle_export_feedback_batch(args: argparse.Namespace) -> int:
+    """Plan or explicitly execute one assignment-level feedback batch."""
+    try:
+        workspace_root = resolve_workspace_root()
+        scope: BatchScope = "completed" if args.completed else "selected"
+        student_ids = tuple(args.student_id or ())
+        plan = build_batch_feedback_export_plan(
+            workspace_root,
+            args.class_id,
+            args.assignment_id,
+            scope=scope,
+            student_ids=student_ids,
+            feedback_format=cast(FeedbackFormat, args.format),
+            overwrite_policy=cast(OverwritePolicy, args.overwrite_policy),
+        )
+    except (WorkspaceRootError, BatchFeedbackExportError) as error:
+        print(f"Error: could not plan batch feedback export: {error}", file=sys.stderr)
+        return 1
+
+    print_batch_feedback_export_plan(plan)
+    if args.dry_run:
+        return 0
+
+    try:
+        result = execute_batch_feedback_export(workspace_root, plan)
+    except BatchFeedbackExportError as error:
+        print(f"Error: could not start batch feedback export: {error}", file=sys.stderr)
+        return 1
+    print_batch_feedback_export_result(result)
+    unsuccessful = {
+        "blocked_incomplete",
+        "blocked_attention",
+        "blocked_unknown_state",
+        "state_changed",
+        "export_failed",
+        "verification_failed",
+    }
+    return 1 if any(item.outcome in unsuccessful for item in result.items) else 0
 
 
 def handle_export_class_summary(args: argparse.Namespace) -> int:
