@@ -178,14 +178,15 @@ def test_continue_review_complete_individual_review_uses_real_teacher_session(
             "1",
             "1",
             "1",
-            # Evidence opening remains an explicit auxiliary action.
-            "1",
+            # Evidence opening remains an explicit primary action.
+            "o",
             "1",
             "1",
             "y",
             "",
-            # Current details remains an explicit auxiliary action.
-            "2",
+            # Current details remains explicit through Advanced Actions.
+            "a",
+            "1",
             "",
             # C -> minimum requirements.
             "c",
@@ -269,7 +270,7 @@ def test_continue_review_complete_individual_review_uses_real_teacher_session(
         prompt.choice.casefold()
         for prompt in recorder.prompts
         if prompt.prompt == "Select an option: "
-        and prompt.choice.casefold() in {"c", "3", "4", "5", "6", "10"}
+        and prompt.choice.casefold() in {"o", "a", "c", "e"}
     ]
 
     assert opened == [

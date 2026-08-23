@@ -18,8 +18,9 @@ The teacher-facing `Selected Student Review` root displays the projection as:
 C. Continue Review — <current continuation label>
 ```
 
-When a safe target exists, selecting `C` enters the same existing child workflow
-that remains directly available through the numbered menu action.
+When a safe target exists, selecting `C` enters the same existing child workflow.
+The #386 compact root keeps direct non-linear access to those stages through
+`Advanced Actions`; continuation does not own or duplicate the child workflows.
 
 ## Ownership and dependency direction
 
@@ -191,8 +192,8 @@ Refresh summary
 P / N / W navigation
 ```
 
-They remain directly reachable and do not become artificial prerequisites for
-mechanical progression.
+They remain reachable through the compact root or `Advanced Actions` and do not
+become artificial prerequisites for mechanical progression.
 
 ## Cancellation and write safety
 

@@ -197,20 +197,27 @@ def test_review_menu_selected_student_excludes_legacy_review_entry_actions(
 
     output = capsys.readouterr().out
     assert "Selected Student Review" in output
-    assert "1. Open submission evidence" in output
-    assert "2. View current review details" in output
-    assert "3. Review minimum requirements" in output
-    assert "4. Review units and Focus Standard observations" in output
-    assert "5. Overall Focus Standard ratings" in output
-    assert "6. Compose Focus Standard feedback" in output
-    assert "7. Manage submission pages" in output
-    assert "8. Add teacher note" in output
-    assert "9. Update review workflow state" in output
-    assert "10. Export student feedback" in output
-    assert "11. Refresh summary" in output
+    assert "O. Open Evidence" in output
+    assert "C. Continue Review — Review minimum requirements" in output
+    assert "E. Export Feedback" in output
+    assert "A. Advanced Actions" in output
     assert "B. Back" in output
     assert "M. Main Menu" in output
     assert "Q. Quit" in output
+    for old_action in (
+        "1. Open submission evidence",
+        "2. View current review details",
+        "3. Review minimum requirements",
+        "4. Review units and Focus Standard observations",
+        "5. Overall Focus Standard ratings",
+        "6. Compose Focus Standard feedback",
+        "7. Manage submission pages",
+        "8. Add teacher note",
+        "9. Update review workflow state",
+        "10. Export student feedback",
+        "11. Refresh summary",
+    ):
+        assert old_action not in output
     assert "Add structured tag" not in output
     assert "Select reusable comment" not in output
     assert "Set criterion score" not in output
@@ -233,7 +240,7 @@ def test_review_menu_records_minimum_requirement_check(
     recorder = MenuScreenRecorder(
         _enter_selected_student()
         + [
-            "3",
+            "a", "2",
             "1",
             "1",
             "1",
@@ -334,7 +341,7 @@ def test_review_menu_requirement_status_back_returns_to_selector_without_mutatio
 ) -> None:
     recorder = MenuScreenRecorder(
         _enter_selected_student()
-        + ["3", "1", "1", "b", "b", "4"]
+        + ["a", "2", "1", "1", "b", "b", "4"]
         + _exit_selected_student_to_main()
     )
     recorder.install(monkeypatch)
@@ -362,7 +369,7 @@ def test_review_menu_invalid_requirement_selection_stays_in_workflow_without_mut
 ) -> None:
     recorder = MenuScreenRecorder(
         _enter_selected_student()
-        + ["3", "1", invalid_choice, "", "b", "4"]
+        + ["a", "2", "1", invalid_choice, "", "b", "4"]
         + _exit_selected_student_to_main()
     )
     recorder.install(monkeypatch)
@@ -388,7 +395,7 @@ def test_review_menu_invalid_requirement_status_returns_to_selector_without_muta
 ) -> None:
     recorder = MenuScreenRecorder(
         _enter_selected_student()
-        + ["3", "1", "1", "invalid", "", "b", "4"]
+        + ["a", "2", "1", "1", "invalid", "", "b", "4"]
         + _exit_selected_student_to_main()
     )
     recorder.install(monkeypatch)
@@ -422,7 +429,7 @@ def test_feedback_configuration_opens_focused_standard_selector(
     )
     recorder = MenuScreenRecorder(
         _enter_selected_student()
-        + ["6", "1", "b", "", "b"]
+        + ["a", "5", "1", "b", "", "b"]
         + _exit_selected_student_to_main()
     )
     recorder.install(monkeypatch)
@@ -450,7 +457,7 @@ def test_review_menu_returns_without_full_review_when_policy_allows(
         monkeypatch,
         _enter_selected_student()
         + [
-            "3",
+            "a", "2",
             "1",
             "1",
             "2",
@@ -504,7 +511,7 @@ def test_review_menu_blank_note_cancels_without_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["8", ""]
+        + ["a", "7", ""]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -522,7 +529,7 @@ def test_review_menu_updates_review_workflow_state(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["9", "4", "1"]
+        + ["a", "8", "4", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 

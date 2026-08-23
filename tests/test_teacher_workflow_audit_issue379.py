@@ -166,7 +166,7 @@ def test_class_set_student_handoff_audit_uses_real_workflow(
     assert f"Class: {CLASS_ID}" in output
     assert "Student: Avery Rivera" in output
     assert "Student: Mina Patel" in output
-    assert f"N. Next student — Mina Patel ({SECOND_STUDENT_ID})" in output
+    assert f"N. Next Student — Mina Patel ({SECOND_STUDENT_ID})" in output
     assert "Position: 1 of 2" in output
     assert "Position: 2 of 2" in output
     assert "No digital submission evidence has been found for this student." in output
@@ -240,17 +240,18 @@ def test_complete_individual_review_audit_uses_one_real_teacher_session(
             "1",
             "1",
             "1",
-            # Open the selected evidence safely.
-            "1",
+            # Open the selected evidence safely from the compact root.
+            "o",
             "1",
             "1",
             "y",
             "",
-            # Inspect the current review details.
-            "2",
+            # Inspect current details through Advanced Actions.
+            "a",
+            "1",
             "",
-            # Record the one configured minimum requirement as met.
-            "3",
+            # Continue -> minimum requirements.
+            "c",
             "1",
             "1",
             "1",
@@ -263,8 +264,8 @@ def test_complete_individual_review_audit_uses_one_real_teacher_session(
             "",
             "",
             "b",
-            # Define one paragraph review unit and record one observation.
-            "4",
+            # Continue -> review units / observations.
+            "c",
             "1",
             "1",
             "1",
@@ -284,8 +285,8 @@ def test_complete_individual_review_audit_uses_one_real_teacher_session(
             "1",
             "",
             "4",
-            # Record and complete the overall Focus Standard rating.
-            "5",
+            # Continue -> overall Focus Standard ratings.
+            "c",
             "2",
             "1",
             "1",
@@ -298,8 +299,8 @@ def test_complete_individual_review_audit_uses_one_real_teacher_session(
             "1",
             "",
             "4",
-            # Add teacher-authored feedback and mark composition complete.
-            "6",
+            # Continue -> teacher-authored Focus Standard feedback.
+            "c",
             "2",
             "1",
             "Synthetic student feedback.",
@@ -311,8 +312,8 @@ def test_complete_individual_review_audit_uses_one_real_teacher_session(
             "1",
             "",
             "b",
-            # Export the completed review as Markdown.
-            "10",
+            # Export explicitly from the compact root.
+            "e",
             "2",
             "",
             # Exit without changing any additional review state.
@@ -333,7 +334,7 @@ def test_complete_individual_review_audit_uses_one_real_teacher_session(
         screens,
         heading="Select Submission Page",
         required_text=f"Student: Avery Rivera ({STUDENT_ID})",
-        forbidden_parent_text="11. Refresh summary",
+        forbidden_parent_text="A. Advanced Actions",
         parent_heading="Selected Student Review",
         result_heading="Submission Evidence Opened",
         unrelated_previous_text="Current review summary",

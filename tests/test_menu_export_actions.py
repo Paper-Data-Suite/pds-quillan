@@ -408,8 +408,9 @@ def test_selected_student_review_menu_includes_feedback_export(
     assert main(["menu"]) == 0
     output = capsys.readouterr().out
     assert "Selected Student Review" in output
-    assert "6. Compose Focus Standard feedback" in output
-    assert "10. Export student feedback" in output
+    assert "C. Continue Review — Review minimum requirements" in output
+    assert "E. Export Feedback" in output
+    assert "A. Advanced Actions" in output
 
 
 @pytest.mark.menu_density_workflow("feedback export")
@@ -450,7 +451,7 @@ def test_menu_export_student_feedback_creates_feedback_file(
 
     recorder = MenuScreenRecorder(
         _enter_selected_student()
-        + ["10", "2"]
+        + ["e", "2"]
         + _exit_after_selected_student_action_to_main(),
     )
     recorder.install(monkeypatch)
@@ -511,7 +512,7 @@ def test_menu_export_student_feedback_pdf_creates_pdf_and_updates_metadata(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["10", "1"]
+        + ["e", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -631,7 +632,7 @@ def test_menu_export_feedback_invalid_overwrite_cancels_without_writing(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["10", "4"]
+        + ["e", "4"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -664,7 +665,7 @@ def test_menu_export_feedback_reports_missing_review_record(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["10", "1"]
+        + ["e", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -700,7 +701,7 @@ def test_menu_export_feedback_requires_overwrite_when_existing(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["10", "2", "1"]
+        + ["e", "2", "1"]
         + _exit_after_selected_student_action_to_main(),
     )
 
@@ -738,7 +739,7 @@ def test_menu_export_feedback_overwrites_existing_export(
     _menu_input(
         monkeypatch,
         _enter_selected_student()
-        + ["10", "2", "2"]
+        + ["e", "2", "2"]
         + _exit_after_selected_student_action_to_main(),
     )
 
