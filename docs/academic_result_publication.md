@@ -408,11 +408,18 @@ exception text.
 
 ## Teacher menu
 
-The teacher-facing workflow is:
+The advanced teacher-facing lifecycle workflow is:
 
 ```text
 Assignment Management -> Academic Result Publications
 ```
+
+The routine [`Share Results with Meridian`](share_results_with_meridian.md)
+workflow enters from the already-selected Assignment Review Actions context
+and orchestrates only ordinary first publication or exact-head supersession.
+It uses this same lifecycle service and the same typed `PUBLISH` / `SUPERSEDE`
+authorization; withdrawal, republication after withdrawal, historical
+inspection, and manual catalog rebuild remain advanced operations.
 
 It provides:
 
@@ -467,8 +474,11 @@ Publication management does not parse or display raw manifest academic content.
 
 ## Explicit-only and downstream boundaries
 
-No ordinary Quillan workflow publishes, supersedes, republishes, withdraws, or
-rebuilds the academic catalog automatically.
+No Quillan workflow publishes, supersedes, republishes, withdraws, or rebuilds
+the academic catalog **implicitly**. The guided `Share Results with Meridian`
+workflow may perform ordinary publish/supersede only after a fresh exact-state
+preview and typed `PUBLISH` / `SUPERSEDE`; it never performs withdrawal,
+republish-after-withdrawal, or manual catalog rebuild automatically.
 
 The metadata-only publication producer profile remains free of lifecycle callbacks.
 

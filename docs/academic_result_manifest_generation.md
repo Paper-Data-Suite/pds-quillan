@@ -273,5 +273,7 @@ submission creation, page management, requirement review, review observations,
 overall ratings, feedback composition/export, reports, scan-review resolution,
 imports, help/version display, and module-profile discovery.
 
-Only the explicit manifest CLI/menu surfaces and later deliberately added typed
-producer orchestration may call durable manifest generation.
+Only the explicit manifest CLI/menu surfaces and deliberately typed producer
+orchestration may call durable manifest generation. [`Share Results with Meridian`](share_results_with_meridian.md) is one such
+orchestration: it requires typed `GENERATE` and then calls the same existing
+generation service without changing revision or projection policy.

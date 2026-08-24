@@ -426,6 +426,7 @@ def test_registration_writes_are_isolated_to_explicit_quillan_boundary() -> None
         "academic_work_menu.py",
         "academic_work_registration.py",
         "cli_app/handlers/academic_work.py",
+        "share_results_menu.py",
     }
     boundary_source = Path(registration_module.__file__).read_text(encoding="utf-8")
     assert "write_academic_work_registration" not in boundary_source
