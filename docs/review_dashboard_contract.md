@@ -91,3 +91,25 @@ summary.routed_evidence.skipped_files
 Neither field is emitted in version 2. All other key ordering, JSON types,
 null semantics, deterministic ordering, privacy boundaries, and
 workspace-relative POSIX path semantics remain unchanged.
+
+## Relationship to Class Review Progress
+
+Issue #388 adds a focused teacher-facing class-completion projection without changing
+this dashboard's schema or diagnostic authority.
+
+The focused view derives from one already-built `AssignmentReviewDashboard` and the
+#383 work queue derived from that same snapshot. It reuses this dashboard's independent
+PDF/Markdown `present`, `stale`, `missing`, and `unknown` freshness values rather than
+creating another export-status algorithm.
+
+The two views have different population rules by design. This dashboard may still show
+assignment-local discovered records when the canonical roster is unavailable.
+`Class Review Progress` fails closed without the canonical roster because it cannot
+safely claim a class completion denominator or roster order.
+
+The dashboard remains the full diagnostic surface for malformed records, page/routing
+details, scan-review diagnostics, paths, and unrostered assignment-local records.
+`Class Review Progress` remains a compact roster-only workflow for completion counts,
+filtering, and exact-student drill-down.
+
+`quillan review-dashboard` remains unchanged and continues to emit schema version `2`.

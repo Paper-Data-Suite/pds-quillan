@@ -121,10 +121,10 @@ def test_assignment_review_actions_add_queue_without_renumbering_existing_action
         "4. Export reports",
         "5. View full diagnostic dashboard",
         "6. Refresh",
-        "7. View review work queue",
+        "7. Review class progress",
     ):
         assert expected in output
-    assert "Review Work Queue" in output
+    assert "Class Review Progress" in output
 
 
 def test_queue_screen_main_menu_uses_existing_navigation_semantics(
