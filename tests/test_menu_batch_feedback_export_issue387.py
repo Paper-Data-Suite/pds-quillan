@@ -105,7 +105,7 @@ def test_assignment_review_actions_exposes_batch_without_renumbering_existing_ac
     output = capsys.readouterr().out
     assert "4. Export reports" in output
     assert "5. View full diagnostic dashboard" in output
-    assert "7. View review work queue" in output
+    assert "7. Review class progress" in output
     assert "F. Batch Feedback Export" in output
 
 

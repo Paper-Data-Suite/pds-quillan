@@ -28,6 +28,14 @@ from quillan.batch_feedback_export import (
     build_batch_feedback_export_plan,
     execute_batch_feedback_export,
 )
+from quillan.class_review_completion import (
+    ClassReviewCompletionError,
+    ClassReviewCompletionFilter,
+    ClassReviewCompletionItem,
+    ClassReviewCompletionView,
+    derive_class_review_completion_view_from_dashboard,
+    filter_class_review_completion_items,
+)
 from quillan.class_summary_export import (
     ClassSummaryExportError,
     export_class_review_summary,
@@ -132,6 +140,7 @@ from quillan.review_student_navigation import (
 )
 from quillan.review_work_queue import (
     CATEGORY_LABELS,
+    WORK_QUEUE_CATEGORIES,
     AssignmentReviewWorkQueue,
     ReviewWorkQueueError,
     ReviewWorkQueueItem,
@@ -421,6 +430,22 @@ def _load_review_dashboard(
     except (ReviewDashboardError, OSError) as error:
         print(f"Error: could not build assignment review dashboard: {error}")
         return None
+
+
+def _load_class_review_completion_from_dashboard(
+    workspace_root: Path,
+    dashboard: AssignmentReviewDashboard,
+) -> tuple[ClassReviewCompletionView | None, str | None]:
+    try:
+        return (
+            derive_class_review_completion_view_from_dashboard(
+                workspace_root,
+                dashboard,
+            ),
+            None,
+        )
+    except (ClassReviewCompletionError, OSError, ValueError) as error:
+        return None, str(error)
 
 
 def _load_review_work_queue(
@@ -4330,8 +4355,18 @@ def _launch_assignment_review_actions(
         if dashboard is None:
             input("Press Enter to continue...")
             return 1
+        completion, completion_error = (
+            _load_class_review_completion_from_dashboard(
+                workspace_root,
+                dashboard,
+            )
+        )
 
-        _print_compact_assignment_dashboard(dashboard)
+        _print_compact_assignment_dashboard(
+            dashboard,
+            completion,
+            completion_error=completion_error,
+        )
         print()
 
         print("1. Select student/submission")
@@ -4340,7 +4375,7 @@ def _launch_assignment_review_actions(
         print("4. Export reports")
         print("5. View full diagnostic dashboard")
         print("6. Refresh")
-        print("7. View review work queue")
+        print("7. Review class progress")
         print("F. Batch Feedback Export")
         print_navigation_options()
         print()
@@ -4385,19 +4420,18 @@ def _launch_assignment_review_actions(
                 workspace_root, class_id, assignment_id
             )
         elif choice == "5":
-            clear_screen()
-            print_menu_header("Full Assignment Diagnostic Dashboard")
-            print_active_context(workspace_root, class_id, assignment_id)
-            print(
-                format_assignment_review_dashboard(
-                    dashboard, show_unused_duplicate_files=False
-                )
+            _show_full_assignment_diagnostic_dashboard(
+                workspace_root,
+                dashboard,
             )
-            input("Press Enter to continue...")
         elif choice == "6":
             continue
         elif choice == "7":
-            _menu_review_work_queue(workspace_root, class_id, assignment_id)
+            _menu_class_review_progress(
+                workspace_root,
+                class_id,
+                assignment_id,
+            )
         elif choice.casefold() == "f":
             _menu_batch_feedback_export(workspace_root, class_id, assignment_id)
         else:
@@ -4599,6 +4633,358 @@ def _prompt_batch_feedback_overwrite_policy(
     return policies[choice]
 
 
+def _menu_class_review_progress(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    """Show focused roster completion, filtering, and exact-student drill-down."""
+    from quillan.menu import clear_screen, print_menu_header
+
+    current_filter = ClassReviewCompletionFilter("all")
+    while True:
+        dashboard = _load_review_dashboard(
+            workspace_root,
+            class_id,
+            assignment_id,
+        )
+        if dashboard is None:
+            input("Press Enter to continue...")
+            return
+        completion, completion_error = (
+            _load_class_review_completion_from_dashboard(
+                workspace_root,
+                dashboard,
+            )
+        )
+
+        clear_screen()
+        print_menu_header("Class Review Progress")
+        print_active_context(workspace_root, class_id, assignment_id)
+
+        if completion is None:
+            print("Review completion: unavailable")
+            if completion_error:
+                print(f"Reason: {completion_error}")
+            print(
+                "Canonical roster-backed progress could not be derived safely. "
+                "Use the full diagnostic dashboard for assignment-local details."
+            )
+            print()
+            print("D. Full diagnostic dashboard")
+            print("R. Refresh")
+            print_navigation_options()
+            print()
+            choice = input("Select an option: ").strip()
+            navigation = parse_navigation_choice(choice)
+            if choice == "" or navigation is NavigationChoice.BACK:
+                return
+            if choice.casefold() == "d":
+                _show_full_assignment_diagnostic_dashboard(
+                    workspace_root,
+                    dashboard,
+                )
+                continue
+            if choice.casefold() == "r":
+                continue
+            print(f"Invalid selection. {navigation_hint()}")
+            input("Press Enter to continue...")
+            continue
+
+        filtered = filter_class_review_completion_items(
+            completion,
+            current_filter,
+        )
+        _print_class_review_completion_summary(completion)
+        print()
+        _print_class_review_export_summary(completion)
+        print()
+        print(f"Filter: {_class_review_filter_label(current_filter)}")
+        print(f"Showing: {len(filtered)} of {completion.roster_count}")
+        print()
+        print("Students:")
+        if not filtered:
+            print("- No roster students match this filter.")
+        for index, item in enumerate(filtered, start=1):
+            print(f"{index}. {_class_review_completion_item_label(item)}")
+        if completion.unrostered_student_ids:
+            print()
+            print(
+                "Unrostered diagnostic records excluded: "
+                f"{len(completion.unrostered_student_ids)}"
+            )
+        if completion.warnings:
+            print(f"Progress warnings: {len(completion.warnings)}")
+
+        print()
+        print("F. Filter")
+        print("D. Full diagnostic dashboard")
+        print("R. Refresh")
+        print_navigation_options()
+        print()
+
+        choice = input("Select an option or student: ").strip()
+        navigation = parse_navigation_choice(choice)
+        if choice == "" or navigation is NavigationChoice.BACK:
+            return
+        if choice.casefold() == "f":
+            selected_filter = _prompt_class_review_completion_filter(
+                workspace_root,
+                class_id,
+                assignment_id,
+            )
+            if selected_filter is not None:
+                current_filter = selected_filter
+            continue
+        if choice.casefold() == "d":
+            _show_full_assignment_diagnostic_dashboard(
+                workspace_root,
+                dashboard,
+            )
+            continue
+        if choice.casefold() == "r":
+            continue
+
+        student_id: str | None = None
+        if choice.isdigit() and 1 <= int(choice) <= len(filtered):
+            student_id = filtered[int(choice) - 1].student_id
+        else:
+            exact_match = next(
+                (item for item in filtered if item.student_id == choice),
+                None,
+            )
+            if exact_match is not None:
+                student_id = exact_match.student_id
+        if student_id is not None:
+            _launch_selected_student_review(
+                workspace_root,
+                class_id,
+                assignment_id,
+                student_id,
+            )
+            continue
+
+        print(
+            "Invalid selection. Choose a displayed student, Filter, "
+            "Diagnostics, Refresh, or navigation option."
+        )
+        input("Press Enter to continue...")
+
+
+def _prompt_class_review_completion_filter(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> ClassReviewCompletionFilter | None:
+    from quillan.menu import clear_screen, print_menu_header
+
+    while True:
+        clear_screen()
+        print_menu_header("Class Review Progress Filter")
+        print_active_context(workspace_root, class_id, assignment_id)
+        print("1. All students")
+        print("2. Needs work")
+        print("3. Complete")
+        print("4. By review-work stage")
+        print("5. By PDF export state")
+        print("6. By Markdown export state")
+        print_navigation_options()
+        print()
+
+        choice = input("Select filter: ").strip()
+        navigation = parse_navigation_choice(choice)
+        if choice == "" or navigation is NavigationChoice.BACK:
+            return None
+        if choice == "1":
+            return ClassReviewCompletionFilter("all")
+        if choice == "2":
+            return ClassReviewCompletionFilter("needs_work")
+        if choice == "3":
+            return ClassReviewCompletionFilter("category", "complete")
+        if choice == "4":
+            return _prompt_class_review_category_filter(
+                workspace_root,
+                class_id,
+                assignment_id,
+            )
+        if choice == "5":
+            return _prompt_class_review_export_filter(
+                workspace_root,
+                class_id,
+                assignment_id,
+                kind="pdf",
+            )
+        if choice == "6":
+            return _prompt_class_review_export_filter(
+                workspace_root,
+                class_id,
+                assignment_id,
+                kind="markdown",
+            )
+        print(f"Invalid selection. {navigation_hint()}")
+        input("Press Enter to continue...")
+
+
+def _prompt_class_review_category_filter(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> ClassReviewCompletionFilter | None:
+    from quillan.menu import clear_screen, print_menu_header
+
+    clear_screen()
+    print_menu_header("Class Review Progress — Review Stage")
+    print_active_context(workspace_root, class_id, assignment_id)
+    for index, category in enumerate(WORK_QUEUE_CATEGORIES, start=1):
+        print(f"{index}. {CATEGORY_LABELS[category].capitalize()}")
+    print_navigation_options()
+    print()
+    choice = input("Select review-work stage: ").strip()
+    navigation = parse_navigation_choice(choice)
+    if choice == "" or navigation is NavigationChoice.BACK:
+        return None
+    if choice.isdigit() and 1 <= int(choice) <= len(WORK_QUEUE_CATEGORIES):
+        return ClassReviewCompletionFilter(
+            "category",
+            WORK_QUEUE_CATEGORIES[int(choice) - 1],
+        )
+    if choice in WORK_QUEUE_CATEGORIES:
+        return ClassReviewCompletionFilter("category", choice)
+    print(f"Invalid selection. {navigation_hint()}")
+    input("Press Enter to continue...")
+    return None
+
+
+def _prompt_class_review_export_filter(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    *,
+    kind: str,
+) -> ClassReviewCompletionFilter | None:
+    from quillan.menu import clear_screen, print_menu_header
+
+    label = "PDF" if kind == "pdf" else "Markdown"
+    clear_screen()
+    print_menu_header(f"Class Review Progress — {label} Export State")
+    print_active_context(workspace_root, class_id, assignment_id)
+    print("Only export-capable reviews are considered by export-state filters.")
+    print()
+    print("1. Current")
+    print("2. Stale")
+    print("3. Missing")
+    print("4. Unknown")
+    print_navigation_options()
+    print()
+    choice = input("Select export state: ").strip()
+    navigation = parse_navigation_choice(choice)
+    if choice == "" or navigation is NavigationChoice.BACK:
+        return None
+    states = {
+        "1": "present",
+        "2": "stale",
+        "3": "missing",
+        "4": "unknown",
+    }
+    if choice not in states:
+        print(f"Invalid selection. {navigation_hint()}")
+        input("Press Enter to continue...")
+        return None
+    return ClassReviewCompletionFilter(kind, states[choice])
+
+
+def _class_review_filter_label(
+    filter_spec: ClassReviewCompletionFilter,
+) -> str:
+    if filter_spec.kind == "all":
+        return "All students"
+    if filter_spec.kind == "needs_work":
+        return "Needs work"
+    if filter_spec.kind == "category":
+        assert filter_spec.value is not None
+        return CATEGORY_LABELS[filter_spec.value].capitalize()
+    assert filter_spec.value is not None
+    prefix = "PDF" if filter_spec.kind == "pdf" else "Markdown"
+    return f"{prefix} {_class_review_export_status_label(filter_spec.value)}"
+
+
+def _class_review_export_status_label(status: str) -> str:
+    return "current" if status == "present" else status
+
+
+def _class_review_completion_item_label(
+    item: ClassReviewCompletionItem,
+) -> str:
+    identity = (
+        f"{item.display_name} ({item.student_id})"
+        if item.display_name != item.student_id
+        else item.student_id
+    )
+    label = f"{identity} — {CATEGORY_LABELS[item.category]}"
+    if item.export_capable:
+        return (
+            f"{label} — "
+            f"PDF {_class_review_export_status_label(item.feedback_pdf_status)}; "
+            "Markdown "
+            f"{_class_review_export_status_label(item.feedback_markdown_status)}"
+        )
+    if item.category == "attention_required":
+        return f"{label} — {item.reason_code.replace('_', ' ')}"
+    return label
+
+
+def _print_class_review_completion_summary(
+    completion: ClassReviewCompletionView,
+) -> None:
+    print(f"Complete: {completion.complete_count} / {completion.roster_count}")
+    print(f"Needs work: {completion.needs_work_count}")
+    print(f"Export-capable reviews: {completion.export_capable_count}")
+    print(f"Export pending: {completion.export_pending_count}")
+    print(f"Attention required: {completion.attention_count}")
+
+
+def _print_class_review_export_summary(
+    completion: ClassReviewCompletionView,
+) -> None:
+    print("Export-capable feedback:")
+    print(
+        "PDF: "
+        + "; ".join(
+            f"{_class_review_export_status_label(state)}={count}"
+            for state, count in completion.feedback_pdf_counts
+        )
+    )
+    print(
+        "Markdown: "
+        + "; ".join(
+            f"{_class_review_export_status_label(state)}={count}"
+            for state, count in completion.feedback_markdown_counts
+        )
+    )
+
+
+def _show_full_assignment_diagnostic_dashboard(
+    workspace_root: Path,
+    dashboard: AssignmentReviewDashboard,
+) -> None:
+    from quillan.menu import clear_screen, print_menu_header
+
+    clear_screen()
+    print_menu_header("Full Assignment Diagnostic Dashboard")
+    print_active_context(
+        workspace_root,
+        dashboard.class_id,
+        dashboard.assignment_id,
+    )
+    print(
+        format_assignment_review_dashboard(
+            dashboard,
+            show_unused_duplicate_files=False,
+        )
+    )
+    input("Press Enter to continue...")
+
+
 def _menu_review_work_queue(
     workspace_root: Path,
     class_id: str,
@@ -4654,11 +5040,12 @@ def _menu_review_work_queue(
 
 def _print_compact_assignment_dashboard(
     dashboard: AssignmentReviewDashboard,
+    completion: ClassReviewCompletionView | None = None,
+    *,
+    completion_error: str | None = None,
 ) -> None:
-    submissions = dict(dashboard.submission_counts)
     routed = dict(dashboard.routed_counts)
     pages = dict(dashboard.page_counts)
-    reviews = dict(dashboard.review_counts)
     scan_review = dict(dashboard.scan_review_counts)
     page_problem_count = sum(
         pages.get(state, 0)
@@ -4666,25 +5053,19 @@ def _print_compact_assignment_dashboard(
     )
     print(f"Class: {dashboard.class_id}")
     print(f"Assignment: {dashboard.assignment_title} ({dashboard.assignment_id})")
-    print(f"Students: {len(dashboard.students)}")
-    print(
-        "Submissions: "
-        f"valid={submissions['valid']}; missing={submissions['missing']}; "
-        f"invalid={submissions['invalid']}"
-    )
+    if completion is None:
+        print(f"Students discovered: {len(dashboard.students)}")
+        print("Review completion: unavailable")
+        if completion_error:
+            print("Use Review class progress or full diagnostics for details.")
+    else:
+        print(f"Students: {completion.roster_count}")
+        print(f"Complete: {completion.complete_count} / {completion.roster_count}")
+        print(f"Needs work: {completion.needs_work_count}")
+        print(f"Export pending: {completion.export_pending_count}")
+        print(f"Attention required: {completion.attention_count}")
     print(f"Assembly needed: {routed['students_needing_assembly']}")
     print(f"Page problems: {page_problem_count}")
-    print(
-        "Reviews: "
-        f"valid={reviews['valid']}; missing={reviews['missing']}; "
-        f"invalid={reviews['invalid']}"
-    )
-    print(
-        "Feedback PDFs: "
-        + "; ".join(
-            f"{state}={count}" for state, count in dashboard.feedback_pdf_counts
-        )
-    )
     print(f"Active Core scan-review items: {scan_review['attention_items']}")
     print(f"Warnings: {len(dashboard.warnings)}")
 

@@ -81,20 +81,25 @@ reviews, or inconsistent returned-work state prevent safe normal classification.
 The queue exposes bounded reason/warning codes, not student writing, feedback bodies,
 private notes, rating values, rationales, or teacher-note text.
 
-## Later integration
+## Downstream integration
 
-This model deliberately does not implement:
+The queue remains the mechanical classification authority consumed by completed
+teacher-workflow layers:
 
 ```text
 #384 next/previous/next-needing-review navigation
 #385 Continue Review routing
 #387 batch feedback export
-#388 redesigned class completion views
-#391 shared attention provider
+#388 Class Review Progress
 ```
 
-Later work may consume roster order, exact student identity, category, counts, and
-reason codes from this read-only model without changing its no-write boundary.
+#388 derives a focused class-completion projection from the same dashboard snapshot
+used to derive this queue. It preserves these categories, roster order, exact student
+identity, completion semantics, and no-write boundary while adding filtering and
+per-format feedback freshness for export-capable reviews.
+
+#391 remains future shared attention-provider work. It may consume privacy-minimal
+Quillan-owned facts but must not change this queue's local classification semantics.
 ## Direct CLI
 
 The supported direct command is:
@@ -112,18 +117,22 @@ The command has no navigation, priority, mutation, assembly, continuation, or ex
 options. Those remain later workflow concerns.
 ## Teacher menu integration
 
-`Assignment Review Actions` exposes `View review work queue`. The screen rebuilds the
-queue from current canonical state on entry and on `R. Refresh`, shows the #382 exact
-active class/assignment header, then renders complete/needs-work counts and roster
-students in canonical roster order. `B. Back` and `M. Main Menu` retain the active
-class/assignment context; `Q. Quit` ends the process. Viewing and refreshing write no
-workspace files and do not cache queue state in `MenuSessionContext`.
+The exact queue remains directly available through `quillan review-queue`. The routine
+assignment menu now uses #388 `Class Review Progress` as the teacher-facing class-set
+view:
 
-The existing `Select Student/Submission` screen remains the explicit student-selection
-path. It keeps concise submission/evidence detail and appends the same queue category
-as `work=<category>` for roster students. Unrostered diagnostic records remain
-selectable where the pre-existing dashboard exposes them, but they are labeled outside
-the normal roster queue rather than being silently promoted into it.
+```text
+7. Review class progress
+```
 
-This integration does not implement next/previous student navigation, automatic opening
-of a queue item, `Continue Review`, automatic assembly, or automatic export.
+That focused screen consumes this queue rather than redefining it. It adds ephemeral
+filtering, per-format export freshness for export-capable reviews, and exact-student
+drill-down while preserving canonical roster order and read-only viewing semantics.
+
+The existing `Select Student/Submission` path remains available as a broader
+submission/diagnostic picker and still labels roster students with the same queue
+category. Unrostered diagnostic records can remain visible in comprehensive diagnostic
+surfaces but are never promoted into the normal roster completion population.
+
+Neither the queue nor the focused progress view automatically assembles submissions,
+advances review state, creates feedback, or exports artifacts.
