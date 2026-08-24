@@ -4376,6 +4376,7 @@ def _launch_assignment_review_actions(
         print("5. View full diagnostic dashboard")
         print("6. Refresh")
         print("7. Review class progress")
+        print("S. Share Results with Meridian")
         print("F. Batch Feedback Export")
         print_navigation_options()
         print()
@@ -4428,6 +4429,16 @@ def _launch_assignment_review_actions(
             continue
         elif choice == "7":
             _menu_class_review_progress(
+                workspace_root,
+                class_id,
+                assignment_id,
+            )
+        elif choice.casefold() == "s":
+            from quillan.share_results_menu import (
+                launch_share_results_with_meridian_menu,
+            )
+
+            launch_share_results_with_meridian_menu(
                 workspace_root,
                 class_id,
                 assignment_id,

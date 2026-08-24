@@ -2194,3 +2194,20 @@ remains the intentional one-student workflow.
 
 See [`batch_feedback_export.md`](batch_feedback_export.md) for the complete
 planning, overwrite, freshness, verification, privacy, and ownership contract.
+
+
+## Share Results with Meridian (menu-only orchestration)
+
+`Assignment Review Actions -> S. Share Results with Meridian` is an interactive teacher convenience workflow over the existing exact `academic-work`, `manifest`, and `publication` services.
+
+It deliberately adds **no** new direct CLI namespace or parser surface. Scriptable callers continue to use:
+
+```text
+quillan academic-work ...
+quillan manifest ...
+quillan publication ...
+```
+
+The guided menu reuses the active exact class/assignment context and requires typed `REGISTER` / `UPDATE`, `GENERATE`, and `PUBLISH` / `SUPERSEDE` at the same durable boundaries documented by those existing commands. No `docs/cli_contract_inventory.json` entry is added.
+
+See [Share Results with Meridian](share_results_with_meridian.md).

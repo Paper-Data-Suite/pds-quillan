@@ -181,6 +181,8 @@ A later registration revision never rewrites an older manifest or Publication Re
 
 ## Explicit-only boundary
 
-No ordinary Quillan workflow registers or updates Academic Work implicitly. This includes assignment creation/editing, printable-response generation, PDS2 routing and scan intake, response-page observation persistence, submission assembly, plain-paper submission, review, ratings, feedback, reports, imports, help/version display, and routing-profile discovery.
+No Quillan workflow registers or updates Academic Work **implicitly**. Assignment creation/editing, printable-response generation, PDS2 routing and scan intake, response-page observation persistence, submission assembly, plain-paper submission, review, ratings, feedback, reports, imports, help/version display, and routing-profile discovery never register work.
+
+The deliberately explicit [`Share Results with Meridian`](share_results_with_meridian.md) workflow may call this same registration boundary after rendering the exact request and requiring typed `REGISTER` or `UPDATE`. It does not create a second registration mechanism.
 
 Registration may create only Core-owned Academic Work Registration state. It does not create Academic Period, publication, withdrawal, catalog, manifest, submission, review, feedback-export, or report state, and it does not mutate producer-owned assignment/submission/review/evidence bytes.
