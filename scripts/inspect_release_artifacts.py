@@ -21,6 +21,7 @@ REQUIRED_PACKAGE_FILES = {
     "quillan/pds_publication.py",
     "quillan/pds_operations.py",
     "quillan/attention_provider.py",
+    "quillan/readiness_provider.py",
     "quillan/academic_work_registration.py",
     "quillan/academic_result_manifest.py",
     "quillan/academic_result_manifest_generation.py",

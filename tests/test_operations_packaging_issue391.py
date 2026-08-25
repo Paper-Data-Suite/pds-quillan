@@ -46,14 +46,14 @@ def test_pyproject_declares_exact_operations_entry_point() -> None:
     }
 
 
-def test_operations_provider_is_zero_argument_validated_attention_only_profile() -> None:
+def test_operations_provider_is_zero_argument_validated_core_v1_profile() -> None:
     assert tuple(inspect.signature(get_module_operations_profile).parameters) == ()
     profile = get_module_operations_profile()
     assert isinstance(profile, ModuleOperationsProfile)
     assert validate_module_operations_profile(profile) == profile
     assert profile.module_id == "quillan"
     assert profile.attention_provider is not None
-    assert profile.readiness_provider is None
+    assert profile.readiness_provider is not None
 
 
 def test_installed_operations_entry_point_resolves_exact_provider() -> None:

@@ -97,6 +97,6 @@ def test_empty_workspace_attention_is_read_only_through_core_invocation(
     assert before == after
 
 
-def test_readiness_remains_capability_absent_until_issue392() -> None:
+def test_readiness_is_present_after_issue392() -> None:
     profile = get_module_operations_profile()
-    assert profile.readiness_provider is None
+    assert profile.readiness_provider is not None
