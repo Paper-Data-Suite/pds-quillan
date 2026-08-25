@@ -17,6 +17,7 @@ from pds_core.identifiers import validate_identifier
 from pds_core.local_open import LocalOpenError, open_local_path
 from pds_core.routing_models import ModuleWorkRef
 
+from quillan.diagnostic_events import try_emit_diagnostic_event
 from quillan.atomic_record_io import (
     AtomicRecordConcurrencyError,
     AtomicRecordDurabilityError,
@@ -877,13 +878,25 @@ def resolve_post_dispatch_after_successful_retry(
         },
         retry_provenance=provenance,
     )
-    return _write_resolution(
+    persisted = _write_resolution(
         root,
         canonical_ref,
         occurrence,
         occurrence_revision,
         resolution,
     )
+    try_emit_diagnostic_event(
+        root,
+        component="recovery",
+        workflow="resolve_post_dispatch",
+        stage="recover",
+        outcome="recovered",
+        code="post_dispatch_recovered",
+        class_id=canonical_ref.class_id,
+        assignment_id=canonical_ref.work_id,
+        path=persisted.path,
+    )
+    return persisted
 
 
 resolve_post_dispatch_review_item = resolve_post_dispatch_review_occurrence

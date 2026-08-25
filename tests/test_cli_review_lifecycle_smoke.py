@@ -13,6 +13,7 @@ from pypdf import PdfReader
 
 from quillan.assignment_workflows import build_assignment_config, write_assignment_config
 from quillan.cli import main
+from quillan.diagnostic_events import list_diagnostic_events
 import quillan.cli_app.handlers.exports as exports_handler
 import quillan.cli_app.handlers.feedback as feedback_handler
 import quillan.cli_app.handlers.observations as observations_handler
@@ -354,10 +355,32 @@ def test_complete_review_lifecycle_uses_only_direct_noninteractive_cli(
     assert _snapshot_files(tmp_path) == before_status
 
     final_files = set(_snapshot_files(tmp_path))
-    assert final_files - initial_files == {
+    diagnostic_prefix = "shared/quillan/diagnostics/"
+    initial_domain_files = {
+        path for path in initial_files if not path.startswith(diagnostic_prefix)
+    }
+    final_domain_files = {
+        path for path in final_files if not path.startswith(diagnostic_prefix)
+    }
+    assert final_domain_files - initial_domain_files == {
         review_path.relative_to(tmp_path).as_posix(),
         pdf_path.relative_to(tmp_path).as_posix(),
     }
+
+    diagnostic_listing = list_diagnostic_events(tmp_path)
+    assert diagnostic_listing.warning_codes == ()
+    assert len(diagnostic_listing.events) == 1
+    export_event = diagnostic_listing.events[0]
+    assert export_event.component == "feedback_export"
+    assert export_event.workflow == "export_feedback"
+    assert export_event.outcome == "success"
+    assert export_event.code == "export_verified"
+    assert export_event.class_id == CLASS_ID
+    assert export_event.assignment_id == ASSIGNMENT_ID
+    assert export_event.exception_type is None
+    assert export_event.path_context is not None
+    assert "<student>" in export_event.path_context
+
     assert exit_results == [0] * 12
     assert not list(tmp_path.rglob("*.csv")) or list(tmp_path.rglob("*.csv")) == [roster_path]
     assert not list(tmp_path.rglob("feedback.md"))

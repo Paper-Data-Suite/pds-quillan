@@ -8,6 +8,7 @@ from typing import Literal, TypeAlias, TypeVar
 
 from pds_core.registry_services import AcademicWorkRegistrationRequest
 
+from quillan.diagnostic_events import try_emit_diagnostic_event
 from quillan.academic_result_manifest_generation import (
     QuillanManifestGenerationError,
     QuillanManifestGenerationPartialSuccessError,
@@ -560,12 +561,33 @@ def _guided_publication(
             class_id,
             assignment_id,
         )
-    except ShareResultsError:
+    except ShareResultsError as error:
+        try_emit_diagnostic_event(
+            workspace_root,
+            component="publication",
+            workflow="share_results",
+            stage="preflight",
+            outcome="blocked",
+            code="share_state_changed",
+            class_id=class_id,
+            assignment_id=assignment_id,
+            exception=error,
+        )
         print("Publication status changed or became unavailable after confirmation.")
         print("No Core publication operation was started.")
         return "cancelled"
 
     if not _same_publication_preview(preview, fresh, intended_step):
+        try_emit_diagnostic_event(
+            workspace_root,
+            component="publication",
+            workflow="share_results",
+            stage="preflight",
+            outcome="blocked",
+            code="share_state_changed",
+            class_id=class_id,
+            assignment_id=assignment_id,
+        )
         print("Publication state changed after confirmation.")
         print("No Core publication operation was started.")
         return "cancelled"

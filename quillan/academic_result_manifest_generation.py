@@ -17,6 +17,7 @@ from pds_core.scan_retention import RetainedSourceScan
 from pds_core.standards import load_workspace_standards_library
 
 from quillan._path_safety import is_link_like
+from quillan.diagnostic_events import try_emit_diagnostic_event
 from quillan.academic_result_manifest import (
     ACADEMIC_RESULT_MANIFEST_CONTRACT_VERSION,
     ACADEMIC_RESULT_MANIFEST_PRODUCER_MODULE_ID,
@@ -1261,8 +1262,12 @@ def generate_academic_result_manifest(
             "class_id and assignment_id must be safe identifiers."
         ) from error
 
-    directory = _prepare_manifest_generation_directory(root, work)
-    lock_path, lock_token = _acquire_generation_lock(directory)
+    try:
+        directory = _prepare_manifest_generation_directory(root, work)
+        lock_path, lock_token = _acquire_generation_lock(directory)
+    except QuillanManifestGenerationError as error:
+        _record_manifest_generation_error(root, work, error)
+        raise
     operation_error: BaseException | None = None
     durable_path: Path | None = None
     durable_revision: int | None = None
@@ -1414,9 +1419,21 @@ def generate_academic_result_manifest(
                 "Manifest revision is durable but final verification failed.",
                 state,
             ) from error
+        try_emit_diagnostic_event(
+            root,
+            component="publication",
+            workflow="generate_result_manifest",
+            stage="verify_record",
+            outcome="success",
+            code="manifest_revision_created",
+            class_id=work.class_id,
+            assignment_id=work.work_id,
+            path=result_value.path,
+        )
         return result_value
     except QuillanManifestGenerationError as error:
         operation_error = error
+        _record_manifest_generation_error(root, work, error)
         raise
     except Exception as error:
         normalized = QuillanManifestGenerationIntegrityError(
@@ -1439,6 +1456,18 @@ def generate_academic_result_manifest(
             )
             if operation_error is None:
                 if durable_path is not None and durable_revision is not None:
+                    try_emit_diagnostic_event(
+                        root,
+                        component="publication",
+                        workflow="generate_result_manifest",
+                        stage="post_write_verify",
+                        outcome="partial_success",
+                        code="manifest_partial_success",
+                        class_id=work.class_id,
+                        assignment_id=work.work_id,
+                        exception=cleanup_error,
+                        path=durable_path,
+                    )
                     state = ManifestGenerationPartialSuccessState(
                         operation="lock_cleanup",
                         work=work,
@@ -1473,6 +1502,33 @@ def generate_academic_result_manifest(
                 operation_error.add_note(
                     "Owned manifest generation lock cleanup also failed."
                 )
+
+
+def _record_manifest_generation_error(
+    workspace_root: Path,
+    work: ModuleWorkRef,
+    error: QuillanManifestGenerationError,
+) -> None:
+    if isinstance(error, QuillanManifestGenerationPartialSuccessError):
+        outcome = "partial_success"
+        code = "manifest_partial_success"
+        path = error.state.path
+    else:
+        outcome = "failure"
+        code = "manifest_generation_failed"
+        path = None
+    try_emit_diagnostic_event(
+        workspace_root,
+        component="publication",
+        workflow="generate_result_manifest",
+        stage="write_record",
+        outcome=outcome,
+        code=code,
+        class_id=work.class_id,
+        assignment_id=work.work_id,
+        exception=error,
+        path=path,
+    )
 
 
 def _native_record_snapshot(

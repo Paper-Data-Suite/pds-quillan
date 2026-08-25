@@ -49,6 +49,7 @@ from pds_core.registry_services import (
 from pds_core.routing_models import ModuleRecordRef, ModuleWorkRef
 
 from quillan._path_safety import is_link_like
+from quillan.diagnostic_events import try_emit_diagnostic_event
 from quillan.pds_contract import (
     QUILLAN_ACADEMIC_WORK_CONTRACT_VERSION,
     QUILLAN_MODULE_ID,
@@ -270,6 +271,12 @@ def register_quillan_academic_work(
     try:
         result = register_academic_work(workspace_root, request)
     except Exception as error:
+        _record_registration_service_error(
+            workspace_root,
+            class_id,
+            assignment_id,
+            error,
+        )
         _raise_normalized_service_error(error)
     if result.disposition not in {"created", "existing"}:
         raise QuillanAcademicWorkRegistrationIntegrityError(
@@ -317,6 +324,12 @@ def update_quillan_academic_work_registration(
             expected_current_revision=expected_current_revision,
         )
     except Exception as error:
+        _record_registration_service_error(
+            workspace_root,
+            class_id,
+            assignment_id,
+            error,
+        )
         _raise_normalized_service_error(error)
     if result.disposition not in {"updated", "existing"}:
         raise QuillanAcademicWorkRegistrationIntegrityError(
@@ -324,6 +337,33 @@ def update_quillan_academic_work_registration(
         )
     _verify_current(workspace_root, context.work, result.registration)
     return result
+
+
+def _record_registration_service_error(
+    workspace_root: str | Path,
+    class_id: str,
+    assignment_id: str,
+    error: Exception,
+) -> None:
+    if isinstance(error, RegistryServicePartialSuccessError):
+        outcome = "partial_success"
+        code = "registration_partial_success"
+    elif isinstance(error, RegistryServiceConflictError):
+        outcome = "blocked"
+        code = "registration_conflict"
+    else:
+        return
+    try_emit_diagnostic_event(
+        workspace_root,
+        component="publication",
+        workflow="register_academic_work",
+        stage="write_record",
+        outcome=outcome,
+        code=code,
+        class_id=class_id,
+        assignment_id=assignment_id,
+        exception=error,
+    )
 
 
 def _verify_current(

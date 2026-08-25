@@ -17,6 +17,10 @@ from quillan.cli_app.handlers.comments import (
     handle_comments_show,
 )
 from quillan.cli_app.handlers.dashboard import handle_review_dashboard
+from quillan.cli_app.handlers.diagnostics import (
+    handle_diagnostics_list,
+    handle_diagnostics_show,
+)
 from quillan.cli_app.handlers.review_queue import handle_review_queue
 from quillan.cli_app.handlers.review_status import handle_review_status
 from quillan.cli_app.handlers.review_workflow import handle_review_workflow_set_state
@@ -727,6 +731,57 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_academic_work_identity_options(manifest_generate_parser)
     manifest_generate_parser.set_defaults(handler=handle_manifest_generate)
+
+    diagnostics_parser = subparsers.add_parser(
+        "diagnostics",
+        help="Inspect recent privacy-minimized Quillan-local diagnostic events.",
+        description=(
+            "Read bounded immutable local troubleshooting events. "
+            "Inspection is read-only and never mutates diagnostic state."
+        ),
+    )
+    diagnostics_parser.set_defaults(
+        handler=partial(_print_parser_help, diagnostics_parser)
+    )
+    diagnostics_subparsers = diagnostics_parser.add_subparsers(
+        dest="diagnostics_command"
+    )
+
+    diagnostics_list_parser = diagnostics_subparsers.add_parser(
+        "list",
+        help="List recent local diagnostic events with bounded safe metadata.",
+    )
+    diagnostics_list_parser.add_argument(
+        "--limit",
+        type=positive_integer,
+        default=50,
+        help="Maximum recent events to show (default: 50; hard maximum: 200).",
+    )
+    diagnostics_list_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Standard-output representation (default: text).",
+    )
+    diagnostics_list_parser.set_defaults(handler=handle_diagnostics_list)
+
+    diagnostics_show_parser = diagnostics_subparsers.add_parser(
+        "show",
+        help="Show one exact immutable local diagnostic event.",
+    )
+    diagnostics_show_parser.add_argument(
+        "--event-id",
+        required=True,
+        action=StoreOnceAction,
+        help="Exact opaque diagnostic event identifier.",
+    )
+    diagnostics_show_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Standard-output representation (default: text).",
+    )
+    diagnostics_show_parser.set_defaults(handler=handle_diagnostics_show)
 
     printable_responses_parser = subparsers.add_parser(
         "printable-responses",

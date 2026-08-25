@@ -16,6 +16,7 @@ from pds_core.rosters import RosterError
 from pds_core.standards import load_workspace_standards_library
 
 from quillan._path_safety import is_link_like
+from quillan.diagnostic_events import try_emit_diagnostic_event
 from quillan.assignments import (
     AssignmentConfigError,
     validate_assignment_standards_selection,
@@ -196,6 +197,18 @@ def commit_assignment_copy(plan: AssignmentCopyPlan) -> tuple[Path, ...]:
             plan.workspace_root, source_ref
         )
     except (OSError, ValueError) as error:
+        try_emit_diagnostic_event(
+            plan.workspace_root,
+            component="assignment",
+            workflow="copy_assignment",
+            stage="load_context",
+            outcome="blocked",
+            code="assignment_copy_stale",
+            class_id=plan.source_class_id,
+            assignment_id=plan.source_assignment_id,
+            exception=error,
+            path=plan.source_path,
+        )
         raise AssignmentCopyError(
             f"Source assignment changed or became unavailable after planning: {error}"
         ) from error
@@ -203,6 +216,17 @@ def commit_assignment_copy(plan: AssignmentCopyPlan) -> tuple[Path, ...]:
         current_source.paths.assignment_path != plan.source_path
         or current_source.assignment_record.original_bytes != plan.source_original_bytes
     ):
+        try_emit_diagnostic_event(
+            plan.workspace_root,
+            component="assignment",
+            workflow="copy_assignment",
+            stage="preflight",
+            outcome="blocked",
+            code="assignment_copy_stale",
+            class_id=plan.source_class_id,
+            assignment_id=plan.source_assignment_id,
+            path=plan.source_path,
+        )
         raise AssignmentCopyError(
             "Source assignment changed after preview; plan the copy again "
             "before saving."
@@ -241,18 +265,58 @@ def commit_assignment_copy(plan: AssignmentCopyPlan) -> tuple[Path, ...]:
         )
 
     try:
-        return write_assignment_configs(
+        saved_paths = write_assignment_configs(
             plan.workspace_root,
             plan.target_class_ids,
             target_assignment,
             overwrite=False,
         )
-    except AssignmentBatchWriteError:
+    except AssignmentBatchWriteError as error:
+        try_emit_diagnostic_event(
+            plan.workspace_root,
+            component="assignment",
+            workflow="copy_assignment",
+            stage="write_record",
+            outcome="partial_success",
+            code="assignment_write_partial_success",
+            class_id=plan.target_class_ids[0],
+            assignment_id=plan.target_assignment_id,
+            exception=error,
+            path=plan.destinations[0].path,
+        )
         raise
     except (OSError, ValueError) as error:
+        try_emit_diagnostic_event(
+            plan.workspace_root,
+            component="assignment",
+            workflow="copy_assignment",
+            stage="write_record",
+            outcome="failure",
+            code="assignment_create_conflict",
+            class_id=plan.target_class_ids[0],
+            assignment_id=plan.target_assignment_id,
+            exception=error,
+            path=plan.destinations[0].path,
+        )
         raise AssignmentCopyError(
             f"Assignment copy was not committed: {error}"
         ) from error
+
+    for class_id, destination in zip(
+        plan.target_class_ids, plan.destinations, strict=True
+    ):
+        try_emit_diagnostic_event(
+            plan.workspace_root,
+            component="assignment",
+            workflow="copy_assignment",
+            stage="verify_record",
+            outcome="success",
+            code="assignment_copy_created",
+            class_id=class_id,
+            assignment_id=plan.target_assignment_id,
+            path=destination.path,
+        )
+    return saved_paths
 
 
 def _require_no_academic_registration(
