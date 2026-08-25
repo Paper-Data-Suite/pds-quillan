@@ -6,7 +6,7 @@ workspace generation and immutable producer storage are documented in
 [Academic Result Manifest Generation](docs/academic_result_manifest_generation.md).
 Installed publication compatibility is documented in
 [Publication Producer Profile](docs/publication_producer_profile.md). Quillan's
-Core v1 attention integration is documented in
+Core v1 attention and readiness integration is documented in
 [Module Operations Provider](docs/module_operations.md). Explicit Core
 publication, supersession, withdrawal, republication, and catalog reconciliation
 are documented in
@@ -39,15 +39,16 @@ manifest contract `quillan_academic_result_manifest_v1`, capability
 `standards_ratings`, and no Publication Record source contract. It does not read
 a workspace, publish records, expose a reader, or change routing behavior.
 
-Teacher-attention interoperability is discovered independently through
+Operational interoperability is discovered independently through
 `paper_data_suite.module_operations`, with
 `quillan = quillan.pds_operations:get_module_operations_profile`. Quillan
 requires `pds-core>=0.6.2,<0.7` because Core 0.6.2 introduced this contract.
-The v1 profile exposes a read-only attention provider and intentionally leaves
-readiness absent until #392. Attention is aggregated from current Quillan-owned
-workflow projections; it does not expose student/private review content, derive
-state from #390 diagnostic history, execute owner actions, or mutate the
-workspace.
+The v1 profile exposes independent read-only attention and readiness providers.
+Attention aggregates current Quillan-owned workflow projections; readiness
+answers whether the supplied workspace/class context is structurally usable.
+Neither provider exposes student/private review content, derives meaning from
+#390 diagnostic history, executes owner actions, or mutates the workspace.
+The operations profile is not launcher or Suite release-compatibility authority.
 
 An active route is only structurally dispatchable. The response-page handler also
 requires the immutable issuance lifecycle to be exactly `issued`. Student and page

@@ -7,6 +7,7 @@ from pds_core.module_operations import (
     ModuleAttentionReport,
     ModuleOperationsProfile,
     ModuleOperationsRequest,
+    ModuleReadinessReport,
     validate_module_operations_profile,
 )
 
@@ -23,18 +24,32 @@ def evaluate_quillan_attention(
     return _evaluate(request)
 
 
+def evaluate_quillan_readiness(
+    request: ModuleOperationsRequest,
+    /,
+) -> ModuleReadinessReport:
+    """Lazily evaluate Quillan-owned readiness for one neutral Core request."""
+    from quillan.readiness_provider import evaluate_quillan_readiness as _evaluate
+
+    return _evaluate(request)
+
+
 def get_module_operations_profile() -> ModuleOperationsProfile:
-    """Return Quillan's validated attention-only Core operations profile."""
+    """Return Quillan's validated Core v1 operations profile."""
     return validate_module_operations_profile(
         ModuleOperationsProfile(
             module_id=QUILLAN_MODULE_ID,
             supported_core_operations_contract_versions=frozenset(
                 {MODULE_OPERATIONS_CONTRACT_VERSION}
             ),
-            readiness_provider=None,
+            readiness_provider=evaluate_quillan_readiness,
             attention_provider=evaluate_quillan_attention,
         )
     )
 
 
-__all__ = ["evaluate_quillan_attention", "get_module_operations_profile"]
+__all__ = [
+    "evaluate_quillan_attention",
+    "evaluate_quillan_readiness",
+    "get_module_operations_profile",
+]

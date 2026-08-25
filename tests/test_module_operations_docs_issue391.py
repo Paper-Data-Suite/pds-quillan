@@ -12,7 +12,7 @@ def test_module_operations_document_covers_normative_boundaries() -> None:
         "paper_data_suite.module_operations",
         "quillan.pds_operations:get_module_operations_profile",
         "attention_provider = present",
-        "readiness_provider = absent",
+        "readiness_provider = present",
         "quillan_scan_review",
         "quillan_feedback_export_pending",
         "quillan_results_publication_pending",
@@ -21,7 +21,7 @@ def test_module_operations_document_covers_normative_boundaries() -> None:
         "open_review_queue",
         "student IDs",
         "diagnostic-event history",
-        "Attention evaluation is observational",
+        "Attention and readiness evaluation are observational",
         "attention != publication authorization",
     )
     for value in required:

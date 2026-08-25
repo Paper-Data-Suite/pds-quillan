@@ -21,6 +21,7 @@ from quillan.assignment_discovery import DiscoveredAssignment
 from quillan.class_review_completion import ClassReviewCompletionView
 from quillan.pds_operations import (
     evaluate_quillan_attention,
+    evaluate_quillan_readiness,
     get_module_operations_profile,
 )
 from quillan.share_results import ShareResultsStatus
@@ -94,21 +95,21 @@ def _share_status(
     )
 
 
-def test_profile_is_valid_attention_only_core_v1_profile() -> None:
+def test_profile_is_valid_core_v1_profile_after_issue392() -> None:
     profile = get_module_operations_profile()
     assert validate_module_operations_profile(profile) == profile
     assert profile.module_id == "quillan"
     assert profile.supported_core_operations_contract_versions == frozenset(
         {MODULE_OPERATIONS_CONTRACT_VERSION}
     )
-    assert profile.readiness_provider is None
+    assert profile.readiness_provider is evaluate_quillan_readiness
     assert profile.attention_provider is evaluate_quillan_attention
 
     missing_readiness = invoke_module_readiness(
         profile,
         ModuleOperationsRequest(),
     )
-    assert missing_readiness.code == "module_operations.capability_absent"
+    assert missing_readiness.code == "module_operations.evaluation_unavailable"
 
 
 def test_profile_construction_does_not_import_attention_implementation() -> None:
@@ -121,7 +122,7 @@ profile = get_module_operations_profile()
 print(json.dumps({
     "module": profile.module_id,
     "attention_callable": callable(profile.attention_provider),
-    "readiness_absent": profile.readiness_provider is None,
+    "readiness_callable": callable(profile.readiness_provider),
     "attention_impl_imported": "quillan.attention_provider" in sys.modules,
 }))
 """
@@ -136,7 +137,7 @@ print(json.dumps({
     assert json.loads(result.stdout) == {
         "module": "quillan",
         "attention_callable": True,
-        "readiness_absent": True,
+        "readiness_callable": True,
         "attention_impl_imported": False,
     }
 
