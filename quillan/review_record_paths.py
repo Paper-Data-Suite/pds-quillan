@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 from typing import Any, Literal
 
+from quillan.diagnostic_events import try_emit_diagnostic_event
 from quillan.atomic_record_io import (
     AtomicRecordConcurrencyError,
     AtomicRecordDurabilityError,
@@ -86,14 +87,23 @@ def create_quillan_review_record(
             verify_bytes=lambda loaded: _verify_review_bytes(loaded, record_data),
         )
     except AtomicRecordConcurrencyError as error:
+        _record_review_write_failure(
+            context, "review_write_conflict", "blocked", error
+        )
         raise ReviewRecordConcurrencyError(str(error)) from error
     except AtomicRecordDurabilityError as error:
+        _record_review_write_failure(
+            context, "review_write_partial_success", "partial_success", error
+        )
         raise ReviewRecordPathError(
             str(error),
             possibly_durable_path=error.possibly_durable_path,
             possible_lock_path=error.possible_lock_path,
         ) from error
     except (AtomicRecordError, OSError) as error:
+        _record_review_write_failure(
+            context, "review_record_unreadable", "failure", error
+        )
         raise ReviewRecordPathError(str(error)) from error
     return PersistedReviewRecord(
         path,
@@ -124,14 +134,23 @@ def update_quillan_review_record(
             lock_purpose="review-update",
         )
     except AtomicRecordConcurrencyError as error:
+        _record_review_write_failure(
+            context, "review_write_conflict", "blocked", error
+        )
         raise ReviewRecordConcurrencyError(str(error)) from error
     except AtomicRecordDurabilityError as error:
+        _record_review_write_failure(
+            context, "review_write_partial_success", "partial_success", error
+        )
         raise ReviewRecordPathError(
             str(error),
             possibly_durable_path=error.possibly_durable_path,
             possible_lock_path=error.possible_lock_path,
         ) from error
     except (AtomicRecordError, OSError) as error:
+        _record_review_write_failure(
+            context, "review_record_unreadable", "failure", error
+        )
         raise ReviewRecordPathError(str(error)) from error
     return PersistedReviewRecord(
         path,
@@ -231,6 +250,26 @@ def write_review_record(
     except (AtomicRecordError, QuillanWorkPathError, OSError) as error:
         raise ReviewRecordPathError(str(error)) from error
     return target
+
+
+def _record_review_write_failure(
+    context: QuillanStudentReviewContext,
+    code: str,
+    outcome: str,
+    error: BaseException,
+) -> None:
+    try_emit_diagnostic_event(
+        context.paths.workspace_root,
+        component="review",
+        workflow="persist_review",
+        stage="write_record",
+        outcome=outcome,
+        code=code,
+        class_id=context.paths.work_ref.class_id,
+        assignment_id=context.paths.work_ref.work_id,
+        exception=error,
+        path=context.paths.review_record_path,
+    )
 
 
 def _require_context(context: QuillanStudentReviewContext) -> None:

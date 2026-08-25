@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final, Literal, cast
 
+from quillan.diagnostic_events import try_emit_diagnostic_event
 from quillan.feedback_export import (
     FeedbackExportError,
     export_student_feedback,
@@ -268,13 +269,37 @@ def execute_batch_feedback_export(
             )
         )
 
-    return BatchFeedbackExportResult(
+    result = BatchFeedbackExportResult(
         class_id=plan.class_id,
         assignment_id=plan.assignment_id,
         feedback_format=plan.feedback_format,
         overwrite_policy=plan.overwrite_policy,
         items=tuple(results),
     )
+    writable_outcomes = {"created", "replaced"}
+    if result.failure_count:
+        try_emit_diagnostic_event(
+            root,
+            component="feedback_export",
+            workflow="batch_export_feedback",
+            stage="verify_record",
+            outcome="partial_success",
+            code="batch_export_partial_success",
+            class_id=plan.class_id,
+            assignment_id=plan.assignment_id,
+        )
+    elif any(item.outcome in writable_outcomes for item in result.items):
+        try_emit_diagnostic_event(
+            root,
+            component="feedback_export",
+            workflow="batch_export_feedback",
+            stage="verify_record",
+            outcome="success",
+            code="batch_export_verified",
+            class_id=plan.class_id,
+            assignment_id=plan.assignment_id,
+        )
+    return result
 
 
 def _validate_options(

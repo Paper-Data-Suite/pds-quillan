@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pds_core.module_dispatch import RouteDispatchSuccess
 
+from quillan.diagnostic_events import try_emit_diagnostic_event
 from quillan.pds2_scan_intake import QuillanScanIntakeSummary
 from quillan.pds2_scan_intake import (
     process_quillan_scan_folder,
@@ -148,12 +149,82 @@ def persist_and_assemble_quillan_scan_successes(
     preservation = preserve_post_dispatch_review_occurrences(
         workspace_root, intake_summary, persistence, assembly
     )
-    return QuillanPostDispatchPersistenceResult(
+    result = QuillanPostDispatchPersistenceResult(
         intake_summary=intake_summary,
         observation_persistence=persistence,
         submission_assembly=assembly,
         review_preservation=preservation,
     )
+    _record_scan_workflow_diagnostics(workspace_root, result)
+    return result
+
+
+def _record_scan_workflow_diagnostics(
+    workspace_root: Path,
+    result: QuillanPostDispatchPersistenceResult,
+) -> None:
+    "Record bounded batch/assembly facts without student or source identities."
+    summary = result.intake_summary
+    if not summary.complete_success:
+        has_dispatch_success = bool(summary.dispatch_success_count)
+        try_emit_diagnostic_event(
+            workspace_root,
+            component="paper_intake",
+            workflow="route_returned_paper",
+            stage="route",
+            outcome="partial_success" if has_dispatch_success else "failure",
+            code="partial_dispatch" if has_dispatch_success else "dispatch_failed",
+        )
+
+    first_failure_by_target: dict[tuple[str, str], Any] = {}
+    for failure in result.submission_assembly.failures:
+        first_failure_by_target.setdefault(
+            (failure.class_id, failure.assignment_id),
+            failure,
+        )
+    successful_targets = {
+        (assembled.class_id, assembled.assignment_id)
+        for assembled in result.submission_assembly.assembled
+    }
+
+    for (class_id, assignment_id), failure in sorted(
+        first_failure_by_target.items()
+    ):
+        code = (
+            "evidence_integrity_mismatch"
+            if "hash_mismatch" in failure.category
+            else "evidence_missing"
+            if "missing_evidence" in failure.category
+            else "assembly_conflict"
+            if "conflict" in failure.category
+            else "assembly_blocked"
+        )
+        try_emit_diagnostic_event(
+            workspace_root,
+            component="assembly",
+            workflow="assemble_submission",
+            stage="assemble",
+            outcome="failure",
+            code=code,
+            class_id=class_id,
+            assignment_id=assignment_id,
+            exception=failure.error,
+            path=failure.possible_manifest_path,
+        )
+
+    for class_id, assignment_id in sorted(
+        successful_targets - set(first_failure_by_target)
+    ):
+        try_emit_diagnostic_event(
+            workspace_root,
+            component="assembly",
+            workflow="assemble_submission",
+            stage="verify_record",
+            outcome="success",
+            code="assembly_succeeded",
+            class_id=class_id,
+            assignment_id=assignment_id,
+        )
 
 
 def process_quillan_scan_workflow(

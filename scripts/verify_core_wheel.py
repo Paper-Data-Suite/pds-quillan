@@ -1,4 +1,4 @@
-"""Authenticate the exact official PDS Core 0.6.0 release wheel."""
+"""Authenticate explicitly known official PDS Core 0.6 release wheels."""
 
 from __future__ import annotations
 
@@ -15,16 +15,24 @@ from typing import Final
 import zipfile
 
 
+AUTHORITATIVE_CORE_DISTRIBUTION: Final = "pds-core"
+
+# Backward-compatible aliases for the established minimum Core contract.
 AUTHORITATIVE_CORE_FILENAME: Final = "pds_core-0.6.0-py3-none-any.whl"
 AUTHORITATIVE_CORE_SHA256: Final = (
     "be28c061b38463ef59ebc328ed1aa443767fe7f2c626babb769c2d8e5932f308"
 )
-AUTHORITATIVE_CORE_DISTRIBUTION: Final = "pds-core"
 AUTHORITATIVE_CORE_VERSION: Final = "0.6.0"
+
+CORE_063_FILENAME: Final = "pds_core-0.6.3-py3-none-any.whl"
+CORE_063_SHA256: Final = (
+    "98d7596ce0eed26e4d56a17bbbbd644db3014259b56a45783a173fe8237af5e5"
+)
+CORE_063_VERSION: Final = "0.6.3"
 
 
 class CoreWheelVerificationError(ValueError):
-    """Raised when a supplied Core wheel is not the authoritative release asset."""
+    """Raised when a supplied Core wheel is not the selected official release."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +45,17 @@ class CoreWheelContract:
     version: str = AUTHORITATIVE_CORE_VERSION
 
 
+CORE_WHEEL_CONTRACTS: Final[dict[str, CoreWheelContract]] = {
+    "0.6.0": CoreWheelContract(),
+    "0.6.3": CoreWheelContract(
+        filename=CORE_063_FILENAME,
+        sha256=CORE_063_SHA256,
+        distribution=AUTHORITATIVE_CORE_DISTRIBUTION,
+        version=CORE_063_VERSION,
+    ),
+}
+
+
 @dataclass(frozen=True, slots=True)
 class VerifiedCoreWheel:
     """Authenticated wheel identity suitable for validator output."""
@@ -47,6 +66,18 @@ class VerifiedCoreWheel:
     distribution: str
     version: str
     metadata_path: str
+
+
+def known_core_wheel_contract(version: str) -> CoreWheelContract:
+    """Return one explicitly pinned known-release contract."""
+    try:
+        return CORE_WHEEL_CONTRACTS[version]
+    except KeyError as error:
+        raise CoreWheelVerificationError(
+            "Core release must be one of: "
+            + ", ".join(sorted(CORE_WHEEL_CONTRACTS))
+            + "."
+        ) from error
 
 
 def verify_core_wheel(
@@ -106,12 +137,14 @@ def verify_core_wheel(
     )
 
 
-def installed_core_identity() -> dict[str, str]:
-    """Verify Core metadata and prove its import comes from this environment."""
-    version = metadata.version(AUTHORITATIVE_CORE_DISTRIBUTION)
-    if version != AUTHORITATIVE_CORE_VERSION:
+def installed_core_identity(
+    contract: CoreWheelContract = CoreWheelContract(),
+) -> dict[str, str]:
+    """Verify selected Core metadata and prove its import comes from this environment."""
+    version = metadata.version(contract.distribution)
+    if version != contract.version:
         raise CoreWheelVerificationError(
-            f"Installed pds-core version must be {AUTHORITATIVE_CORE_VERSION}, got {version}."
+            f"Installed pds-core version must be {contract.version}, got {version}."
         )
     import pds_core
 
@@ -124,7 +157,7 @@ def installed_core_identity() -> dict[str, str]:
             "Installed pds_core.__file__ must resolve to an ordinary file."
         )
     environment = Path(sys.prefix).resolve()
-    distribution = metadata.distribution(AUTHORITATIVE_CORE_DISTRIBUTION)
+    distribution = metadata.distribution(contract.distribution)
     distribution_location = Path(str(distribution.locate_file(""))).resolve()
     if not import_path.is_relative_to(environment):
         raise CoreWheelVerificationError(
@@ -151,7 +184,7 @@ def installed_core_identity() -> dict[str, str]:
         )
 
     return {
-        "installed_distribution": AUTHORITATIVE_CORE_DISTRIBUTION,
+        "installed_distribution": contract.distribution,
         "installed_version": version,
         "installed_import_path": str(import_path),
         "installed_distribution_location": str(distribution_location),
@@ -162,10 +195,17 @@ def installed_core_identity() -> dict[str, str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("wheel", type=Path)
+    parser.add_argument(
+        "--core-version",
+        required=True,
+        choices=tuple(sorted(CORE_WHEEL_CONTRACTS)),
+        help="Exact pinned Core release contract expected for this wheel.",
+    )
     parser.add_argument("--verify-installed", action="store_true")
     args = parser.parse_args()
+    contract = known_core_wheel_contract(args.core_version)
     try:
-        verified = verify_core_wheel(args.wheel)
+        verified = verify_core_wheel(args.wheel, contract)
         result = {
             "path": str(verified.path),
             "filename": verified.filename,
@@ -175,7 +215,7 @@ def main() -> int:
             "metadata_path": verified.metadata_path,
         }
         if args.verify_installed:
-            result.update(installed_core_identity())
+            result.update(installed_core_identity(contract))
     except CoreWheelVerificationError as error:
         parser.exit(1, f"Core wheel verification failed: {error}\n")
     print(json.dumps(result, indent=2, sort_keys=True))

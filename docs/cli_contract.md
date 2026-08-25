@@ -476,6 +476,8 @@ lightweight `submission.json.submission_state`; `review-workflow set-state`
 changes only the standards-based `review.json.review_state` and is an explicit
 manual override.
 
+- `quillan diagnostics` — read-only local diagnostic-event inspection (`list`, `show`).
+
 ## Direct Standards-Based Review Lifecycle
 
 After a canonical submission is available, a teacher can complete the ordinary
@@ -2211,3 +2213,29 @@ quillan publication ...
 The guided menu reuses the active exact class/assignment context and requires typed `REGISTER` / `UPDATE`, `GENERATE`, and `PUBLISH` / `SUPERSEDE` at the same durable boundaries documented by those existing commands. No `docs/cli_contract_inventory.json` entry is added.
 
 See [Share Results with Meridian](share_results_with_meridian.md).
+
+## Local Diagnostic Events
+
+`quillan diagnostics` is the advanced read-only inspection namespace for
+Quillan-owned local diagnostic events:
+
+```powershell
+quillan diagnostics list [--limit <N>] [--format text|json]
+quillan diagnostics show --event-id <event_id> [--format text|json]
+```
+
+`list` defaults to the bounded recent-event service limit and enforces the
+diagnostics hard maximum. `show` requires the exact opaque event identity. Both
+commands read only `shared/quillan/diagnostics/events`; a missing directory is a
+successful empty list and is not created.
+
+Text and JSON expose only the fixed privacy-minimized event schema. Malformed or
+unknown retained entries are represented only by bounded warning codes during
+listing; raw malformed bytes are never printed.
+
+The namespace intentionally provides no `delete`, `clear`, `tail`, `watch`, `stream`,
+`upload`, `send`, or telemetry command. Diagnostic history is non-authoritative and
+does not replace the Assignment Review Dashboard, review queue, Core publication
+state, #391 attention, or #392 readiness.
+
+See [Quillan Local Diagnostic Events](diagnostic_events.md).

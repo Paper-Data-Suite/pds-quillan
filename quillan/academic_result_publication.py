@@ -74,6 +74,7 @@ from pds_core.registry_services import (
 )
 from pds_core.routing_models import ModuleRecordRef, ModuleWorkRef
 
+from quillan.diagnostic_events import try_emit_diagnostic_event
 from quillan.academic_result_manifest_generation import (
     AcademicResultManifestGenerationResult,
     QuillanManifestGenerationError,
@@ -700,6 +701,22 @@ def _verify_result(
         try:
             catalog = _reconcile_catalog(root, work, canonical, withdrawal)
         except _CatalogFailure as failure:
+            try_emit_diagnostic_event(
+                root,
+                component="publication",
+                workflow=(
+                    "publish_results"
+                    if operation == "publish"
+                    else "supersede_results"
+                ),
+                stage="catalog_rebuild",
+                outcome="partial_success",
+                code="catalog_reconciliation_failed",
+                class_id=work.class_id,
+                assignment_id=work.work_id,
+                exception=failure.error,
+                path=stored.path,
+            )
             raise QuillanAcademicResultPublicationPartialSuccessError(
                 "Core publication is durable but catalog reconciliation failed.",
                 PublicationPartialSuccessState(
@@ -718,7 +735,7 @@ def _verify_result(
                     catalog_error=failure.error,
                 ),
             ) from failure.error
-        return AcademicResultPublicationResult(
+        result = AcademicResultPublicationResult(
             operation,
             service.disposition,
             canonical,
@@ -728,9 +745,46 @@ def _verify_result(
             catalog,
             generation,
         )
+        if operation in {"publish", "supersede"}:
+            try_emit_diagnostic_event(
+                root,
+                component="publication",
+                workflow=(
+                    "publish_results"
+                    if operation == "publish"
+                    else "supersede_results"
+                ),
+                stage="post_write_verify",
+                outcome="success",
+                code=(
+                    "publication_verified"
+                    if operation == "publish"
+                    else "supersession_verified"
+                ),
+                class_id=work.class_id,
+                assignment_id=work.work_id,
+                path=stored.path,
+            )
+        return result
     except QuillanAcademicResultPublicationPartialSuccessError:
         raise
     except Exception as error:
+        try_emit_diagnostic_event(
+            root,
+            component="publication",
+            workflow=(
+                "publish_results"
+                if operation == "publish"
+                else "supersede_results"
+            ),
+            stage="post_write_verify",
+            outcome="partial_success",
+            code="publication_partial_success",
+            class_id=work.class_id,
+            assignment_id=work.work_id,
+            exception=error,
+            path=stored.path,
+        )
         raise QuillanAcademicResultPublicationPartialSuccessError(
             "Core publication is durable but post-write verification failed.",
             PublicationPartialSuccessState(
@@ -782,6 +836,13 @@ def publish_quillan_academic_results(
             workspace_root, _request(stored, registration)
         )
     except RegistryServiceError as error:
+        _record_publication_service_error(
+            workspace_root,
+            work,
+            "publish",
+            stored,
+            error,
+        )
         _raise_registry(error, operation="publish", manifest=stored)
     return _verify_result(workspace_root, work, service, stored, "publish")
 
@@ -857,6 +918,13 @@ def supersede_quillan_academic_results(
             expected_current_publication_id=expected_current_publication_id,
         )
     except RegistryServiceError as error:
+        _record_publication_service_error(
+            workspace_root,
+            work,
+            "supersede",
+            stored,
+            error,
+        )
         _raise_registry(error, operation="supersede", manifest=stored)
     return _verify_result(workspace_root, work, service, stored, "supersede")
 
@@ -1135,6 +1203,39 @@ def republish_quillan_academic_results_after_withdrawal(
         stored,
         "republish_after_withdrawal",
         generation=generation,
+    )
+
+
+def _record_publication_service_error(
+    workspace_root: str | Path,
+    work: ModuleWorkRef,
+    operation: Literal["publish", "supersede"],
+    manifest: StoredAcademicResultManifest,
+    error: RegistryServiceError,
+) -> None:
+    if isinstance(error, RegistryServicePartialSuccessError):
+        outcome = "partial_success"
+        code = "publication_partial_success"
+    elif isinstance(error, RegistryServiceConflictError):
+        outcome = "blocked"
+        code = "publication_conflict"
+    else:
+        return
+    try_emit_diagnostic_event(
+        workspace_root,
+        component="publication",
+        workflow=(
+            "publish_results"
+            if operation == "publish"
+            else "supersede_results"
+        ),
+        stage="write_record",
+        outcome=outcome,
+        code=code,
+        class_id=work.class_id,
+        assignment_id=work.work_id,
+        exception=error,
+        path=manifest.path,
     )
 
 

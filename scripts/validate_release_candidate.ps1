@@ -81,7 +81,7 @@ if (-not (Test-Path -LiteralPath $CoreWheel -PathType Leaf) -or
 $CoreVerifier = Join-Path $PSScriptRoot 'verify_core_wheel.py'
 $ArtifactPersister = Join-Path $PSScriptRoot 'persist_release_artifacts.py'
 Invoke-Required "Authenticate official Core wheel" $ResolvedPython @(
-    $CoreVerifier, $CoreWheel
+    $CoreVerifier, $CoreWheel, '--core-version', '0.6.0'
 )
 foreach ($Target in $GeneratedBuildRoots) {
     if (Test-Path -LiteralPath $Target) {
@@ -120,7 +120,7 @@ try {
         $EnvironmentPython = Join-Path $Environment 'Scripts\python.exe'
         Invoke-Required "Install Core into $Mode environment" $EnvironmentPython @('-m', 'pip', 'install', $CoreWheel)
         Invoke-Required "Verify installed Core identity ($Mode)" $EnvironmentPython @(
-            $CoreVerifier, $CoreWheel, '--verify-installed'
+            $CoreVerifier, $CoreWheel, '--core-version', '0.6.0', '--verify-installed'
         )
         $Artifact = if ($Mode -eq 'wheel') { $Wheel } else { $Sdist }
         Invoke-Required "Install Quillan $Mode artifact" $EnvironmentPython @('-m', 'pip', 'install', $Artifact)

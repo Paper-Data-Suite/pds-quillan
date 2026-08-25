@@ -30,6 +30,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from quillan.diagnostic_events import try_emit_diagnostic_event
 from quillan.review_record import (
     ReviewRecordError,
     validate_review_record,
@@ -181,6 +182,17 @@ def export_student_feedback(
     ratings = feedback.ratings
     overwrote_existing = output_path.exists()
     if overwrote_existing and not overwrite:
+        try_emit_diagnostic_event(
+            context["workspace_root"],
+            component="feedback_export",
+            workflow="export_feedback",
+            stage="preflight",
+            outcome="blocked",
+            code="export_overwrite_conflict",
+            class_id=class_id,
+            assignment_id=assignment_id,
+            path=output_path,
+        )
         raise FeedbackExportError(
             f"Feedback export already exists: {output_path}. "
             "Use --overwrite to replace it."
@@ -192,6 +204,17 @@ def export_student_feedback(
         created_at=normalized_created_at,
         feedback_pdf_path=None,
         feedback_markdown_path=output_path,
+    )
+    try_emit_diagnostic_event(
+        context["workspace_root"],
+        component="feedback_export",
+        workflow="export_feedback",
+        stage="verify_record",
+        outcome="success",
+        code="export_verified",
+        class_id=class_id,
+        assignment_id=assignment_id,
+        path=output_path,
     )
     return ExportedFeedback(
         class_id=class_id,
@@ -251,6 +274,17 @@ def export_student_feedback_pdf(
     ]
     overwrote_existing = bool(existing_paths)
     if existing_paths and not overwrite:
+        try_emit_diagnostic_event(
+            context["workspace_root"],
+            component="feedback_export",
+            workflow="export_feedback",
+            stage="preflight",
+            outcome="blocked",
+            code="export_overwrite_conflict",
+            class_id=class_id,
+            assignment_id=assignment_id,
+            path=existing_paths[0],
+        )
         joined = ", ".join(str(path) for path in existing_paths)
         raise FeedbackExportError(
             f"Feedback export already exists: {joined}. "
@@ -270,6 +304,17 @@ def export_student_feedback_pdf(
         created_at=normalized_created_at,
         feedback_pdf_path=pdf_path,
         feedback_markdown_path=markdown_path,
+    )
+    try_emit_diagnostic_event(
+        context["workspace_root"],
+        component="feedback_export",
+        workflow="export_feedback",
+        stage="verify_record",
+        outcome="success",
+        code="export_verified",
+        class_id=class_id,
+        assignment_id=assignment_id,
+        path=pdf_path,
     )
 
     markdown_relative_path = (
