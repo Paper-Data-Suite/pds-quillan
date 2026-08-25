@@ -24,6 +24,12 @@ AUTHORITATIVE_CORE_SHA256: Final = (
 )
 AUTHORITATIVE_CORE_VERSION: Final = "0.6.0"
 
+CORE_062_FILENAME: Final = "pds_core-0.6.2-py3-none-any.whl"
+CORE_062_SHA256: Final = (
+    "b9d5de7d467d18716f415da87f359e940603d9c738a3a9ae9309272ebe78a848"
+)
+CORE_062_VERSION: Final = "0.6.2"
+
 CORE_063_FILENAME: Final = "pds_core-0.6.3-py3-none-any.whl"
 CORE_063_SHA256: Final = (
     "98d7596ce0eed26e4d56a17bbbbd644db3014259b56a45783a173fe8237af5e5"
@@ -47,6 +53,12 @@ class CoreWheelContract:
 
 CORE_WHEEL_CONTRACTS: Final[dict[str, CoreWheelContract]] = {
     "0.6.0": CoreWheelContract(),
+    "0.6.2": CoreWheelContract(
+        filename=CORE_062_FILENAME,
+        sha256=CORE_062_SHA256,
+        distribution=AUTHORITATIVE_CORE_DISTRIBUTION,
+        version=CORE_062_VERSION,
+    ),
     "0.6.3": CoreWheelContract(
         filename=CORE_063_FILENAME,
         sha256=CORE_063_SHA256,

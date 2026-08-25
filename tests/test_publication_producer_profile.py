@@ -150,7 +150,7 @@ def test_extracted_constants_preserve_previous_public_imports() -> None:
     assert work_version == QUILLAN_ACADEMIC_WORK_CONTRACT_VERSION
 
 
-def test_pyproject_declares_two_exact_independent_entry_points() -> None:
+def test_pyproject_declares_three_exact_independent_provider_entry_points() -> None:
     project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     groups = project["project"]["entry-points"]
     assert groups["paper_data_suite.modules"] == {
@@ -158,6 +158,9 @@ def test_pyproject_declares_two_exact_independent_entry_points() -> None:
     }
     assert groups[PUBLICATION_PRODUCER_ENTRY_POINT_GROUP] == {
         "quillan": "quillan.pds_publication:get_publication_producer_profile"
+    }
+    assert groups["paper_data_suite.module_operations"] == {
+        "quillan": "quillan.pds_operations:get_module_operations_profile"
     }
 
 

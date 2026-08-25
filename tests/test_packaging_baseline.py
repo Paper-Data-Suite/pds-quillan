@@ -28,14 +28,16 @@ def test_runtime_declares_one_ordinary_core_requirement() -> None:
         for value in dependencies
         if canonicalize_name(Requirement(value).name) == "pds-core"
     ]
-    assert core_values == ["pds-core>=0.6,<0.7"]
+    assert core_values == ["pds-core>=0.6.2,<0.7"]
 
     requirement = Requirement(core_values[0])
     assert canonicalize_name(requirement.name) == "pds-core"
     assert requirement.url is None
-    assert {str(value) for value in requirement.specifier} == {">=0.6", "<0.7"}
-    assert Version("0.6.0") in requirement.specifier
+    assert {str(value) for value in requirement.specifier} == {">=0.6.2", "<0.7"}
+    assert Version("0.6.2") in requirement.specifier
+    assert Version("0.6.3") in requirement.specifier
     assert Version("0.6.9") in requirement.specifier
+    assert Version("0.6.1") not in requirement.specifier
     assert Version("0.5.9") not in requirement.specifier
     assert Version("0.7.0") not in requirement.specifier
     assert Version("0.6.0a1") not in requirement.specifier

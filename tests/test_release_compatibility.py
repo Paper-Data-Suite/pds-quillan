@@ -56,9 +56,12 @@ def test_historical_release_evidence_is_explicitly_pinned() -> None:
         assert compatibility.LEGACY_VERSION in compatibility._read(relative)
 
 
-def test_core_05_and_07_are_outside_supported_range() -> None:
+def test_core_floor_and_upper_bound_are_exact() -> None:
     specifier = compatibility.EXPECTED_CORE_SPECIFIER
-    assert "0.6.0" in specifier
+    assert "0.6.2" in specifier
+    assert "0.6.3" in specifier
+    assert "0.6.1" not in specifier
+    assert "0.6.0" not in specifier
     assert "0.5.0" not in specifier
     assert "0.7.0" not in specifier
 

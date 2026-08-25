@@ -13,22 +13,24 @@ ROOT = Path(__file__).resolve().parents[1]
 CI = ROOT / ".github" / "workflows" / "ci.yml"
 
 
-def test_quillan_keeps_core_06_range_instead_of_raising_floor() -> None:
+def test_issue391_raises_core_floor_only_to_module_operations_release() -> None:
     document = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     dependencies = document["project"]["dependencies"]
-    assert "pds-core>=0.6,<0.7" in dependencies
+    assert "pds-core>=0.6.2,<0.7" in dependencies
+    assert "pds-core>=0.6,<0.7" not in dependencies
     assert not any(
         str(item).startswith("pds-core>=0.6.3")
         for item in dependencies
     )
 
 
-def test_ci_preserves_minimum_060_and_adds_exact_063_endpoint_matrix() -> None:
+def test_ci_qualifies_new_minimum_062_and_retains_exact_063_endpoint_matrix() -> None:
     source = CI.read_text(encoding="utf-8")
 
-    assert "Download released Core 0.6.0" in source
-    assert "pds_core-0.6.0-py3-none-any.whl" in source
-    assert "--core-version 0.6.0" in source
+    assert "Download released Core 0.6.2" in source
+    assert "pds_core-0.6.2-py3-none-any.whl" in source
+    assert "--core-version 0.6.2" in source
+    assert "Download released Core 0.6.0" not in source
 
     assert "core-063-qualification:" in source
     assert 'python: ["3.11", "3.14"]' in source
