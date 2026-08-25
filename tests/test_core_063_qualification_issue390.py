@@ -37,6 +37,11 @@ def test_ci_preserves_minimum_060_and_adds_exact_063_endpoint_matrix() -> None:
     assert "Download released Core 0.6.3" in source
     assert "pds_core-0.6.3-py3-none-any.whl" in source
     assert "--core-version 0.6.3" in source
+    assert 'component="assembly"' in source
+    assert 'workflow="assemble_submission"' in source
+    assert 'stage="verify_record"' in source
+    assert 'code="assembly_succeeded"' in source
+    assert "diagnostic_retention_pruned" not in source
     assert (
         "98d7596ce0eed26e4d56a17bbbbd644db3014259b56a45783a173fe8237af5e5"
         in (ROOT / "scripts" / "verify_core_wheel.py").read_text(encoding="utf-8")

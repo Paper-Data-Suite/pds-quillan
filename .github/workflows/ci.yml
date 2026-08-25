@@ -158,11 +158,11 @@ jobs:
         run: |
           from quillan.diagnostic_events import build_diagnostic_event
           event = build_diagnostic_event(
-              component="diagnostics",
-              workflow="inspect_diagnostics",
-              stage="validate_input",
+              component="assembly",
+              workflow="assemble_submission",
+              stage="verify_record",
               outcome="success",
-              code="diagnostic_retention_pruned",
+              code="assembly_succeeded",
           )
           assert event.core_version == "0.6.3", event.core_version
       - name: Core 0.6.3 qualification contract
