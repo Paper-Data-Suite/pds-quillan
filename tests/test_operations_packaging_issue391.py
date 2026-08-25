@@ -89,8 +89,19 @@ def test_ci_uses_062_as_current_minimum_and_keeps_063_qualification() -> None:
         encoding="utf-8"
     )
     assert "Download released Core 0.6.2" in source
-    assert "pds_core-0.6.2-py3-none-any.whl" in source
-    assert "--core-version 0.6.2" in source
+    assert source.count("pds_core-0.6.2-py3-none-any.whl") >= 4
+    assert source.count("--core-version 0.6.2") >= 2
+    assert (
+        'verify_core_wheel.py "${{ runner.temp }}/pds_core-0.6.2-py3-none-any.whl" '
+        "--core-version 0.6.2"
+    ) in source
+    assert (
+        'verify_core_wheel.py "${{ runner.temp }}/pds_core-0.6.2-py3-none-any.whl" '
+        "--core-version 0.6.2 --verify-installed"
+    ) in source
+    validation_prefix = source.split("core-063-qualification:", 1)[0]
+    assert "pds_core-0.6.0-py3-none-any.whl" not in validation_prefix
+    assert "--core-version 0.6.0" not in validation_prefix
     assert "Download released Core 0.6.0" not in source
     assert "core-063-qualification:" in source
     assert "Download released Core 0.6.3" in source

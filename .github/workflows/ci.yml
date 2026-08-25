@@ -54,9 +54,9 @@ jobs:
           path = Path(os.environ["RUNNER_TEMP"]) / "pds_core-0.6.2-py3-none-any.whl"
           urlretrieve(url, path)
       - name: Authenticate released Core 0.6.2
-        run: python scripts/verify_core_wheel.py "${{ runner.temp }}/pds_core-0.6.0-py3-none-any.whl" --core-version 0.6.2
+        run: python scripts/verify_core_wheel.py "${{ runner.temp }}/pds_core-0.6.2-py3-none-any.whl" --core-version 0.6.2
       - name: Install
-        run: python -m pip install "${{ runner.temp }}/pds_core-0.6.0-py3-none-any.whl" ".[dev]"
+        run: python -m pip install "${{ runner.temp }}/pds_core-0.6.2-py3-none-any.whl" ".[dev]"
       - name: Remove local build residue
         shell: python
         run: |
@@ -66,7 +66,7 @@ jobs:
               if path.exists():
                   shutil.rmtree(path)
       - name: Verify installed Core 0.6.2 identity
-        run: python scripts/verify_core_wheel.py "${{ runner.temp }}/pds_core-0.6.0-py3-none-any.whl" --core-version 0.6.0 --verify-installed
+        run: python scripts/verify_core_wheel.py "${{ runner.temp }}/pds_core-0.6.2-py3-none-any.whl" --core-version 0.6.2 --verify-installed
       - name: Dependency check
         run: python -m pip check
       - name: Full pytest
