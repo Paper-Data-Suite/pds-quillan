@@ -26,7 +26,7 @@ from quillan.pds_publication import get_publication_producer_profile
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RELEASE_VERSION = "0.9.0"
 LEGACY_VERSION = "0.8.9"
-EXPECTED_CORE_SPECIFIER = SpecifierSet(">=0.6,<0.7")
+EXPECTED_CORE_SPECIFIER = SpecifierSet(">=0.6.2,<0.7")
 EXPECTED_CAPABILITIES = frozenset({"standards_ratings"})
 EXPECTED_ARTIFACT_KINDS = frozenset(
     {"student_work", "feedback_pdf", "feedback_markdown"}
@@ -154,7 +154,7 @@ def validate_core_and_sibling_dependencies() -> None:
     )
     if len(core) != 1 or core[0].specifier != EXPECTED_CORE_SPECIFIER:
         raise ReleaseCompatibilityError(
-            "Quillan must require exactly pds-core>=0.6,<0.7"
+            "Quillan must require exactly pds-core>=0.6.2,<0.7"
         )
     if core[0].url is not None or core[0].marker is not None or core[0].extras:
         raise ReleaseCompatibilityError(

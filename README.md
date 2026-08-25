@@ -5,9 +5,11 @@ Quillan's immutable producer-owned result contract is documented in
 workspace generation and immutable producer storage are documented in
 [Academic Result Manifest Generation](docs/academic_result_manifest_generation.md).
 Installed publication compatibility is documented in
-[Publication Producer Profile](docs/publication_producer_profile.md). Explicit
-Core publication, supersession, withdrawal, republication, and catalog
-reconciliation are documented in
+[Publication Producer Profile](docs/publication_producer_profile.md). Quillan's
+Core v1 attention integration is documented in
+[Module Operations Provider](docs/module_operations.md). Explicit Core
+publication, supersession, withdrawal, republication, and catalog reconciliation
+are documented in
 [Academic Result Publication Lifecycle](docs/academic_result_publication.md).
 Consumer-neutral manifest reading and separately authorized student-work/feedback
 artifact resolution are documented in
@@ -36,6 +38,16 @@ contract `quillan_academic_work_v1`, publication kind `academic_result_set`,
 manifest contract `quillan_academic_result_manifest_v1`, capability
 `standards_ratings`, and no Publication Record source contract. It does not read
 a workspace, publish records, expose a reader, or change routing behavior.
+
+Teacher-attention interoperability is discovered independently through
+`paper_data_suite.module_operations`, with
+`quillan = quillan.pds_operations:get_module_operations_profile`. Quillan
+requires `pds-core>=0.6.2,<0.7` because Core 0.6.2 introduced this contract.
+The v1 profile exposes a read-only attention provider and intentionally leaves
+readiness absent until #392. Attention is aggregated from current Quillan-owned
+workflow projections; it does not expose student/private review content, derive
+state from #390 diagnostic history, execute owner actions, or mutate the
+workspace.
 
 An active route is only structurally dispatchable. The response-page handler also
 requires the immutable issuance lifecycle to be exactly `issued`. Student and page
@@ -408,7 +420,7 @@ development extras:
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install "C:\path\to\pds_core-0.6.0-py3-none-any.whl"
+python -m pip install "C:\path\to\pds_core-0.6.2-py3-none-any.whl"
 python -m pip install -e ".[dev]"
 python -m pip check
 ```
@@ -427,7 +439,7 @@ To validate clean editable and noneditable installations, run:
 powershell -ExecutionPolicy Bypass `
     -File .\scripts\validate_development_install.ps1 `
     -Python .\.venv\Scripts\python.exe `
-    -PdsCoreWheel "C:\path\to\pds_core-0.6.0-py3-none-any.whl"
+    -PdsCoreWheel "C:\path\to\pds_core-0.6.2-py3-none-any.whl"
 ```
 
 The equivalent `PDS_CORE_WHEEL` environment variable may be used instead of

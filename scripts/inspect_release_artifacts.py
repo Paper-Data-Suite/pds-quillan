@@ -19,6 +19,8 @@ EXPECTED_VERSION = "0.9.0"
 REQUIRED_PACKAGE_FILES = {
     "quillan/pds_module.py",
     "quillan/pds_publication.py",
+    "quillan/pds_operations.py",
+    "quillan/attention_provider.py",
     "quillan/academic_work_registration.py",
     "quillan/academic_result_manifest.py",
     "quillan/academic_result_manifest_generation.py",
@@ -50,6 +52,9 @@ EXPECTED_ENTRY_POINTS = {
     },
     "paper_data_suite.publication_producers": {
         "quillan": "quillan.pds_publication:get_publication_producer_profile",
+    },
+    "paper_data_suite.module_operations": {
+        "quillan": "quillan.pds_operations:get_module_operations_profile",
     },
 }
 
@@ -103,7 +108,7 @@ def _metadata_contract(raw: str) -> dict[str, object]:
     assert core_requirement.marker is None, core_requirement
     assert not core_requirement.extras, core_requirement
     assert {str(value) for value in core_requirement.specifier} == {
-        ">=0.6",
+        ">=0.6.2",
         "<0.7",
     }, core_requirement
     return {
@@ -115,7 +120,7 @@ def _metadata_contract(raw: str) -> dict[str, object]:
 
 
 def validate_entry_points_text(raw: str) -> None:
-    """Require exact, independent Quillan routing and publication providers."""
+    """Require exact independent routing, publication, and operations providers."""
     parser = _EntryPointParser(interpolation=None, strict=True)
     try:
         parser.read_string(raw)

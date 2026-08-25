@@ -15,6 +15,8 @@ import pytest
 from scripts.verify_core_wheel import (
     AUTHORITATIVE_CORE_FILENAME,
     AUTHORITATIVE_CORE_SHA256,
+    CORE_062_FILENAME,
+    CORE_062_SHA256,
     CORE_063_FILENAME,
     CORE_063_SHA256,
     CORE_WHEEL_CONTRACTS,
@@ -62,13 +64,18 @@ def _matching_contract(
     return replace(base, sha256=hashlib.sha256(path.read_bytes()).hexdigest())
 
 
-def test_known_release_contracts_pin_exact_060_and_063_assets() -> None:
-    assert tuple(sorted(CORE_WHEEL_CONTRACTS)) == ("0.6.0", "0.6.3")
+def test_known_release_contracts_pin_exact_060_062_and_063_assets() -> None:
+    assert tuple(sorted(CORE_WHEEL_CONTRACTS)) == ("0.6.0", "0.6.2", "0.6.3")
 
-    minimum = known_core_wheel_contract("0.6.0")
-    assert minimum.filename == AUTHORITATIVE_CORE_FILENAME
-    assert minimum.sha256 == AUTHORITATIVE_CORE_SHA256
-    assert minimum.version == "0.6.0"
+    historical = known_core_wheel_contract("0.6.0")
+    assert historical.filename == AUTHORITATIVE_CORE_FILENAME
+    assert historical.sha256 == AUTHORITATIVE_CORE_SHA256
+    assert historical.version == "0.6.0"
+
+    minimum = known_core_wheel_contract("0.6.2")
+    assert minimum.filename == CORE_062_FILENAME
+    assert minimum.sha256 == CORE_062_SHA256
+    assert minimum.version == "0.6.2"
 
     current = known_core_wheel_contract("0.6.3")
     assert current.filename == CORE_063_FILENAME
@@ -78,10 +85,10 @@ def test_known_release_contracts_pin_exact_060_and_063_assets() -> None:
 
 def test_unknown_release_contract_is_rejected() -> None:
     with pytest.raises(CoreWheelVerificationError, match="must be one of"):
-        known_core_wheel_contract("0.6.2")
+        known_core_wheel_contract("0.6.1")
 
 
-@pytest.mark.parametrize("version", ("0.6.0", "0.6.3"))
+@pytest.mark.parametrize("version", ("0.6.0", "0.6.2", "0.6.3"))
 def test_correct_metadata_and_hash_contract_is_accepted(
     tmp_path: Path,
     version: str,
@@ -170,7 +177,7 @@ def _installed_identity(
     )
 
 
-@pytest.mark.parametrize("version", ("0.6.0", "0.6.3"))
+@pytest.mark.parametrize("version", ("0.6.0", "0.6.2", "0.6.3"))
 def test_installed_identity_accepts_explicit_selected_release(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

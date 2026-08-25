@@ -222,7 +222,11 @@ def _installed_provenance(
     _require("PYTHONPATH" not in os.environ, "installed provenance", "PYTHONPATH must be cleared.")
     _require(metadata.version("quillan") == version, "installed provenance", "Quillan version disagrees.")
     installed_core = metadata.version("pds-core")
-    _require(installed_core == core_version == "0.6.0", "installed provenance", "Core version disagrees.")
+    _require(
+        installed_core == core_version,
+        "installed provenance",
+        "Core version disagrees.",
+    )
     _require(pds_core.__version__ == installed_core, "installed provenance", "Core module version disagrees.")
     requirements = tuple(Requirement(value) for value in (metadata.requires("quillan") or ()))
     core_requirements = tuple(
@@ -231,7 +235,7 @@ def _installed_provenance(
     _require(
         len(core_requirements) == 1 and Version(installed_core) in core_requirements[0].specifier,
         "installed provenance",
-        "Quillan dependency metadata rejects Core 0.6.0.",
+        "Quillan dependency metadata rejects the selected Core version.",
     )
     required_modules = (
         "quillan",

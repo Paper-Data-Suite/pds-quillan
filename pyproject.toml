@@ -16,7 +16,7 @@ authors = [
 dependencies = [
     "numpy<2.5",
     "opencv-python",
-    "pds-core>=0.6,<0.7",
+    "pds-core>=0.6.2,<0.7",
     "pdf2image",
     "qrcode[pil]",
     "reportlab",
@@ -43,6 +43,9 @@ quillan = "quillan.pds_module:get_module_profile"
 
 [project.entry-points."paper_data_suite.publication_producers"]
 quillan = "quillan.pds_publication:get_publication_producer_profile"
+
+[project.entry-points."paper_data_suite.module_operations"]
+quillan = "quillan.pds_operations:get_module_operations_profile"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

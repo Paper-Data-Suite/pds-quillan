@@ -630,6 +630,16 @@ def main() -> int:
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--repository", type=Path, required=True)
     parser.add_argument("--full-workflow", action="store_true")
+    parser.add_argument(
+        "--expected-core-version",
+        default="0.6.0",
+        choices=("0.6.0", "0.6.2", "0.6.3"),
+        help=(
+            "Exact installed PDS Core version expected by this isolated "
+            "acceptance run. The 0.6.0 default preserves historical "
+            "Quillan 0.9.0 qualification replay."
+        ),
+    )
     args = parser.parse_args()
     work = args.work.resolve()
     repository = args.repository.resolve()
@@ -642,7 +652,7 @@ def main() -> int:
     distribution = metadata.distribution("quillan")
     core_distribution = metadata.distribution("pds-core")
     assert distribution.version == EXPECTED_VERSION
-    assert core_distribution.version == "0.6.0"
+    assert core_distribution.version == args.expected_core_version
     root = Path(str(distribution.locate_file(""))).resolve()
     import quillan
     import quillan.academic_result_artifacts

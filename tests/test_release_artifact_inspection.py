@@ -49,7 +49,7 @@ License-File: LICENSE
 """
 
 
-VALID_METADATA = _metadata("pds-core<0.7,>=0.6")
+VALID_METADATA = _metadata("pds-core<0.7,>=0.6.2")
 
 
 def _wheel(
@@ -62,6 +62,8 @@ def _wheel(
         for required in (
             "pds_module.py",
             "pds_publication.py",
+            "pds_operations.py",
+            "attention_provider.py",
             "academic_work_registration.py",
             "academic_result_manifest.py",
             "academic_result_manifest_generation.py",
@@ -79,7 +81,9 @@ def _wheel(
             "[paper_data_suite.modules]\n"
             "quillan = quillan.pds_module:get_module_profile\n"
             "[paper_data_suite.publication_producers]\n"
-            "quillan = quillan.pds_publication:get_publication_producer_profile\n",
+            "quillan = quillan.pds_publication:get_publication_producer_profile\n"
+            "[paper_data_suite.module_operations]\n"
+            "quillan = quillan.pds_operations:get_module_operations_profile\n",
         )
         archive.writestr("quillan-0.9.0.dist-info/licenses/LICENSE", "MIT\n")
     return path
@@ -104,6 +108,8 @@ def _sdist(
     for required in (
         "pds_module.py",
         "pds_publication.py",
+        "pds_operations.py",
+        "attention_provider.py",
         "academic_work_registration.py",
         "academic_result_manifest.py",
         "academic_result_manifest_generation.py",
@@ -215,27 +221,27 @@ def test_sdist_requires_exact_release_root(tmp_path: Path) -> None:
 INVALID_CORE_REQUIREMENTS = (
     pytest.param((), id="missing"),
     pytest.param(
-        ("pds-core>=0.6,<0.7", "pds-core>=0.6,<0.7"),
+        ("pds-core>=0.6.2,<0.7", "pds-core>=0.6.2,<0.7"),
         id="duplicate-canonical",
     ),
     pytest.param(
-        ("pds-core>=0.6,<0.7", "pds_core>=0.6,<0.7"),
+        ("pds-core>=0.6.2,<0.7", "pds_core>=0.6.2,<0.7"),
         id="duplicate-underscore-alias",
     ),
     pytest.param(
-        ("pds-core>=0.6,<0.7", "PDS.Core>=0.6,<0.7"),
+        ("pds-core>=0.6.2,<0.7", "PDS.Core>=0.6.2,<0.7"),
         id="duplicate-dot-case-alias",
     ),
-    pytest.param(("pds-core>=0.5,<0.6",), id="old-range"),
+    pytest.param(("pds-core>=0.6,<0.7",), id="old-floor"),
     pytest.param(("pds-core>=0.7,<0.8",), id="core-07-only"),
-    pytest.param(("pds-core>=0.6",), id="unbounded"),
+    pytest.param(("pds-core>=0.6.2",), id="unbounded"),
     pytest.param(
         ("pds-core @ https://example.invalid/pds_core.whl",),
         id="direct-url",
     ),
-    pytest.param(("pds-core[test]>=0.6,<0.7",), id="extra"),
+    pytest.param(("pds-core[test]>=0.6.2,<0.7",), id="extra"),
     pytest.param(
-        ('pds-core>=0.6,<0.7; python_version >= "3.11"',),
+        ('pds-core>=0.6.2,<0.7; python_version >= "3.11"',),
         id="environment-marker",
     ),
 )
