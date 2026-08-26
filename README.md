@@ -252,35 +252,64 @@ The first Review Student Work menu is:
 ```text
 1. Assignment Review Actions
 2. Scan Intake / Route Paper Responses
-3. Back
+C. Manage active context
+R. Resolve Scan Review Items
+B. Back
+M. Main Menu
+Q. Quit
 ```
 
-After selecting a class and assignment, the assignment-level menu is:
+After selecting or reusing an exact active class/assignment, the assignment-level
+menu keeps routine class-set status visible and exposes:
 
 ```text
 1. Select student/submission
-2. Assemble routed submissions
-3. Export Comprehensive Class Summary
-4. Export Standards Summary
-5. Export Student Performance Summary
-6. Back
+2. View submission status
+3. Review scan problems
+4. Export reports
+5. View full diagnostic dashboard
+6. Refresh
+7. Review class progress
+F. Batch Feedback Export
+S. Share Results with Meridian
+B. Back
+M. Main Menu
+Q. Quit
 ```
 
-The selected-student review menu is:
+For a review-ready student, the compact selected-student root is:
 
 ```text
-1. Open submission evidence
-2. View current review details
-3. Review minimum requirements
-4. Review units and Focus Standard observations
-5. Overall Focus Standard ratings
-6. Compose Focus Standard feedback
-7. Manage submission pages
-8. Add teacher note
-9. Update review workflow state
-10. Export student feedback
-11. Refresh summary
-12. Back
+O. Open Evidence
+C. Continue Review — <current continuation label>
+E. Export Feedback
+N. Next Student — <student label or bounded roster state>
+A. Advanced Actions
+
+P. Previous Student — <student label or bounded roster state>
+W. Next Student Needing Review — <student label or bounded unavailable state>
+
+B. Back
+M. Main Menu
+Q. Quit
+```
+
+`Advanced Actions` preserves direct, non-linear access to the less-common review
+and recovery operations:
+
+```text
+1. View current review details
+2. Review minimum requirements
+3. Review units and Focus Standard observations
+4. Overall Focus Standard ratings
+5. Compose Focus Standard feedback
+6. Manage submission pages
+7. Add teacher note
+8. Update review workflow state
+9. Refresh summary
+B. Back
+M. Main Menu
+Q. Quit
 ```
 
 Minimum-requirement checks are generated from assignment `basic_requirements`
@@ -427,10 +456,9 @@ python -m pip install -e ".[dev]"
 python -m pip check
 ```
 
-The configured package index did not provide a compatible PDS Core distribution
-during the Core 0.6 baseline validation, so install a verified compatible wheel
-first. Pip then confirms that wheel satisfies Quillan's declared
-`pds-core>=0.6,<0.7` runtime dependency. A sibling Core checkout is not required,
+When normal dependency resolution is unavailable, install a verified compatible
+PDS Core wheel first. Pip then confirms that wheel satisfies Quillan's declared
+`pds-core>=0.6.2,<0.7` runtime dependency. A sibling Core checkout is not required,
 and no neighboring Core source path is used. `requirements-dev.txt` is a
 convenience wrapper around `.[dev]` and may be used instead of the direct
 editable-install command.
@@ -447,18 +475,17 @@ powershell -ExecutionPolicy Bypass `
 The equivalent `PDS_CORE_WHEEL` environment variable may be used instead of
 `-PdsCoreWheel`; an explicit parameter takes precedence. The isolated validation
 checks package metadata, editable and noneditable installation, installed import
-origins, CLI availability, and workspace side effects. The v0.9.0 runtime is
-PDS2-only and uses module-qualified storage throughout.
+origins, CLI availability, and workspace side effects. The v0.10.0 candidate runtime is PDS2-only and uses module-qualified storage throughout.
 
-Release-candidate validation also runs the dedicated
-[`installed producer acceptance`](docs/installed_producer_acceptance.md) once
-against the built Quillan wheel and exact released Core 0.6.0 wheel. The ordinary
-installed workflow first proves that assignment, PDS2, review, feedback, and report
-operations create no academic registry state. A separate explicit phase then
-registers, generates immutable manifests, publishes, discovers, Core-verifies,
-reads, resolves separately authorized artifacts, corrects, supersedes, withdraws,
-and audits the synthetic result lifecycle. This acceptance neither grants release
-authorization nor adds grading, proficiency, or portfolio policy.
+Release-candidate validation qualifies the same built Quillan wheel against exact,
+authenticated Core 0.6.2 and Core 0.6.3 endpoint wheels. At each endpoint it runs
+the installed application workflow, producer lifecycle, module-operations checks,
+class-set acceptance, and release-edge/mixed-routing acceptance outside the source
+checkout. The ordinary installed workflow first proves that assignment, PDS2,
+review, feedback, and report operations create no academic registry state; explicit
+producer phases then exercise registration, immutable manifests, publication,
+supersession/withdrawal, authorization, and audit behavior. This acceptance neither
+grants release authorization nor adds grading, proficiency, or portfolio policy.
 
 Core 0.6 adoption is compatibility infrastructure only. It does not register
 Academic Work, generate or publish Academic Result manifests, create Publication

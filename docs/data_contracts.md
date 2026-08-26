@@ -1,10 +1,12 @@
 # Quillan Data Contracts
 
-Quillan requires `pds-core>=0.6,<0.7`; release qualification uses the exact
-released Core 0.6.0 wheel. This dependency upgrade preserves the routing contract
-`"1"`, PDS2 payloads, route-registration schema `"1"`, and the existing Quillan
-producer contracts. It does not itself create Academic Work Registration,
-Academic Period, manifest, Publication Record, withdrawal, or catalog state.
+Quillan v0.10.0 requires `pds-core>=0.6.2,<0.7`. Release qualification covers the
+exact authenticated Core 0.6.2 minimum endpoint and Core 0.6.3 current endpoint.
+This dependency floor preserves routing contract `"1"`, PDS2 payloads,
+route-registration schema `"1"`, and the existing Quillan producer contracts. The
+Core dependency itself does not create Academic Work Registration, Academic Period,
+manifest, Publication Record, withdrawal, or catalog state; those remain separate
+explicit workflows where supported.
 
 The pure `quillan_academic_result_manifest_v1` contract is defined in
 [Academic Result Manifest v1](academic_result_manifest_v1.md). Quillan preserves
@@ -53,14 +55,17 @@ exact manifest-bound native source bytes before exposing only authoritative sele
 PDS2 student work or exact metadata-backed feedback PDF/Markdown bytes. Manifest,
 student-work, feedback, and underlying-source authorization remain distinct.
 
-The clean-wheel composition of these producer contracts is proved by
-[Installed Producer Acceptance](installed_producer_acceptance.md). The release
-harness first proves that ordinary installed PDS2/review workflows create no
-academic registry state, then explicitly registers, generates, publishes,
-discovers, verifies, reads, authorizes artifacts, updates registration metadata,
-corrects native review state, supersedes, withdraws, and audits through installed
-Quillan and released Core 0.6.0 APIs. This is integration evidence, not a new data
-contract or consumer policy.
+The installed composition of these producer contracts is covered by
+[Installed Producer Acceptance](installed_producer_acceptance.md) and the active
+[v0.10.0 Installed Class-Set Acceptance](v0.10.0_installed_class_set_acceptance.md).
+The v0.10.0 release gate installs the same candidate wheel against authenticated
+Core 0.6.2 and Core 0.6.3 endpoints. It first proves that ordinary installed
+PDS2/review workflows create no academic registry state, then explicitly exercises
+registration, immutable manifest generation, publication, discovery, verification,
+authorized artifact access, correction, supersession, withdrawal, module operations,
+class-set behavior, and release-edge isolation. Historical Core 0.6.0 producer
+acceptance remains v0.9.0 evidence. These are integration proofs, not new data
+contracts or consumer policy.
 
 Quillan-owned assignment records and all dependent submission, review, and export
 records are rooted exclusively beneath
@@ -106,14 +111,14 @@ those source schemas.
 Quillan stores structured evidence and teacher review data in local files under
 the teacher-selected Paper Data Suite workspace.
 
-The active v0.8.6 review model is standards-based:
+The active v0.10.0 review model is standards-based:
 
 ```text
 student evidence -> review unit -> Focus Standard -> teacher judgment -> feedback/reporting
 ```
 
 The old generic tag, comment-bank, rubric, and criterion-score runtime model
-has been removed. This index documents the active v0.8.6 contracts.
+has been removed. This index documents the active v0.10.0 contracts.
 
 ## Active Contracts
 
@@ -134,7 +139,7 @@ Active assignments use schema version `2` and live at:
 classes/<class_id>/modules/quillan/work/<assignment_id>/assignment.json
 ```
 
-The v0.8.6 assignment contract is defined in
+The schema-version-2 assignment contract, introduced during v0.8.6 development, is defined in
 [`assignment_contract.md`](assignment_contract.md). It covers:
 
 * `student_prompt`;
@@ -196,7 +201,7 @@ The contract is defined in
 * `exports.feedback_markdown`.
 
 Top-level v1 fields such as `notes`, `tags`, `comments`, `scores`, and
-`requirement_checks` are legacy and are not active v0.8.6 review fields.
+`requirement_checks` are legacy and are not active schema-version-2 review fields.
 
 ### Reusable Focus Standard Comments
 
