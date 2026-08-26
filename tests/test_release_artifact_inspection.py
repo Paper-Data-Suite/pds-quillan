@@ -41,7 +41,7 @@ def _metadata(*requirements: str) -> str:
     )
     return f"""Metadata-Version: 2.4
 Name: quillan
-Version: 0.9.0
+Version: 0.10.0
 Requires-Python: >=3.11
 {requires_dist}\
 License-Expression: MIT
@@ -73,11 +73,11 @@ def _wheel(
             "academic_result_artifacts.py",
         ):
             archive.writestr(f"quillan/{required}", "")
-        archive.writestr("quillan/_version.py", '__version__ = "0.9.0"\n')
+        archive.writestr("quillan/_version.py", '__version__ = "0.10.0"\n')
         archive.writestr(extra_name, "")
-        archive.writestr("quillan-0.9.0.dist-info/METADATA", metadata)
+        archive.writestr("quillan-0.10.0.dist-info/METADATA", metadata)
         archive.writestr(
-            "quillan-0.9.0.dist-info/entry_points.txt",
+            "quillan-0.10.0.dist-info/entry_points.txt",
             "[console_scripts]\nquillan = quillan.cli:main\n"
             "[paper_data_suite.modules]\n"
             "quillan = quillan.pds_module:get_module_profile\n"
@@ -86,7 +86,7 @@ def _wheel(
             "[paper_data_suite.module_operations]\n"
             "quillan = quillan.pds_operations:get_module_operations_profile\n",
         )
-        archive.writestr("quillan-0.9.0.dist-info/licenses/LICENSE", "MIT\n")
+        archive.writestr("quillan-0.10.0.dist-info/licenses/LICENSE", "MIT\n")
     return path
 
 
@@ -95,7 +95,7 @@ def _sdist(
     extra_name: str = "quillan/current.py",
     *,
     metadata: str = VALID_METADATA,
-    package_name: str = "quillan-0.9.0",
+    package_name: str = "quillan-0.10.0",
 ) -> Path:
     root = path.parent / f"{path.name}.source"
     package = root / package_name
@@ -104,7 +104,7 @@ def _sdist(
     (package / "LICENSE").write_text("MIT\n", encoding="utf-8")
     (package / "README.md").write_text("Quillan\n", encoding="utf-8")
     (package / "quillan" / "_version.py").write_text(
-        '__version__ = "0.9.0"\n', encoding="utf-8"
+        '__version__ = "0.10.0"\n', encoding="utf-8"
     )
     for required in (
         "pds_module.py",
@@ -143,8 +143,8 @@ def test_sdist_rejects_each_removed_module(tmp_path: Path, removed: str) -> None
 
 
 def test_ordinary_current_package_paths_are_accepted(tmp_path: Path) -> None:
-    assert inspect_wheel(_wheel(tmp_path / "current.whl"))["version"] == "0.9.0"
-    assert inspect_sdist(_sdist(tmp_path / "current.tar.gz"))["version"] == "0.9.0"
+    assert inspect_wheel(_wheel(tmp_path / "current.whl"))["version"] == "0.10.0"
+    assert inspect_sdist(_sdist(tmp_path / "current.tar.gz"))["version"] == "0.10.0"
 
 
 @pytest.mark.parametrize(
@@ -214,7 +214,7 @@ def test_artifacts_reject_bundled_sibling_source(
 def test_sdist_requires_exact_release_root(tmp_path: Path) -> None:
     artifact = _sdist(
         tmp_path / "wrong-root.tar.gz",
-        package_name="not-quillan-0.9.0",
+        package_name="not-quillan-0.10.0",
     )
     with pytest.raises(AssertionError):
         inspect_sdist(artifact)

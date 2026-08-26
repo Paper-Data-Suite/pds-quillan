@@ -1,4 +1,4 @@
-"""Verify the Quillan v0.9.0 release compatibility boundary."""
+"""Verify the Quillan v0.10.0 release-candidate compatibility boundary."""
 
 from __future__ import annotations
 
@@ -21,11 +21,12 @@ from quillan.pds_contract import (
     QUILLAN_MODULE_ID,
 )
 from quillan.pds_module import get_module_profile
+from quillan.pds_operations import get_module_operations_profile
 from quillan.pds_publication import get_publication_producer_profile
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RELEASE_VERSION = "0.9.0"
-LEGACY_VERSION = "0.8.9"
+RELEASE_VERSION = "0.10.0"
+PREVIOUS_RELEASE_VERSION = "0.9.0"
 EXPECTED_CORE_SPECIFIER = SpecifierSet(">=0.6.2,<0.7")
 EXPECTED_CAPABILITIES = frozenset({"standards_ratings"})
 EXPECTED_ARTIFACT_KINDS = frozenset(
@@ -48,43 +49,29 @@ SIBLING_IMPORT_ROOTS = frozenset(
         "pds_portia",
     }
 )
+
 ACTIVE_VERSION_FILES = (
     Path("quillan/_version.py"),
     Path("README.md"),
     Path("SECURITY.md"),
-    Path("docs/development_plan.md"),
     Path("docs/release_process.md"),
     Path("docs/release_checklist.md"),
-    Path("docs/data_contracts.md"),
-    Path("docs/cli_contract.md"),
-    Path("docs/v0.9.0_release_compatibility.md"),
-    Path("docs/releases/v0.9.0.md"),
-    Path("docs/releases/v0.9.0_acceptance_matrix.md"),
-    Path("docs/physical_acceptance_v0.9.0.md"),
+    Path("docs/v0.10.0_installed_class_set_acceptance.md"),
+    Path("docs/physical_acceptance_v0.10.0.md"),
     Path("scripts/inspect_release_artifacts.py"),
     Path("scripts/persist_release_artifacts.py"),
     Path("scripts/run_installed_acceptance.py"),
-    Path("scripts/run_visual_acceptance.py"),
     Path("scripts/validate_release_candidate.ps1"),
-    Path("scripts/verify_installed_producer_acceptance.py"),
 )
-HISTORICAL_RELEASE_FILES = (
-    Path("docs/releases/v0.8.9.md"),
-    Path("docs/releases/v0.8.9_acceptance_matrix.md"),
-    Path("docs/physical_acceptance_v0.8.9.md"),
-)
-LEGACY_ALLOWED_LINES = {
-    Path("docs/v0.9.0_release_compatibility.md"): (
-        "v0.8.9 remains the Core 0.5 PDS2 release.",
-    ),
-    Path("docs/release_checklist.md"): (
-        "Quillan 0.9.0 while v0.8.9 history remains unchanged.",
-    ),
-}
 
+HISTORICAL_V090_RELEASE_FILES = (
+    Path("docs/releases/v0.9.0.md"),
+    Path("docs/releases/v0.9.0_acceptance_matrix.md"),
+    Path("docs/physical_acceptance_v0.9.0.md"),
+)
 
 class ReleaseCompatibilityError(RuntimeError):
-    """Raised when the v0.9.0 release boundary is inconsistent."""
+    """Raised when the v0.10.0 release-candidate boundary is inconsistent."""
 
 
 def _read(relative: Path) -> str:
@@ -102,47 +89,37 @@ def _import_root(node: ast.AST) -> tuple[str, ...]:
     return ()
 
 
-def _validate_active_legacy_mentions(relative: Path, text: str) -> None:
-    actual = tuple(
-        line.strip() for line in text.splitlines() if LEGACY_VERSION in line
-    )
-    expected = LEGACY_ALLOWED_LINES.get(relative, ())
-    if actual != expected:
-        raise ReleaseCompatibilityError(
-            f"active release surface has unexpected 0.8.9 context: {relative}"
-        )
-
-
 def validate_release_identity() -> None:
     project = tomllib.loads(_read(Path("pyproject.toml")))["project"]
     if project.get("name") != "quillan" or __version__ != RELEASE_VERSION:
         raise ReleaseCompatibilityError(
-            "distribution/runtime version must be quillan 0.9.0"
+            "distribution/runtime version must be quillan 0.10.0"
         )
+
     for relative in ACTIVE_VERSION_FILES:
         text = _read(relative)
         if RELEASE_VERSION not in text:
             raise ReleaseCompatibilityError(
-                f"active release surface lacks 0.9.0: {relative}"
+                f"active release surface lacks 0.10.0: {relative}"
             )
-        _validate_active_legacy_mentions(relative, text)
 
-    for relative in HISTORICAL_RELEASE_FILES:
-        if LEGACY_VERSION not in _read(relative):
+    for relative in HISTORICAL_V090_RELEASE_FILES:
+        text = _read(relative)
+        if PREVIOUS_RELEASE_VERSION not in text:
             raise ReleaseCompatibilityError(
-                f"historical v0.8.9 release evidence lost its identity: {relative}"
+                f"historical v0.9.0 release evidence lost its identity: {relative}"
             )
 
     changelog = _read(Path("CHANGELOG.md"))
-    release_heading = "## 0.9.0 - Unreleased"
-    legacy_heading = "## 0.8.9 - 2026-07-23"
-    if release_heading not in changelog or legacy_heading not in changelog:
+    candidate_heading = "## 0.10.0 - Unreleased"
+    previous_heading = "## 0.9.0 - 2026-08-16"
+    if candidate_heading not in changelog or previous_heading not in changelog:
         raise ReleaseCompatibilityError(
-            "changelog must preserve both v0.9.0 preparation and v0.8.9 history"
+            "changelog must preserve v0.10.0 candidate and released v0.9.0 history"
         )
-    if changelog.index(release_heading) > changelog.index(legacy_heading):
+    if changelog.index(candidate_heading) > changelog.index(previous_heading):
         raise ReleaseCompatibilityError(
-            "v0.9.0 changelog entry must precede historical v0.8.9 evidence"
+            "v0.10.0 candidate changelog entry must precede v0.9.0 history"
         )
 
 
@@ -182,7 +159,7 @@ def validate_sibling_import_isolation() -> None:
         )
 
 
-def validate_routing_and_producer_profiles() -> None:
+def validate_routing_publication_and_operations_profiles() -> None:
     routing = get_module_profile()
     if (
         routing.module_id != "quillan"
@@ -193,16 +170,16 @@ def validate_routing_and_producer_profiles() -> None:
     ):
         raise ReleaseCompatibilityError("routing profile changed")
 
-    profile = get_publication_producer_profile()
-    if len(profile.publication_contracts) != 1:
+    publication = get_publication_producer_profile()
+    if len(publication.publication_contracts) != 1:
         raise ReleaseCompatibilityError("publication producer profile changed")
-    support = profile.publication_contracts[0]
+    support = publication.publication_contracts[0]
     if (
         QUILLAN_MODULE_ID != "quillan"
-        or profile.module_id != QUILLAN_MODULE_ID
-        or profile.supported_core_publication_schema_versions != frozenset({"1"})
+        or publication.module_id != QUILLAN_MODULE_ID
+        or publication.supported_core_publication_schema_versions != frozenset({"1"})
         or QUILLAN_ACADEMIC_WORK_CONTRACT_VERSION != "quillan_academic_work_v1"
-        or profile.supported_academic_work_contract_versions
+        or publication.supported_academic_work_contract_versions
         != frozenset({QUILLAN_ACADEMIC_WORK_CONTRACT_VERSION})
         or support.publication_kind != "academic_result_set"
         or ACADEMIC_RESULT_MANIFEST_CONTRACT_VERSION
@@ -214,6 +191,16 @@ def validate_routing_and_producer_profiles() -> None:
         or support.allows_missing_source_record is not True
     ):
         raise ReleaseCompatibilityError("publication producer profile changed")
+
+    operations = get_module_operations_profile()
+    if (
+        operations.module_id != "quillan"
+        or operations.supported_core_operations_contract_versions
+        != frozenset({"1"})
+        or operations.attention_provider is None
+        or operations.readiness_provider is None
+    ):
+        raise ReleaseCompatibilityError("module-operations profile changed")
 
 
 def validate_reader_and_artifact_boundaries() -> None:
@@ -243,7 +230,9 @@ def validate_reader_and_artifact_boundaries() -> None:
     artifact_kinds = frozenset(get_args(artifacts.AcademicResultArtifactKind))
     if artifact_kinds != EXPECTED_ARTIFACT_KINDS:
         raise ReleaseCompatibilityError("artifact kinds changed")
-    signature = inspect.signature(artifacts.read_authorized_academic_result_artifacts)
+    signature = inspect.signature(
+        artifacts.read_authorized_academic_result_artifacts
+    )
     if tuple(signature.parameters) != (
         "workspace_root",
         "manifest",
@@ -266,7 +255,7 @@ def validate_release_compatibility() -> None:
     validate_release_identity()
     validate_core_and_sibling_dependencies()
     validate_sibling_import_isolation()
-    validate_routing_and_producer_profiles()
+    validate_routing_publication_and_operations_profiles()
     validate_reader_and_artifact_boundaries()
 
 
@@ -282,7 +271,7 @@ def main() -> int:
     ) as error:
         print(f"Release compatibility audit failed: {error}")
         return 1
-    print("Quillan v0.9.0 compatibility: PASS")
+    print("Quillan v0.10.0 compatibility: PASS")
     return 0
 
 

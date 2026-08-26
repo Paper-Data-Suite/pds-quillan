@@ -92,16 +92,26 @@ def test_harness_does_not_import_sibling_products() -> None:
         assert sibling not in source
 
 
-def test_release_harness_orders_no_side_effect_acceptance_before_wheel_producer() -> None:
+def test_release_harness_orders_installed_acceptance_before_persistence() -> None:
     source = RELEASE.read_text(encoding="utf-8")
-    ordinary = source.index('Invoke-Required "Installed acceptance ($Mode)"')
-    producer = source.index('Invoke-Required "Installed producer acceptance (wheel)"')
+    ordinary = source.index(
+        'Invoke-Required "Installed application workflow Core $CoreVersion"'
+    )
+    producer = source.index(
+        'Invoke-Required "Installed producer lifecycle Core $CoreVersion"'
+    )
+    class_set = source.index(
+        'Invoke-Required "Installed class-set acceptance Core $CoreVersion"'
+    )
+    release_edge = source.index(
+        'Invoke-Required "Installed release-edge acceptance Core $CoreVersion"'
+    )
     persistence = source.index('Invoke-Required "Persist exact tested artifacts"')
-    assert ordinary < producer < persistence
+    assert ordinary < producer < class_set < release_edge < persistence
     assert "verify_installed_producer_acceptance.py" in source
-    assert "acceptance\\workflow-workspace" in source
-    assert "if ($Mode -eq 'wheel')" in source
-    assert "if ($Mode -eq 'wheel') { $AcceptanceArguments += '--full-workflow' }" in source
+    assert "verify_installed_class_set_acceptance.py" in source
+    assert "verify_installed_release_edges.py" in source
+    assert "(Join-Path $Acceptance 'workflow-workspace')" in source
     assert "Remove-Item Env:PYTHONPATH" in source
     assert 'Write-Host "Release authorization: NOT GRANTED"' in source
 

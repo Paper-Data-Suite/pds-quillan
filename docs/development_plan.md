@@ -8,12 +8,12 @@ explicit Core publication/supersession/withdrawal/republication with full catalo
 reconciliation, consumer-neutral manifest/artifact reading through #364, and
 clean-wheel installed producer lifecycle acceptance through #365.
 
-Classification: **active authority** for the v0.9.0 release candidate.
+Classification: **active authority** for the v0.10.0 teacher-workflow release candidate.
 
 ## Current status
 
-Quillan v0.9.0 is a local-first, teacher-controlled writing-evidence module for
-PDS Core 0.6. Its supported workflow is:
+Quillan v0.10.0 is the current local-first, teacher-controlled writing-evidence
+candidate for PDS Core 0.6. Its supported workflow is:
 
 ```text
 PDS2 locator -> immutable Core route -> Quillan page context
@@ -47,7 +47,8 @@ dashboards, and cross-assignment analytics are outside this milestone.
 
 PDF scan intake uses `pdf2image` and requires Poppler on the host. Supported
 Python versions are CPython 3.11 through 3.14. Runtime Core compatibility is
-`pds-core>=0.6,<0.7`, with released Core 0.6.0 as the qualification baseline.
+`pds-core>=0.6.2,<0.7`, with released Core 0.6.2 and 0.6.3 as the candidate
+qualification endpoints.
 
 Quillan supports explicit Academic Work Registration for eligible managed
 assignments through Core under `quillan_academic_work_v1`; ordinary assignment,

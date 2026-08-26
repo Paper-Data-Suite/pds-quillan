@@ -6,7 +6,36 @@ Quillan is in early pre-1.0 development. Package versions describe the
 installable project state; GitHub issues and milestones may be used for
 planning and do not by themselves represent releases.
 
-## 0.9.0 - Unreleased
+## 0.10.0 - Unreleased
+
+### Added
+
+- Added the v0.10.0 teacher-workflow milestone: safe assignment copying,
+  reusable review-configuration presets, recent context, deterministic class-set
+  review queues, student navigation, Continue Review guidance, compact routine
+  review, batch feedback export, class completion status, guided Share Results,
+  privacy-conscious local diagnostics, and Core module-operations attention and
+  readiness providers.
+- Added installed and physical class-set candidate acceptance under #393.
+
+### Changed
+
+- Promoted the installable candidate identity from released v0.9.0 to v0.10.0.
+- Require PDS Core `>=0.6.2,<0.7`; candidate qualification authenticates both
+  released Core 0.6.2 and 0.6.3 endpoint wheels.
+- Candidate qualification builds one exact wheel/sdist pair and reuses those
+  bytes across endpoint and physical acceptance.
+
+### Compatibility
+
+- PDS2 routing, Academic Result Manifest v1, publication producer contracts,
+  and teacher-authoritative review semantics remain unchanged.
+- Unified mixed-module paper intake remains Suite-owned; Quillan only proves
+  interoperability with Core routing and dispatch.
+- Release remains pending #393 installed/physical acceptance and #394 final
+  workflow/release audit.
+
+## 0.9.0 - 2026-08-16
 
 ### Added
 

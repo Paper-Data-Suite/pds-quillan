@@ -14,7 +14,7 @@ import subprocess
 import sys
 from typing import Any
 
-EXPECTED_VERSION = "0.9.0"
+EXPECTED_VERSION = "0.10.0"
 CLASS_ID = "synthetic_release_class"
 ASSIGNMENT_ID = "synthetic_release_digital"
 STANDARD_ID = "synthetic:W.RELEASE.1"
@@ -734,7 +734,7 @@ def main() -> int:
         assert not sentinel.exists(), module
 
     version = _run(_cli(["--version"]), cwd=work, env=env)
-    assert version.stdout == "quillan 0.9.0\n" and version.stderr == ""
+    assert version.stdout == f"quillan {EXPECTED_VERSION}\n" and version.stderr == ""
     for help_arguments in SIDE_EFFECT_FREE_HELP_COMMANDS:
         result = _run(_cli(list(help_arguments)), cwd=work, env=env)
         assert result.stdout and result.stderr == ""
