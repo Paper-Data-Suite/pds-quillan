@@ -12,8 +12,8 @@ from typing import Final
 
 
 ARTIFACT_NAMES: Final = (
-    "quillan-0.9.0-py3-none-any.whl",
-    "quillan-0.9.0.tar.gz",
+    "quillan-0.10.0-py3-none-any.whl",
+    "quillan-0.10.0.tar.gz",
 )
 
 

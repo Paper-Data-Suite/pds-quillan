@@ -76,7 +76,8 @@ world languages, arts/humanities, and interdisciplinary writing tasks.
 
 ## Current Status
 
-Quillan 0.9.0 is the Core 0.6 academic-publication release candidate. Its active workflow is
+Quillan 0.10.0 is the current teacher-workflow release candidate. It builds on the
+released v0.9.0 academic-publication boundary and keeps the active workflow
 standards-based:
 
 ```text

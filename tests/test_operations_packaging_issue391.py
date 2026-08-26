@@ -108,9 +108,11 @@ def test_ci_uses_062_as_current_minimum_and_keeps_063_qualification() -> None:
     assert "--core-version 0.6.3" in source
 
 
-def test_historical_release_candidate_contract_remains_explicitly_060() -> None:
+def test_active_release_candidate_uses_module_operations_core_range() -> None:
     source = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
         encoding="utf-8"
     )
-    assert source.count("'--core-version', '0.6.0'") == 2
-    assert "'--expected-core-version', '0.6.0'" in source
+    assert "'--core-version', '0.6.2'" in source
+    assert "'--core-version', '0.6.3'" in source
+    assert "'--core-version', '0.6.0'" not in source
+    assert "'--expected-core-version', '0.6.0'" not in source

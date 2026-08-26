@@ -50,12 +50,14 @@ def test_ci_qualifies_new_minimum_062_and_retains_exact_063_endpoint_matrix() ->
     )
 
 
-def test_release_candidate_keeps_explicit_historical_core_060_contract() -> None:
+def test_release_candidate_uses_current_supported_core_endpoints() -> None:
     source = (
         ROOT / "scripts" / "validate_release_candidate.ps1"
     ).read_text(encoding="utf-8")
-    assert source.count("'--core-version', '0.6.0'") == 2
-    assert "'--expected-core-version', '0.6.0'" in source
+    assert "'--core-version', '0.6.2'" in source
+    assert "'--core-version', '0.6.3'" in source
+    assert "'--core-version', '0.6.0'" not in source
+    assert "'--expected-core-version', '0.6.0'" not in source
 
 
 def test_diagnostic_event_reports_actual_installed_core_version() -> None:

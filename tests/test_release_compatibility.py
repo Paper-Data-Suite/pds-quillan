@@ -12,48 +12,24 @@ def test_release_compatibility_passes_current_tree() -> None:
     compatibility.validate_release_compatibility()
 
 
-def test_release_version_is_unique() -> None:
-    assert compatibility.RELEASE_VERSION == "0.9.0"
-    assert compatibility.LEGACY_VERSION == "0.8.9"
-    assert compatibility.LEGACY_ALLOWED_LINES == {
-        Path("docs/v0.9.0_release_compatibility.md"): (
-            "v0.8.9 remains the Core 0.5 PDS2 release.",
-        ),
-        Path("docs/release_checklist.md"): (
-            "Quillan 0.9.0 while v0.8.9 history remains unchanged.",
-        ),
-    }
+def test_release_version_and_historical_boundary_are_exact() -> None:
+    assert compatibility.RELEASE_VERSION == "0.10.0"
+    assert compatibility.PREVIOUS_RELEASE_VERSION == "0.9.0"
+    assert compatibility.HISTORICAL_V090_RELEASE_FILES == (
+        Path("docs/releases/v0.9.0.md"),
+        Path("docs/releases/v0.9.0_acceptance_matrix.md"),
+        Path("docs/physical_acceptance_v0.9.0.md"),
+    )
 
 
-def test_active_legacy_mentions_are_exactly_bounded() -> None:
+def test_active_release_surfaces_name_v0100() -> None:
     for relative in compatibility.ACTIVE_VERSION_FILES:
-        compatibility._validate_active_legacy_mentions(
-            relative, compatibility._read(relative)
-        )
+        assert compatibility.RELEASE_VERSION in compatibility._read(relative)
 
 
-def test_unexpected_active_legacy_mention_is_rejected() -> None:
-    text = (
-        "Quillan 0.9.0 while v0.8.9 history remains unchanged.\n"
-        "Current release is 0.8.9.\n"
-    )
-    with pytest.raises(
-        compatibility.ReleaseCompatibilityError,
-        match="unexpected 0.8.9 context",
-    ):
-        compatibility._validate_active_legacy_mentions(
-            Path("docs/release_checklist.md"), text
-        )
-
-
-def test_historical_release_evidence_is_explicitly_pinned() -> None:
-    assert compatibility.HISTORICAL_RELEASE_FILES == (
-        Path("docs/releases/v0.8.9.md"),
-        Path("docs/releases/v0.8.9_acceptance_matrix.md"),
-        Path("docs/physical_acceptance_v0.8.9.md"),
-    )
-    for relative in compatibility.HISTORICAL_RELEASE_FILES:
-        assert compatibility.LEGACY_VERSION in compatibility._read(relative)
+def test_historical_v090_files_remain_identified_as_v090() -> None:
+    for relative in compatibility.HISTORICAL_V090_RELEASE_FILES:
+        assert compatibility.PREVIOUS_RELEASE_VERSION in compatibility._read(relative)
 
 
 def test_core_floor_and_upper_bound_are_exact() -> None:
@@ -86,3 +62,7 @@ def test_sibling_import_audit_rejects_runtime_import(
     monkeypatch.setattr(compatibility, "PROJECT_ROOT", tmp_path)
     with pytest.raises(compatibility.ReleaseCompatibilityError, match="sibling"):
         compatibility.validate_sibling_import_isolation()
+
+
+def test_operations_profile_is_part_of_release_boundary() -> None:
+    compatibility.validate_routing_publication_and_operations_profiles()
