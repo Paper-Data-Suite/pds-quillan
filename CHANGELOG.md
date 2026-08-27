@@ -32,8 +32,8 @@ planning and do not by themselves represent releases.
   and teacher-authoritative review semantics remain unchanged.
 - Unified mixed-module paper intake remains Suite-owned; Quillan only proves
   interoperability with Core routing and dispatch.
-- Release remains pending #393 installed/physical acceptance and #394 final
-  workflow/release audit.
+- #393 installed/physical candidate acceptance completed; release remains pending
+  #394 final workflow/release audit and explicit owner release authorization.
 
 ## 0.9.0 - 2026-08-16
 
