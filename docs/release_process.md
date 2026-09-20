@@ -1,90 +1,64 @@
-# v0.10.0 Release Process
+# v0.10.1 Release Process
 
-Classification: **active authority for the v0.10.0 candidate**.
+Classification: **active authority for the v0.10.1 patch candidate**.
 
-Issue #393 owns candidate construction plus installed and physical class-set
-acceptance. Issue #394 owns the final skeptical workflow/release audit. Neither
-issue grants release authorization merely because automation passes.
+Issue #412 owns implementation, exact-candidate qualification, installed
+feedback-assembly acceptance, and release preparation. Passing automation does
+not itself grant tag or GitHub Release authority.
 
-## Candidate construction
+## Exact candidate construction
 
-1. Reconcile a clean branch with `origin/main` and record the starting commit.
-2. Authenticate both supported Core endpoint wheels:
-   - `pds_core-0.6.2-py3-none-any.whl`
-   - `pds_core-0.6.3-py3-none-any.whl`
-3. Run source pytest, Ruff, strict mypy, compileall, `pip check`,
-   documentation, release compatibility, `run_tests.ps1`, and diff hygiene.
-4. Build exactly one pair:
-   - `quillan-0.10.0-py3-none-any.whl`
-   - `quillan-0.10.0.tar.gz`
-5. Run Twine and archive inspection on that pair.
-6. Install the **same wheel bytes** in isolated Core 0.6.2 and Core 0.6.3
+1. Reconcile the release commit with `origin/main` and require a clean tree.
+2. Authenticate the supported Core endpoint wheels for 0.6.2 and 0.6.3.
+3. Run full source pytest, Ruff, strict mypy, compileall, documentation checks,
+   release compatibility, `pip check`, and diff hygiene.
+4. Build exactly one pair from that commit:
+   - `quillan-0.10.1-py3-none-any.whl`
+   - `quillan-0.10.1.tar.gz`
+5. Run Twine and archive inspection against that exact pair.
+6. Install the same wheel bytes into isolated Core 0.6.2 and Core 0.6.3
    environments outside the checkout.
-7. Verify independently:
-   - console/application entry point;
-   - Core routing profile;
-   - publication-producer profile and lifecycle;
-   - module-operations profile;
-   - attention;
-   - readiness;
-   - installed class-set workflow;
-   - final publication/withdrawal state;
-   - mixed foreign-route isolation.
+7. Verify console entry point, Core routing, publication, module operations,
+   existing class-set workflows, release edges, and the new batch-feedback
+   assembly workflow.
 8. Run the sdist smoke without rebuilding the candidate pair.
-9. Persist the exact tested pair to a new empty external directory and record
-   filenames, byte lengths, and SHA-256 values.
-10. Prepare physical acceptance from the persisted exact wheel.
+9. Persist the exact tested pair outside the repository and record filenames,
+   lengths, and SHA-256 values.
 
-A rebuilt wheel has a new identity. Any installed or physical evidence tied to
-previous bytes is invalid for the rebuilt candidate.
+A rebuild has a different artifact identity and invalidates installed evidence
+for the previous bytes.
 
-## Core endpoint policy
+## Installed feedback-assembly acceptance
 
-Runtime compatibility remains exactly:
+The installed console script must create/load synthetic class and assignment
+state with at least two current canonical feedback PDFs, dry-run whole-class
+assembly without creating output, create both a print packet and sharing ZIP,
+verify roster page order and ZIP member bytes, and prove canonical review,
+submission, feedback, Academic Work, and publication state did not change.
 
-```text
-pds-core>=0.6.2,<0.7
-```
+See [v0.10.1 Installed Batch Feedback Acceptance](v0.10.1_installed_batch_feedback_acceptance.md).
 
-Core 0.6.2 is the minimum supported endpoint and Core 0.6.3 is the current
-qualification endpoint for this milestone. Core 0.6.0 remains historical v0.9.0
-release evidence only.
+## Physical acceptance boundary
 
-## Physical acceptance
+Issue #412 does not intentionally modify PDS2, routing, scan intake,
+response-page generation, physical evidence assembly, review semantics, or
+publication semantics. The exact v0.10.0 physical-paper acceptance therefore
+remains applicable and is not repeated. Any implementation change that crosses
+one of those boundaries invalidates that waiver and requires affected physical
+requalification.
 
-Use [v0.10.0 Physical Acceptance](physical_acceptance_v0.10.0.md).
+See the historical [v0.10.0 Physical Acceptance](physical_acceptance_v0.10.0.md).
 
-Physical acceptance means real generated paper is printed, physically marked,
-scanned, retained through Core, decoded/routed, assembled, and reviewed through
-the exact installed candidate. Generated PDFs, rendered images, or mocked scan
-bytes are not substitutes for physical evidence.
+## Core and publication compatibility
 
-No raw scans, generated PDFs, candidate wheels, workspaces, or venvs are
-committed.
-
-## Pre-merge and post-merge authority
-
-The preparation PR should say `Refs #393` or `Part of #393`; normally it must
-not auto-close #393 because squash merge changes commit identity.
-
-After merge:
-
-1. reconcile exact `main == origin/main`;
-2. record the merged commit;
-3. rebuild one fresh v0.10.0 pair;
-4. rerun authoritative installed qualification;
-5. persist exact bytes externally;
-6. perform owner physical acceptance against that exact wheel;
-7. bind the result to commit and hashes;
-8. close #393 only if no acceptance blocker remains.
-
-#394 then audits the final workflow and release boundary. If #394 requires a
-packaged-byte change, affected #393 installed/physical acceptance must be
-repeated.
+Runtime compatibility remains exactly `pds-core>=0.6.2,<0.7`. Feedback batch
+assembly adds no Core API, Academic Work registration, Academic Result,
+Publication Record, Meridian handoff, grading, or proficiency behavior.
 
 ## Release authority
 
-#393 does not tag, publish, deploy, or grant final release authorization.
-
-No tag or GitHub Release may be created until the later release decision is
-explicitly authorized. Do not publish Quillan to a package index.
+After qualification, an owner must explicitly authorize the v0.10.1 release.
+Only then may the normal process create/push tag `v0.10.1` and make the exact
+qualified wheel/sdist available in the repository's release channel. Do not
+upload Quillan to an external package index without separate explicit
+authorization.

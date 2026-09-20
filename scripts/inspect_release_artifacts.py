@@ -15,7 +15,7 @@ import zipfile
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
-EXPECTED_VERSION = "0.10.0"
+EXPECTED_VERSION = "0.10.1"
 REQUIRED_PACKAGE_FILES = {
     "quillan/pds_module.py",
     "quillan/pds_publication.py",
@@ -28,6 +28,7 @@ REQUIRED_PACKAGE_FILES = {
     "quillan/academic_result_publication.py",
     "quillan/academic_result_reader.py",
     "quillan/academic_result_artifacts.py",
+    "quillan/batch_feedback_assembly.py",
 }
 REMOVED = {
     "quillan/submissions.py",
@@ -112,10 +113,23 @@ def _metadata_contract(raw: str) -> dict[str, object]:
         ">=0.6.2",
         "<0.7",
     }, core_requirement
+    pdf_requirements = [
+        requirement
+        for requirement in parsed_requirements
+        if canonicalize_name(requirement.name) == "pypdf"
+    ]
+    assert len(pdf_requirements) == 1, pdf_requirements
+    pdf_requirement = pdf_requirements[0]
+    assert pdf_requirement.url is None and pdf_requirement.marker is None
+    assert {str(value) for value in pdf_requirement.specifier} == {
+        ">=5",
+        "<7",
+    }, pdf_requirement
     return {
         "version": metadata["Version"],
         "requires_python": metadata["Requires-Python"],
         "core_requirement": str(core_requirement),
+        "pdf_requirement": str(pdf_requirement),
         "license": metadata["License-Expression"],
     }
 

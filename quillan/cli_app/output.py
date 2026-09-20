@@ -11,6 +11,10 @@ from quillan.batch_feedback_export import (
     BatchFeedbackExportPlan,
     BatchFeedbackExportResult,
 )
+from quillan.batch_feedback_assembly import (
+    FeedbackAssemblyPlan,
+    FeedbackAssemblyResult,
+)
 from quillan.class_summary_export import ExportedClassSummary
 from quillan.comment_management import (
     CreatedManualReusableComment,
@@ -546,6 +550,59 @@ def print_batch_feedback_export_plan(plan: BatchFeedbackExportPlan) -> None:
         )
         for warning in item.warnings:
             print(f"  warning: {warning}")
+
+
+def print_feedback_assembly_plan(plan: FeedbackAssemblyPlan) -> None:
+    """Print a bounded feedback-distribution preview."""
+    print("Feedback Batch Assembly Preview")
+    print(f"Class: {plan.class_id}")
+    print(f"Assignment: {plan.assignment_title} ({plan.assignment_id})")
+    print(f"Scope: {plan.scope}")
+    print(f"Requested output: {plan.output}")
+    print(f"Duplex safe: {'yes' if plan.duplex_safe else 'no'}")
+    print(f"Roster students: {plan.roster_count}")
+    print(f"Selected: {plan.selected_count}")
+    print(f"Ready: {plan.included_count}")
+    print(f"Excluded: {plan.excluded_count}")
+    for reason, count in plan.reason_counts:
+        print(f"- {reason}: {count}")
+    print("Students:")
+    for item in plan.items:
+        decision = "include" if item.included else "exclude"
+        print(
+            f"- {item.display_name} ({item.student_id}) — "
+            f"{decision}: {item.reason_code}; source={item.source_relative_path}"
+        )
+    print("No canonical Quillan records will be changed.")
+
+
+def print_feedback_assembly_result(result: FeedbackAssemblyResult) -> None:
+    """Print a concise verified assembly result."""
+    print("Feedback Batch Result")
+    print(f"Class: {result.class_id}")
+    print(f"Assignment: {result.assignment_title} ({result.assignment_id})")
+    print(f"Scope: {result.scope}")
+    print(f"Requested output: {result.output}")
+    print(f"Selected: {result.selected_count}")
+    print(f"Included: {len(result.included_student_ids)}")
+    print(f"Excluded: {len(result.exclusions)}")
+    for reason, count in result.reason_counts:
+        print(f"- {reason}: {count}")
+    if result.exclusions:
+        print("Excluded students:")
+        for item in result.exclusions:
+            print(f"- {item.display_name} ({item.student_id}) — {item.reason_code}")
+    print("Created:")
+    if result.print_packet_relative_path is not None:
+        print(
+            f"- {result.print_packet_relative_path} "
+            f"({result.print_packet_page_count} pages)"
+        )
+    if result.sharing_bundle_relative_path is not None:
+        print(
+            f"- {result.sharing_bundle_relative_path} "
+            f"({result.sharing_bundle_pdf_count} PDFs)"
+        )
 
 
 def print_batch_feedback_export_result(result: BatchFeedbackExportResult) -> None:

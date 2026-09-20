@@ -11,12 +11,12 @@ from scripts.persist_release_artifacts import ARTIFACT_NAMES
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_issue393_candidate_identity_is_exact_v0100() -> None:
-    assert quillan.__version__ == __version__ == "0.10.0"
-    assert EXPECTED_VERSION == "0.10.0"
+def test_patch_candidate_identity_is_exact_v0101() -> None:
+    assert quillan.__version__ == __version__ == "0.10.1"
+    assert EXPECTED_VERSION == "0.10.1"
     assert ARTIFACT_NAMES == (
-        "quillan-0.10.0-py3-none-any.whl",
-        "quillan-0.10.0.tar.gz",
+        "quillan-0.10.1-py3-none-any.whl",
+        "quillan-0.10.1.tar.gz",
     )
 
 
@@ -35,7 +35,7 @@ def test_issue393_installed_acceptance_targets_candidate_identity() -> None:
     source = (ROOT / "scripts" / "run_installed_acceptance.py").read_text(
         encoding="utf-8"
     )
-    assert 'EXPECTED_VERSION = "0.10.0"' in source
+    assert 'EXPECTED_VERSION = "0.10.1"' in source
     assert 'EXPECTED_VERSION = "0.9.0"' not in source
 
 

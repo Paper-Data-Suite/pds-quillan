@@ -13,6 +13,7 @@ from scripts.run_installed_acceptance import (
     SIDE_EFFECT_FREE_HELP_COMMANDS,
     _assert_no_academic_state,
     _compare_retained_source_inventories,
+    _feedback_assembly_academic_state_inventory,
     _verify_installed_academic_result_reader,
     _retained_source_inventory,
     _verify_digital_durable_state,
@@ -211,6 +212,36 @@ def test_no_academic_state_accepts_ordinary_workspace(tmp_path: Path) -> None:
     (tmp_path / "classes").mkdir()
     (tmp_path / "scans" / "source").mkdir(parents=True)
     _assert_no_academic_state(tmp_path)
+
+
+def test_feedback_assembly_inventory_covers_each_forbidden_state_store(
+    tmp_path: Path,
+) -> None:
+    work = tmp_path / "classes" / "plain" / "modules" / "quillan" / "work" / "paper"
+    before = _feedback_assembly_academic_state_inventory(tmp_path, work)
+
+    fixtures = {
+        "academic_work_registration": tmp_path / "registry" / "work" / "record.json",
+        "academic_result_manifest_state": (
+            work / "exports" / "manifests" / "academic_results" / "1.json"
+        ),
+        "publication_records_and_head": (
+            tmp_path / "registry" / "publications" / "publication.json"
+        ),
+        "withdrawal_and_supersession_state": (
+            tmp_path / "registry" / "withdrawals" / "withdrawal.json"
+        ),
+        "publication_catalog_state": tmp_path / "registry" / "catalog.sqlite",
+    }
+    for path in fixtures.values():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"synthetic academic state")
+
+    after = _feedback_assembly_academic_state_inventory(tmp_path, work)
+
+    assert set(before) == set(fixtures)
+    for state_name in fixtures:
+        assert after[state_name] != before[state_name]
 
 
 @pytest.mark.parametrize("relative_path", ACADEMIC_STATE_PATHS)

@@ -8,11 +8,11 @@ explicit Core publication/supersession/withdrawal/republication with full catalo
 reconciliation, consumer-neutral manifest/artifact reading through #364, and
 clean-wheel installed producer lifecycle acceptance through #365.
 
-Classification: **active authority** for the v0.10.0 teacher-workflow release candidate.
+Classification: **active authority** for the v0.10.1 patch-release candidate.
 
 ## Current status
 
-Quillan v0.10.0 is the current local-first, teacher-controlled writing-evidence
+Quillan v0.10.1 is the current local-first, teacher-controlled writing-evidence
 candidate for PDS Core 0.6. Its supported workflow is:
 
 ```text
@@ -20,6 +20,11 @@ PDS2 locator -> immutable Core route -> Quillan page context
 -> retained-once scan intake -> Core dispatch -> observation/evidence
 -> issuance-authoritative submission -> teacher review -> feedback/reports
 ```
+
+The v0.10.1 patch adds #412 feedback batch assembly as a noncanonical
+distribution layer over current per-student PDFs. It does not change the v0.10.0
+review, paper, routing, publication, or Core ownership boundaries. See
+[Batch Feedback Assembly](batch_feedback_assembly.md).
 
 All assignment-owned records live below
 `classes/<class_id>/modules/quillan/work/<assignment_id>/`. Quillan neither reads

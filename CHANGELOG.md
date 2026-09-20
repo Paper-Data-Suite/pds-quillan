@@ -6,7 +6,32 @@ Quillan is in early pre-1.0 development. Package versions describe the
 installable project state; GitHub issues and milestones may be used for
 planning and do not by themselves represent releases.
 
-## 0.10.0 - Unreleased
+## 0.10.1 - Unreleased
+
+### Added
+
+- Added assignment-level feedback batch assembly (#412) for roster-ordered print
+  packets and byte-preserving sharing ZIPs built only from current canonical
+  per-student PDFs.
+- Added optional duplex-safe separator pages, whole-class and exact selected-
+  student scopes, dry-run previews, state revalidation, staged atomic output,
+  and safe menu result opening.
+
+### Changed
+
+- Promoted `pypdf>=5,<7` from the development-only set to runtime dependencies
+  for PDF composition.
+- Added installed-wheel acceptance for feedback assembly while preserving the
+  v0.10.0 physical-paper evidence because no paper intake or review boundary
+  changed.
+
+### Compatibility
+
+- Canonical feedback remains
+  `submissions/<student_id>/exports/feedback.pdf`; batch artifacts are disposable
+  teacher-facing derivatives and never create publication or academic state.
+
+## 0.10.0 - 2026-08-26
 
 ### Added
 
@@ -32,8 +57,8 @@ planning and do not by themselves represent releases.
   and teacher-authoritative review semantics remain unchanged.
 - Unified mixed-module paper intake remains Suite-owned; Quillan only proves
   interoperability with Core routing and dispatch.
-- #393 installed/physical candidate acceptance completed; release remains pending
-  #394 final workflow/release audit and explicit owner release authorization.
+- #393 installed/physical candidate acceptance and #394 final release audit
+  completed before the v0.10.0 release.
 
 ## 0.9.0 - 2026-08-16
 

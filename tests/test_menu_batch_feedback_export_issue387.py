@@ -107,6 +107,7 @@ def test_assignment_review_actions_exposes_batch_without_renumbering_existing_ac
     assert "5. View full diagnostic dashboard" in output
     assert "7. Review class progress" in output
     assert "F. Batch Feedback Export" in output
+    assert "G. Prepare Feedback for Printing / Sharing" in output
 
 
 @pytest.mark.menu_density_workflow("batch feedback export")

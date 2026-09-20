@@ -4,7 +4,7 @@
 
 Quillan is the Paper Data Suite module for writing-response template generation, paper/scanned submission workflows, essay tagging, standards-aligned review, feedback, and publication of writing-related academic results.
 
-The current supported pre-1.0 release line is `0.10.x`. Quillan `0.10.0` is the current release candidate.
+The current supported pre-1.0 release line is `0.10.x`. Quillan `0.10.1` is the current patch-release candidate.
 
 Quillan is local-first, teacher-controlled educational software. It is not:
 
@@ -61,6 +61,7 @@ Do not publicly post:
 * exported student reports;
 * exported class reports containing identifiable records;
 * feedback PDFs or Markdown files from real classroom use;
+* multi-student feedback print packets or sharing bundles;
 * assembled submission files from real classroom use;
 * PDS2 source or routed scan pages from real classroom use;
 * local production workspace folders;
@@ -330,6 +331,12 @@ teacher feedback
 A generated feedback artifact may contain sensitive student writing, teacher comments, standards information, and other education records.
 
 Protect exported feedback accordingly.
+
+Assignment-level feedback batches are sensitive teacher-facing containers.
+The combined print packet must never be sent wholesale to one student, and the
+sharing ZIP must be opened so its individual PDFs can be distributed to the
+correct students. Both artifact types remain inside the teacher-controlled PDS
+workspace and must not be committed to this repository.
 
 ## Scan and Paper-Workflow Security
 

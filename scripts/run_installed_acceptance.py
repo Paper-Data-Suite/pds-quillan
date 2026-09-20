@@ -13,8 +13,9 @@ import pkgutil
 import subprocess
 import sys
 from typing import Any
+from zipfile import ZipFile
 
-EXPECTED_VERSION = "0.10.0"
+EXPECTED_VERSION = "0.10.1"
 CLASS_ID = "synthetic_release_class"
 ASSIGNMENT_ID = "synthetic_release_digital"
 STANDARD_ID = "synthetic:W.RELEASE.1"
@@ -43,6 +44,7 @@ SIDE_EFFECT_FREE_HELP_COMMANDS = (
     ("academic-work", "--help"),
     ("manifest", "--help"),
     ("publication", "--help"),
+    ("assemble-feedback-batch", "--help"),
 )
 
 
@@ -56,6 +58,75 @@ def _assert_no_academic_state(workspace: Path) -> None:
     """Prove ordinary Quillan operations did not create Core academic state."""
     created = [path.as_posix() for path in ACADEMIC_STATE_PATHS if (workspace / path).exists()]
     assert not created, created
+
+
+def _path_state_inventory(
+    workspace: Path,
+    paths: tuple[Path, ...],
+) -> dict[str, dict[str, object]]:
+    """Capture exact in-workspace file state without interpreting Core records."""
+    inventory: dict[str, dict[str, object]] = {}
+    for target in paths:
+        relative = target.relative_to(workspace).as_posix()
+        if not os.path.lexists(target):
+            inventory[relative] = {"kind": "missing"}
+            continue
+        candidates = (target,) if not target.is_dir() else (target, *sorted(target.rglob("*")))
+        for candidate in candidates:
+            key = candidate.relative_to(workspace).as_posix()
+            if candidate.is_symlink():
+                inventory[key] = {"kind": "link"}
+            elif candidate.is_dir():
+                inventory[key] = {"kind": "directory"}
+            elif candidate.is_file():
+                data = candidate.read_bytes()
+                inventory[key] = {
+                    "kind": "file",
+                    "size": len(data),
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                }
+            else:
+                inventory[key] = {"kind": "other"}
+    return inventory
+
+
+def _feedback_assembly_academic_state_inventory(
+    workspace: Path,
+    work_root: Path,
+) -> dict[str, dict[str, dict[str, object]]]:
+    """Snapshot every academic/publication store that #412 must not change."""
+    registry = workspace / "registry"
+    publication_records = registry / "publications"
+    return {
+        "academic_work_registration": _path_state_inventory(
+            workspace,
+            (workspace / "settings" / "academic_periods", registry / "work"),
+        ),
+        "academic_result_manifest_state": _path_state_inventory(
+            workspace,
+            (work_root / "exports" / "manifests" / "academic_results",),
+        ),
+        "publication_records_and_head": _path_state_inventory(
+            workspace,
+            (publication_records,),
+        ),
+        "withdrawal_and_supersession_state": _path_state_inventory(
+            workspace,
+            (registry / "withdrawals", publication_records),
+        ),
+        "publication_catalog_state": _path_state_inventory(
+            workspace,
+            tuple(
+                registry / name
+                for name in (
+                    "catalog.sqlite",
+                    "catalog.sqlite-wal",
+                    "catalog.sqlite-shm",
+                    "catalog.sqlite-journal",
+                )
+            ),
+        ),
+    }
 
 
 def _module_origin(module_name: str) -> Path:
@@ -259,7 +330,7 @@ def _cli(arguments: list[str]) -> list[str]:
 
 def _exercise_complete_review(
     identity: list[str], *, class_id: str, assignment_id: str, work: Path,
-    env: dict[str, str], comment: str,
+    env: dict[str, str], comment: str, export_reports: bool = True,
 ) -> dict[str, object]:
     """Complete one representative review through supported direct commands."""
     commands = (
@@ -293,12 +364,13 @@ def _exercise_complete_review(
     assert len(ready["private_notes"]) == 1
 
     _run(_cli(["export-feedback", *identity, "--format", "both"]), cwd=work, env=env)
-    for export_command in (
-        "export-student-performance-summary",
-        "export-class-summary",
-        "export-standards-summary",
-    ):
-        _run(_cli([export_command, class_id, assignment_id]), cwd=work, env=env)
+    if export_reports:
+        for export_command in (
+            "export-student-performance-summary",
+            "export-class-summary",
+            "export-standards-summary",
+        ):
+            _run(_cli([export_command, class_id, assignment_id]), cwd=work, env=env)
     final = _load_object(review_path)
     assert final["review_state"] == "exported"
     for export in ("feedback_markdown", "feedback_pdf"):
@@ -417,15 +489,46 @@ def _run_full_workflow(workspace: Path, *, work: Path, env: dict[str, str]) -> d
         env=env,
         comment="Synthetic teacher feedback.",
     )
-
     retained_before_plain = _retained_source_inventory(workspace)
     plain_class = "synthetic_plain_class"
     plain_assignment = "synthetic_plain_assignment"
-    write_class_roster(workspace, create_roster(plain_class, ({"student_id": "00309", "last_name": "Paper", "first_name": "Taylor", "period": "4"},)))
+    write_class_roster(
+        workspace,
+        create_roster(
+            plain_class,
+            (
+                {
+                    "student_id": "00309",
+                    "last_name": "Paper",
+                    "first_name": "Taylor",
+                    "period": "4",
+                },
+                {
+                    "student_id": "00410",
+                    "last_name": "Batch",
+                    "first_name": "Casey",
+                    "period": "4",
+                },
+            ),
+        ),
+    )
     plain = dict(assignment)
     plain.update({"assignment_id": plain_assignment, "class_ids": [plain_class], "title": "Synthetic Plain Paper Response"})
     write_assignment_config(workspace, plain_class, plain)
     _run(_cli(["create-plain-paper-submission", plain_class, plain_assignment, "00309", "--yes"]), cwd=work, env=env)
+    _run(
+        _cli(
+            [
+                "create-plain-paper-submission",
+                plain_class,
+                plain_assignment,
+                "00410",
+                "--yes",
+            ]
+        ),
+        cwd=work,
+        env=env,
+    )
     plain_identity = [plain_class, plain_assignment, "00309"]
     plain_review = _exercise_complete_review(
         plain_identity,
@@ -435,9 +538,31 @@ def _run_full_workflow(workspace: Path, *, work: Path, env: dict[str, str]) -> d
         env=env,
         comment="Synthetic plain-paper teacher feedback.",
     )
+    second_plain_review = _exercise_complete_review(
+        [plain_class, plain_assignment, "00410"],
+        class_id=plain_class,
+        assignment_id=plain_assignment,
+        work=work,
+        env=env,
+        comment="Second synthetic plain-paper teacher feedback.",
+        export_reports=False,
+    )
     plain_root = (
         workspace / "classes" / plain_class / "modules" / "quillan" / "work"
         / plain_assignment
+    )
+    feedback_assembly = _exercise_feedback_assembly(
+        workspace,
+        plain_root,
+        class_id=plain_class,
+        assignment_id=plain_assignment,
+        student_ids=("00309", "00410"),
+        expected_names=(
+            "Taylor_Paper_feedback.pdf",
+            "Casey_Batch_feedback.pdf",
+        ),
+        work=work,
+        env=env,
     )
     plain_absence = _verify_plain_paper_absence(workspace, plain_root)
     retained_after_plain = _retained_source_inventory(workspace)
@@ -465,9 +590,122 @@ def _run_full_workflow(workspace: Path, *, work: Path, env: dict[str, str]) -> d
         },
         "page_management": {"action": "exclude_restore", "restored": True},
         "digital_review": digital_review,
+        "second_plain_paper_review": second_plain_review,
+        "feedback_batch_assembly": feedback_assembly,
         "plain_paper_review": plain_review,
         "plain_paper_digital_absence": plain_absence,
         "module_qualified": True,
+    }
+
+
+def _exercise_feedback_assembly(
+    workspace: Path,
+    work_root: Path,
+    *,
+    class_id: str,
+    assignment_id: str,
+    student_ids: tuple[str, ...],
+    expected_names: tuple[str, ...],
+    work: Path,
+    env: dict[str, str],
+) -> dict[str, object]:
+    """Prove installed dry-run and both-mode assembly without canonical mutation."""
+    from pypdf import PdfReader
+
+    sources = tuple(
+        work_root / "submissions" / student_id / "exports" / "feedback.pdf"
+        for student_id in student_ids
+    )
+    canonical = tuple(
+        work_root / "submissions" / student_id / filename
+        for student_id in student_ids
+        for filename in ("submission.json", "review.json")
+    )
+    source_bytes = tuple(path.read_bytes() for path in sources)
+    canonical_hashes = {
+        str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in canonical
+    }
+    academic_state_before = _feedback_assembly_academic_state_inventory(
+        workspace, work_root
+    )
+    batches = work_root / "exports" / "feedback_batches"
+    assert not batches.exists()
+
+    dry_run = _run(
+        _cli(
+            [
+                "assemble-feedback-batch",
+                class_id,
+                assignment_id,
+                "--whole-class",
+                "--output",
+                "both",
+                "--duplex-safe",
+                "--dry-run",
+            ]
+        ),
+        cwd=work,
+        env=env,
+    )
+    assert "Ready: 2" in dry_run.stdout
+    assert not batches.exists()
+
+    assembled = _run(
+        _cli(
+            [
+                "assemble-feedback-batch",
+                class_id,
+                assignment_id,
+                "--whole-class",
+                "--output",
+                "both",
+                "--duplex-safe",
+                "--yes",
+            ]
+        ),
+        cwd=work,
+        env=env,
+    )
+    assert "Included: 2" in assembled.stdout
+    batch_dirs = tuple(path for path in batches.iterdir() if path.is_dir())
+    assert len(batch_dirs) == 1
+    packet = batch_dirs[0] / "feedback_print_packet.pdf"
+    bundle = batch_dirs[0] / "feedback_sharing_bundle.zip"
+    packet_text = "\n".join(
+        page.extract_text() or "" for page in PdfReader(packet).pages
+    )
+    first_display = expected_names[0].removesuffix("_feedback.pdf").replace("_", " ")
+    second_display = expected_names[1].removesuffix("_feedback.pdf").replace("_", " ")
+    assert packet_text.index(first_display) < packet_text.index(second_display)
+    with ZipFile(bundle) as archive:
+        names = archive.namelist()
+        assert names == list(expected_names)
+        assert tuple(archive.read(name) for name in names) == source_bytes
+    assert tuple(path.read_bytes() for path in sources) == source_bytes
+    assert {
+        str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in canonical
+    } == canonical_hashes
+    academic_state_after = _feedback_assembly_academic_state_inventory(
+        workspace, work_root
+    )
+    for state_name, before in academic_state_before.items():
+        assert academic_state_after[state_name] == before, state_name
+    return {
+        "dry_run_created_nothing": True,
+        "included_students": len(student_ids),
+        "packet_pages": len(PdfReader(packet).pages),
+        "zip_members": len(names),
+        "source_bytes_preserved": True,
+        "canonical_records_unchanged": True,
+        "academic_work_registration_unchanged": True,
+        "academic_result_manifest_state_unchanged": True,
+        "publication_records_and_head_unchanged": True,
+        "withdrawal_and_supersession_state_unchanged": True,
+        "publication_catalog_state_unchanged": True,
+        "workspace_relative_outputs": [
+            packet.relative_to(workspace).as_posix(),
+            bundle.relative_to(workspace).as_posix(),
+        ],
     }
 
 

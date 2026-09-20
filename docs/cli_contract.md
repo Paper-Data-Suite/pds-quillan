@@ -441,6 +441,7 @@ quillan set-review-state <class_id> <assignment_id> <student_id> <state>
 quillan add-note <class_id> <assignment_id> <student_id> --text "..."
 quillan export-feedback <class_id> <assignment_id> <student_id> [--format markdown|pdf|both] [--overwrite]
 quillan export-feedback-batch <class_id> <assignment_id> (--completed | --student-id <student_id> [--student-id <student_id> ...]) --format pdf|markdown|both [--overwrite-policy none|stale|all] (--dry-run | --yes)
+quillan assemble-feedback-batch <class_id> <assignment_id> (--whole-class | --student-id <student_id> [--student-id <student_id> ...]) --output print|bundle|both [--duplex-safe] (--dry-run | --yes)
 quillan export-student-performance-summary <class_id> <assignment_id> [--overwrite]
 quillan export-class-summary <class_id> <assignment_id> [--overwrite]
 quillan export-comprehensive-class-summary <class_id> <assignment_id> [--overwrite]
@@ -2196,6 +2197,43 @@ remains the intentional one-student workflow.
 
 See [`batch_feedback_export.md`](batch_feedback_export.md) for the complete
 planning, overwrite, freshness, verification, privacy, and ownership contract.
+
+## Direct Feedback Batch Assembly
+
+Issue #412 adds a separate non-interactive distribution command:
+
+```powershell
+quillan assemble-feedback-batch <class_id> <assignment_id> `
+  --whole-class --output print --dry-run
+
+quillan assemble-feedback-batch <class_id> <assignment_id> `
+  --student-id <student_id> --student-id <student_id> `
+  --output bundle --yes
+
+quillan assemble-feedback-batch <class_id> <assignment_id> `
+  --whole-class --output both --duplex-safe --yes
+```
+
+Exactly one scope is required: `--whole-class` or one-or-more repeated exact
+`--student-id` arguments. Exactly one execution boundary is required:
+`--dry-run` or `--yes`. `--output` accepts `print`, `bundle`, or `both`.
+`--duplex-safe` is valid only when print output is requested.
+
+Planning is read-only, uses canonical roster order, and reports current,
+missing, stale, invalid, identity-mismatched, unavailable, or unreadable source
+PDFs without loading feedback text into the plan. Dry-run creates no batch or
+temporary directories. Execution revalidates every included canonical source
+against the confirmed preview, stages and verifies all requested outputs, then
+atomically installs one new assignment-local batch directory. The CLI never
+opens output automatically.
+
+Assembly does not invoke feedback generation. `F. Batch Feedback Export` owns
+generation and freshness replacement; `G. Prepare Feedback for Printing /
+Sharing` owns distribution assembly. Canonical per-student PDF paths and
+`review.json.exports.feedback_pdf` provenance remain unchanged.
+
+See [`batch_feedback_assembly.md`](batch_feedback_assembly.md) for the complete
+freshness, staging, privacy, filename, and release contract.
 
 
 ## Share Results with Meridian (menu-only orchestration)

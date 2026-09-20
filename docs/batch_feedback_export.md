@@ -5,6 +5,11 @@
 Issue #387 adds assignment-level orchestration for student feedback export without
 changing Quillan's teacher-judgment model or the existing single-student renderers.
 
+Issue #412 is intentionally separate: after #387 has created or refreshed
+canonical per-student PDFs, [Batch Feedback Assembly](batch_feedback_assembly.md)
+can collect only the current PDFs into disposable print or sharing artifacts.
+Assembly never invokes this generation workflow silently.
+
 The batch layer answers:
 
 ```text

@@ -1,53 +1,48 @@
-# v0.10.0 Candidate Acceptance Checklist
+# v0.10.1 Candidate Acceptance Checklist
 
-Classification: **active #393 acceptance procedure**.
+Classification: **active #412 patch-release procedure**.
 
 ## Preparation
 
-- [x] Candidate identity is Quillan `0.10.0`.
-- [x] Runtime dependency remains exactly `pds-core>=0.6.2,<0.7`.
-- [x] Historical v0.9.0 release evidence remains unchanged.
-- [ ] Core 0.6.2 exact wheel authenticated.
-- [ ] Core 0.6.3 exact wheel authenticated.
+- [x] Candidate identity is Quillan `0.10.1`.
+- [x] Runtime dependency remains `pds-core>=0.6.2,<0.7`.
+- [x] `pypdf>=5,<7` is a bounded runtime dependency.
+- [x] Historical v0.10.0 installed and physical evidence remains unchanged.
+- [ ] Core 0.6.2 and 0.6.3 exact wheels authenticated.
 - [ ] Full source/static/documentation gates pass.
-- [ ] Exactly one v0.10.0 wheel/sdist pair built.
+- [ ] Exactly one v0.10.1 wheel/sdist pair built.
 - [ ] Twine and artifact inspection pass.
-- [ ] Candidate filenames, byte lengths, and SHA-256 values recorded.
+- [ ] Candidate filenames, lengths, and SHA-256 values recorded.
 
 ## Installed acceptance
-
-Using the same exact wheel bytes:
 
 - [ ] Core 0.6.2 isolated install passes.
 - [ ] Core 0.6.3 isolated install passes.
 - [ ] No source checkout or `PYTHONPATH` shadowing.
-- [ ] `quillan = quillan.cli:main` verified independently.
-- [ ] Routing profile verified independently.
-- [ ] Publication-producer profile/lifecycle verified independently.
-- [ ] Module-operations profile reports attention and readiness.
-- [ ] Installed class-set workflow passes.
-- [ ] Mixed foreign-route isolation passes.
-- [ ] Exact tested wheel/sdist persisted externally.
+- [ ] Installed `quillan` console entry point verified.
+- [ ] Existing routing/publication/module-operation/class-set gates pass.
+- [ ] Whole-class feedback assembly dry-run creates nothing.
+- [ ] Installed print packet preserves roster order.
+- [ ] Installed sharing ZIP preserves source PDF bytes.
+- [ ] Canonical records and academic/publication state remain unchanged.
+- [ ] Exact tested wheel/sdist persisted outside the repository.
 
-## Physical owner acceptance
+## Physical boundary
 
-Using that exact persisted wheel:
-
-- [ ] Case A — representative class-set golden loop.
-- [ ] Case B — duplicate and missing page.
-- [ ] Case C — regeneration and mixed issuance.
-- [ ] Case D — foreign/mixed routing isolation, or exact Suite-boundary
-      limitation documented.
-- [ ] Printer/scanner environment recorded.
-- [ ] Physical/environment limitations classified.
-- [ ] No real student data used.
+- [x] No #412 change intentionally touches the v0.10.0 physical-paper boundary.
+- [ ] Reconfirm implementation diff did not invalidate that conclusion.
+- [ ] If invalidated, rerun affected physical acceptance before authorization.
 
 ## Authority
 
-- [ ] Post-merge exact commit requalified.
-- [ ] Installed acceptance: PASS.
-- [ ] Physical acceptance: PASS or explicitly nonblocking documented limitation.
-- [ ] `READY FOR #394` recorded.
+- [ ] Reconciled release commit qualified.
+- [ ] Installed acceptance passed against exact recorded bytes.
+- [ ] Artifact hashes recorded.
+- [ ] Owner explicitly authorized `v0.10.1`.
+- [ ] Tag and repository release use those exact artifacts.
 
-#393 does not itself grant final release authorization, authorize publication or
-deployment, create a tag, publish a GitHub Release, or upload to a package index.
+Do not upload to an external package index without separate explicit
+authorization.
+
+This checklist does not itself authorize a tag, GitHub Release, upload,
+publication, or deployment.
