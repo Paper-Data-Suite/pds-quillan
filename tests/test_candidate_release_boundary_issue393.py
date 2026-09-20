@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_candidate_validator_builds_v0100_once_and_qualifies_both_core_endpoints() -> None:
+def test_candidate_validator_builds_v0101_once_and_qualifies_both_core_endpoints() -> None:
     text = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
         encoding="utf-8"
     )
@@ -13,14 +13,14 @@ def test_candidate_validator_builds_v0100_once_and_qualifies_both_core_endpoints
     assert "$PdsCore063Wheel" in text
     assert "'--core-version', '0.6.2'" in text
     assert "'--core-version', '0.6.3'" in text
-    assert "quillan-0.10.0-py3-none-any.whl" in text
-    assert "quillan-0.10.0.tar.gz" in text
+    assert "quillan-0.10.1-py3-none-any.whl" in text
+    assert "quillan-0.10.1.tar.gz" in text
     assert text.count('"Build one wheel and sdist"') == 1
     assert "verify_installed_producer_acceptance.py" in text
     assert "verify_installed_operations_acceptance.py" in text
-    assert "'--version', '0.10.0'" in text
+    assert "'--version', '0.10.1'" in text
     assert "'--expected-core-version', $CoreVersion" in text
-    assert "Physical acceptance: PENDING OWNER" in text
+    assert "v0.10.0 physical acceptance remains applicable: NOT REPEATED" in text
 
 
 def test_candidate_validator_has_no_active_v090_or_core060_assumption() -> None:

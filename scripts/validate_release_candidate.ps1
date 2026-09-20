@@ -7,7 +7,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Prefix = "pds-quillan-v0100-candidate-"
+$Prefix = "pds-quillan-v0101-candidate-"
 $Repository = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $RepositoryParent = Split-Path $Repository -Parent
 $OriginalLocation = (Get-Location).Path
@@ -134,8 +134,8 @@ try {
     }
     finally { Pop-Location }
 
-    $Wheel = Join-Path $ArtifactRoot 'quillan-0.10.0-py3-none-any.whl'
-    $Sdist = Join-Path $ArtifactRoot 'quillan-0.10.0.tar.gz'
+    $Wheel = Join-Path $ArtifactRoot 'quillan-0.10.1-py3-none-any.whl'
+    $Sdist = Join-Path $ArtifactRoot 'quillan-0.10.1.tar.gz'
     Invoke-Required "Artifact inspection" $ResolvedPython @(
         $ArtifactInspector, $Wheel, $Sdist
     )
@@ -189,7 +189,7 @@ try {
                     $ProducerAcceptance,
                     '--workspace', (Join-Path $Acceptance 'workflow-workspace'),
                     '--repository', $Repository,
-                    '--version', '0.10.0',
+                    '--version', '0.10.1',
                     '--expected-core-version', $CoreVersion
                 )
             Invoke-Required "Installed module operations Core $CoreVersion" `
@@ -259,9 +259,9 @@ try {
         $Core062Wheel, $Core063Wheel, $Wheel, $Sdist |
         Format-Table -AutoSize
 
-    Write-Host "Automated v0.10.0 candidate validation: PASS"
-    Write-Host "Physical acceptance: PENDING OWNER"
-    Write-Host "READY FOR #394: NO"
+    Write-Host "Automated v0.10.1 candidate validation: PASS"
+    Write-Host "v0.10.0 physical acceptance remains applicable: NOT REPEATED"
+    Write-Host "READY FOR #412 RELEASE AUTHORIZATION: NO"
     Write-Host "Release authorization: NOT GRANTED"
 }
 finally {

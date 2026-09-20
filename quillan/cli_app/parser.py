@@ -25,6 +25,7 @@ from quillan.cli_app.handlers.review_queue import handle_review_queue
 from quillan.cli_app.handlers.review_status import handle_review_status
 from quillan.cli_app.handlers.review_workflow import handle_review_workflow_set_state
 from quillan.cli_app.handlers.exports import (
+    handle_assemble_feedback_batch,
     handle_export_class_summary,
     handle_export_feedback,
     handle_export_feedback_batch,
@@ -1658,6 +1659,54 @@ def build_parser() -> argparse.ArgumentParser:
         help="Explicitly authorize execution of the displayed deterministic plan.",
     )
     export_feedback_batch_parser.set_defaults(handler=handle_export_feedback_batch)
+
+    assemble_feedback_batch_parser = subparsers.add_parser(
+        "assemble-feedback-batch",
+        help="Assemble current feedback PDFs for teacher printing or sharing.",
+        description=(
+            "Preview or assemble roster-ordered current canonical feedback PDFs. "
+            "This command never generates feedback, changes review state, or publishes results."
+        ),
+    )
+    _add_assignment_identity_arguments(assemble_feedback_batch_parser)
+    assembly_scope = assemble_feedback_batch_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    assembly_scope.add_argument(
+        "--whole-class",
+        action="store_true",
+        help="Evaluate every student in canonical roster order.",
+    )
+    assembly_scope.add_argument(
+        "--student-id",
+        action="append",
+        help="Exact roster student ID; repeat for an explicit selection.",
+    )
+    assemble_feedback_batch_parser.add_argument(
+        "--output",
+        required=True,
+        choices=("print", "bundle", "both"),
+        help="Create a print packet, sharing bundle, or both.",
+    )
+    assemble_feedback_batch_parser.add_argument(
+        "--duplex-safe",
+        action="store_true",
+        help="Insert separator blanks between odd-page students in print output.",
+    )
+    assembly_execution = assemble_feedback_batch_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    assembly_execution.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Fully validate and print the plan without creating batch directories.",
+    )
+    assembly_execution.add_argument(
+        "--yes",
+        action="store_true",
+        help="Explicitly authorize assembly of the displayed plan.",
+    )
+    assemble_feedback_batch_parser.set_defaults(handler=handle_assemble_feedback_batch)
 
     export_class_summary_parser = subparsers.add_parser(
         "export-class-summary",

@@ -28,6 +28,14 @@ from quillan.batch_feedback_export import (
     build_batch_feedback_export_plan,
     execute_batch_feedback_export,
 )
+from quillan.batch_feedback_assembly import (
+    AssemblyOutput,
+    AssemblyScope,
+    BatchFeedbackAssemblyError,
+    FeedbackAssemblyResult,
+    build_feedback_assembly_plan,
+    execute_feedback_assembly,
+)
 from quillan.class_review_completion import (
     ClassReviewCompletionError,
     ClassReviewCompletionFilter,
@@ -44,6 +52,8 @@ from quillan.cli_app.output import (
     print_added_review_note,
     print_batch_feedback_export_plan,
     print_batch_feedback_export_result,
+    print_feedback_assembly_plan,
+    print_feedback_assembly_result,
     print_exported_class_summary,
     print_exported_feedback,
     print_exported_feedback_pdf,
@@ -60,6 +70,11 @@ from quillan.cli_app.output import (
     print_updated_review_unit_observation,
     print_updated_review_units,
     print_updated_review_workflow_state,
+)
+from quillan.generated_output_opening import (
+    GeneratedOutputOpeningError,
+    open_generated_output_file,
+    open_generated_output_folder,
 )
 from quillan.feedback_export import (
     FeedbackExportError,
@@ -4378,6 +4393,7 @@ def _launch_assignment_review_actions(
         print("7. Review class progress")
         print("S. Share Results with Meridian")
         print("F. Batch Feedback Export")
+        print("G. Prepare Feedback for Printing / Sharing")
         print_navigation_options()
         print()
 
@@ -4445,6 +4461,8 @@ def _launch_assignment_review_actions(
             )
         elif choice.casefold() == "f":
             _menu_batch_feedback_export(workspace_root, class_id, assignment_id)
+        elif choice.casefold() == "g":
+            _menu_feedback_assembly(workspace_root, class_id, assignment_id)
         else:
             print("Invalid selection. Please choose a listed action.")
             input("Press Enter to continue...")
@@ -4642,6 +4660,157 @@ def _prompt_batch_feedback_overwrite_policy(
         input("Press Enter to continue...")
         return None
     return policies[choice]
+
+
+def _menu_feedback_assembly(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    """Preview and explicitly assemble current canonical feedback PDFs."""
+    _print_assignment_action_header(
+        "Prepare Feedback for Printing / Sharing", class_id, assignment_id
+    )
+    print("1. Whole class")
+    print("2. Select roster students")
+    print_navigation_options()
+    print()
+    choice = input("Select scope: ").strip()
+    navigation = parse_navigation_choice(choice)
+    if choice == "" or navigation is NavigationChoice.BACK:
+        return
+    scope: AssemblyScope
+    student_ids: tuple[str, ...] = ()
+    if choice == "1":
+        scope = "whole_class"
+    elif choice == "2":
+        scope = "selected"
+        queue = _load_review_work_queue(workspace_root, class_id, assignment_id)
+        if queue is None:
+            input("Press Enter to continue...")
+            return
+        selection = _prompt_batch_feedback_student_ids(queue)
+        if selection is None:
+            return
+        student_ids = selection
+    else:
+        print(f"Invalid selection. {navigation_hint()}")
+        input("Press Enter to continue...")
+        return
+
+    output = _prompt_feedback_assembly_output(class_id, assignment_id)
+    if output is None:
+        return
+    duplex_safe = False
+    if output in {"print", "both"}:
+        answer = input(
+            "Keep each student's feedback on a separate physical sheet "
+            "when duplex printing? (y/N): "
+        ).strip()
+        if parse_navigation_choice(answer) is NavigationChoice.BACK:
+            return
+        duplex_safe = answer.casefold() in {"y", "yes"}
+
+    try:
+        plan = build_feedback_assembly_plan(
+            workspace_root,
+            class_id,
+            assignment_id,
+            scope=scope,
+            output=output,
+            duplex_safe=duplex_safe,
+            student_ids=student_ids,
+        )
+    except (BatchFeedbackAssemblyError, OSError, ValueError) as error:
+        print(f"Error: could not plan feedback batch assembly: {error}")
+        input("Press Enter to continue...")
+        return
+
+    _print_assignment_action_header(
+        "Feedback Batch Assembly Preview", class_id, assignment_id
+    )
+    print_feedback_assembly_plan(plan)
+    if plan.included_count == 0:
+        print()
+        print(
+            "No current feedback PDFs are ready. Use Batch Feedback Export for "
+            "missing or stale students."
+        )
+        input("Press Enter to continue...")
+        return
+    print()
+    confirmation = input("Assemble these feedback artifacts? (y/yes): ").strip()
+    if confirmation.casefold() not in {"y", "yes"}:
+        print("Feedback batch assembly canceled; no files were written.")
+        return
+
+    try:
+        result = execute_feedback_assembly(workspace_root, plan)
+    except BatchFeedbackAssemblyError as error:
+        print(f"Error: could not assemble feedback batch: {error}")
+        input("Press Enter to continue...")
+        return
+    _print_assignment_action_header(
+        "Feedback Batch Assembly Result", class_id, assignment_id
+    )
+    print_feedback_assembly_result(result)
+    _prompt_open_feedback_assembly(workspace_root, result)
+
+
+def _prompt_feedback_assembly_output(
+    class_id: str,
+    assignment_id: str,
+) -> AssemblyOutput | None:
+    _print_assignment_action_header(
+        "Feedback Distribution Output", class_id, assignment_id
+    )
+    print("1. Print packet")
+    print("2. Sharing bundle")
+    print("3. Both")
+    print_navigation_options()
+    print()
+    choice = input("Select output: ").strip()
+    if choice == "" or parse_navigation_choice(choice) is NavigationChoice.BACK:
+        return None
+    outputs: dict[str, AssemblyOutput] = {
+        "1": "print",
+        "2": "bundle",
+        "3": "both",
+    }
+    if choice not in outputs:
+        print(f"Invalid selection. {navigation_hint()}")
+        input("Press Enter to continue...")
+        return None
+    return outputs[choice]
+
+
+def _prompt_open_feedback_assembly(
+    workspace_root: Path,
+    result: FeedbackAssemblyResult,
+) -> None:
+    primary = (
+        result.print_packet_relative_path
+        or result.sharing_bundle_relative_path
+    )
+    if primary is None:
+        return
+    label = "print packet" if result.print_packet_relative_path else "sharing bundle"
+    print()
+    print(f"1. Open {label}")
+    print("2. Open output folder")
+    print("3. Back")
+    choice = input("Select an option: ").strip()
+    if choice in {"", "3"} or parse_navigation_choice(choice) is NavigationChoice.BACK:
+        return
+    try:
+        if choice == "1":
+            opened = open_generated_output_file(workspace_root, primary)
+            print(f"Opened {label}: {opened.relative_path}")
+        elif choice == "2":
+            opened = open_generated_output_folder(workspace_root, primary)
+            print(f"Opened output folder: {opened.relative_path}")
+    except GeneratedOutputOpeningError as error:
+        print(f"Error: could not open generated output: {error}")
 
 
 def _menu_class_review_progress(

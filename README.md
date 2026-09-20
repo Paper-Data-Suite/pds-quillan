@@ -76,8 +76,8 @@ world languages, arts/humanities, and interdisciplinary writing tasks.
 
 ## Current Status
 
-Quillan 0.10.0 is the current teacher-workflow release candidate. It builds on the
-released v0.9.0 academic-publication boundary and keeps the active workflow
+Quillan 0.10.1 is the current patch-release candidate. It builds on the
+released v0.10.0 teacher-workflow line and keeps the active workflow
 standards-based:
 
 ```text
@@ -108,6 +108,7 @@ Quillan currently supports:
 * reusable review-configuration presets in `shared/review_configuration_presets/`;
 * reusable Focus Standard comments in `shared/focus_standard_comments/`;
 * student feedback export to Markdown, PDF, or both;
+* assignment-level print-packet and sharing-ZIP assembly from current PDFs;
 * assignment-local Student Performance Summary export;
 * assignment-local Comprehensive Class Summary export; and
 * assignment-local Focus Standard summary export.
@@ -271,6 +272,7 @@ menu keeps routine class-set status visible and exposes:
 6. Refresh
 7. Review class progress
 F. Batch Feedback Export
+G. Prepare Feedback for Printing / Sharing
 S. Share Results with Meridian
 B. Back
 M. Main Menu
@@ -432,6 +434,7 @@ docs/assignment_contract.md
 docs/review_record_contract.md
 docs/focus_standard_comment_contract.md
 docs/feedback_export_contract.md
+docs/batch_feedback_assembly.md
 docs/assignment_reporting_contract.md
 docs/cli_contract.md
 docs/prepared_review_workflow.md
@@ -475,7 +478,7 @@ powershell -ExecutionPolicy Bypass `
 The equivalent `PDS_CORE_WHEEL` environment variable may be used instead of
 `-PdsCoreWheel`; an explicit parameter takes precedence. The isolated validation
 checks package metadata, editable and noneditable installation, installed import
-origins, CLI availability, and workspace side effects. The v0.10.0 candidate runtime is PDS2-only and uses module-qualified storage throughout.
+origins, CLI availability, and workspace side effects. The v0.10.1 candidate runtime is PDS2-only and uses module-qualified storage throughout.
 
 Release-candidate validation qualifies the same built Quillan wheel against exact,
 authenticated Core 0.6.2 and Core 0.6.3 endpoint wheels. At each endpoint it runs

@@ -1,4 +1,4 @@
-"""Verify the Quillan v0.10.0 release-candidate compatibility boundary."""
+"""Verify the Quillan v0.10.1 patch-release compatibility boundary."""
 
 from __future__ import annotations
 
@@ -25,8 +25,8 @@ from quillan.pds_operations import get_module_operations_profile
 from quillan.pds_publication import get_publication_producer_profile
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RELEASE_VERSION = "0.10.0"
-PREVIOUS_RELEASE_VERSION = "0.9.0"
+RELEASE_VERSION = "0.10.1"
+PREVIOUS_RELEASE_VERSION = "0.10.0"
 EXPECTED_CORE_SPECIFIER = SpecifierSet(">=0.6.2,<0.7")
 EXPECTED_CAPABILITIES = frozenset({"standards_ratings"})
 EXPECTED_ARTIFACT_KINDS = frozenset(
@@ -56,22 +56,20 @@ ACTIVE_VERSION_FILES = (
     Path("SECURITY.md"),
     Path("docs/release_process.md"),
     Path("docs/release_checklist.md"),
-    Path("docs/v0.10.0_installed_class_set_acceptance.md"),
-    Path("docs/physical_acceptance_v0.10.0.md"),
+    Path("docs/v0.10.1_installed_batch_feedback_acceptance.md"),
     Path("scripts/inspect_release_artifacts.py"),
     Path("scripts/persist_release_artifacts.py"),
     Path("scripts/run_installed_acceptance.py"),
     Path("scripts/validate_release_candidate.ps1"),
 )
 
-HISTORICAL_V090_RELEASE_FILES = (
-    Path("docs/releases/v0.9.0.md"),
-    Path("docs/releases/v0.9.0_acceptance_matrix.md"),
-    Path("docs/physical_acceptance_v0.9.0.md"),
+HISTORICAL_PREVIOUS_RELEASE_FILES = (
+    Path("docs/v0.10.0_installed_class_set_acceptance.md"),
+    Path("docs/physical_acceptance_v0.10.0.md"),
 )
 
 class ReleaseCompatibilityError(RuntimeError):
-    """Raised when the v0.10.0 release-candidate boundary is inconsistent."""
+    """Raised when the v0.10.1 patch-release boundary is inconsistent."""
 
 
 def _read(relative: Path) -> str:
@@ -93,33 +91,33 @@ def validate_release_identity() -> None:
     project = tomllib.loads(_read(Path("pyproject.toml")))["project"]
     if project.get("name") != "quillan" or __version__ != RELEASE_VERSION:
         raise ReleaseCompatibilityError(
-            "distribution/runtime version must be quillan 0.10.0"
+            "distribution/runtime version must be quillan 0.10.1"
         )
 
     for relative in ACTIVE_VERSION_FILES:
         text = _read(relative)
         if RELEASE_VERSION not in text:
             raise ReleaseCompatibilityError(
-                f"active release surface lacks 0.10.0: {relative}"
+                f"active release surface lacks 0.10.1: {relative}"
             )
 
-    for relative in HISTORICAL_V090_RELEASE_FILES:
+    for relative in HISTORICAL_PREVIOUS_RELEASE_FILES:
         text = _read(relative)
         if PREVIOUS_RELEASE_VERSION not in text:
             raise ReleaseCompatibilityError(
-                f"historical v0.9.0 release evidence lost its identity: {relative}"
+                f"historical v0.10.0 release evidence lost its identity: {relative}"
             )
 
     changelog = _read(Path("CHANGELOG.md"))
-    candidate_heading = "## 0.10.0 - Unreleased"
-    previous_heading = "## 0.9.0 - 2026-08-16"
+    candidate_heading = "## 0.10.1 - Unreleased"
+    previous_heading = "## 0.10.0 - 2026-08-26"
     if candidate_heading not in changelog or previous_heading not in changelog:
         raise ReleaseCompatibilityError(
-            "changelog must preserve v0.10.0 candidate and released v0.9.0 history"
+            "changelog must preserve v0.10.1 candidate and released v0.10.0 history"
         )
     if changelog.index(candidate_heading) > changelog.index(previous_heading):
         raise ReleaseCompatibilityError(
-            "v0.10.0 candidate changelog entry must precede v0.9.0 history"
+            "v0.10.1 candidate changelog entry must precede v0.10.0 history"
         )
 
 
@@ -140,6 +138,13 @@ def validate_core_and_sibling_dependencies() -> None:
     siblings = {canonicalize_name(value) for value in SIBLING_DISTRIBUTIONS}
     if any(canonicalize_name(value.name) in siblings for value in dependencies):
         raise ReleaseCompatibilityError("Quillan has a sibling runtime dependency")
+    pdf = tuple(
+        value for value in dependencies if canonicalize_name(value.name) == "pypdf"
+    )
+    if len(pdf) != 1 or pdf[0].specifier != SpecifierSet(">=5,<7"):
+        raise ReleaseCompatibilityError(
+            "Quillan must require exactly pypdf>=5,<7 for batch PDF assembly"
+        )
 
 
 def validate_sibling_import_isolation() -> None:
@@ -271,7 +276,7 @@ def main() -> int:
     ) as error:
         print(f"Release compatibility audit failed: {error}")
         return 1
-    print("Quillan v0.10.0 compatibility: PASS")
+    print("Quillan v0.10.1 compatibility: PASS")
     return 0
 
 

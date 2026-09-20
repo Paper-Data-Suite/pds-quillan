@@ -4464,6 +4464,111 @@
     {
       "path": [
         "quillan",
+        "assemble-feedback-batch"
+      ],
+      "aliases": [],
+      "short_help": "Assemble current feedback PDFs for teacher printing or sharing.",
+      "description": "Preview or assemble roster-ordered current canonical feedback PDFs. This command never generates feedback, changes review state, or publishes results.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--whole-class"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Evaluate every student in canonical roster order.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--student-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Exact roster student ID; repeat for an explicit selection.",
+          "mutex_group": 1
+        },
+        {
+          "names": [
+            "--output"
+          ],
+          "required": true,
+          "choices": [
+            "print",
+            "bundle",
+            "both"
+          ],
+          "default": null,
+          "help": "Create a print packet, sharing bundle, or both.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--duplex-safe"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Insert separator blanks between odd-page students in print output.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--dry-run"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Fully validate and print the plan without creating batch directories.",
+          "mutex_group": 2
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly authorize assembly of the displayed plan.",
+          "mutex_group": 2
+        }
+      ],
+      "mutex_groups": [
+        {
+          "group": 1,
+          "required": true
+        },
+        {
+          "group": 2,
+          "required": true
+        }
+      ]
+    },
+    {
+      "path": [
+        "quillan",
         "export-class-summary"
       ],
       "aliases": [

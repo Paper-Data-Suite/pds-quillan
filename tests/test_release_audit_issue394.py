@@ -32,6 +32,7 @@ def test_readme_describes_final_compact_review_and_release_endpoints() -> None:
         "R. Resolve Scan Review Items",
         "7. Review class progress",
         "F. Batch Feedback Export",
+        "G. Prepare Feedback for Printing / Sharing",
         "S. Share Results with Meridian",
         "O. Open Evidence",
         "C. Continue Review — <current continuation label>",
@@ -40,7 +41,7 @@ def test_readme_describes_final_compact_review_and_release_endpoints() -> None:
         "P. Previous Student",
         "W. Next Student Needing Review",
         "`pds-core>=0.6.2,<0.7` runtime dependency",
-        "The v0.10.0 candidate runtime is PDS2-only",
+        "The v0.10.1 candidate runtime is PDS2-only",
         "authenticated Core 0.6.2 and Core 0.6.3 endpoint wheels",
     ):
         assert expected in source
@@ -54,21 +55,20 @@ def test_readme_describes_final_compact_review_and_release_endpoints() -> None:
 def test_active_data_contract_index_uses_v010_release_boundary() -> None:
     source = _text("docs/data_contracts.md")
 
-    assert "Quillan v0.10.0 requires `pds-core>=0.6.2,<0.7`" in source
+    assert "Quillan v0.10.1 requires `pds-core>=0.6.2,<0.7`" in source
     assert "Core 0.6.2 minimum endpoint and Core 0.6.3 current endpoint" in source
-    assert "The active v0.10.0 review model is standards-based:" in source
-    assert "This index documents the active v0.10.0 contracts." in source
+    assert "The active v0.10.1 review model is standards-based:" in source
+    assert "This index documents the active v0.10.1 contracts." in source
     assert "Historical Core 0.6.0 producer" in source
 
     assert "The active v0.8.6 review model is standards-based:" not in source
     assert "This index documents the active v0.8.6 contracts." not in source
 
 
-def test_unreleased_changelog_reflects_completed_issue393_gate() -> None:
+def test_unreleased_changelog_reflects_issue412_patch_boundary() -> None:
     source = _text("CHANGELOG.md")
-    current = source.split("## 0.9.0 -", maxsplit=1)[0]
+    current = source.split("## 0.10.0 -", maxsplit=1)[0]
 
-    assert "#393 installed/physical candidate acceptance completed" in current
-    assert "#394 final workflow/release audit" in current
-    assert "explicit owner release authorization" in current
-    assert "Release remains pending #393 installed/physical acceptance" not in current
+    assert "feedback batch assembly (#412)" in current
+    assert "pypdf>=5,<7" in current
+    assert "per-student PDFs" in current

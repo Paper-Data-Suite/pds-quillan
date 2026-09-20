@@ -31,6 +31,7 @@ MENU_DENSITY_ACCEPTANCE_MATRIX = {
     "workflow-state changes": "tests/test_menu_review_student_work.py::test_review_menu_updates_review_workflow_state",
     "feedback export": "tests/test_menu_export_actions.py::test_menu_export_student_feedback_creates_feedback_file",
     "batch feedback export": "tests/test_menu_batch_feedback_export_issue387.py::test_menu_completed_batch_previews_once_then_executes_once",
+    "feedback batch assembly": "tests/test_menu_batch_feedback_assembly_issue412.py::test_menu_previews_once_executes_once_and_opens_with_safe_helper",
     "class review progress": "tests/test_menu_class_review_completion_issue388.py::test_class_review_progress_density_uses_real_workflow",
     "share results with Meridian": "tests/test_menu_share_results_density_issue389.py::test_share_results_with_meridian_density_uses_real_workflow",
     "assignment-report export": "tests/test_menu_export_actions.py::test_menu_export_class_summary_creates_summary_file",

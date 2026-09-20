@@ -16,11 +16,20 @@ from quillan.batch_feedback_export import (
     build_batch_feedback_export_plan,
     execute_batch_feedback_export,
 )
+from quillan.batch_feedback_assembly import (
+    AssemblyOutput,
+    AssemblyScope,
+    BatchFeedbackAssemblyError,
+    build_feedback_assembly_plan,
+    execute_feedback_assembly,
+)
 from quillan.class_summary_export import (
     ClassSummaryExportError,
     export_class_review_summary,
 )
 from quillan.cli_app.output import (
+    print_feedback_assembly_plan,
+    print_feedback_assembly_result,
     print_batch_feedback_export_plan,
     print_batch_feedback_export_result,
     print_exported_class_summary,
@@ -123,6 +132,36 @@ def handle_export_feedback_batch(args: argparse.Namespace) -> int:
         "verification_failed",
     }
     return 1 if any(item.outcome in unsuccessful for item in result.items) else 0
+
+
+def handle_assemble_feedback_batch(args: argparse.Namespace) -> int:
+    """Plan or explicitly assemble existing current feedback PDFs."""
+    try:
+        workspace_root = resolve_workspace_root()
+        scope: AssemblyScope = "whole_class" if args.whole_class else "selected"
+        plan = build_feedback_assembly_plan(
+            workspace_root,
+            args.class_id,
+            args.assignment_id,
+            scope=scope,
+            student_ids=tuple(args.student_id or ()),
+            output=cast(AssemblyOutput, args.output),
+            duplex_safe=bool(args.duplex_safe),
+        )
+    except (WorkspaceRootError, BatchFeedbackAssemblyError) as error:
+        print(f"Error: could not plan feedback batch assembly: {error}", file=sys.stderr)
+        return 1
+
+    print_feedback_assembly_plan(plan)
+    if args.dry_run:
+        return 0
+    try:
+        result = execute_feedback_assembly(workspace_root, plan)
+    except BatchFeedbackAssemblyError as error:
+        print(f"Error: could not assemble feedback batch: {error}", file=sys.stderr)
+        return 1
+    print_feedback_assembly_result(result)
+    return 0
 
 
 def handle_export_class_summary(args: argparse.Namespace) -> int:

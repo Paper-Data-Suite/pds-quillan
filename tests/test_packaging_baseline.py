@@ -67,6 +67,20 @@ def test_core_requirement_identity_uses_standard_name_normalization() -> None:
     ]
 
 
+def test_pdf_composition_dependency_is_runtime_bounded() -> None:
+    project = _configuration()["project"]
+    assert isinstance(project, dict)
+    dependencies = project["dependencies"]
+    assert isinstance(dependencies, list)
+    values = [
+        Requirement(value)
+        for value in dependencies
+        if canonicalize_name(Requirement(value).name) == "pypdf"
+    ]
+    assert len(values) == 1
+    assert {str(value) for value in values[0].specifier} == {">=5", "<7"}
+
+
 def test_development_extras_declare_packaging_directly() -> None:
     project = _configuration()["project"]
     assert isinstance(project, dict)

@@ -282,10 +282,19 @@ Derived outputs are generated from teacher-reviewed records:
 * `exports/student_performance_summary.csv`
 * `exports/class_summary.csv`
 * `exports/standards_summary.csv`
+* `exports/feedback_batches/<batch_id>/feedback_print_packet.pdf`
+* `exports/feedback_batches/<batch_id>/feedback_sharing_bundle.zip`
 
 Exports and reports should be reproducible from the applicable reviewed
 records and should not become the sole copy of submission evidence or teacher
 decisions.
+
+The feedback-batch directory is a noncanonical, teacher-facing distribution
+layer. Its print packet and sharing ZIP are rebuilt only from already-current
+canonical per-student PDFs. Deleting any directory beneath
+`exports/feedback_batches/` does not change `review.json`, `submission.json`,
+feedback provenance, Academic Work, Academic Results, Publication Records, or
+Meridian state.
 
 ## Active Records vs. Historical Preservation
 
