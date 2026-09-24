@@ -311,7 +311,7 @@ def test_review_ready_navigation_failure_uses_explicit_unavailable_labels(
     before = _snapshot(tmp_path)
     monkeypatch.setattr(
         review_menu,
-        "build_review_student_navigation",
+        "build_review_student_navigation_from_read_context",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             ReviewStudentNavigationError("synthetic canonical navigation failure")
         ),
@@ -357,7 +357,7 @@ def test_attention_required_compact_root_surfaces_bounded_reason_and_warning(
     )
     monkeypatch.setattr(
         review_menu,
-        "build_review_student_navigation",
+        "build_review_student_navigation_from_read_context",
         lambda *_args, **_kwargs: attention,
     )
     _inputs(monkeypatch, ("b",))
@@ -397,7 +397,7 @@ def test_needs_assembly_remains_recovery_screen_not_compact_review_root(
     )
     monkeypatch.setattr(
         review_menu,
-        "build_review_student_navigation",
+        "build_review_student_navigation_from_read_context",
         lambda *_args, **_kwargs: needs_assembly,
     )
     monkeypatch.setattr(

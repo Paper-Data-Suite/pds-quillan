@@ -10,9 +10,10 @@ import pytest
 import quillan.review_menu as review_menu
 from quillan.plain_paper_submission import create_plain_paper_submission
 from quillan.review_record_paths import review_record_path
+from quillan.review_read_context import AssignmentReviewReadContext
 from quillan.review_student_navigation import (
     ReviewStudentNavigation,
-    build_review_student_navigation,
+    build_review_student_navigation_from_read_context,
 )
 from tests.test_menu_review_student_work import (
     ASSIGNMENT_ID,
@@ -140,19 +141,18 @@ def test_navigation_rebuilds_from_current_queue_on_every_root_redraw(
     calls: list[str] = []
 
     def recording_builder(
-        workspace_root: str | Path,
-        class_id: str,
-        assignment_id: str,
+        read_context: AssignmentReviewReadContext,
         student_id: str,
     ) -> ReviewStudentNavigation:
         calls.append(student_id)
-        return build_review_student_navigation(
-            workspace_root, class_id, assignment_id, student_id
+        return build_review_student_navigation_from_read_context(
+            read_context,
+            student_id,
         )
 
     monkeypatch.setattr(
         review_menu,
-        "build_review_student_navigation",
+        "build_review_student_navigation_from_read_context",
         recording_builder,
     )
     _inputs(monkeypatch, ("n", "p", "b"))
@@ -267,7 +267,7 @@ def test_unrostered_selected_student_fails_closed_for_class_set_navigation(
     )
     monkeypatch.setattr(
         review_menu,
-        "build_review_student_navigation",
+        "build_review_student_navigation_from_read_context",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             ReviewStudentNavigationError("student is outside the canonical roster")
         ),
@@ -307,19 +307,15 @@ def test_completed_child_write_is_reflected_by_fresh_navigation_redraw(
 
     _prepare(tmp_path, monkeypatch)
     marker = tmp_path / "synthetic-explicit-child-write"
-    real_builder = build_review_student_navigation
+    real_builder = build_review_student_navigation_from_read_context
     calls: list[bool] = []
 
     def state_sensitive_builder(
-        workspace_root: str | Path,
-        class_id: str,
-        assignment_id: str,
+        read_context: AssignmentReviewReadContext,
         student_id: str,
     ) -> ReviewStudentNavigation:
         navigation = real_builder(
-            workspace_root,
-            class_id,
-            assignment_id,
+            read_context,
             student_id,
         )
         changed = marker.exists()
@@ -341,7 +337,7 @@ def test_completed_child_write_is_reflected_by_fresh_navigation_redraw(
 
     monkeypatch.setattr(
         review_menu,
-        "build_review_student_navigation",
+        "build_review_student_navigation_from_read_context",
         state_sensitive_builder,
     )
     monkeypatch.setattr(review_menu, "_menu_add_review_note", explicit_child_write)

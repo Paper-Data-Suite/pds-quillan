@@ -144,6 +144,11 @@ from quillan.review_continuation import (
     ReviewContinuationError,
     derive_review_continuation,
 )
+from quillan.review_read_context import (
+    AssignmentReviewReadContext,
+    ReviewReadContextError,
+    build_assignment_review_read_context,
+)
 from quillan.review_status_display import (
     review_progress_status,
     review_status_label,
@@ -152,6 +157,7 @@ from quillan.review_student_navigation import (
     ReviewStudentNavigation,
     ReviewStudentNavigationError,
     build_review_student_navigation,
+    build_review_student_navigation_from_read_context,
 )
 from quillan.review_work_queue import (
     CATEGORY_LABELS,
@@ -195,8 +201,10 @@ from quillan.submission_status import (
 )
 from quillan.student_display import student_display_lookup, student_review_label
 from quillan.student_review_status import (
+    StudentReviewStatus,
     StudentReviewStatusError,
     build_student_review_status,
+    build_student_review_status_from_read_context,
     student_review_status_to_dict,
 )
 from quillan.menu_context import (
@@ -417,11 +425,52 @@ def _workspace_root() -> Path | None:
         return None
 
 
+def _load_selected_review_read_context(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> AssignmentReviewReadContext | None:
+    try:
+        return build_assignment_review_read_context(
+            workspace_root,
+            class_id,
+            assignment_id,
+        )
+    except (ReviewReadContextError, OSError) as error:
+        print(f"Error: could not build selected review context: {error}")
+        return None
+
+
+def _print_selected_review_active_context(
+    read_context: AssignmentReviewReadContext,
+) -> None:
+    assignment = read_context.assignment_context.assignment
+    print("Active context")
+    print(f"Class: {read_context.class_id}")
+    print(
+        f"Assignment: {read_context.assignment_id} - "
+        f"{assignment['title']}"
+    )
+    print()
+
 def _load_submission_status(
     workspace_root: Path,
     class_id: str,
     assignment_id: str,
+    *,
+    selected_review_status: StudentReviewStatus | None = None,
 ) -> AssignmentSubmissionStatus | None:
+    if selected_review_status is not None:
+        try:
+            return _selected_submission_status_from_review_status(
+                workspace_root,
+                class_id,
+                assignment_id,
+                selected_review_status,
+            )
+        except (TypeError, ValueError) as error:
+            print(f"Error: could not project selected submission status: {error}")
+            return None
     try:
         return list_assignment_submission_status(
             workspace_root,
@@ -431,6 +480,74 @@ def _load_submission_status(
     except Exception as error:
         print(f"Error: could not list submission status: {error}")
         return None
+
+
+def _selected_submission_status_from_review_status(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    selected_review_status: StudentReviewStatus,
+) -> AssignmentSubmissionStatus:
+    """Project only the selected-root branch state without an assignment-wide read."""
+    if (
+        selected_review_status.class_id != class_id
+        or selected_review_status.assignment_id != assignment_id
+    ):
+        raise ValueError("Selected review status identity does not match active context.")
+
+    data = student_review_status_to_dict(selected_review_status)
+    routed = cast(dict[str, Any], data["routed_evidence"])
+    submission = cast(dict[str, Any], data["submission"])
+    student_id = selected_review_status.student_id
+
+    if submission["status"] == "missing" and routed["available"] is not True:
+        raise ValueError("Routed evidence status is unavailable for the selected student.")
+
+    routed_present = routed["present"] is True
+    has_manifest = submission["status"] != "missing"
+    if not has_manifest and not routed_present:
+        student_statuses: tuple[StudentSubmissionStatus, ...] = ()
+    else:
+        manifest_path = (
+            workspace_root / str(submission["path"])
+            if has_manifest
+            else None
+        )
+        submission_state = (
+            str(submission["state"])
+            if submission["state"] is not None
+            else None
+        )
+        student_statuses = (
+            StudentSubmissionStatus(
+                student_id=student_id,
+                manifest_path=manifest_path,
+                submission_state=submission_state,
+                pages=(),
+                missing_pages=(),
+                duplicate_pages=(),
+                needs_rescan_pages=(),
+                excluded_pages=(),
+                unselected_present_pages=(),
+                plain_paper=submission["plain_paper"] is True,
+            ),
+        )
+
+    manifest_students = (student_id,) if has_manifest else ()
+    routed_students = (student_id,) if routed_present else ()
+    students_without_manifests = (
+        (student_id,) if routed_present and not has_manifest else ()
+    )
+    return AssignmentSubmissionStatus(
+        class_id=class_id,
+        assignment_id=assignment_id,
+        students_with_manifests=manifest_students,
+        students_with_routed_evidence=routed_students,
+        students_without_manifests=students_without_manifests,
+        unassembled_routed_files=(),
+        unused_duplicate_routed_files=(),
+        student_statuses=student_statuses,
+    )
 
 
 def _load_review_dashboard(
@@ -604,8 +721,15 @@ def _load_review_student_navigation(
     class_id: str,
     assignment_id: str,
     student_id: str,
+    *,
+    read_context: AssignmentReviewReadContext | None = None,
 ) -> ReviewStudentNavigation | None:
     try:
+        if read_context is not None:
+            return build_review_student_navigation_from_read_context(
+                read_context,
+                student_id,
+            )
         return build_review_student_navigation(
             workspace_root,
             class_id,
@@ -944,12 +1068,28 @@ def _launch_selected_student_review(
     while True:
         clear_screen()
         print_menu_header("Selected Student Review")
-        print_active_context(workspace_root, class_id, assignment_id)
+        read_context = _load_selected_review_read_context(
+            workspace_root,
+            class_id,
+            assignment_id,
+        )
+        if read_context is None:
+            return 1
+        _print_selected_review_active_context(read_context)
+        try:
+            selected_review_status = build_student_review_status_from_read_context(
+                read_context,
+                current_student_id,
+            )
+        except StudentReviewStatusError as error:
+            print(f"Status unavailable: {error}")
+            return 1
         _print_review_summary(
             workspace_root,
             class_id,
             assignment_id,
             current_student_id,
+            status=selected_review_status,
         )
         print()
         class_set_navigation = _load_review_student_navigation(
@@ -957,6 +1097,7 @@ def _launch_selected_student_review(
             class_id,
             assignment_id,
             current_student_id,
+            read_context=read_context,
         )
         review_continuation = _review_continuation_for_selected_student(
             class_set_navigation,
@@ -966,7 +1107,12 @@ def _launch_selected_student_review(
         )
         print()
 
-        status = _load_submission_status(workspace_root, class_id, assignment_id)
+        status = _load_submission_status(
+            workspace_root,
+            class_id,
+            assignment_id,
+            selected_review_status=selected_review_status,
+        )
         student_status = _student_submission_status(status, current_student_id)
         if student_status is None:
             _print_review_student_navigation(class_set_navigation)
@@ -1636,28 +1782,36 @@ def _print_review_summary(
     class_id: str,
     assignment_id: str,
     student_id: str,
+    *,
+    status: StudentReviewStatus | None = None,
 ) -> None:
     print("Current review summary")
     print()
-    try:
-        status = build_student_review_status(
-            workspace_root, class_id, assignment_id, student_id
-        )
-    except StudentReviewStatusError as error:
-        print(f"Status unavailable: {error}")
-        return
+    if status is None:
+        try:
+            status = build_student_review_status(
+                workspace_root, class_id, assignment_id, student_id
+            )
+        except StudentReviewStatusError as error:
+            print(f"Status unavailable: {error}")
+            return
     data = student_review_status_to_dict(status)
+    student = cast(dict[str, Any], data["student"])
     routed = cast(dict[str, Any], data["routed_evidence"])
     submission = cast(dict[str, Any], data["submission"])
     review = cast(dict[str, Any], data["review"])
     progress = cast(dict[str, Any], review["progress"])
     exports = cast(dict[str, Any], review["exports"])
     export_summary = cast(dict[str, Any], exports["summary"])
+    display_name = str(student["display_name"])
+    student_label = (
+        student_id
+        if display_name == student_id
+        else f"{display_name} ({student_id})"
+    )
     print(f"Class: {class_id}")
     print(f"Assignment: {assignment_id}")
-    print(
-        f"Student: {student_review_label(workspace_root, class_id, student_id)}"
-    )
+    print(f"Student: {student_label}")
     print(f"Submission: {submission['status']}")
     print(f"Routed evidence files: {routed['file_count']}")
     print(f"Needs assembly: {_format_yes_no(routed['needs_assembly'] is True)}")

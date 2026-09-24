@@ -8,10 +8,12 @@ from types import SimpleNamespace
 import pytest
 
 import quillan.review_menu as review_menu
+from quillan.review_read_context import AssignmentReviewReadContext
 from quillan.review_student_navigation import (
     ReviewStudentNavigation,
     ReviewStudentNavigationError,
     build_review_student_navigation,
+    build_review_student_navigation_from_read_context,
 )
 from tests.test_menu_review_student_work import (
     ASSIGNMENT_ID,
@@ -148,7 +150,7 @@ def test_continue_review_routes_each_available_stage_to_existing_child_workflow(
     navigation = _navigation_with_category(tmp_path, STUDENT_ID, category)
     monkeypatch.setattr(
         review_menu,
-        "build_review_student_navigation",
+        "build_review_student_navigation_from_read_context",
         lambda *_args, **_kwargs: navigation,
     )
     calls = _record_handlers(monkeypatch)
@@ -180,14 +182,13 @@ def test_continue_review_recalculates_after_each_child_returns(
     build_calls: list[str] = []
 
     def changing_builder(
-        root: str | Path,
-        class_id: str,
-        assignment_id: str,
+        read_context: AssignmentReviewReadContext,
         student_id: str,
     ) -> ReviewStudentNavigation:
         build_calls.append(student_id)
-        navigation = build_review_student_navigation(
-            root, class_id, assignment_id, student_id
+        navigation = build_review_student_navigation_from_read_context(
+            read_context,
+            student_id,
         )
         category = next(categories)
         return replace(
@@ -201,7 +202,7 @@ def test_continue_review_recalculates_after_each_child_returns(
 
     monkeypatch.setattr(
         review_menu,
-        "build_review_student_navigation",
+        "build_review_student_navigation_from_read_context",
         changing_builder,
     )
     calls = _record_handlers(monkeypatch)
@@ -259,7 +260,7 @@ def test_complete_and_attention_required_continue_review_are_no_write_states(
     navigation = _navigation_with_category(tmp_path, STUDENT_ID, category)
     monkeypatch.setattr(
         review_menu,
-        "build_review_student_navigation",
+        "build_review_student_navigation_from_read_context",
         lambda *_args, **_kwargs: navigation,
     )
     calls = _record_handlers(monkeypatch)
@@ -320,7 +321,7 @@ def test_needs_assembly_continue_review_does_not_assemble_submission(
     )
     monkeypatch.setattr(
         review_menu,
-        "build_review_student_navigation",
+        "build_review_student_navigation_from_read_context",
         lambda *_args, **_kwargs: navigation,
     )
     synthetic_status = SimpleNamespace(
@@ -364,7 +365,7 @@ def test_queue_navigation_failure_makes_continue_review_bounded_and_unavailable(
     before = _snapshot(tmp_path)
     monkeypatch.setattr(
         review_menu,
-        "build_review_student_navigation",
+        "build_review_student_navigation_from_read_context",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             ReviewStudentNavigationError("synthetic canonical queue failure")
         ),
