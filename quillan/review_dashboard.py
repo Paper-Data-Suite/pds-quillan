@@ -9,16 +9,19 @@ import os
 from pathlib import Path
 from typing import Any, Final
 
-from pds_core.classes import load_class_roster
 from pds_core.identifiers import validate_identifier
-from pds_core.rosters import RosterError, student_display_name
+from pds_core.rosters import student_display_name
 
 from quillan.assignment_summary_context import feedback_status, relative_path_for
 from quillan.work_paths import quillan_work_paths
 from quillan.feedback_export import feedback_export_path, feedback_pdf_export_path
 from quillan.plain_paper_submission import is_plain_paper_submission
+from quillan.review_read_context import (
+    AssignmentReviewReadContext,
+    ReviewReadContextError,
+    build_assignment_review_read_context,
+)
 from quillan.review_status_display import review_progress_status
-from quillan.response_page_observations import group_response_page_observations_by_student
 from quillan.record_context import (
     InvalidReviewError,
     InvalidSubmissionError,
@@ -27,8 +30,7 @@ from quillan.record_context import (
     QuillanRecordContextError,
     RecordIdentityMismatchError,
     ReviewLoadingPolicy,
-    load_quillan_assignment_context,
-    load_quillan_student_review_context,
+    load_quillan_student_review_context_from_assignment_context,
     mutable_json_copy,
     student_record_paths,
 )
@@ -36,7 +38,7 @@ from quillan.scan_review_resolution import (
     ScanReviewResolutionError,
     discover_scan_review_items,
 )
-from quillan.work_paths import _is_link_like, quillan_work_ref
+from quillan.work_paths import _is_link_like
 
 DASHBOARD_SCHEMA_VERSION: Final = "2"
 DASHBOARD_RECORD_TYPE: Final = "quillan_assignment_review_dashboard"
@@ -150,36 +152,50 @@ def build_assignment_review_dashboard(
 ) -> AssignmentReviewDashboard:
     """Build a deterministic dashboard using only existing workspace records."""
     try:
-        validate_identifier(class_id, "class_id")
-        validate_identifier(assignment_id, "assignment_id")
-    except ValueError as error:
+        read_context = build_assignment_review_read_context(
+            workspace_root,
+            class_id,
+            assignment_id,
+        )
+    except ReviewReadContextError as error:
         raise ReviewDashboardError(str(error)) from error
-    work_ref = quillan_work_ref(class_id, assignment_id)
-    try:
-        assignment_context = load_quillan_assignment_context(workspace_root, work_ref)
-        root = assignment_context.paths.workspace_root
-        assignment = mutable_json_copy(assignment_context.assignment)
-    except (OSError, QuillanRecordContextError) as error:
-        raise ReviewDashboardError(f"Could not load assignment: {error}") from error
+    return build_assignment_review_dashboard_from_read_context(read_context)
+
+
+def build_assignment_review_dashboard_from_read_context(
+    read_context: AssignmentReviewReadContext,
+) -> AssignmentReviewDashboard:
+    """Compose the full dashboard from one already-built canonical read context."""
+    if type(read_context) is not AssignmentReviewReadContext:
+        raise ReviewDashboardError(
+            "read_context must be an exact AssignmentReviewReadContext."
+        )
+
+    assignment_context = read_context.assignment_context
+    root = read_context.workspace_root
+    class_id = read_context.class_id
+    assignment_id = read_context.assignment_id
+    work_ref = assignment_context.paths.work_ref
+    assignment = mutable_json_copy(assignment_context.assignment)
 
     warnings: list[DashboardWarning] = []
-    roster_students: tuple[Any, ...] | None
-    try:
-        roster_students = load_class_roster(root, class_id).students
-    except (OSError, RosterError) as error:
-        roster_students = None
-        warnings.append(DashboardWarning("roster_unavailable", str(error)))
+    roster_students: tuple[Any, ...] | None = read_context.roster_students
+    if roster_students is None:
+        warnings.append(
+            DashboardWarning(
+                "roster_unavailable",
+                read_context.roster_error or "Canonical class roster is unavailable.",
+            )
+        )
 
     submissions_dir = assignment_context.paths.submissions_dir
     submission_ids = _directory_ids(submissions_dir)
-    try:
-        observations_by_student = group_response_page_observations_by_student(
-            root, class_id, assignment_id
-        )
-    except (OSError, ValueError) as error:
+    observations_by_student = read_context.observations_by_student
+    if observations_by_student is None:
         raise ReviewDashboardError(
-            f"Could not discover routed evidence: {error}"
-        ) from error
+            "Could not discover routed evidence: "
+            f"{read_context.observations_error or 'unknown observation read failure'}"
+        )
     routed_ids = set(observations_by_student)
     ordered_ids, display_names, roster_ids = _student_population(
         roster_students, submission_ids, routed_ids
@@ -208,11 +224,12 @@ def build_assignment_review_dashboard(
         submission_status = "missing"
         review_status = "unavailable"
         try:
-            record_context = load_quillan_student_review_context(
-                root,
-                work_ref,
-                student_id,
-                review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+            record_context = (
+                load_quillan_student_review_context_from_assignment_context(
+                    assignment_context,
+                    student_id,
+                    review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+                )
             )
         except MissingSubmissionError as error:
             review_status = "unavailable"
