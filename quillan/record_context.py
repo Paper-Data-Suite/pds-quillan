@@ -453,9 +453,30 @@ def load_quillan_student_review_context(
     if not isinstance(review_policy, ReviewLoadingPolicy):
         raise QuillanRecordContextError("review_policy must be a ReviewLoadingPolicy.")
     assignment_context = load_quillan_assignment_context(workspace_root, work_ref)
-    paths = student_record_paths(
-        assignment_context.paths.workspace_root, work_ref, student_id
+    return load_quillan_student_review_context_from_assignment_context(
+        assignment_context,
+        student_id,
+        review_policy=review_policy,
     )
+
+
+def load_quillan_student_review_context_from_assignment_context(
+    assignment_context: QuillanAssignmentRecordContext,
+    student_id: str,
+    *,
+    review_policy: ReviewLoadingPolicy = ReviewLoadingPolicy.REVIEW_OPTIONAL,
+) -> QuillanStudentReviewContext:
+    """Load one student while reusing an already validated assignment context."""
+    if type(assignment_context) is not QuillanAssignmentRecordContext:
+        raise QuillanRecordContextError(
+            "assignment_context must be an exact QuillanAssignmentRecordContext."
+        )
+    if not isinstance(review_policy, ReviewLoadingPolicy):
+        raise QuillanRecordContextError("review_policy must be a ReviewLoadingPolicy.")
+
+    root = assignment_context.paths.workspace_root
+    work_ref = assignment_context.paths.work_ref
+    paths = student_record_paths(root, work_ref, student_id)
     manifest_exists = os.path.lexists(paths.submission_manifest_path)
     review_exists = os.path.lexists(paths.review_record_path)
     if not manifest_exists:

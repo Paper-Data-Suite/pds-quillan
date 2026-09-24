@@ -10,14 +10,17 @@ from pathlib import Path
 import pytest
 from pds_core.routing_models import ModuleWorkRef
 
+import quillan.record_context as record_context_module
 from quillan.record_context import (
     InvalidReviewError,
     MissingReviewError,
     OrphanReviewError,
+    QuillanRecordContextError,
     ReviewAlreadyExistsError,
     ReviewLoadingPolicy,
     load_quillan_assignment_context,
     load_quillan_student_review_context,
+    load_quillan_student_review_context_from_assignment_context,
     mutable_json_copy,
 )
 from quillan.review_record_paths import (
@@ -61,6 +64,88 @@ def test_assignment_context_uses_only_module_qualified_record(tmp_path: Path) ->
     assert context.paths.assignment_path == canonical
     assert context.assignment["assignment_id"] == ASSIGNMENT_ID
 
+
+
+def test_student_context_reuses_prevalidated_assignment_without_reloading_assignment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_assignment(tmp_path)
+    _write_manifest(tmp_path)
+    _write_review(tmp_path, _review())
+    assignment_context = load_quillan_assignment_context(tmp_path, _ref())
+
+    def unexpected_assignment_reload(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("prevalidated student load reloaded assignment context")
+
+    monkeypatch.setattr(
+        record_context_module,
+        "load_quillan_assignment_context",
+        unexpected_assignment_reload,
+    )
+
+    context = load_quillan_student_review_context_from_assignment_context(
+        assignment_context,
+        STUDENT_ID,
+        review_policy=ReviewLoadingPolicy.REVIEW_REQUIRED,
+    )
+
+    assert context.assignment_context is assignment_context
+    assert context.paths.workspace_root == assignment_context.paths.workspace_root
+    assert context.paths.work_ref == assignment_context.paths.work_ref
+    assert context.submission["student_id"] == STUDENT_ID
+    assert context.review is not None
+    assert context.review["student_id"] == STUDENT_ID
+
+
+def test_prevalidated_assignment_student_loader_rejects_noncanonical_context(
+    tmp_path: Path,
+) -> None:
+    _write_assignment(tmp_path)
+    _write_manifest(tmp_path)
+
+    with pytest.raises(
+        QuillanRecordContextError,
+        match="exact QuillanAssignmentRecordContext",
+    ):
+        load_quillan_student_review_context_from_assignment_context(  # type: ignore[arg-type]
+            object(),
+            STUDENT_ID,
+        )
+
+
+def test_existing_student_loader_preserves_assignment_load_boundary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_assignment(tmp_path)
+    _write_manifest(tmp_path)
+    calls = 0
+    original = record_context_module.load_quillan_assignment_context
+
+    def counted_assignment_load(
+        workspace_root: str | Path,
+        work_ref: ModuleWorkRef,
+    ):
+        nonlocal calls
+        calls += 1
+        return original(workspace_root, work_ref)
+
+    monkeypatch.setattr(
+        record_context_module,
+        "load_quillan_assignment_context",
+        counted_assignment_load,
+    )
+
+    context = load_quillan_student_review_context(
+        tmp_path,
+        _ref(),
+        STUDENT_ID,
+        review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+    )
+
+    assert context.submission["student_id"] == STUDENT_ID
+    assert calls == 1
 
 def test_student_context_is_recursively_immutable(tmp_path: Path) -> None:
     _write_assignment(tmp_path)
