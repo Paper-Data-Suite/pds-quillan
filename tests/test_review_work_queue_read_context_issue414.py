@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -49,12 +50,13 @@ def test_public_queue_builds_assignment_read_context_once(
     _write_assignment(tmp_path)
     _write_roster(tmp_path)
     calls = 0
-    original = queue_module.build_assignment_review_read_context
+    queue_hooks: Any = queue_module
+    original = queue_hooks.build_assignment_review_read_context
 
-    def counted_builder(*args: object, **kwargs: object):
+    def counted_builder(*args: Any, **kwargs: Any) -> Any:
         nonlocal calls
         calls += 1
-        return original(*args, **kwargs)  # type: ignore[arg-type]
+        return original(*args, **kwargs)
 
     monkeypatch.setattr(
         queue_module,
@@ -79,15 +81,16 @@ def test_queue_from_context_reuses_exact_context_for_dashboard(
         ASSIGNMENT_ID,
     )
     seen: list[tuple[object, bool]] = []
-    original = queue_module.build_assignment_review_dashboard_from_read_context
+    queue_hooks: Any = queue_module
+    original = queue_hooks.build_assignment_review_dashboard_from_read_context
 
     def counted_dashboard(
-        context: object,
+        context: Any,
         *,
         include_scan_review: bool = True,
-    ):
+    ) -> Any:
         seen.append((context, include_scan_review))
-        return original(  # type: ignore[arg-type]
+        return original(
             context,
             include_scan_review=include_scan_review,
         )
@@ -115,11 +118,12 @@ def test_queue_requirement_count_uses_assignment_already_in_read_context(
         ASSIGNMENT_ID,
     )
     assignments_seen: list[dict[str, object]] = []
-    original = queue_module.configured_requirements
+    queue_hooks: Any = queue_module
+    original = queue_hooks.configured_requirements
 
-    def counted_requirements(assignment: dict[str, object]):
+    def counted_requirements(assignment: dict[str, object]) -> Any:
         assignments_seen.append(assignment)
-        return original(assignment)  # type: ignore[arg-type]
+        return original(assignment)
 
     monkeypatch.setattr(
         queue_module,
@@ -135,6 +139,6 @@ def test_queue_requirement_count_uses_assignment_already_in_read_context(
 
 def test_queue_from_context_rejects_wrong_context_type() -> None:
     with pytest.raises(ReviewWorkQueueError, match="exact AssignmentReviewReadContext"):
-        build_assignment_review_work_queue_from_read_context(  # type: ignore[arg-type]
-            object()
+        build_assignment_review_work_queue_from_read_context(
+            cast(Any, object())
         )

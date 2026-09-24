@@ -7,7 +7,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Prefix = "pds-quillan-v0101-candidate-"
+$Prefix = "pds-quillan-v0102-candidate-"
 $Repository = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $RepositoryParent = Split-Path $Repository -Parent
 $OriginalLocation = (Get-Location).Path
@@ -87,6 +87,7 @@ $ProducerAcceptance = Join-Path $PSScriptRoot 'verify_installed_producer_accepta
 $OperationsAcceptance = Join-Path $PSScriptRoot 'verify_installed_operations_acceptance.py'
 $ClassSetAcceptance = Join-Path $PSScriptRoot 'verify_installed_class_set_acceptance.py'
 $ReleaseEdgeAcceptance = Join-Path $PSScriptRoot 'verify_installed_release_edges.py'
+$SelectedReviewAcceptance = Join-Path $PSScriptRoot 'verify_installed_selected_review_reads.py'
 
 Invoke-Required "Authenticate official Core 0.6.2 wheel" $ResolvedPython @(
     $CoreVerifier, $Core062Wheel, '--core-version', '0.6.2'
@@ -134,8 +135,8 @@ try {
     }
     finally { Pop-Location }
 
-    $Wheel = Join-Path $ArtifactRoot 'quillan-0.10.1-py3-none-any.whl'
-    $Sdist = Join-Path $ArtifactRoot 'quillan-0.10.1.tar.gz'
+    $Wheel = Join-Path $ArtifactRoot 'quillan-0.10.2-py3-none-any.whl'
+    $Sdist = Join-Path $ArtifactRoot 'quillan-0.10.2.tar.gz'
     Invoke-Required "Artifact inspection" $ResolvedPython @(
         $ArtifactInspector, $Wheel, $Sdist
     )
@@ -153,6 +154,7 @@ try {
         $Work = Join-Path $ModeRoot 'outside-source'
         $Acceptance = Join-Path $ModeRoot 'acceptance'
         $OperationsWorkspace = Join-Path $ModeRoot 'operations-workspace'
+        $SelectedReviewWorkspace = Join-Path $ModeRoot 'selected-review-workspace'
         New-Item -ItemType Directory -Path $ModeRoot | Out-Null
         New-Item -ItemType Directory -Path $Work | Out-Null
         New-Item -ItemType Directory -Path $OperationsWorkspace | Out-Null
@@ -189,7 +191,7 @@ try {
                     $ProducerAcceptance,
                     '--workspace', (Join-Path $Acceptance 'workflow-workspace'),
                     '--repository', $Repository,
-                    '--version', '0.10.1',
+                    '--version', '0.10.2',
                     '--expected-core-version', $CoreVersion
                 )
             Invoke-Required "Installed module operations Core $CoreVersion" `
@@ -211,6 +213,14 @@ try {
                     $ReleaseEdgeAcceptance,
                     '--workspace', (Join-Path $Acceptance 'workflow-workspace'),
                     '--repository', $Repository,
+                    '--expected-core-version', $CoreVersion
+                )
+            Invoke-Required "Installed selected-review reads Core $CoreVersion" `
+                $EnvironmentPython @(
+                    $SelectedReviewAcceptance,
+                    '--workspace', $SelectedReviewWorkspace,
+                    '--repository', $Repository,
+                    '--expected-quillan-version', '0.10.2',
                     '--expected-core-version', $CoreVersion
                 )
         }
@@ -259,9 +269,9 @@ try {
         $Core062Wheel, $Core063Wheel, $Wheel, $Sdist |
         Format-Table -AutoSize
 
-    Write-Host "Automated v0.10.1 candidate validation: PASS"
+    Write-Host "Automated v0.10.2 candidate validation: PASS"
     Write-Host "v0.10.0 physical acceptance remains applicable: NOT REPEATED"
-    Write-Host "READY FOR #412 RELEASE AUTHORIZATION: NO"
+    Write-Host "READY FOR #414 RELEASE AUTHORIZATION: NO"
     Write-Host "Release authorization: NOT GRANTED"
 }
 finally {

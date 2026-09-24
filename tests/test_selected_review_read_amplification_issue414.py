@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import hashlib
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pds_core.scan_routes import build_retained_source_filename
@@ -213,26 +214,28 @@ def test_representative_30_student_redraw_has_one_strict_evidence_pass(
         "evidence_verify": 0,
     }
 
-    original_assignment = read_context_module.load_quillan_assignment_context
-    original_roster = read_context_module.load_class_roster
-    original_group = read_context_module.group_response_page_observations_by_student
-    original_verify = observation_module.verify_contextual_routed_page_evidence
+    read_context_hooks: Any = read_context_module
+    observation_hooks: Any = observation_module
+    original_assignment = read_context_hooks.load_quillan_assignment_context
+    original_roster = read_context_hooks.load_class_roster
+    original_group = read_context_hooks.group_response_page_observations_by_student
+    original_verify = observation_hooks.verify_contextual_routed_page_evidence
 
-    def counted_assignment(*args: object, **kwargs: object):
+    def counted_assignment(*args: Any, **kwargs: Any) -> Any:
         counts["assignment"] += 1
-        return original_assignment(*args, **kwargs)  # type: ignore[arg-type]
+        return original_assignment(*args, **kwargs)
 
-    def counted_roster(*args: object, **kwargs: object):
+    def counted_roster(*args: Any, **kwargs: Any) -> Any:
         counts["roster"] += 1
-        return original_roster(*args, **kwargs)  # type: ignore[arg-type]
+        return original_roster(*args, **kwargs)
 
-    def counted_group(*args: object, **kwargs: object):
+    def counted_group(*args: Any, **kwargs: Any) -> Any:
         counts["observation_group"] += 1
-        return original_group(*args, **kwargs)  # type: ignore[arg-type]
+        return original_group(*args, **kwargs)
 
-    def counted_verify(*args: object, **kwargs: object):
+    def counted_verify(*args: Any, **kwargs: Any) -> Any:
         counts["evidence_verify"] += 1
-        return original_verify(*args, **kwargs)  # type: ignore[arg-type]
+        return original_verify(*args, **kwargs)
 
     def unexpected_legacy(*_args: object, **_kwargs: object) -> object:
         raise AssertionError("representative redraw invoked a redundant legacy read")

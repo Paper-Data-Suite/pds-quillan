@@ -6,7 +6,46 @@ Quillan is in early pre-1.0 development. Package versions describe the
 installable project state; GitHub issues and milestones may be used for
 planning and do not by themselves represent releases.
 
-## 0.10.1 - Unreleased
+## 0.10.2 - Unreleased
+
+### Changed
+
+- Optimized `Selected Student Review` (#414) around one fresh redraw-scoped
+  assignment review context shared by the selected-student summary, class-set
+  queue/navigation, active assignment presentation, and selected submission
+  branch decision.
+- Reused the already validated assignment context for per-student review loads
+  and removed repeated roster, assignment, routed-observation, and
+  assignment-wide submission-status reads from an ordinary redraw.
+- Routine review queue/navigation now skips scan-review diagnostic discovery;
+  the full diagnostic assignment dashboard keeps scan-review discovery by
+  default.
+- Freshness remains action-scoped: no cache survives a teacher action, P/N/W
+  navigation, export, cancel, or child-workflow return.
+
+### Fixed
+
+- Corrected assignment-dashboard classification of unassembled routed
+  observations to use the observation's authoritative `logical_page` rather
+  than manifest-only duplicate fields.
+
+### Validation
+
+- Added a deterministic 30-student acceptance with four observations per
+  student and 120 actual routed evidence files. One redraw performs one strict
+  observation pass and exactly one routed-evidence verification/hash per file.
+- Added exact-wheel selected-review read acceptance for both authenticated Core
+  0.6.2 and Core 0.6.3 candidate environments.
+- Preserved write-free redraw behavior, strict path/provenance validation, and
+  fail-closed observation discovery.
+
+### Compatibility
+
+- No assignment, submission, review, feedback, diagnostic, Academic Work,
+  Academic Result, publication, routing, or PDS2 schema changes are introduced.
+- Runtime compatibility remains `pds-core>=0.6.2,<0.7`.
+
+## 0.10.1 - 2026-09-20
 
 ### Added
 

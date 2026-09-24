@@ -58,7 +58,10 @@ def test_full_dashboard_still_discovers_scan_review_items_by_default(
     )
     calls = 0
 
-    def counted_scan_discovery(*_args: object, **_kwargs: object):
+    def counted_scan_discovery(
+        *_args: object,
+        **_kwargs: object,
+    ) -> SimpleNamespace:
         nonlocal calls
         calls += 1
         return SimpleNamespace(items=(), warnings=())

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -113,11 +114,17 @@ def test_selected_student_status_from_context_reuses_exact_assignment_context(
         ASSIGNMENT_ID,
     )
     seen: list[object] = []
+    status_hooks: Any = status_module
     original = (
-        status_module.load_quillan_student_review_context_from_assignment_context
+        status_hooks.load_quillan_student_review_context_from_assignment_context
     )
 
-    def counted_loader(assignment_context, student_id, *, review_policy):
+    def counted_loader(
+        assignment_context: Any,
+        student_id: Any,
+        *,
+        review_policy: Any,
+    ) -> Any:
         seen.append(assignment_context)
         return original(
             assignment_context,
@@ -171,12 +178,13 @@ def test_navigation_from_context_uses_context_qualified_queue_only(
         ASSIGNMENT_ID,
     )
     seen: list[object] = []
-    original = navigation_module.build_assignment_review_work_queue_from_read_context
+    navigation_hooks: Any = navigation_module
+    original = navigation_hooks.build_assignment_review_work_queue_from_read_context
 
     def unexpected_public_queue(*_args: object, **_kwargs: object) -> object:
         raise AssertionError("context-qualified navigation called public queue builder")
 
-    def counted_context_queue(context):
+    def counted_context_queue(context: Any) -> Any:
         seen.append(context)
         return original(context)
 
@@ -202,15 +210,15 @@ def test_navigation_from_context_uses_context_qualified_queue_only(
 
 def test_context_qualified_projections_reject_wrong_context_type() -> None:
     with pytest.raises(StudentReviewStatusError, match="exact AssignmentReviewReadContext"):
-        build_student_review_status_from_read_context(  # type: ignore[arg-type]
-            object(),
+        build_student_review_status_from_read_context(
+            cast(Any, object()),
             "00100",
         )
     with pytest.raises(
         ReviewStudentNavigationError,
         match="exact AssignmentReviewReadContext",
     ):
-        build_review_student_navigation_from_read_context(  # type: ignore[arg-type]
-            object(),
+        build_review_student_navigation_from_read_context(
+            cast(Any, object()),
             "00100",
         )

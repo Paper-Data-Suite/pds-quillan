@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -42,23 +43,24 @@ def test_selected_root_uses_one_assignment_level_read_boundary(
     _prepare(tmp_path, monkeypatch)
     counts = {"assignment": 0, "roster": 0, "observations": 0}
 
-    original_assignment = read_context_module.load_quillan_assignment_context
-    original_roster = read_context_module.load_class_roster
+    read_context_hooks: Any = read_context_module
+    original_assignment = read_context_hooks.load_quillan_assignment_context
+    original_roster = read_context_hooks.load_class_roster
     original_observations = (
-        read_context_module.group_response_page_observations_by_student
+        read_context_hooks.group_response_page_observations_by_student
     )
 
-    def counted_assignment(*args: object, **kwargs: object):
+    def counted_assignment(*args: Any, **kwargs: Any) -> Any:
         counts["assignment"] += 1
-        return original_assignment(*args, **kwargs)  # type: ignore[arg-type]
+        return original_assignment(*args, **kwargs)
 
-    def counted_roster(*args: object, **kwargs: object):
+    def counted_roster(*args: Any, **kwargs: Any) -> Any:
         counts["roster"] += 1
-        return original_roster(*args, **kwargs)  # type: ignore[arg-type]
+        return original_roster(*args, **kwargs)
 
-    def counted_observations(*args: object, **kwargs: object):
+    def counted_observations(*args: Any, **kwargs: Any) -> Any:
         counts["observations"] += 1
-        return original_observations(*args, **kwargs)  # type: ignore[arg-type]
+        return original_observations(*args, **kwargs)
 
     def unexpected_legacy_read(*_args: object, **_kwargs: object) -> object:
         raise AssertionError("Selected root invoked a legacy redundant read path")
@@ -115,22 +117,23 @@ def test_navigation_redraw_discards_context_and_builds_fresh_state(
     status_contexts: list[object] = []
     navigation_contexts: list[object] = []
 
-    original_context = review_menu.build_assignment_review_read_context
-    original_status = review_menu.build_student_review_status_from_read_context
+    review_menu_hooks: Any = review_menu
+    original_context = review_menu_hooks.build_assignment_review_read_context
+    original_status = review_menu_hooks.build_student_review_status_from_read_context
     original_navigation = (
-        review_menu.build_review_student_navigation_from_read_context
+        review_menu_hooks.build_review_student_navigation_from_read_context
     )
 
-    def counted_context(*args: object, **kwargs: object):
-        context = original_context(*args, **kwargs)  # type: ignore[arg-type]
+    def counted_context(*args: Any, **kwargs: Any) -> Any:
+        context = original_context(*args, **kwargs)
         contexts.append(context)
         return context
 
-    def counted_status(context, student_id):
+    def counted_status(context: Any, student_id: Any) -> Any:
         status_contexts.append(context)
         return original_status(context, student_id)
 
-    def counted_navigation(context, student_id):
+    def counted_navigation(context: Any, student_id: Any) -> Any:
         navigation_contexts.append(context)
         return original_navigation(context, student_id)
 

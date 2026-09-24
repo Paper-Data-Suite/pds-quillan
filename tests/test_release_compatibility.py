@@ -12,23 +12,29 @@ def test_release_compatibility_passes_current_tree() -> None:
     compatibility.validate_release_compatibility()
 
 
-def test_release_version_and_historical_boundary_are_exact() -> None:
-    assert compatibility.RELEASE_VERSION == "0.10.1"
-    assert compatibility.PREVIOUS_RELEASE_VERSION == "0.10.0"
+def test_release_version_and_historical_boundaries_are_exact() -> None:
+    assert compatibility.RELEASE_VERSION == "0.10.2"
+    assert compatibility.PREVIOUS_RELEASE_VERSION == "0.10.1"
+    assert compatibility.BASE_RELEASE_VERSION == "0.10.0"
     assert compatibility.HISTORICAL_PREVIOUS_RELEASE_FILES == (
+        Path("docs/v0.10.1_installed_batch_feedback_acceptance.md"),
+    )
+    assert compatibility.HISTORICAL_BASE_RELEASE_FILES == (
         Path("docs/v0.10.0_installed_class_set_acceptance.md"),
         Path("docs/physical_acceptance_v0.10.0.md"),
     )
 
 
-def test_active_release_surfaces_name_v0101() -> None:
+def test_active_release_surfaces_name_v0102() -> None:
     for relative in compatibility.ACTIVE_VERSION_FILES:
         assert compatibility.RELEASE_VERSION in compatibility._read(relative)
 
 
-def test_historical_previous_files_remain_identified() -> None:
+def test_historical_release_files_remain_identified() -> None:
     for relative in compatibility.HISTORICAL_PREVIOUS_RELEASE_FILES:
         assert compatibility.PREVIOUS_RELEASE_VERSION in compatibility._read(relative)
+    for relative in compatibility.HISTORICAL_BASE_RELEASE_FILES:
+        assert compatibility.BASE_RELEASE_VERSION in compatibility._read(relative)
 
 
 def test_core_floor_and_upper_bound_are_exact() -> None:

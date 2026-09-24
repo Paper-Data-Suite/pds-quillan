@@ -6,6 +6,7 @@ import json
 import os
 from dataclasses import replace
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from pds_core.routing_models import ModuleWorkRef
@@ -108,8 +109,8 @@ def test_prevalidated_assignment_student_loader_rejects_noncanonical_context(
         QuillanRecordContextError,
         match="exact QuillanAssignmentRecordContext",
     ):
-        load_quillan_student_review_context_from_assignment_context(  # type: ignore[arg-type]
-            object(),
+        load_quillan_student_review_context_from_assignment_context(
+            cast(Any, object()),
             STUDENT_ID,
         )
 
@@ -126,7 +127,7 @@ def test_existing_student_loader_preserves_assignment_load_boundary(
     def counted_assignment_load(
         workspace_root: str | Path,
         work_ref: ModuleWorkRef,
-    ):
+    ) -> Any:
         nonlocal calls
         calls += 1
         return original(workspace_root, work_ref)

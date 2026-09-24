@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pds_core.rosters import RosterError
@@ -32,23 +33,24 @@ def test_builder_reads_assignment_roster_and_strict_observations_once(
     before = _snapshot(tmp_path)
     calls = {"assignment": 0, "roster": 0, "observations": 0}
 
-    original_assignment = read_context_module.load_quillan_assignment_context
-    original_roster = read_context_module.load_class_roster
+    read_context_hooks: Any = read_context_module
+    original_assignment = read_context_hooks.load_quillan_assignment_context
+    original_roster = read_context_hooks.load_class_roster
     original_observations = (
-        read_context_module.group_response_page_observations_by_student
+        read_context_hooks.group_response_page_observations_by_student
     )
 
-    def counted_assignment(*args: object, **kwargs: object):
+    def counted_assignment(*args: Any, **kwargs: Any) -> Any:
         calls["assignment"] += 1
-        return original_assignment(*args, **kwargs)  # type: ignore[arg-type]
+        return original_assignment(*args, **kwargs)
 
-    def counted_roster(*args: object, **kwargs: object):
+    def counted_roster(*args: Any, **kwargs: Any) -> Any:
         calls["roster"] += 1
-        return original_roster(*args, **kwargs)  # type: ignore[arg-type]
+        return original_roster(*args, **kwargs)
 
-    def counted_observations(*args: object, **kwargs: object):
+    def counted_observations(*args: Any, **kwargs: Any) -> Any:
         calls["observations"] += 1
-        return original_observations(*args, **kwargs)  # type: ignore[arg-type]
+        return original_observations(*args, **kwargs)
 
     monkeypatch.setattr(
         read_context_module,

@@ -77,7 +77,7 @@ def test_build_event_uses_fixed_safe_contract(tmp_path: Path) -> None:
     assert event.schema_version == "1"
     assert event.module == "quillan"
     assert event.record_type == "diagnostic_event"
-    assert event.quillan_version == "0.10.1"
+    assert event.quillan_version == "0.10.2"
     assert event.core_version == "0.6.3"
     assert event.category == "review"
     assert event.code == "invalid_review_record"

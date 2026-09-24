@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -56,11 +57,17 @@ def test_dashboard_reuses_exact_assignment_context_for_every_student_record_load
         ASSIGNMENT_ID,
     )
     seen_assignment_contexts: list[object] = []
+    dashboard_hooks: Any = dashboard_module
     original = (
-        dashboard_module.load_quillan_student_review_context_from_assignment_context
+        dashboard_hooks.load_quillan_student_review_context_from_assignment_context
     )
 
-    def counted_loader(assignment_context, student_id, *, review_policy):
+    def counted_loader(
+        assignment_context: Any,
+        student_id: Any,
+        *,
+        review_policy: Any,
+    ) -> Any:
         seen_assignment_contexts.append(assignment_context)
         return original(
             assignment_context,
@@ -119,12 +126,13 @@ def test_public_dashboard_builds_assignment_read_context_once(
     _write_roster(tmp_path)
     _write_records(tmp_path, STUDENT_ID)
     calls = 0
-    original = dashboard_module.build_assignment_review_read_context
+    dashboard_hooks: Any = dashboard_module
+    original = dashboard_hooks.build_assignment_review_read_context
 
-    def counted_builder(*args: object, **kwargs: object):
+    def counted_builder(*args: Any, **kwargs: Any) -> Any:
         nonlocal calls
         calls += 1
-        return original(*args, **kwargs)  # type: ignore[arg-type]
+        return original(*args, **kwargs)
 
     monkeypatch.setattr(
         dashboard_module,
@@ -167,6 +175,6 @@ def test_dashboard_preserves_fail_closed_observation_semantics(
 
 def test_dashboard_from_context_rejects_wrong_context_type() -> None:
     with pytest.raises(ReviewDashboardError, match="exact AssignmentReviewReadContext"):
-        build_assignment_review_dashboard_from_read_context(  # type: ignore[arg-type]
-            object()
+        build_assignment_review_dashboard_from_read_context(
+            cast(Any, object())
         )

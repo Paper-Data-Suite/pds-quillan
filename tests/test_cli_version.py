@@ -18,6 +18,6 @@ def test_version_is_exact_stdout_only_and_workspace_free(
         build_parser().parse_args(["--version"])
     assert raised.value.code == 0
     captured = capsys.readouterr()
-    assert captured.out == "quillan 0.10.1\n"
+    assert captured.out == "quillan 0.10.2\n"
     assert captured.err == ""
     assert not sentinel.exists()

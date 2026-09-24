@@ -41,7 +41,7 @@ def test_readme_describes_final_compact_review_and_release_endpoints() -> None:
         "P. Previous Student",
         "W. Next Student Needing Review",
         "`pds-core>=0.6.2,<0.7` runtime dependency",
-        "The v0.10.1 candidate runtime is PDS2-only",
+        "The v0.10.2 candidate runtime is PDS2-only",
         "authenticated Core 0.6.2 and Core 0.6.3 endpoint wheels",
     ):
         assert expected in source
@@ -52,23 +52,24 @@ def test_readme_describes_final_compact_review_and_release_endpoints() -> None:
     assert "exact released Core 0.6.0 wheel" not in source
 
 
-def test_active_data_contract_index_uses_v010_release_boundary() -> None:
+def test_active_data_contract_index_uses_v0102_release_boundary() -> None:
     source = _text("docs/data_contracts.md")
 
-    assert "Quillan v0.10.1 requires `pds-core>=0.6.2,<0.7`" in source
+    assert "Quillan v0.10.2 requires `pds-core>=0.6.2,<0.7`" in source
     assert "Core 0.6.2 minimum endpoint and Core 0.6.3 current endpoint" in source
-    assert "The active v0.10.1 review model is standards-based:" in source
-    assert "This index documents the active v0.10.1 contracts." in source
+    assert "The active v0.10.2 review model is standards-based:" in source
+    assert "This index documents the active v0.10.2 contracts." in source
     assert "Historical Core 0.6.0 producer" in source
 
     assert "The active v0.8.6 review model is standards-based:" not in source
     assert "This index documents the active v0.8.6 contracts." not in source
 
 
-def test_unreleased_changelog_reflects_issue412_patch_boundary() -> None:
+def test_unreleased_changelog_reflects_issue414_patch_boundary() -> None:
     source = _text("CHANGELOG.md")
-    current = source.split("## 0.10.0 -", maxsplit=1)[0]
+    current = source.split("## 0.10.1 - 2026-09-20", maxsplit=1)[0]
 
-    assert "feedback batch assembly (#412)" in current
-    assert "pypdf>=5,<7" in current
-    assert "per-student PDFs" in current
+    assert "Selected Student Review" in current
+    assert "redraw-scoped" in current
+    assert "120 actual routed evidence files" in current
+    assert "no cache survives a teacher action" in current

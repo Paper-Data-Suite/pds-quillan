@@ -15,7 +15,7 @@ import zipfile
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
-EXPECTED_VERSION = "0.10.1"
+EXPECTED_VERSION = "0.10.2"
 REQUIRED_PACKAGE_FILES = {
     "quillan/pds_module.py",
     "quillan/pds_publication.py",
@@ -29,6 +29,7 @@ REQUIRED_PACKAGE_FILES = {
     "quillan/academic_result_reader.py",
     "quillan/academic_result_artifacts.py",
     "quillan/batch_feedback_assembly.py",
+    "quillan/review_read_context.py",
 }
 REMOVED = {
     "quillan/submissions.py",

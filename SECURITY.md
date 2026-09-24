@@ -4,7 +4,7 @@
 
 Quillan is the Paper Data Suite module for writing-response template generation, paper/scanned submission workflows, essay tagging, standards-aligned review, feedback, and publication of writing-related academic results.
 
-The current supported pre-1.0 release line is `0.10.x`. Quillan `0.10.1` is the current patch-release candidate.
+The current supported pre-1.0 release line is `0.10.x`. Quillan `0.10.2` is the current patch-release candidate.
 
 Quillan is local-first, teacher-controlled educational software. It is not:
 
