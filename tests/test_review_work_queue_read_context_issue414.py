@@ -78,12 +78,19 @@ def test_queue_from_context_reuses_exact_context_for_dashboard(
         CLASS_ID,
         ASSIGNMENT_ID,
     )
-    seen: list[object] = []
+    seen: list[tuple[object, bool]] = []
     original = queue_module.build_assignment_review_dashboard_from_read_context
 
-    def counted_dashboard(context):
-        seen.append(context)
-        return original(context)
+    def counted_dashboard(
+        context: object,
+        *,
+        include_scan_review: bool = True,
+    ):
+        seen.append((context, include_scan_review))
+        return original(  # type: ignore[arg-type]
+            context,
+            include_scan_review=include_scan_review,
+        )
 
     monkeypatch.setattr(
         queue_module,
@@ -93,7 +100,7 @@ def test_queue_from_context_reuses_exact_context_for_dashboard(
 
     build_assignment_review_work_queue_from_read_context(read_context)
 
-    assert seen == [read_context]
+    assert seen == [(read_context, False)]
 
 
 def test_queue_requirement_count_uses_assignment_already_in_read_context(

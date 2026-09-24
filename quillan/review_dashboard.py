@@ -164,12 +164,16 @@ def build_assignment_review_dashboard(
 
 def build_assignment_review_dashboard_from_read_context(
     read_context: AssignmentReviewReadContext,
+    *,
+    include_scan_review: bool = True,
 ) -> AssignmentReviewDashboard:
-    """Compose the full dashboard from one already-built canonical read context."""
+    """Compose a dashboard from one already-built canonical read context."""
     if type(read_context) is not AssignmentReviewReadContext:
         raise ReviewDashboardError(
             "read_context must be an exact AssignmentReviewReadContext."
         )
+    if type(include_scan_review) is not bool:
+        raise ReviewDashboardError("include_scan_review must be a Boolean.")
 
     assignment_context = read_context.assignment_context
     root = read_context.workspace_root
@@ -394,34 +398,41 @@ def build_assignment_review_dashboard_from_read_context(
     unassembled, unused_duplicates = _routed_file_status(
         root, observations_by_student, valid_manifests, assembled_paths
     )
-    scan_available = True
+    scan_available = False
     scan_items: tuple[DashboardScanReviewItem, ...] = ()
     scan_warning_count = 0
-    try:
-        scan_discovery = discover_scan_review_items(
-            root, class_id=class_id, assignment_id=assignment_id, include_resolved=False
-        )
-        scan_warning_count = len(scan_discovery.warnings)
-        for message in scan_discovery.warnings:
-            warnings.append(DashboardWarning("scan_review_metadata_warning", message))
-        scan_items = tuple(
-            DashboardScanReviewItem(
-                failure_id=item.failure_id,
-                status=item.display_status,
-                failure_category=item.failure_category,
-                failure_message=item.failure_message,
-                source_filename=item.source_filename,
-                source_page_number=item.source_page_number,
-                student_id=item.student_id,
-                failure_metadata_path=item.failure_metadata_relative_path,
-                retained_source_path=item.retained_source_path,
-                created_at=item.created_at,
+    if include_scan_review:
+        scan_available = True
+        try:
+            scan_discovery = discover_scan_review_items(
+                root,
+                class_id=class_id,
+                assignment_id=assignment_id,
+                include_resolved=False,
             )
-            for item in scan_discovery.items
-        )
-    except (OSError, ScanReviewResolutionError, ValueError) as error:
-        scan_available = False
-        warnings.append(DashboardWarning("scan_review_unavailable", str(error)))
+            scan_warning_count = len(scan_discovery.warnings)
+            for message in scan_discovery.warnings:
+                warnings.append(
+                    DashboardWarning("scan_review_metadata_warning", message)
+                )
+            scan_items = tuple(
+                DashboardScanReviewItem(
+                    failure_id=item.failure_id,
+                    status=item.display_status,
+                    failure_category=item.failure_category,
+                    failure_message=item.failure_message,
+                    source_filename=item.source_filename,
+                    source_page_number=item.source_page_number,
+                    student_id=item.student_id,
+                    failure_metadata_path=item.failure_metadata_relative_path,
+                    retained_source_path=item.retained_source_path,
+                    created_at=item.created_at,
+                )
+                for item in scan_discovery.items
+            )
+        except (OSError, ScanReviewResolutionError, ValueError) as error:
+            scan_available = False
+            warnings.append(DashboardWarning("scan_review_unavailable", str(error)))
 
     return _dashboard(
         root=root,

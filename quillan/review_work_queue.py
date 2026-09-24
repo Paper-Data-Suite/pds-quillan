@@ -126,7 +126,10 @@ def build_assignment_review_work_queue_from_read_context(
         )
 
     try:
-        dashboard = build_assignment_review_dashboard_from_read_context(read_context)
+        dashboard = build_assignment_review_dashboard_from_read_context(
+            read_context,
+            include_scan_review=False,
+        )
         assignment = mutable_json_copy(read_context.assignment_context.assignment)
         requirement_count = len(configured_requirements(assignment))
     except (OSError, ValueError) as error:
