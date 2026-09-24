@@ -7,12 +7,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
-from quillan.assignment_summary_context import load_assignment
 from quillan.minimum_requirement_review import configured_requirements
+from quillan.record_context import mutable_json_copy
 from quillan.review_dashboard import (
     AssignmentReviewDashboard,
     DashboardStudentStatus,
-    build_assignment_review_dashboard,
+    build_assignment_review_dashboard_from_read_context,
+)
+from quillan.review_read_context import (
+    AssignmentReviewReadContext,
+    ReviewReadContextError,
+    build_assignment_review_read_context,
 )
 from quillan.review_status_display import review_progress_status
 
@@ -98,16 +103,37 @@ def build_assignment_review_work_queue(
     assignment_id: str,
 ) -> AssignmentReviewWorkQueue:
     """Build a read-only roster queue from current canonical Quillan state."""
-    root = Path(workspace_root)
     try:
-        dashboard = build_assignment_review_dashboard(root, class_id, assignment_id)
-        assignment = load_assignment(root, class_id, assignment_id)
+        read_context = build_assignment_review_read_context(
+            workspace_root,
+            class_id,
+            assignment_id,
+        )
+    except ReviewReadContextError as error:
+        raise ReviewWorkQueueError(
+            f"Could not build review work queue: {error}"
+        ) from error
+    return build_assignment_review_work_queue_from_read_context(read_context)
+
+
+def build_assignment_review_work_queue_from_read_context(
+    read_context: AssignmentReviewReadContext,
+) -> AssignmentReviewWorkQueue:
+    """Build the assignment queue from one already-built canonical read context."""
+    if type(read_context) is not AssignmentReviewReadContext:
+        raise ReviewWorkQueueError(
+            "read_context must be an exact AssignmentReviewReadContext."
+        )
+
+    try:
+        dashboard = build_assignment_review_dashboard_from_read_context(read_context)
+        assignment = mutable_json_copy(read_context.assignment_context.assignment)
+        requirement_count = len(configured_requirements(assignment))
     except (OSError, ValueError) as error:
         raise ReviewWorkQueueError(
             f"Could not build review work queue: {error}"
         ) from error
 
-    requirement_count = len(configured_requirements(assignment))
     return derive_assignment_review_work_queue(
         dashboard,
         configured_requirement_count=requirement_count,
