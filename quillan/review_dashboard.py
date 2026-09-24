@@ -22,6 +22,7 @@ from quillan.review_read_context import (
     build_assignment_review_read_context,
 )
 from quillan.review_status_display import review_progress_status
+from quillan.response_page_observations import QuillanResponsePageObservation
 from quillan.record_context import (
     InvalidReviewError,
     InvalidSubmissionError,
@@ -835,7 +836,10 @@ def _manifest_evidence_paths(root: Path, manifest: dict[str, Any]) -> set[Path]:
 
 def _routed_file_status(
     root: Path,
-    evidence_by_student: Mapping[str, tuple[Any, ...]],
+    evidence_by_student: Mapping[
+        str,
+        tuple[QuillanResponsePageObservation, ...],
+    ],
     manifests: dict[str, dict[str, Any]],
     assembled: set[Path],
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -854,10 +858,7 @@ def _routed_file_status(
             if resolved in assembled:
                 continue
             relative = relative_path_for(resolved, root)
-            if (
-                item.duplicate_number is not None
-                and item.page_number in represented.get(student_id, set())
-            ):
+            if item.logical_page in represented.get(student_id, set()):
                 duplicates.append(relative)
             else:
                 unassembled.append(relative)
