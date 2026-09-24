@@ -5,12 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from quillan.review_read_context import AssignmentReviewReadContext
 from quillan.review_work_queue import (
     WORK_QUEUE_CATEGORIES,
     AssignmentReviewWorkQueue,
     ReviewWorkQueueError,
     ReviewWorkQueueItem,
     build_assignment_review_work_queue,
+    build_assignment_review_work_queue_from_read_context,
 )
 
 
@@ -53,6 +55,23 @@ def build_review_student_navigation(
         ) from error
     return derive_review_student_navigation(queue, student_id)
 
+
+def build_review_student_navigation_from_read_context(
+    read_context: AssignmentReviewReadContext,
+    student_id: str,
+) -> ReviewStudentNavigation:
+    """Build navigation from the exact queue projected from one redraw read."""
+    if type(read_context) is not AssignmentReviewReadContext:
+        raise ReviewStudentNavigationError(
+            "read_context must be an exact AssignmentReviewReadContext."
+        )
+    try:
+        queue = build_assignment_review_work_queue_from_read_context(read_context)
+    except ReviewWorkQueueError as error:
+        raise ReviewStudentNavigationError(
+            f"Could not build review student navigation: {error}"
+        ) from error
+    return derive_review_student_navigation(queue, student_id)
 
 def derive_review_student_navigation(
     queue: AssignmentReviewWorkQueue,

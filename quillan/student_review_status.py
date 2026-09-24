@@ -16,6 +16,7 @@ from quillan.assignment_summary_context import feedback_status, relative_path_fo
 from quillan.feedback_export import feedback_export_path, feedback_pdf_export_path
 from quillan.minimum_requirement_review import configured_requirements
 from quillan.plain_paper_submission import is_plain_paper_submission
+from quillan.review_read_context import AssignmentReviewReadContext
 from quillan.review_status_display import review_progress_status
 from quillan.response_page_observations import group_response_page_observations_by_student
 from quillan.record_context import (
@@ -28,6 +29,7 @@ from quillan.record_context import (
     ReviewLoadingPolicy,
     load_quillan_assignment_context,
     load_quillan_student_review_context,
+    load_quillan_student_review_context_from_assignment_context,
     mutable_json_copy,
     student_record_paths,
 )
@@ -224,6 +226,167 @@ def build_student_review_status(
         warnings=tuple(dict.fromkeys(warnings)),
     )
 
+
+def build_student_review_status_from_read_context(
+    read_context: AssignmentReviewReadContext,
+    student_id: str,
+) -> StudentReviewStatus:
+    """Project one student status from a fresh assignment review read context."""
+    if type(read_context) is not AssignmentReviewReadContext:
+        raise StudentReviewStatusError(
+            "read_context must be an exact AssignmentReviewReadContext."
+        )
+    try:
+        validate_identifier(student_id, "student_id")
+    except ValueError as error:
+        raise StudentReviewStatusError(str(error)) from error
+
+    assignment_context = read_context.assignment_context
+    root = read_context.workspace_root
+    class_id = read_context.class_id
+    assignment_id = read_context.assignment_id
+    work_ref = assignment_context.paths.work_ref
+    assignment_path = assignment_context.paths.assignment_path
+    assignment = mutable_json_copy(assignment_context.assignment)
+    try:
+        paths = student_record_paths(root, work_ref, student_id)
+    except QuillanRecordContextError as error:
+        raise StudentReviewStatusError(f"Could not load assignment: {error}") from error
+
+    warnings: list[str] = []
+    display_name = student_id
+    roster_status = "roster_unavailable"
+    if read_context.roster_students is None:
+        warnings.append("roster_unavailable")
+    else:
+        roster_status = "unrostered"
+        for student in read_context.roster_students:
+            if student.student_id == student_id:
+                display_name = student_display_name(student)
+                roster_status = "rostered"
+                break
+        if roster_status == "unrostered":
+            warnings.append("unrostered_student")
+
+    observations = read_context.observations_by_student
+    routed_available = observations is not None
+    routed_count: int | None
+    if observations is None:
+        routed_count = None
+        warnings.append("routed_evidence_unavailable")
+    else:
+        routed_count = len(observations.get(student_id, ()))
+
+    manifest_path = paths.submission_manifest_path
+    review_path = paths.review_record_path
+    manifest: dict[str, Any] | None = None
+    review: dict[str, Any] | None = None
+    submission_status = "missing"
+    review_status = "missing"
+    try:
+        record_context = load_quillan_student_review_context_from_assignment_context(
+            assignment_context,
+            student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+        )
+    except MissingSubmissionError:
+        pass
+    except OrphanReviewError:
+        review_status = "orphaned"
+        warnings.append("review_without_valid_submission")
+    except InvalidSubmissionError:
+        submission_status = "invalid"
+        warnings.append("invalid_submission")
+    except InvalidReviewError as error:
+        submission_status = "valid"
+        review_status = "invalid"
+        warnings.append("invalid_review")
+        if error.submission_record is not None:
+            manifest = mutable_json_copy(error.submission_record.value)
+    except RecordIdentityMismatchError:
+        submission_status = "identity_mismatch"
+        review_status = "identity_mismatch"
+        warnings.append("identity_mismatch")
+    except QuillanRecordContextError:
+        submission_status = "invalid"
+        review_status = "invalid"
+        warnings.append("unsafe_path")
+    else:
+        manifest = mutable_json_copy(record_context.submission)
+        submission_status = "valid"
+        if record_context.review is not None:
+            review = mutable_json_copy(record_context.review)
+            review_status = "valid"
+
+    needs_assembly = (
+        None
+        if routed_count is None
+        else bool(routed_count) and manifest is None
+    )
+    if needs_assembly:
+        warnings.append("routed_evidence_needs_assembly")
+    if submission_status == "missing":
+        warnings.append("missing_submission")
+    if review_status == "missing":
+        warnings.append("missing_review")
+    orphaned = review_status == "orphaned"
+    if orphaned:
+        warnings.append("review_without_valid_submission")
+
+    requirements = configured_requirements(assignment)
+    focus_ids = tuple(str(value) for value in assignment["focus_standard_ids"])
+    submission_section = _submission_section(
+        manifest,
+        submission_status,
+        manifest_path,
+        root,
+    )
+    review_section, review_warnings = _review_section(
+        root,
+        class_id,
+        assignment_id,
+        student_id,
+        review,
+        review_status,
+        review_path,
+        orphaned,
+        requirements,
+        focus_ids,
+    )
+    warnings.extend(review_warnings)
+
+    return StudentReviewStatus(
+        class_id=class_id,
+        assignment_id=assignment_id,
+        student_id=student_id,
+        assignment=_freeze(
+            {
+                "title": assignment["title"],
+                "writing_type": assignment["writing_type"],
+                "standards_profile_id": assignment["standards_profile_id"],
+                "focus_standard_count": len(focus_ids),
+                "configured_requirement_count": len(requirements),
+                "path": relative_path_for(assignment_path, root),
+            }
+        ),
+        student=_freeze(
+            {
+                "display_name": display_name,
+                "roster_status": roster_status,
+            }
+        ),
+        routed_evidence=_freeze(
+            {
+                "available": routed_available,
+                "present": None if routed_count is None else routed_count > 0,
+                "file_count": routed_count,
+                "needs_assembly": needs_assembly,
+            }
+        ),
+        submission=_freeze(submission_section),
+        review=_freeze(review_section),
+        warnings=tuple(dict.fromkeys(warnings)),
+    )
 
 def _submission_section(
     manifest: dict[str, Any] | None, status: str, path: Path, root: Path
