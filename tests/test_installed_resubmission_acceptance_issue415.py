@@ -41,9 +41,14 @@ def test_installed_acceptance_fixture_exercises_rescan_and_resolution(
         ]["module_details"]["source_selected_evidence_fingerprint"]
     }
     opened_paths: list[Path] = []
+
+    def record_open(path: Path) -> Path:
+        opened_paths.append(path)
+        return path
+
     monkeypatch.setattr(
         "quillan.evidence_opening.open_local_path",
-        lambda path: opened_paths.append(path) or path,
+        record_open,
     )
     for evidence in (original, candidate):
         opened = open_exact_verified_submission_evidence(
