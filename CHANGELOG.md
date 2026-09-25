@@ -28,7 +28,9 @@ planning and do not by themselves represent releases.
 - Feedback exports bind to a deterministic fingerprint of the authoritative
   selected evidence. Candidate assembly and dismissal preserve freshness;
   selecting different evidence makes prior feedback stale without changing
-  teacher judgments or rewriting feedback.
+  teacher judgments or rewriting feedback. Legacy v0.10.2 export metadata is
+  grandfathered until the first explicit selection change so upgrading alone does
+  not incorrectly stale previously current feedback.
 
 ### Validation
 

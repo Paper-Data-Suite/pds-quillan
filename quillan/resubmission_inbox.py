@@ -181,68 +181,78 @@ def build_assignment_resubmission_inbox_from_read_context(
             )
             continue
         except InvalidReviewError:
-            if not _has_rescan_signal(observations):
+            rescan_pages = _rescan_signal_pages(observations)
+            if not rescan_pages:
                 continue
-            items.append(
+            items.extend(
                 _attention_item(
                     student_id,
                     display_name,
                     roster_status,
-                    observations[0].logical_page,
+                    page_number,
                     "invalid_review",
                 )
+                for page_number in rescan_pages
             )
             continue
         except InvalidSubmissionError:
-            if not _has_rescan_signal(observations):
+            rescan_pages = _rescan_signal_pages(observations)
+            if not rescan_pages:
                 continue
-            items.append(
+            items.extend(
                 _attention_item(
                     student_id,
                     display_name,
                     roster_status,
-                    observations[0].logical_page,
+                    page_number,
                     "invalid_submission",
                 )
+                for page_number in rescan_pages
             )
             continue
         except OrphanReviewError:
-            if not _has_rescan_signal(observations):
+            rescan_pages = _rescan_signal_pages(observations)
+            if not rescan_pages:
                 continue
-            items.append(
+            items.extend(
                 _attention_item(
                     student_id,
                     display_name,
                     roster_status,
-                    observations[0].logical_page,
+                    page_number,
                     "orphan_review",
                 )
+                for page_number in rescan_pages
             )
             continue
         except RecordIdentityMismatchError:
-            if not _has_rescan_signal(observations):
+            rescan_pages = _rescan_signal_pages(observations)
+            if not rescan_pages:
                 continue
-            items.append(
+            items.extend(
                 _attention_item(
                     student_id,
                     display_name,
                     roster_status,
-                    observations[0].logical_page,
+                    page_number,
                     "record_identity_mismatch",
                 )
+                for page_number in rescan_pages
             )
             continue
         except (OSError, QuillanRecordContextError):
-            if not _has_rescan_signal(observations):
+            rescan_pages = _rescan_signal_pages(observations)
+            if not rescan_pages:
                 continue
-            items.append(
+            items.extend(
                 _attention_item(
                     student_id,
                     display_name,
                     roster_status,
-                    observations[0].logical_page,
+                    page_number,
                     "record_or_path_unavailable",
                 )
+                for page_number in rescan_pages
             )
             continue
 
@@ -474,13 +484,11 @@ def _awaiting_rescan_items(
     )
 
 
-def _has_rescan_signal(
+def _rescan_signal_pages(
     observations: tuple[QuillanResponsePageObservation, ...],
-) -> bool:
-    return any(
-        sum(item.logical_page == page for item in observations) > 1
-        for page in {item.logical_page for item in observations}
-    )
+) -> tuple[int, ...]:
+    counts = Counter(item.logical_page for item in observations)
+    return tuple(sorted(page for page, count in counts.items() if count > 1))
 
 
 def _attention_item(

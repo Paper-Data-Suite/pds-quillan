@@ -284,11 +284,18 @@ def feedback_status(
 def _export_selection_is_stale(
     metadata: dict[str, Any], selected_evidence_fingerprint: str
 ) -> bool:
-    """Require feedback to bind to the current authoritative evidence selection."""
+    """Compare a bound selection while grandfathering pre-v0.10.3 metadata."""
     details = metadata.get("module_details")
     if not isinstance(details, dict):
         return True
-    source_fingerprint = details.get("source_selected_evidence_fingerprint")
+    binding_key = "source_selected_evidence_fingerprint"
+    if binding_key not in details:
+        # v0.10.2 feedback predates selection fingerprints. Its existing
+        # source-review timestamp remains authoritative until the first explicit
+        # #415 selection change, where the resolution service binds the legacy
+        # metadata to the pre-change selection before mutating the manifest.
+        return False
+    source_fingerprint = details.get(binding_key)
     if not isinstance(source_fingerprint, str):
         return True
     return source_fingerprint != selected_evidence_fingerprint

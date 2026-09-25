@@ -96,6 +96,11 @@ def test_canceling_candidate_selection_does_not_call_resolution_service(
         "select_submission_evidence_candidate",
         lambda *_args, **_kwargs: pytest.fail("resolution service was called"),
     )
+    monkeypatch.setattr(
+        review_menu,
+        "build_assignment_resubmission_inbox",
+        lambda *_args, **_kwargs: inbox,
+    )
 
     review_menu._review_resubmission_item(
         tmp_path, CLASS_ID, ASSIGNMENT_ID, inbox, item
@@ -151,15 +156,32 @@ def test_detail_stays_open_while_teacher_compares_both_scans(
             evidence_id
         ),
     )
+    redraws = 0
+
+    def rebuild(*_args: object, **_kwargs: object) -> AssignmentResubmissionInbox:
+        nonlocal redraws
+        redraws += 1
+        return inbox
+
+    monkeypatch.setattr(
+        review_menu,
+        "build_assignment_resubmission_inbox",
+        rebuild,
+    )
 
     review_menu._review_resubmission_item(
         tmp_path, CLASS_ID, ASSIGNMENT_ID, inbox, item
     )
 
+    selected_evidence = item.selected_evidence
+    candidate_evidence = item.candidate_evidence
+    assert selected_evidence is not None
+    assert candidate_evidence is not None
     assert opened == [
-        item.selected_evidence.evidence_id,
-        item.candidate_evidence.evidence_id,
+        selected_evidence.evidence_id,
+        candidate_evidence.evidence_id,
     ]
+    assert redraws == 3
 
 
 def test_detail_does_not_offer_dismissal_without_current_selection(
@@ -203,6 +225,11 @@ def test_detail_does_not_offer_dismissal_without_current_selection(
         review_menu,
         "dismiss_submission_evidence_candidate",
         lambda *_args, **_kwargs: pytest.fail("dismissal service was called"),
+    )
+    monkeypatch.setattr(
+        review_menu,
+        "build_assignment_resubmission_inbox",
+        lambda *_args, **_kwargs: inbox,
     )
 
     review_menu._review_resubmission_item(

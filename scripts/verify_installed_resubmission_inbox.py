@@ -379,6 +379,54 @@ def main() -> int:
     if len(opened_paths) != 2:
         raise AssertionError("installed exact opening did not open both comparisons")
 
+    legacy_review = json.loads(
+        review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(
+            encoding="utf-8"
+        )
+    )
+    for field in ("feedback_pdf", "feedback_markdown"):
+        metadata_value = legacy_review["exports"].get(field)
+        if isinstance(metadata_value, dict):
+            details = metadata_value.get("module_details")
+            if not isinstance(details, dict):
+                raise AssertionError("installed export metadata lacks module_details")
+            if "source_selected_evidence_fingerprint" not in details:
+                raise AssertionError("v0.10.3 export did not record selection binding")
+            details.pop("source_selected_evidence_fingerprint")
+    write_review_record(
+        review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID),
+        legacy_review,
+        overwrite=True,
+    )
+    feedback_path = (
+        workspace
+        / "classes"
+        / CLASS_ID
+        / "modules"
+        / "quillan"
+        / "work"
+        / ASSIGNMENT_ID
+        / "submissions"
+        / STUDENT_ID
+        / "exports"
+        / "feedback.pdf"
+    )
+    current_manifest = load_submission_manifest(
+        submission_manifest_path(
+            workspace,
+            quillan_work_ref(CLASS_ID, ASSIGNMENT_ID),
+            STUDENT_ID,
+        )
+    )
+    if feedback_status(
+        workspace,
+        legacy_review,
+        "feedback_pdf",
+        feedback_path,
+        selected_evidence_fingerprint=selected_evidence_fingerprint(current_manifest),
+    )[1] != "present":
+        raise AssertionError("legacy v0.10.2 feedback was staled by upgrade alone")
+
     select_submission_evidence_candidate(
         workspace,
         CLASS_ID,
@@ -396,19 +444,6 @@ def main() -> int:
         review_record_path(workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID).read_text(
             encoding="utf-8"
         )
-    )
-    feedback_path = (
-        workspace
-        / "classes"
-        / CLASS_ID
-        / "modules"
-        / "quillan"
-        / "work"
-        / ASSIGNMENT_ID
-        / "submissions"
-        / STUDENT_ID
-        / "exports"
-        / "feedback.pdf"
     )
     if feedback_status(
         workspace,
@@ -438,6 +473,7 @@ def main() -> int:
                 "feedback_status": "stale",
                 "exact_evidence_opens": len(opened_paths),
                 "real_assembly_runs": 2,
+                "legacy_feedback_compatibility": "passed",
                 "real_feedback_pdf_export": True,
             },
             indent=2,

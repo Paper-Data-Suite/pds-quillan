@@ -13,15 +13,24 @@ from pds_core.identifiers import IdentifierValidationError, validate_identifier
 from quillan.record_context import (
     MissingSubmissionError,
     QuillanRecordContextError,
+    QuillanStudentReviewContext,
     ReviewLoadingPolicy,
     load_quillan_student_review_context_from_assignment_context,
     mutable_json_copy,
+)
+from quillan.review_record import ReviewRecordError
+from quillan.review_record_paths import (
+    ReviewRecordPathError,
+    update_quillan_review_record,
 )
 from quillan.review_read_context import (
     ReviewReadContextError,
     build_assignment_review_read_context,
 )
-from quillan.submission_evidence_validation import evidence_matches_observation
+from quillan.submission_evidence_validation import (
+    evidence_matches_observation,
+    selected_evidence_fingerprint,
+)
 from quillan.submission_manifest import (
     SubmissionManifestError,
     validate_submission_manifest,
@@ -182,6 +191,9 @@ def _resolve(
             "selected evidence."
         )
 
+    if action == "selected":
+        _bind_legacy_feedback_exports_to_selection(context, manifest)
+
     updated = deepcopy(manifest)
     updated_page = _page(updated, page_number)
     updated_evidence = _evidence(updated_page, evidence_id)
@@ -217,6 +229,46 @@ def _resolve(
         selected_evidence_id=cast(str | None, updated_page["selected_evidence_id"]),
         updated_at=updated_at,
     )
+
+
+def _bind_legacy_feedback_exports_to_selection(
+    context: QuillanStudentReviewContext,
+    manifest: dict[str, Any],
+) -> None:
+    """Bind otherwise-current legacy feedback before authoritative selection moves."""
+    if context.review is None:
+        return
+    review = mutable_json_copy(context.review)
+    current_fingerprint = selected_evidence_fingerprint(manifest)
+    changed = False
+    exports = cast(dict[str, Any], review["exports"])
+    for field in ("feedback_pdf", "feedback_markdown"):
+        metadata = exports.get(field)
+        if not isinstance(metadata, dict):
+            continue
+        # Already-stale legacy feedback does not need migration, and an existing
+        # binding (valid or malformed) must never be rewritten implicitly.
+        if metadata.get("source_review_updated_at") != review["updated_at"]:
+            continue
+        details = metadata.get("module_details")
+        if not isinstance(details, dict):
+            raise SubmissionEvidenceResolutionError(
+                "Legacy feedback metadata has invalid module_details."
+            )
+        binding_key = "source_selected_evidence_fingerprint"
+        if binding_key in details:
+            continue
+        details[binding_key] = current_fingerprint
+        changed = True
+    if not changed:
+        return
+    try:
+        update_quillan_review_record(context, review)
+    except (ReviewRecordError, ReviewRecordPathError, OSError) as error:
+        raise SubmissionEvidenceResolutionError(
+            "Could not bind legacy feedback to the current evidence selection: "
+            f"{error}"
+        ) from error
 
 
 def _page(manifest: dict[str, Any], page_number: int) -> dict[str, Any]:

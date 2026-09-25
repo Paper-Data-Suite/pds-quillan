@@ -1442,6 +1442,10 @@ Routing or assembling a candidate, dismissing a candidate, or another manifest
 revision that preserves every `selected_evidence_id` leaves feedback current.
 A teacher-confirmed selected-evidence change alters the fingerprint and makes
 earlier feedback stale without changing review judgments or rewriting
-student-facing output. Legacy metadata without this binding is treated as stale
-when selection-aware freshness is requested because its source selection cannot
-be proven.
+student-facing output. Feedback metadata created before v0.10.3 has no selection
+binding and remains governed by the pre-v0.10.3 review-timestamp freshness rule;
+upgrade alone does not make it stale. Before the first explicit evidence-selection
+change, the resolution service revision-guards a metadata-only binding of otherwise-
+current legacy feedback to the pre-change selection. If that binding cannot be
+persisted, selection is canceled. A present but malformed binding remains
+fail-closed and is never silently replaced.

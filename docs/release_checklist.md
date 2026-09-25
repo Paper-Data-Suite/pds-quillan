@@ -26,6 +26,10 @@ Classification: **active #415 patch-release procedure**.
 - [x] Pending assembly, multiple rescans, selection, dismissal, and cancel pass.
 - [x] Selecting authoritative evidence makes prior feedback stale.
 - [x] Candidate routing, assembly, and dismissal leave feedback current.
+- [ ] Legacy v0.10.2 feedback remains current on upgrade and becomes stale only
+  after an explicit selection change binds the pre-change evidence fingerprint.
+- [ ] Resubmission detail is rebuilt from canonical state before every redraw.
+- [ ] Attention-required rescan rows identify the actual duplicate logical page(s).
 - [x] Full immutable observation and retained-source projection is shared by
   assembly, inbox, resolution, and exact opening.
 - [x] Exact opening performs fresh action-time byte/hash/provenance validation.
@@ -73,11 +77,13 @@ Classification: **active #415 patch-release procedure**.
 - No replacement artifacts may be qualified until a reconciled release commit
   exists. Release authorization remains not granted.
 
-## 2026-09-24 repair-worktree evidence
+## 2026-09-24 baseline evidence at commit `7437364`
 
-- Full pytest: 2972 passed, 23 skipped.
-- Ruff, strict mypy across 172 source files, compileall, `pip check`,
-  documentation integrity, release compatibility, and diff hygiene passed.
+- The committed Codex baseline passed full pytest: 2972 passed, 23 skipped.
+- Ruff, the reported strict mypy subset across 172 source files, compileall,
+  `pip check`, documentation integrity, release compatibility, and diff hygiene
+  passed before the post-commit reconciliation slice. The official `run_tests.ps1`
+  repository-wide mypy gate must be repeated after this fix is applied and committed.
 - Focused #415 repair coverage proves current feedback before selection, stale
   feedback after selection, current feedback after candidate assembly/dismissal,
   full projection validation, action-time tamper rejection, initial-intake

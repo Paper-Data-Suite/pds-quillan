@@ -128,6 +128,15 @@ assembly, or dismissal may advance `submission.json.updated_at`, but does not
 change this fingerprint and therefore does not stale feedback. Explicitly
 selecting different authoritative evidence changes the fingerprint and makes
 earlier feedback stale. Feedback freshness also checks `review.updated_at`.
+Feedback exports created before v0.10.3 have no selected-evidence fingerprint.
+Those legacy exports remain governed by their existing review-timestamp freshness
+rather than becoming stale merely because Quillan was upgraded. Immediately before
+the first explicit #415 selection change, Quillan revision-guards a metadata-only
+binding of otherwise-current legacy exports to the current pre-change selection.
+Only after that binding succeeds may the manifest selection move, which then makes
+the legacy feedback stale normally. Existing malformed bindings are never rewritten
+implicitly and remain fail-closed.
+
 Stale means the teacher should review and export again; Quillan does not alter
 judgments or rewrite feedback.
 
@@ -140,10 +149,12 @@ loaded once from the already validated assignment context. Summary counts,
 rows, candidate detail identities, and chronology are projections of that one
 read.
 
-The context is discarded before the next action. After assembly, selection,
-dismissal, review navigation, evidence opening, feedback export, or refresh,
-the inbox is rebuilt. There is no `inbox.json`, persistent cache, database,
-index, seen flag, or manually maintained revision list.
+The context is discarded before the next action. The focused detail screen
+rebuilds the inbox before every redraw, including after returning from exact evidence
+opening. After assembly, selection, dismissal, review navigation, feedback export, or
+refresh, the assignment inbox likewise rebuilds from canonical state. There is no
+`inbox.json`, persistent cache, database, index, seen flag, or manually maintained
+revision list.
 
 ## Related workflows
 

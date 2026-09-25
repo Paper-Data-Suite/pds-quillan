@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from pds_core.module_dispatch import RouteDispatchRequest, RouteDispatchSuccess
 from pds_core.route_registrations import write_route_registration
@@ -20,6 +20,7 @@ from quillan.assignment_summary_context import feedback_status
 from quillan.pds2_scan_intake import QuillanScanPageOutcome
 from quillan.pds_module import get_module_profile
 from quillan.response_page_observation_persistence import (
+    PersistedQuillanPageObservation,
     persist_quillan_page_observation,
 )
 from quillan.resubmission_inbox import (
@@ -49,11 +50,13 @@ from quillan.submission_review_opening import (
     SubmissionReviewOpeningError,
     open_exact_verified_submission_evidence,
 )
-from tests.review_test_support import _write_assignment
-from tests.test_route_handler import route_context
-from tests.test_selected_review_read_amplification_issue414 import (
+from tests.review_test_support import (
     ASSIGNMENT_ID as REPRESENTATIVE_ASSIGNMENT_ID,
     CLASS_ID as REPRESENTATIVE_CLASS_ID,
+    _write_assignment,
+)
+from tests.test_route_handler import route_context
+from tests.test_selected_review_read_amplification_issue414 import (
     TOTAL_OBSERVATIONS,
     _prepare as _prepare_representative_class,
 )
@@ -69,7 +72,7 @@ def _persist_scan(
     name: str,
     content: bytes,
     timestamp: datetime,
-):
+) -> PersistedQuillanPageObservation:
     source = root / name
     source.write_bytes(content)
     retained = retain_source_scan(root, source, intake_timestamp=timestamp)
@@ -94,7 +97,14 @@ def _persist_scan(
     return persist_quillan_page_observation(root, outcome)
 
 
-def _prepare_initial_and_rescan(tmp_path: Path):
+def _prepare_initial_and_rescan(
+    tmp_path: Path,
+) -> tuple[
+    RouteResolution,
+    PersistedQuillanPageObservation,
+    PersistedQuillanPageObservation,
+    Path,
+]:
     resolution, _ = route_context(tmp_path)
     identity = resolution.locator
     _write_assignment(
@@ -572,12 +582,14 @@ def test_one_inbox_build_reuses_one_bounded_assignment_read(
 ) -> None:
     _prepare_representative_class(tmp_path)
     counts = {"assignment": 0, "roster": 0, "group": 0, "verify": 0}
-    original_assignment = read_context_module.load_quillan_assignment_context
-    original_roster = read_context_module.load_class_roster
-    original_group = read_context_module.group_response_page_observations_by_student
-    original_verify = observation_module.verify_contextual_routed_page_evidence
+    read_context_any = cast(Any, read_context_module)
+    observation_any = cast(Any, observation_module)
+    original_assignment = read_context_any.load_quillan_assignment_context
+    original_roster = read_context_any.load_class_roster
+    original_group = read_context_any.group_response_page_observations_by_student
+    original_verify = observation_any.verify_contextual_routed_page_evidence
 
-    def counted(name: str, function: Any):
+    def counted(name: str, function: Any) -> Any:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             counts[name] += 1
             return function(*args, **kwargs)
@@ -585,22 +597,22 @@ def test_one_inbox_build_reuses_one_bounded_assignment_read(
         return wrapper
 
     monkeypatch.setattr(
-        read_context_module,
+        read_context_any,
         "load_quillan_assignment_context",
         counted("assignment", original_assignment),
     )
     monkeypatch.setattr(
-        read_context_module,
+        read_context_any,
         "load_class_roster",
         counted("roster", original_roster),
     )
     monkeypatch.setattr(
-        read_context_module,
+        read_context_any,
         "group_response_page_observations_by_student",
         counted("group", original_group),
     )
     monkeypatch.setattr(
-        observation_module,
+        observation_any,
         "verify_contextual_routed_page_evidence",
         counted("verify", original_verify),
     )

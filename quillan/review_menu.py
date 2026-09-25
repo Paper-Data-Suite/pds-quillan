@@ -4727,11 +4727,54 @@ def _review_resubmission_item(
     inbox: AssignmentResubmissionInbox,
     item: ResubmissionInboxItem,
 ) -> None:
-    """Keep one comparison detail open while the teacher inspects evidence."""
-    while _review_resubmission_item_prompt(
-        workspace_root, class_id, assignment_id, inbox, item
-    ):
-        pass
+    """Rebuild canonical state before every resubmission detail redraw."""
+    del inbox
+    candidate_id = (
+        None if item.candidate_evidence is None else item.candidate_evidence.evidence_id
+    )
+    item_key = (
+        item.student_id,
+        item.page_number,
+        candidate_id,
+        item.attention_code,
+        item.assembly_state,
+    )
+    while True:
+        try:
+            current_inbox = build_assignment_resubmission_inbox(
+                workspace_root, class_id, assignment_id
+            )
+        except (ResubmissionInboxError, OSError, ValueError) as error:
+            print(f"Error: could not refresh resubmission detail: {error}")
+            input("Press Enter to continue...")
+            return
+        current_item = next(
+            (
+                candidate
+                for candidate in current_inbox.items
+                if (
+                    candidate.student_id,
+                    candidate.page_number,
+                    None
+                    if candidate.candidate_evidence is None
+                    else candidate.candidate_evidence.evidence_id,
+                    candidate.attention_code,
+                    candidate.assembly_state,
+                )
+                == item_key
+            ),
+            None,
+        )
+        if current_item is None:
+            return
+        if not _review_resubmission_item_prompt(
+            workspace_root,
+            class_id,
+            assignment_id,
+            current_inbox,
+            current_item,
+        ):
+            return
 
 
 def _review_resubmission_item_prompt(
