@@ -48,6 +48,7 @@ from quillan.record_context import (
     mutable_json_copy,
 )
 from quillan.submission_guidance import missing_submission_guidance
+from quillan.submission_evidence_validation import selected_evidence_fingerprint
 from quillan.work_paths import (
     QuillanWorkPathError,
     feedback_markdown_path,
@@ -981,6 +982,16 @@ def _update_export_metadata(
         raise FeedbackExportError("At least one feedback export path is required.")
     review = dict(context["review"])
     review["exports"] = dict(review["exports"])
+    submission = context.get("manifest")
+    if not isinstance(submission, dict):
+        raise FeedbackExportError(
+            "Canonical submission selection is unavailable for feedback export."
+        )
+    export_details = {
+        "source_selected_evidence_fingerprint": selected_evidence_fingerprint(
+            submission
+        ),
+    }
     if feedback_pdf_path is not None:
         review["exports"]["feedback_pdf"] = {
             "path": _workspace_relative_path(
@@ -988,7 +999,7 @@ def _update_export_metadata(
             ),
             "generated_at": created_at,
             "source_review_updated_at": created_at,
-            "module_details": {},
+            "module_details": export_details,
         }
     if feedback_markdown_path is not None:
         review["exports"]["feedback_markdown"] = {
@@ -997,7 +1008,7 @@ def _update_export_metadata(
             ),
             "generated_at": created_at,
             "source_review_updated_at": created_at,
-            "module_details": {},
+            "module_details": export_details,
         }
     # Returned work remains a distinct terminal workflow state under the v2
     # contract, even when its return feedback has been exported.

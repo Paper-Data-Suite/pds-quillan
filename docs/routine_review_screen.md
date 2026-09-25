@@ -235,3 +235,9 @@ incomplete review, create plain-paper submissions, assemble evidence, or alter
 #384/#385 navigation/continuation semantics.
 
 See [`batch_feedback_export.md`](batch_feedback_export.md).
+
+## Assignment-level resubmission action
+
+`8. Review resubmissions / rescans` belongs to Assignment Review Actions and is
+not added to the compact selected-student root. See
+[Resubmission / Rescan Review](resubmission_inbox.md).

@@ -16,6 +16,7 @@ from quillan.record_context import (
     QuillanRecordContextError,
     load_quillan_assignment_context,
 )
+from quillan.module_errors import QuillanObservationDiscoveryError
 from quillan.response_page_observations import (
     QuillanResponsePageObservation,
     group_response_page_observations_by_student,
@@ -159,7 +160,7 @@ def build_assignment_review_read_context(
             class_id,
             assignment_id,
         )
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, QuillanObservationDiscoveryError) as error:
         observations_by_student = None
         observations_error = _error_message(error)
     else:

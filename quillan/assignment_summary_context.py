@@ -251,6 +251,8 @@ def feedback_status(
     review: dict[str, Any] | None,
     field: str,
     default_path: Path,
+    *,
+    selected_evidence_fingerprint: str | None = None,
 ) -> tuple[str, str, str, tuple[str, ...]]:
     warnings: list[str] = []
     relative_path = relative_path_for(default_path, workspace_root)
@@ -264,12 +266,32 @@ def feedback_status(
         if review is not None and metadata["source_review_updated_at"] != review["updated_at"]:
             warnings.append(f"{field}_stale")
             return relative_path, "stale", "true", tuple(warnings)
+        if selected_evidence_fingerprint is not None and _export_selection_is_stale(
+            metadata, selected_evidence_fingerprint
+        ):
+            warnings.extend(
+                (f"{field}_stale", f"{field}_stale_selected_evidence")
+            )
+            return relative_path, "stale", "true", tuple(warnings)
         return relative_path, "present", "false", tuple(warnings)
 
     if default_path.is_file():
         warnings.append(f"{field}_metadata_missing")
         return relative_path, "unknown", "unknown", tuple(warnings)
     return relative_path, "missing", "false", tuple(warnings)
+
+
+def _export_selection_is_stale(
+    metadata: dict[str, Any], selected_evidence_fingerprint: str
+) -> bool:
+    """Require feedback to bind to the current authoritative evidence selection."""
+    details = metadata.get("module_details")
+    if not isinstance(details, dict):
+        return True
+    source_fingerprint = details.get("source_selected_evidence_fingerprint")
+    if not isinstance(source_fingerprint, str):
+        return True
+    return source_fingerprint != selected_evidence_fingerprint
 
 
 def relative_path_for(path: Path, workspace_root: Path) -> str:

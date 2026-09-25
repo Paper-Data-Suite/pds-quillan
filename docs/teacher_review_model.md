@@ -231,3 +231,11 @@ plain paper outside Quillan. The submission has no digital pages; the teacher
 retains and reviews the physical paper, then records judgments through the
 same review units, Focus Standards, feedback, private notes, and workflow
 states used for scanned submissions.
+
+## Resubmitted evidence
+
+A new scan does not change teacher-authored review judgments. The teacher may
+use the assignment-level [resubmission inbox](resubmission_inbox.md) to select
+or dismiss evidence explicitly, then revisit the student review if appropriate.
+Selecting new authoritative evidence makes earlier feedback stale; it does not
+rewrite that feedback or reset review completion.

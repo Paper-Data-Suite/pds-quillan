@@ -15,7 +15,7 @@ import sys
 from typing import Any
 from zipfile import ZipFile
 
-EXPECTED_VERSION = "0.10.2"
+EXPECTED_VERSION = "0.10.3"
 CLASS_ID = "synthetic_release_class"
 ASSIGNMENT_ID = "synthetic_release_digital"
 STANDARD_ID = "synthetic:W.RELEASE.1"

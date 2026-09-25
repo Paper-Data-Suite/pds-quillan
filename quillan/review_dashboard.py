@@ -39,6 +39,7 @@ from quillan.scan_review_resolution import (
     ScanReviewResolutionError,
     discover_scan_review_items,
 )
+from quillan.submission_evidence_validation import selected_evidence_fingerprint
 from quillan.work_paths import _is_link_like
 
 DASHBOARD_SCHEMA_VERSION: Final = "2"
@@ -332,10 +333,22 @@ def build_assignment_review_dashboard_from_read_context(
         )
         md_default = feedback_export_path(root, class_id, assignment_id, student_id)
         _, pdf_status, _, pdf_warnings = feedback_status(
-            root, review, "feedback_pdf", pdf_default
+            root,
+            review,
+            "feedback_pdf",
+            pdf_default,
+            selected_evidence_fingerprint=(
+                None if manifest is None else selected_evidence_fingerprint(manifest)
+            ),
         )
         _, md_status, _, md_warnings = feedback_status(
-            root, review, "feedback_markdown", md_default
+            root,
+            review,
+            "feedback_markdown",
+            md_default,
+            selected_evidence_fingerprint=(
+                None if manifest is None else selected_evidence_fingerprint(manifest)
+            ),
         )
         student_warnings.extend(pdf_warnings)
         student_warnings.extend(md_warnings)

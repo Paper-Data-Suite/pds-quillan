@@ -12,8 +12,14 @@ from quillan.record_context import (
     QuillanRecordContextError,
     ReviewLoadingPolicy,
     load_quillan_student_review_context,
+    load_quillan_student_review_context_from_assignment_context,
     mutable_json_copy,
 )
+from quillan.review_read_context import (
+    ReviewReadContextError,
+    build_assignment_review_read_context,
+)
+from quillan.submission_evidence_validation import evidence_matches_observation
 from quillan.submission_guidance import missing_submission_guidance
 from quillan.plain_paper_submission import is_plain_paper_submission
 from quillan.work_paths import quillan_work_ref
@@ -229,6 +235,107 @@ def open_student_submission_for_review(
     )
 
 
+def open_exact_verified_submission_evidence(
+    workspace_root: str | Path,
+    class_id: str,
+    assignment_id: str,
+    student_id: str,
+    *,
+    page_number: int,
+    evidence_id: str,
+) -> OpenedSubmissionReview:
+    """Freshly verify and open one exact observation-backed evidence record."""
+    try:
+        read_context = build_assignment_review_read_context(
+            workspace_root, class_id, assignment_id
+        )
+    except ReviewReadContextError as error:
+        raise SubmissionReviewOpeningError(
+            f"Could not verify assignment evidence: {error}"
+        ) from error
+    if read_context.observations_by_student is None:
+        raise SubmissionReviewOpeningError(
+            "Could not verify routed observations: "
+            f"{read_context.observations_error or 'unknown observation read failure'}"
+        )
+    try:
+        context = load_quillan_student_review_context_from_assignment_context(
+            read_context.assignment_context,
+            student_id,
+            review_policy=ReviewLoadingPolicy.REVIEW_OPTIONAL,
+        )
+    except MissingSubmissionError as error:
+        raise SubmissionReviewOpeningError(missing_submission_guidance()) from error
+    except (OSError, RuntimeError, QuillanRecordContextError) as error:
+        raise SubmissionReviewOpeningError(str(error)) from error
+
+    manifest = mutable_json_copy(context.submission)
+    pages = [
+        page for page in manifest["pages"] if page["page_number"] == page_number
+    ]
+    if len(pages) != 1:
+        raise SubmissionReviewOpeningError(
+            f"Submission page {page_number} does not exist exactly once."
+        )
+    page = pages[0]
+    evidence_items = [
+        evidence
+        for evidence in page["evidence"]
+        if evidence["evidence_id"] == evidence_id
+    ]
+    if len(evidence_items) != 1:
+        raise SubmissionReviewOpeningError(
+            f"Evidence ID '{evidence_id}' does not identify exactly one page record."
+        )
+    evidence = evidence_items[0]
+    if evidence["evidence_state"] != "active" or evidence["evidence_role"] not in {
+        "selected",
+        "candidate",
+        "replacement",
+    }:
+        raise SubmissionReviewOpeningError(
+            "The requested evidence is not active review evidence."
+        )
+    observations = [
+        observation
+        for observation in read_context.observations_by_student.get(student_id, ())
+        if observation.observation_id == evidence_id
+        and observation.logical_page == page_number
+    ]
+    if len(observations) != 1 or not evidence_matches_observation(
+        evidence, observations[0]
+    ):
+        raise SubmissionReviewOpeningError(
+            "The requested manifest evidence does not match one freshly verified "
+            "routed observation."
+        )
+    try:
+        opened = open_workspace_evidence(
+            read_context.workspace_root, evidence["routed_evidence_path"]
+        )
+    except (EvidenceOpeningError, OSError, RuntimeError, ValueError) as error:
+        raise SubmissionReviewOpeningError(
+            f"Could not open verified evidence for page {page_number}: {error}"
+        ) from error
+    return OpenedSubmissionReview(
+        class_id=class_id,
+        assignment_id=assignment_id,
+        student_id=student_id,
+        manifest_path=context.paths.submission_manifest_path,
+        manifest_relative_path=context.paths.submission_relative_path,
+        submission_state=manifest["submission_state"],
+        opened_pages=(
+            OpenedSubmissionEvidencePage(
+                page_number=page_number,
+                evidence_id=evidence_id,
+                evidence_path=opened.evidence_path,
+                evidence_relative_path=opened.evidence_relative_path,
+                page_state=page["page_state"],
+            ),
+        ),
+    )
+
+
 def selected_submission_evidence_pages(
     manifest: dict[str, Any],
     *,
@@ -362,6 +469,7 @@ __all__ = [
     "SubmissionEvidencePageOptions",
     "SubmissionReviewOpeningError",
     "list_submission_evidence_candidates",
+    "open_exact_verified_submission_evidence",
     "open_student_submission_for_review",
     "selected_submission_evidence_pages",
 ]

@@ -76,8 +76,8 @@ world languages, arts/humanities, and interdisciplinary writing tasks.
 
 ## Current Status
 
-Quillan 0.10.2 is the current patch-release candidate. It builds on the
-released v0.10.1 batch-assembly line and keeps the active workflow
+Quillan 0.10.3 is the current patch-release candidate. It builds on the
+v0.10.2 redraw-scoped review-read architecture and keeps the active workflow
 standards-based:
 
 ```text
@@ -94,6 +94,8 @@ Quillan currently supports:
 * basic requirements and minimum-requirement return policy;
 * printable QR paper response packets;
 * QR/paper routing and submission assembly;
+* an assignment-level resubmission/rescan inbox with explicit evidence
+  selection or dismissal and no automatic revision inference;
 * read-only submission status listing and assignment review dashboards;
 * workspace-safe evidence opening and selected-evidence opening;
 * minimum-requirements review with explicit teacher-entered outcomes;
@@ -271,6 +273,7 @@ menu keeps routine class-set status visible and exposes:
 5. View full diagnostic dashboard
 6. Refresh
 7. Review class progress
+8. Review resubmissions / rescans
 F. Batch Feedback Export
 G. Prepare Feedback for Printing / Sharing
 S. Share Results with Meridian
@@ -403,6 +406,7 @@ quillan
 quillan --help
 quillan --version
 quillan review-dashboard <class_id> <assignment_id>
+quillan resubmission-inbox <class_id> <assignment_id> --format json
 quillan review-status <class_id> <assignment_id> <student_id> --format json
 quillan assignment --help
 quillan roster --help
@@ -435,6 +439,7 @@ docs/review_record_contract.md
 docs/focus_standard_comment_contract.md
 docs/feedback_export_contract.md
 docs/batch_feedback_assembly.md
+docs/resubmission_inbox.md
 docs/assignment_reporting_contract.md
 docs/cli_contract.md
 docs/prepared_review_workflow.md
@@ -478,7 +483,7 @@ powershell -ExecutionPolicy Bypass `
 The equivalent `PDS_CORE_WHEEL` environment variable may be used instead of
 `-PdsCoreWheel`; an explicit parameter takes precedence. The isolated validation
 checks package metadata, editable and noneditable installation, installed import
-origins, CLI availability, and workspace side effects. The v0.10.2 candidate runtime is PDS2-only and uses module-qualified storage throughout.
+origins, CLI availability, and workspace side effects. The v0.10.3 candidate runtime is PDS2-only and uses module-qualified storage throughout.
 
 Release-candidate validation qualifies the same built Quillan wheel against exact,
 authenticated Core 0.6.2 and Core 0.6.3 endpoint wheels. At each endpoint it runs

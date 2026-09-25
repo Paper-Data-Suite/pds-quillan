@@ -65,7 +65,7 @@ def test_candidate_validator_runs_class_set_for_each_core_endpoint() -> None:
 
 def test_class_set_acceptance_is_source_isolated_and_version_exact() -> None:
     text = _script()
-    assert 'EXPECTED_QUILLAN_VERSION = "0.10.2"' in text
+    assert 'EXPECTED_QUILLAN_VERSION = "0.10.3"' in text
     assert 'choices=("0.6.2", "0.6.3")' in text
     assert "quillan_source_isolated" in text
     assert "core_source_isolated" in text

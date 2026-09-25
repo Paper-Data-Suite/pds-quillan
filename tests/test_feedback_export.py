@@ -22,6 +22,7 @@ from quillan.feedback_export import (
     feedback_export_path,
 )
 from quillan.review_record_paths import review_record_path, write_review_record
+from quillan.submission_evidence_validation import selected_evidence_fingerprint
 from quillan.submission_manifest_paths import submission_manifest_path, write_submission_manifest
 from tests.review_test_support import (
     ASSIGNMENT_ID,
@@ -270,7 +271,11 @@ def test_exports_ordered_student_content_and_records_markdown_metadata(
         "path": expected_path.relative_to(tmp_path).as_posix(),
         "generated_at": TIMESTAMP,
         "source_review_updated_at": TIMESTAMP,
-        "module_details": {},
+        "module_details": {
+            "source_selected_evidence_fingerprint": selected_evidence_fingerprint(
+                _manifest()
+            )
+        },
     }
 
 

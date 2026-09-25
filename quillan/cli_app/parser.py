@@ -22,6 +22,7 @@ from quillan.cli_app.handlers.diagnostics import (
     handle_diagnostics_show,
 )
 from quillan.cli_app.handlers.review_queue import handle_review_queue
+from quillan.cli_app.handlers.resubmission_inbox import handle_resubmission_inbox
 from quillan.cli_app.handlers.review_status import handle_review_status
 from quillan.cli_app.handlers.review_workflow import handle_review_workflow_set_state
 from quillan.cli_app.handlers.exports import (
@@ -189,6 +190,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="Standard-output representation (default: text).",
     )
     review_queue_parser.set_defaults(handler=handle_review_queue)
+
+    resubmission_inbox_parser = subparsers.add_parser(
+        "resubmission-inbox",
+        help="Show newer unresolved scanned evidence for one assignment.",
+        description=(
+            "Derive a read-only teacher inbox from canonical observations, "
+            "submission evidence, review activity, and feedback-export metadata."
+        ),
+    )
+    _add_assignment_identity_arguments(resubmission_inbox_parser)
+    resubmission_inbox_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Standard-output representation (default: text).",
+    )
+    resubmission_inbox_parser.set_defaults(handler=handle_resubmission_inbox)
 
     review_status_parser = subparsers.add_parser(
         "review-status",

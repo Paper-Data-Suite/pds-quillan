@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_candidate_validator_builds_v0102_once_and_qualifies_both_core_endpoints() -> None:
+def test_candidate_validator_builds_v0103_once_and_qualifies_both_core_endpoints() -> None:
     text = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
         encoding="utf-8"
     )
@@ -13,15 +13,15 @@ def test_candidate_validator_builds_v0102_once_and_qualifies_both_core_endpoints
     assert "$PdsCore063Wheel" in text
     assert "'--core-version', '0.6.2'" in text
     assert "'--core-version', '0.6.3'" in text
-    assert "quillan-0.10.2-py3-none-any.whl" in text
-    assert "quillan-0.10.2.tar.gz" in text
+    assert "quillan-0.10.3-py3-none-any.whl" in text
+    assert "quillan-0.10.3.tar.gz" in text
     assert text.count('"Build one wheel and sdist"') == 1
     assert "verify_installed_producer_acceptance.py" in text
     assert "verify_installed_operations_acceptance.py" in text
     assert "verify_installed_selected_review_reads.py" in text
     assert "Installed selected-review reads Core $CoreVersion" in text
-    assert "'--expected-quillan-version', '0.10.2'" in text
-    assert "'--version', '0.10.2'" in text
+    assert "'--expected-quillan-version', '0.10.3'" in text
+    assert "'--version', '0.10.3'" in text
     assert "'--expected-core-version', $CoreVersion" in text
     assert "v0.10.0 physical acceptance remains applicable: NOT REPEATED" in text
 

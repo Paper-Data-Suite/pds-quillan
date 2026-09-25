@@ -41,7 +41,7 @@ from quillan.review_student_navigation import build_review_student_navigation
 from quillan.review_work_queue import build_assignment_review_work_queue
 from quillan.pds_operations import get_module_operations_profile
 
-EXPECTED_QUILLAN_VERSION = "0.10.2"
+EXPECTED_QUILLAN_VERSION = "0.10.3"
 CLASS_ID = "synthetic_release_class"
 ASSIGNMENT_ID = "synthetic_release_digital"
 COPY_ASSIGNMENT_ID = "synthetic_release_copy"

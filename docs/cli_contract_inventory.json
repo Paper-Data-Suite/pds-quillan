@@ -116,6 +116,51 @@
     {
       "path": [
         "quillan",
+        "resubmission-inbox"
+      ],
+      "aliases": [],
+      "short_help": "Show newer unresolved scanned evidence for one assignment.",
+      "description": "Derive a read-only teacher inbox from canonical observations, submission evidence, review activity, and feedback-export metadata.",
+      "arguments": [
+        {
+          "names": [
+            "class_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Class identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "assignment_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Assignment identifier.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--format"
+          ],
+          "required": false,
+          "choices": [
+            "text",
+            "json"
+          ],
+          "default": "text",
+          "help": "Standard-output representation (default: text).",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
         "review-status"
       ],
       "aliases": [],

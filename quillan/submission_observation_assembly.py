@@ -66,6 +66,11 @@ from quillan.submission_manifest_paths import (
     submission_manifest_path,
     update_quillan_submission_manifest,
 )
+from quillan.submission_evidence_validation import (
+    SubmissionEvidenceValidationError,
+    expected_evidence_projection,
+    validate_evidence_observation_projection,
+)
 from quillan.work_paths import quillan_work_ref
 
 ASSEMBLY_FAILURE_CATEGORIES: Final[frozenset[str]] = frozenset(
@@ -1103,34 +1108,12 @@ def _evidence_from_observation(
     evidence_role: str,
     evidence_state: str,
 ) -> dict[str, Any]:
-    return {
-        "evidence_id": observation.observation_id,
-        "routed_evidence_path": observation.routed_evidence_path,
-        "evidence_role": evidence_role,
-        "evidence_state": evidence_state,
-        "duplicate_number": duplicate_number,
-        "created_at": observation.created_at,
-        "retained_source": {
-            "source_scan_id": observation.source_scan_id,
-            "source_filename": observation.source_filename,
-            "source_sha256": observation.source_sha256,
-            "retained_source_path": observation.retained_source_path,
-            "source_page_number": observation.source_page_number,
-        },
-        "module_details": {
-            "observation_id": observation.observation_id,
-            "page_id": observation.page_id,
-            "route_id": observation.route_id,
-            "issuance_id": observation.issuance_id,
-            "generation_id": observation.generation_id,
-            "artifact_id": observation.artifact_id,
-            "logical_page": observation.logical_page,
-            "total_pages": observation.total_pages,
-            "page_role": observation.page_role,
-            "routed_evidence_sha256": observation.routed_evidence_sha256,
-            "routed_evidence_kind": observation.routed_evidence_kind,
-        },
-    }
+    return expected_evidence_projection(
+        observation,
+        duplicate_number=duplicate_number,
+        evidence_role=evidence_role,
+        evidence_state=evidence_state,
+    )
 
 
 def _validate_existing_evidence_projection(
@@ -1138,29 +1121,12 @@ def _validate_existing_evidence_projection(
     observation: QuillanResponsePageObservation,
 ) -> None:
     """Validate immutable observation/provenance fields, preserving teacher state."""
-    expected = _evidence_from_observation(
-        observation,
-        duplicate_number=evidence["duplicate_number"],
-        evidence_role=evidence["evidence_role"],
-        evidence_state=evidence["evidence_state"],
-    )
-    for field in (
-        "evidence_id",
-        "routed_evidence_path",
-        "created_at",
-        "retained_source",
-    ):
-        if evidence[field] != expected[field]:
-            raise QuillanSubmissionObservationAssemblyError(
-                f"Existing evidence {field} contradicts its immutable observation."
-            )
-    actual_details = evidence["module_details"]
-    expected_details = expected["module_details"]
-    for field, expected_value in expected_details.items():
-        if actual_details.get(field) != expected_value:
-            raise QuillanSubmissionObservationAssemblyError(
-                "Existing evidence immutable module details contradict its observation."
-            )
+    try:
+        validate_evidence_observation_projection(evidence, observation)
+    except SubmissionEvidenceValidationError as error:
+        raise QuillanSubmissionObservationAssemblyError(
+            f"Existing evidence projection is invalid: {error}"
+        ) from error
 
 
 def _timestamp(value: datetime | str | None) -> str:

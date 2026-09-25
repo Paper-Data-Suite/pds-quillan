@@ -29,6 +29,9 @@ from quillan.feedback_export import (
     export_student_feedback,
     export_student_feedback_pdf,
 )
+from quillan.submission_evidence_validation import selected_evidence_fingerprint
+from quillan.submission_manifest import load_submission_manifest
+from quillan.submission_manifest_paths import submission_manifest_path
 from quillan.work_paths import (
     feedback_markdown_path,
     feedback_pdf_path,
@@ -141,7 +144,15 @@ def test_markdown_only_export_persists_metadata_and_resolves_exact_bytes(
         "path": exported.feedback_path.relative_to(tmp_path).as_posix(),
         "generated_at": EXPORT_TIME,
         "source_review_updated_at": EXPORT_TIME,
-        "module_details": {},
+        "module_details": {
+            "source_selected_evidence_fingerprint": selected_evidence_fingerprint(
+                load_submission_manifest(
+                    submission_manifest_path(
+                        tmp_path, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
+                    )
+                )
+            )
+        },
     }
     assert review["exports"]["feedback_pdf"] is None
     assert review["updated_at"] == EXPORT_TIME

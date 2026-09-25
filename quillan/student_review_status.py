@@ -33,6 +33,7 @@ from quillan.record_context import (
     mutable_json_copy,
     student_record_paths,
 )
+from quillan.submission_evidence_validation import selected_evidence_fingerprint
 from quillan.work_paths import quillan_work_ref
 
 REVIEW_STATUS_SCHEMA_VERSION: Final = "1"
@@ -199,6 +200,9 @@ def build_student_review_status(
     review_section, review_warnings = _review_section(
         root, class_id, assignment_id, student_id, review, review_status, review_path,
         orphaned, requirements, focus_ids,
+        selected_evidence_fingerprint_value=(
+            None if manifest is None else selected_evidence_fingerprint(manifest)
+        ),
     )
     warnings.extend(review_warnings)
 
@@ -352,6 +356,9 @@ def build_student_review_status_from_read_context(
         orphaned,
         requirements,
         focus_ids,
+        selected_evidence_fingerprint_value=(
+            None if manifest is None else selected_evidence_fingerprint(manifest)
+        ),
     )
     warnings.extend(review_warnings)
 
@@ -430,6 +437,7 @@ def _review_section(
     root: Path, class_id: str, assignment_id: str, student_id: str,
     review: dict[str, Any] | None, status: str, path: Path, orphaned: bool,
     requirements: tuple[Any, ...], focus_ids: tuple[str, ...],
+    *, selected_evidence_fingerprint_value: str | None,
 ) -> tuple[dict[str, Any], list[str]]:
     warnings: list[str] = []
     configured = set(focus_ids)
@@ -486,7 +494,14 @@ def _review_section(
     progress = review_progress_status(review)
     returned = bool(minimum["returned_without_full_review"]) or progress.is_returned_without_full_review
 
-    exports, export_warnings = _exports(root, class_id, assignment_id, student_id, review)
+    exports, export_warnings = _exports(
+        root,
+        class_id,
+        assignment_id,
+        student_id,
+        review,
+        selected_evidence_fingerprint_value=selected_evidence_fingerprint_value,
+    )
     warnings.extend(export_warnings)
     section = {
         "status": status, "path": relative_path_for(path, root), "orphaned": orphaned,
@@ -575,6 +590,7 @@ def _empty_review_section(
 def _exports(
     root: Path, class_id: str, assignment_id: str, student_id: str,
     review: dict[str, Any] | None,
+    *, selected_evidence_fingerprint_value: str | None = None,
 ) -> tuple[dict[str, Any], list[str]]:
     results: dict[str, Any] = {}
     warnings: list[str] = []
@@ -583,7 +599,13 @@ def _exports(
         "feedback_markdown": feedback_export_path(root, class_id, assignment_id, student_id),
     }
     for key in EXPORT_KEYS:
-        relative, status, stale_text, codes = feedback_status(root, review, key, defaults[key])
+        relative, status, stale_text, codes = feedback_status(
+            root,
+            review,
+            key,
+            defaults[key],
+            selected_evidence_fingerprint=selected_evidence_fingerprint_value,
+        )
         metadata = None if review is None else review["exports"].get(key)
         results[key] = {
             "path": relative, "metadata_present": isinstance(metadata, dict),

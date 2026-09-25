@@ -20,13 +20,14 @@ from quillan.feedback_export import (
 from quillan.assignment_summary_context import feedback_status
 from quillan.review_notes import add_review_note
 from quillan.review_record_paths import review_record_path
+from quillan.submission_evidence_validation import selected_evidence_fingerprint
 from tests.test_feedback_export import (
     STANDARD_DESCRIPTION,
     TIMESTAMP,
     _write_assignment,
     _write_standards_library,
 )
-from tests.review_test_support import _write_manifest, _write_review
+from tests.review_test_support import _manifest, _write_manifest, _write_review
 from tests.review_test_support import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID, _review
 
 
@@ -218,7 +219,11 @@ def test_normal_pdf_export_creates_student_facing_pdf_and_metadata(
         ),
         "generated_at": TIMESTAMP,
         "source_review_updated_at": TIMESTAMP,
-        "module_details": {},
+        "module_details": {
+            "source_selected_evidence_fingerprint": selected_evidence_fingerprint(
+                _manifest()
+            )
+        },
     }
     assert review_after["exports"]["feedback_markdown"] is None
     assert review_after["updated_at"] == metadata["source_review_updated_at"]

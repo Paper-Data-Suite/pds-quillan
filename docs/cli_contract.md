@@ -372,6 +372,7 @@ quillan --help
 quillan --version
 quillan review-dashboard <class_id> <assignment_id> [--format text|json]
 quillan review-queue <class_id> <assignment_id> [--format text|json]
+quillan resubmission-inbox <class_id> <assignment_id> [--format text|json]
 quillan review-status <class_id> <assignment_id> <student_id> [--format text|json]
 quillan review-workflow set-state <class_id> <assignment_id> <student_id> --state <state> --yes
 quillan assignment create <class_id> <assignment_id> --title <title> --writing-type <type> (--prompt <text> | --prompt-file <path>) --standards-profile-id <profile_id> --focus-standard-ids <id,...> [--review-unit-type <type>] [--review-unit-singular <label>] [--review-unit-plural <label>] [--rating-scale default] [--paragraphs-min N] [--paragraphs-max N] [--word-count-min N] [--word-count-max N] [--required-elements <items>] [--allow-return-without-full-review true|false] [--overwrite] [--yes | --dry-run]
@@ -2277,3 +2278,10 @@ does not replace the Assignment Review Dashboard, review queue, Core publication
 state, #391 attention, or #392 readiness.
 
 See [Quillan Local Diagnostic Events](diagnostic_events.md).
+
+## `resubmission-inbox`
+
+`quillan resubmission-inbox <class_id> <assignment_id> [--format text|json]`
+is read-only and uses the same canonical projection as assignment action 8.
+JSON record identity is `quillan_assignment_resubmission_inbox`, schema 1, and
+does not expose absolute paths or student writing.

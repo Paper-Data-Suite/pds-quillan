@@ -113,3 +113,10 @@ details, scan-review diagnostics, paths, and unrostered assignment-local records
 filtering, and exact-student drill-down.
 
 `quillan review-dashboard` remains unchanged and continues to emit schema version `2`.
+
+## Resubmission inbox boundary
+
+The dashboard's duplicate-page counts remain structural diagnostics. The
+v0.10.3 [resubmission inbox](resubmission_inbox.md) is a separate structured
+projection of strictly newer unresolved evidence and must not be derived by
+filtering formatted dashboard text.

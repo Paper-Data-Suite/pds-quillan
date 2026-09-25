@@ -17,6 +17,7 @@ from quillan.standards_summary_export import (
     export_standards_summary,
     standards_summary_export_path,
 )
+from quillan.submission_evidence_validation import selected_evidence_fingerprint
 from tests.test_class_summary_export import (
     STANDARD_A,
     STANDARD_A_KEY,
@@ -129,7 +130,11 @@ def test_focus_standard_rows_follow_assignment_order_and_count_ratings(
         ),
         "generated_at": TIMESTAMP,
         "source_review_updated_at": first_review["updated_at"],
-        "module_details": {},
+        "module_details": {
+            "source_selected_evidence_fingerprint": selected_evidence_fingerprint(
+                json.loads(first_manifest.read_text(encoding="utf-8"))
+            )
+        },
     }
     _write_json(first_review_path, first_review)
     stale_review = json.loads(second_review_path.read_text(encoding="utf-8"))
@@ -140,7 +145,11 @@ def test_focus_standard_rows_follow_assignment_order_and_count_ratings(
         ),
         "generated_at": TIMESTAMP,
         "source_review_updated_at": "2026-06-20T12:30:00+00:00",
-        "module_details": {},
+        "module_details": {
+            "source_selected_evidence_fingerprint": selected_evidence_fingerprint(
+                json.loads(second_manifest.read_text(encoding="utf-8"))
+            )
+        },
     }
     _write_json(second_review_path, stale_review)
     originals = {

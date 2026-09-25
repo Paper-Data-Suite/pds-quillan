@@ -31,6 +31,7 @@ from quillan.work_paths import (
     quillan_work_ref,
 )
 from quillan.record_context import canonical_workspace_root
+from quillan.submission_evidence_validation import selected_evidence_fingerprint
 
 BASE_CSV_COLUMNS: Final[tuple[str, ...]] = (
     "class_id",
@@ -217,10 +218,26 @@ def _build_student_row(
         workspace_root, student.work_ref, student.student_id
     )
     pdf_path, pdf_status, pdf_stale, pdf_warnings = feedback_status(
-        workspace_root, review, "feedback_pdf", canonical_pdf_path
+        workspace_root,
+        review,
+        "feedback_pdf",
+        canonical_pdf_path,
+        selected_evidence_fingerprint=(
+            None
+            if loaded.submission is None
+            else selected_evidence_fingerprint(loaded.submission)
+        ),
     )
     md_path, md_status, md_stale, md_warnings = feedback_status(
-        workspace_root, review, "feedback_markdown", canonical_markdown_path
+        workspace_root,
+        review,
+        "feedback_markdown",
+        canonical_markdown_path,
+        selected_evidence_fingerprint=(
+            None
+            if loaded.submission is None
+            else selected_evidence_fingerprint(loaded.submission)
+        ),
     )
     warnings.extend(pdf_warnings)
     warnings.extend(md_warnings)

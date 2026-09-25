@@ -31,6 +31,7 @@ def test_readme_describes_final_compact_review_and_release_endpoints() -> None:
         "C. Manage active context",
         "R. Resolve Scan Review Items",
         "7. Review class progress",
+        "8. Review resubmissions / rescans",
         "F. Batch Feedback Export",
         "G. Prepare Feedback for Printing / Sharing",
         "S. Share Results with Meridian",
@@ -41,7 +42,7 @@ def test_readme_describes_final_compact_review_and_release_endpoints() -> None:
         "P. Previous Student",
         "W. Next Student Needing Review",
         "`pds-core>=0.6.2,<0.7` runtime dependency",
-        "The v0.10.2 candidate runtime is PDS2-only",
+        "The v0.10.3 candidate runtime is PDS2-only",
         "authenticated Core 0.6.2 and Core 0.6.3 endpoint wheels",
     ):
         assert expected in source
@@ -52,24 +53,24 @@ def test_readme_describes_final_compact_review_and_release_endpoints() -> None:
     assert "exact released Core 0.6.0 wheel" not in source
 
 
-def test_active_data_contract_index_uses_v0102_release_boundary() -> None:
+def test_active_data_contract_index_uses_v0103_release_boundary() -> None:
     source = _text("docs/data_contracts.md")
 
-    assert "Quillan v0.10.2 requires `pds-core>=0.6.2,<0.7`" in source
+    assert "Quillan v0.10.3 requires `pds-core>=0.6.2,<0.7`" in source
     assert "Core 0.6.2 minimum endpoint and Core 0.6.3 current endpoint" in source
-    assert "The active v0.10.2 review model is standards-based:" in source
-    assert "This index documents the active v0.10.2 contracts." in source
+    assert "The active v0.10.3 review model is standards-based:" in source
+    assert "This index documents the active v0.10.3 contracts." in source
     assert "Historical Core 0.6.0 producer" in source
 
     assert "The active v0.8.6 review model is standards-based:" not in source
     assert "This index documents the active v0.8.6 contracts." not in source
 
 
-def test_unreleased_changelog_reflects_issue414_patch_boundary() -> None:
+def test_unreleased_changelog_reflects_issue415_patch_boundary() -> None:
     source = _text("CHANGELOG.md")
-    current = source.split("## 0.10.1 - 2026-09-20", maxsplit=1)[0]
+    current = source.split("## 0.10.2 - 2026-09-24", maxsplit=1)[0]
 
-    assert "Selected Student Review" in current
-    assert "redraw-scoped" in current
-    assert "120 actual routed evidence files" in current
-    assert "no cache survives a teacher action" in current
+    assert "Resubmission / Rescan Review" in current
+    assert "immutable additional observations" in current
+    assert "never selects a winner" in current
+    assert "redraw-scoped projection" in current

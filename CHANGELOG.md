@@ -6,7 +6,39 @@ Quillan is in early pre-1.0 development. Package versions describe the
 installable project state; GitHub issues and milestones may be used for
 planning and do not by themselves represent releases.
 
-## 0.10.2 - Unreleased
+## 0.10.3 - Unreleased
+
+### Added
+
+- Added an assignment-level **Resubmission / Rescan Review** inbox (#415) that
+  derives newer unresolved page evidence fresh from canonical observations,
+  submission manifests, review records, and feedback-export metadata.
+- Added direct selected/candidate evidence opening, explicit teacher-confirmed
+  candidate promotion and dismissal, pending-assembly visibility, deterministic
+  multiple-rescan ordering, and the read-only `resubmission-inbox` text/JSON CLI.
+
+### Safety
+
+- Rescans remain immutable additional observations. Quillan does not inspect
+  writing or infer that a student revised it, never selects a winner
+  automatically, and retains old evidence and provenance after every decision.
+- Inbox state is a redraw-scoped projection rather than a stored queue. Viewing,
+  refreshing, opening, and canceling are write-free; only explicit assembly or
+  evidence-resolution actions write canonical records.
+- Feedback exports bind to a deterministic fingerprint of the authoritative
+  selected evidence. Candidate assembly and dismissal preserve freshness;
+  selecting different evidence makes prior feedback stale without changing
+  teacher judgments or rewriting feedback.
+
+### Validation
+
+- Added functional, CLI, menu-numbering, no-write, chronology, identical-byte
+  physical-intake, explicit resolution, feedback-freshness, and bounded
+  read-amplification coverage.
+- Runtime compatibility remains `pds-core>=0.6.2,<0.7`; release qualification
+  covers authenticated Core 0.6.2 and Core 0.6.3 endpoints.
+
+## 0.10.2 - 2026-09-24
 
 ### Changed
 

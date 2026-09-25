@@ -122,6 +122,7 @@ def test_assignment_review_actions_add_queue_without_renumbering_existing_action
         "5. View full diagnostic dashboard",
         "6. Refresh",
         "7. Review class progress",
+        "8. Review resubmissions / rescans",
     ):
         assert expected in output
     assert "Class Review Progress" in output

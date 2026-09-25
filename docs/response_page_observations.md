@@ -74,3 +74,10 @@ their original exception object when a scan batch must continue.
 Issue #340 owns scan-review resolution and wider review-service failure
 migration. Issue #341 owns broader CLI, menu, dashboard, and remaining path
 migration.
+
+## Resubmission projection
+
+Quillan v0.10.3 uses immutable observation identity and `created_at` chronology
+to derive the assignment-level [Resubmission / Rescan Review](resubmission_inbox.md).
+Identical evidence bytes do not collapse distinct physical intake events, and
+chronology never selects a winner automatically.

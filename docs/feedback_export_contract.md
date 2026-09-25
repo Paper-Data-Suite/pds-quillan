@@ -915,8 +915,9 @@ After export, a metadata entry should use this general shape:
   "generated_at": "2026-07-02T00:00:00+00:00",
   "source_review_updated_at": "2026-07-02T00:00:00+00:00",
   "source_assignment_updated_at": "2026-07-02T00:00:00+00:00",
-  "source_submission_updated_at": "2026-07-02T00:00:00+00:00",
-  "module_details": {}
+  "module_details": {
+    "source_selected_evidence_fingerprint": "lowercase-sha256"
+  }
 }
 ```
 
@@ -927,7 +928,6 @@ Required export metadata fields:
 * `generated_at`;
 * `source_review_updated_at`;
 * `source_assignment_updated_at`;
-* `source_submission_updated_at`;
 * `module_details`.
 
 Field rules:
@@ -937,8 +937,9 @@ Field rules:
 * `generated_at` must be a timezone-aware ISO 8601 timestamp.
 * `source_review_updated_at` records the review record timestamp used for export.
 * `source_assignment_updated_at` records the assignment timestamp used for export.
-* `source_submission_updated_at` records the submission manifest timestamp used for export.
-* `module_details` must be an object.
+* `module_details` must be an object. Quillan v0.10.3 records
+  `source_selected_evidence_fingerprint`, a lowercase SHA-256 digest of the
+  ordered `(page_number, selected_evidence_id)` projection used for export.
 * Unknown fields are not part of the target export metadata contract unless a later schema version defines them.
 
 ## Stale Export Detection
@@ -957,10 +958,11 @@ A feedback export may be considered stale or potentially stale when:
 assignment.json.updated_at > exports.feedback_pdf.source_assignment_updated_at
 ```
 
-or:
+or, for Quillan v0.10.3 feedback:
 
 ```text
-submission.json.updated_at > exports.feedback_pdf.source_submission_updated_at
+current selected-evidence fingerprint !=
+exports.feedback_pdf.module_details.source_selected_evidence_fingerprint
 ```
 
 The same logic applies to `feedback_markdown` metadata.
@@ -1429,3 +1431,17 @@ proficiency.
 
 See [`batch_feedback_export.md`](batch_feedback_export.md) for the active #387
 service, menu, direct-CLI, overwrite, race-detection, and verification rules.
+
+## Selected-evidence freshness (v0.10.3)
+
+Feedback export metadata records a deterministic SHA-256 fingerprint of the
+ordered authoritative page selections in
+`module_details.source_selected_evidence_fingerprint`. Current/stale evaluation
+requires both the source review timestamp and this fingerprint to match.
+Routing or assembling a candidate, dismissing a candidate, or another manifest
+revision that preserves every `selected_evidence_id` leaves feedback current.
+A teacher-confirmed selected-evidence change alters the fingerprint and makes
+earlier feedback stale without changing review judgments or rewriting
+student-facing output. Legacy metadata without this binding is treated as stale
+when selection-aware freshness is requested because its source selection cannot
+be proven.

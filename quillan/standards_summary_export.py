@@ -36,6 +36,7 @@ from quillan.work_paths import (
     standards_summary_path,
 )
 from quillan.record_context import canonical_workspace_root
+from quillan.submission_evidence_validation import selected_evidence_fingerprint
 
 CSV_COLUMNS: Final[tuple[str, ...]] = (
     "class_id",
@@ -231,7 +232,15 @@ def _build_row(
             record.student.student_id,
         )
         _, pdf_status, _, _ = feedback_status(
-            workspace_root, review, "feedback_pdf", pdf_path
+            workspace_root,
+            review,
+            "feedback_pdf",
+            pdf_path,
+            selected_evidence_fingerprint=(
+                None
+                if record.submission is None
+                else selected_evidence_fingerprint(record.submission)
+            ),
         )
         if pdf_status == "present":
             feedback_pdf_present += 1

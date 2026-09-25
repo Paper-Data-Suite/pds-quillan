@@ -64,6 +64,7 @@ from quillan.cli_app.output import (
     print_added_feedback_comment,
     print_opened_submission_review,
     print_completed_feedback_composition,
+    print_assignment_submission_assembly,
     print_selected_reusable_feedback_comment,
     print_updated_standard_feedback_options,
     print_updated_overall_standard_rating,
@@ -149,6 +150,13 @@ from quillan.review_read_context import (
     ReviewReadContextError,
     build_assignment_review_read_context,
 )
+from quillan.resubmission_inbox import (
+    AssignmentResubmissionInbox,
+    ResubmissionInboxError,
+    ResubmissionInboxItem,
+    build_assignment_resubmission_inbox,
+    format_assignment_resubmission_inbox,
+)
 from quillan.review_status_display import (
     review_progress_status,
     review_status_label,
@@ -185,6 +193,7 @@ from quillan.record_context import (
 from quillan.submission_review_opening import (
     SubmissionReviewOpeningError,
     list_submission_evidence_candidates,
+    open_exact_verified_submission_evidence,
     open_student_submission_for_review,
 )
 from quillan.submission_page_management import (
@@ -192,6 +201,11 @@ from quillan.submission_page_management import (
     exclude_submission_page,
     mark_submission_page_needs_rescan,
     restore_excluded_submission_page,
+)
+from quillan.submission_evidence_resolution import (
+    SubmissionEvidenceResolutionError,
+    dismiss_submission_evidence_candidate,
+    select_submission_evidence_candidate,
 )
 from quillan.submission_status import (
     AssignmentSubmissionStatus,
@@ -4545,6 +4559,7 @@ def _launch_assignment_review_actions(
         print("5. View full diagnostic dashboard")
         print("6. Refresh")
         print("7. Review class progress")
+        print("8. Review resubmissions / rescans")
         print("S. Share Results with Meridian")
         print("F. Batch Feedback Export")
         print("G. Prepare Feedback for Printing / Sharing")
@@ -4603,6 +4618,12 @@ def _launch_assignment_review_actions(
                 class_id,
                 assignment_id,
             )
+        elif choice == "8":
+            _launch_resubmission_inbox(
+                workspace_root,
+                class_id,
+                assignment_id,
+            )
         elif choice.casefold() == "s":
             from quillan.share_results_menu import (
                 launch_share_results_with_meridian_menu,
@@ -4620,6 +4641,251 @@ def _launch_assignment_review_actions(
         else:
             print("Invalid selection. Please choose a listed action.")
             input("Press Enter to continue...")
+
+
+def _launch_resubmission_inbox(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    """Run the fresh-per-redraw assignment resubmission workflow."""
+    from quillan.menu import clear_screen, print_menu_header
+
+    while True:
+        clear_screen()
+        print_menu_header("Resubmission / Rescan Review")
+        try:
+            inbox = build_assignment_resubmission_inbox(
+                workspace_root, class_id, assignment_id
+            )
+        except (ResubmissionInboxError, OSError, ValueError) as error:
+            print(f"Error: could not build resubmission inbox: {error}")
+            input("Press Enter to continue...")
+            return
+        rendered = format_assignment_resubmission_inbox(inbox).splitlines()
+        print("\n".join(rendered[2:]))
+        print()
+        print("R. Refresh")
+        if any(item.assembly_state == "awaiting_assembly" for item in inbox.items):
+            print("A. Assemble pending routed evidence")
+        print_navigation_options()
+        print()
+        choice = input("Select an item or action: ").strip()
+        navigation = parse_navigation_choice(choice, allow_all=False)
+        if choice == "" or navigation is NavigationChoice.BACK:
+            return
+        if choice.casefold() == "r":
+            continue
+        if choice.casefold() == "a" and any(
+            item.assembly_state == "awaiting_assembly" for item in inbox.items
+        ):
+            _assemble_pending_resubmission_evidence(
+                workspace_root, class_id, assignment_id
+            )
+            continue
+        if not choice.isdigit() or not 1 <= int(choice) <= len(inbox.items):
+            print(f"Invalid selection. {navigation_hint()}")
+            input("Press Enter to continue...")
+            continue
+        _review_resubmission_item(
+            workspace_root,
+            class_id,
+            assignment_id,
+            inbox,
+            inbox.items[int(choice) - 1],
+        )
+
+
+def _assemble_pending_resubmission_evidence(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    confirmation = input(
+        "Assemble pending routed evidence for this assignment? (y/yes): "
+    ).strip()
+    parse_navigation_choice(confirmation)
+    if confirmation.casefold() not in {"y", "yes"}:
+        print("Assembly canceled; no files were written.")
+        input("Press Enter to continue...")
+        return
+    try:
+        result = assemble_assignment_submissions(
+            workspace_root, class_id, assignment_id
+        )
+    except (OSError, ValueError) as error:
+        print(f"Error: could not assemble pending evidence: {error}")
+    else:
+        print_assignment_submission_assembly(result, workspace_root)
+    input("Press Enter to continue...")
+
+
+def _review_resubmission_item(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    inbox: AssignmentResubmissionInbox,
+    item: ResubmissionInboxItem,
+) -> None:
+    """Keep one comparison detail open while the teacher inspects evidence."""
+    while _review_resubmission_item_prompt(
+        workspace_root, class_id, assignment_id, inbox, item
+    ):
+        pass
+
+
+def _review_resubmission_item_prompt(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    inbox: AssignmentResubmissionInbox,
+    item: ResubmissionInboxItem,
+) -> bool:
+    from quillan.menu import clear_screen, print_menu_header
+
+    clear_screen()
+    print_menu_header("Review Resubmitted Evidence")
+    identity = (
+        item.display_name
+        if item.display_name == item.student_id
+        else f"{item.display_name} ({item.student_id})"
+    )
+    print(f"Student: {identity}")
+    print(
+        "Page: unknown" if item.page_number is None else f"Page: {item.page_number}"
+    )
+    print()
+    if item.attention_code is not None:
+        print("Status: attention required")
+        print(f"Reason: {item.attention_code.replace('_', ' ')}")
+        print("No evidence resolution is available until this condition is fixed.")
+        input("Press Enter to continue...")
+        return False
+    if item.assembly_state == "awaiting_assembly":
+        assert item.candidate_evidence is not None
+        print("Status: awaiting assembly")
+        print(f"Scanned: {item.candidate_evidence.created_at}")
+        print("Use A from the inbox to explicitly assemble pending routed evidence.")
+        input("Press Enter to continue...")
+        return False
+    assert item.page_number is not None
+    assert item.candidate_evidence is not None
+    print("Current selected evidence")
+    if item.selected_evidence is None:
+        print("Status: no current selection")
+    else:
+        print(f"Scanned: {item.selected_evidence.created_at}")
+        print("Status: selected")
+    print()
+    print("New candidate evidence")
+    print(f"Scanned: {item.candidate_evidence.created_at}")
+    print("Status: active candidate")
+    relationship = {
+        "new_after_feedback": "arrived after feedback export",
+        "new_after_review_activity": "arrived after recorded review activity",
+        "additional_scanned_evidence": "additional scanned evidence",
+    }.get(item.temporal_classification, item.temporal_classification)
+    print(f"Relationship: {relationship}")
+    print()
+    if item.selected_evidence is not None:
+        print("1. Open current selected evidence")
+    print("2. Open new candidate evidence")
+    print("3. Use new scan as selected evidence")
+    if item.selected_evidence is not None:
+        print("4. Keep current evidence and dismiss new candidate")
+    print("5. Open this student's review")
+    print_navigation_options()
+    print()
+    choice = input("Select an option: ").strip()
+    navigation = parse_navigation_choice(choice)
+    if choice == "" or navigation is NavigationChoice.BACK:
+        return False
+    if choice == "1" and item.selected_evidence is not None:
+        _open_exact_resubmission_evidence(
+            workspace_root,
+            class_id,
+            assignment_id,
+            item,
+            item.selected_evidence.evidence_id,
+        )
+        return True
+    if choice == "2":
+        _open_exact_resubmission_evidence(
+            workspace_root,
+            class_id,
+            assignment_id,
+            item,
+            item.candidate_evidence.evidence_id,
+        )
+        return True
+    if choice == "3" or (choice == "4" and item.selected_evidence is not None):
+        action = "use the new scan" if choice == "3" else "dismiss the new candidate"
+        confirmation = input(f"Confirm: {action}? (y/yes): ").strip()
+        parse_navigation_choice(confirmation)
+        if confirmation.casefold() not in {"y", "yes"}:
+            print("Evidence decision canceled; no files were written.")
+            input("Press Enter to continue...")
+            return False
+        try:
+            if choice == "3":
+                select_submission_evidence_candidate(
+                    workspace_root,
+                    class_id,
+                    assignment_id,
+                    item.student_id,
+                    item.page_number,
+                    item.candidate_evidence.evidence_id,
+                )
+                print("The new scan is now selected; prior evidence remains retained.")
+            else:
+                dismiss_submission_evidence_candidate(
+                    workspace_root,
+                    class_id,
+                    assignment_id,
+                    item.student_id,
+                    item.page_number,
+                    item.candidate_evidence.evidence_id,
+                )
+                print("The candidate was dismissed; its evidence remains retained.")
+        except SubmissionEvidenceResolutionError as error:
+            print(f"Error: evidence decision was not saved: {error}")
+        input("Press Enter to continue...")
+        return False
+    if choice == "5":
+        _launch_selected_student_review(
+            workspace_root,
+            class_id,
+            assignment_id,
+            item.student_id,
+        )
+        return False
+    print(f"Invalid selection. {navigation_hint()}")
+    input("Press Enter to continue...")
+    return True
+
+
+def _open_exact_resubmission_evidence(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+    item: ResubmissionInboxItem,
+    evidence_id: str,
+) -> None:
+    assert item.page_number is not None
+    try:
+        opened = open_exact_verified_submission_evidence(
+            workspace_root,
+            class_id,
+            assignment_id,
+            item.student_id,
+            page_number=item.page_number,
+            evidence_id=evidence_id,
+        )
+    except SubmissionReviewOpeningError as error:
+        print(f"Error: could not open evidence: {error}")
+    else:
+        print_opened_submission_review(opened)
+    input("Press Enter to continue...")
 
 
 def _menu_batch_feedback_export(

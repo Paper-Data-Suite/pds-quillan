@@ -1,11 +1,11 @@
-# v0.10.2 Release Process
+# v0.10.3 Release Process
 
-Classification: **active authority for the v0.10.2 patch candidate**.
+Classification: **active authority for the v0.10.3 patch candidate**.
 
-Issue #414 owns selected-student review read optimization, deterministic
-read-amplification qualification, exact-candidate installed acceptance, and
-release preparation. Passing automation does not itself grant tag or GitHub
-Release authority.
+Issue #415 owns the assignment-level resubmission/rescan inbox, explicit
+evidence resolution, feedback freshness after selection, exact-candidate
+installed acceptance, and release preparation. Passing automation does not
+itself grant tag or GitHub Release authority.
 
 ## Exact candidate construction
 
@@ -14,8 +14,8 @@ Release authority.
 3. Run full source pytest, Ruff, strict mypy, compileall, documentation checks,
    release compatibility, `pip check`, and diff hygiene.
 4. Build exactly one pair from that commit:
-   - `quillan-0.10.2-py3-none-any.whl`
-   - `quillan-0.10.2.tar.gz`
+   - `quillan-0.10.3-py3-none-any.whl`
+   - `quillan-0.10.3.tar.gz`
 5. Run Twine and archive inspection against that exact pair.
 6. Install the same wheel bytes into isolated Core 0.6.2 and Core 0.6.3
    environments outside the checkout.
@@ -29,23 +29,24 @@ Release authority.
 A rebuild has a different artifact identity and invalidates installed evidence
 for the previous bytes.
 
-## Selected-review read acceptance
+## Resubmission inbox acceptance
 
-The source qualification includes a representative 30-student assignment with
-four real routed observations per student. One ordinary Selected Student Review
+The source qualification includes newer candidate evidence, pending assembly,
+identical-byte later intake, feedback chronology, multiple rescans, explicit
+selection/dismissal, cancellation, and bounded attention states. One inbox
 redraw must perform exactly one assignment-context load, one roster load, one
-strict assignment-wide observation discovery pass, and one verification/hash per
-routed evidence file. Routine navigation must not invoke scan-review diagnostic
-discovery or rebuild assignment-wide submission status, and the redraw must not
-write workspace state.
+strict observation discovery pass, and one verification/hash per routed file.
 
 The installed acceptance runs from the exact candidate wheel against both Core
-0.6.2 and Core 0.6.3. It builds a 30-student canonical workspace outside the
-source checkout and verifies the same redraw-scoped assignment/roster/observation
-boundary, source isolation, absence of legacy assignment-wide reads, and
-write-free behavior.
+0.6.2 and Core 0.6.3 outside the checkout. It exercises initial assembly,
+real PDF/Markdown feedback export, later rescan, pre- and post-assembly
+freshness, inbox discovery, action-time verified exact evidence opening,
+explicit selection, a fresh empty inbox, and stale-feedback reporting.
 
-See [v0.10.2 Installed Selected-Review Read Acceptance](v0.10.2_installed_selected_review_read_acceptance.md).
+The [v0.10.2 Installed Selected-Review Read Acceptance](v0.10.2_installed_selected_review_read_acceptance.md)
+remains historical evidence for the unchanged redraw-scoped read boundary.
+See [v0.10.3 Installed Resubmission Inbox Acceptance](v0.10.3_installed_resubmission_inbox_acceptance.md)
+for the active exact-wheel workflow.
 
 ## Historical patch evidence
 
@@ -56,7 +57,7 @@ the unchanged feedback-assembly workflow:
 
 ## Physical acceptance boundary
 
-Issue #414 changes read composition for teacher review screens; it does not
+Issue #415 adds a derived evidence-management workflow; it does not
 change PDS2 generation, route registration, scan intake, retained-source
 handling, routed-evidence creation, printable packet generation, or physical
 page interpretation. The exact v0.10.0 physical-paper acceptance therefore
@@ -68,15 +69,15 @@ See the historical [v0.10.0 Physical Acceptance](physical_acceptance_v0.10.0.md)
 
 ## Core and publication compatibility
 
-Runtime compatibility remains exactly `pds-core>=0.6.2,<0.7`. Issue #414 adds no
+Runtime compatibility remains exactly `pds-core>=0.6.2,<0.7`. Issue #415 adds no
 Core API, Academic Work registration, Academic Result, Publication Record,
-Meridian handoff, grading, proficiency, or portfolio behavior. The optimization
-is redraw-scoped only; no cache survives a user action.
+Meridian handoff, grading, proficiency, or portfolio behavior. The workflow is
+a redraw-scoped projection only; no inbox cache survives a user action.
 
 ## Release authority
 
-After qualification, an owner must explicitly authorize the v0.10.2 release.
-Only then may the normal process create/push tag `v0.10.2` and make the exact
+After qualification, an owner must explicitly authorize the v0.10.3 release.
+Only then may the normal process create/push tag `v0.10.3` and make the exact
 qualified wheel/sdist available in the repository's release channel. Do not
 upload Quillan to an external package index without separate explicit
 authorization.

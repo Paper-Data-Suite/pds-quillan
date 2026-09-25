@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import hashlib
+import json
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,7 @@ from quillan.response_page_observations import (
     canonical_response_page_observation_json,
     derive_observation_id,
 )
+from quillan.submission_evidence_validation import selected_evidence_fingerprint
 from quillan.work_paths import (
     quillan_work_ref,
     response_page_observation_path,
@@ -63,7 +65,10 @@ def _id(prefix: str, value: int) -> str:
 
 def _write_review_records(root: Path) -> None:
     for index, student_id in enumerate(STUDENT_IDS, start=1):
-        _, review_path, review = _write_records(root, student_id)
+        manifest_path, review_path, review = _write_records(root, student_id)
+        fingerprint = selected_evidence_fingerprint(
+            json.loads(manifest_path.read_text(encoding="utf-8"))
+        )
         export_path = (
             root
             / "classes"
@@ -86,7 +91,9 @@ def _write_review_records(root: Path) -> None:
                 "path": relative,
                 "generated_at": review["updated_at"],
                 "source_review_updated_at": review["updated_at"],
-                "module_details": {},
+                "module_details": {
+                    "source_selected_evidence_fingerprint": fingerprint,
+                },
             }
             _write_json(review_path, review)
         elif index % 7 == 0:
@@ -97,7 +104,9 @@ def _write_review_records(root: Path) -> None:
                 "path": relative,
                 "generated_at": review["updated_at"],
                 "source_review_updated_at": "2026-06-20T12:30:00+00:00",
-                "module_details": {},
+                "module_details": {
+                    "source_selected_evidence_fingerprint": fingerprint,
+                },
             }
             _write_json(review_path, review)
         elif index % 3 == 0:
