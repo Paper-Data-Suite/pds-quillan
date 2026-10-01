@@ -83,17 +83,7 @@ def load_retained_page_for_qr(
     )
     suffix = path.suffix.lower()
     if suffix in SUPPORTED_IMAGE_EXTENSIONS:
-        try:
-            image = cv2.imread(str(path), cv2.IMREAD_COLOR)
-        except (cv2.error, OSError) as error:
-            raise QuillanPageImageError(
-                f"Could not load retained image: {error}"
-            ) from error
-        except Exception as error:
-            raise QuillanPageImageError(
-                f"Unexpected retained image loading failure: {error}"
-            ) from error
-        return _validated_bgr(image)
+        return _decode_retained_image(path)
     if suffix != ".pdf":
         raise QuillanSourcePageError("Retained source type is unsupported.")
 
@@ -137,6 +127,27 @@ def load_retained_page_for_qr(
     except Exception as error:
         raise QuillanPageImageError(
             f"Unexpected converted-page image failure: {error}"
+        ) from error
+    return _validated_bgr(image)
+
+
+def _decode_retained_image(path: Path) -> NDArray[np.uint8]:
+    try:
+        encoded = path.read_bytes()
+    except OSError as error:
+        raise QuillanPageImageError(
+            f"Could not read retained image bytes: {error}"
+        ) from error
+    try:
+        buffer = np.frombuffer(encoded, dtype=np.uint8)
+        image = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
+    except (ValueError, cv2.error) as error:
+        raise QuillanPageImageError(
+            f"Could not decode retained image bytes: {error}"
+        ) from error
+    except Exception as error:
+        raise QuillanPageImageError(
+            f"Unexpected retained image decoding failure: {error}"
         ) from error
     return _validated_bgr(image)
 
