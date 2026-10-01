@@ -97,7 +97,7 @@ def test_pdf_page_count_wraps_dependency_and_parser_failures(
 ) -> None:
     retained = _pdf_event(tmp_path)
 
-    def fail(_path: str) -> object:
+    def fail(_pdf_bytes: bytes) -> object:
         raise raised
 
     monkeypatch.setattr(pages, "_load_pdf2image", lambda: _pdf_support(fail, object()))
@@ -120,7 +120,7 @@ def test_pdf_conversion_requests_exactly_one_page(tmp_path: Path, monkeypatch: p
     retained = _pdf_event(tmp_path)
     calls: list[dict[str, object]] = []
 
-    def convert(_path: str, **kwargs: object) -> list[Image.Image]:
+    def convert(_pdf_bytes: bytes, **kwargs: object) -> list[Image.Image]:
         calls.append(kwargs)
         return [Image.new("RGB", (12, 8), "white")]
 
@@ -133,7 +133,7 @@ def test_pdf_conversion_requests_exactly_one_page(tmp_path: Path, monkeypatch: p
 def test_pdf_conversion_failure_and_invalid_result_are_typed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     retained = _pdf_event(tmp_path)
 
-    def fail(_path: str, **_kwargs: object) -> object:
+    def fail(_pdf_bytes: bytes, **_kwargs: object) -> object:
         raise _Timeout("slow")
 
     monkeypatch.setattr(pages, "_load_pdf2image", lambda: _pdf_support(object(), fail))

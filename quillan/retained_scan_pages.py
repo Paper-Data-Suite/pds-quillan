@@ -33,17 +33,18 @@ def retained_source_page_count(
     *,
     workspace_root: Path,
 ) -> int:
-    """Return a positive physical page count after #337 provenance validation."""
+    """Return a positive physical page count after provenance validation."""
     path = _validated_page_path(retained_source, workspace_root, 1)
     if path.suffix.lower() in SUPPORTED_IMAGE_EXTENSIONS:
         return 1
     if path.suffix.lower() != ".pdf":
         raise QuillanSourcePageError("Retained source type is unsupported.")
 
-    pdfinfo_from_path, _, exceptions = _load_pdf2image()
+    pdf_bytes = _read_pdf_bytes_for_count(path)
+    pdfinfo_from_bytes, _, exceptions = _load_pdf2image()
     info_not_installed, page_count_error, syntax_error, timeout_error = exceptions
     try:
-        info = pdfinfo_from_path(str(path))
+        info = pdfinfo_from_bytes(pdf_bytes)
         count = info.get("Pages")
     except info_not_installed as error:
         raise QuillanPdfDependencyError(
@@ -96,11 +97,12 @@ def load_retained_page_for_qr(
     if suffix != ".pdf":
         raise QuillanSourcePageError("Retained source type is unsupported.")
 
-    _, convert_from_path, exceptions = _load_pdf2image()
+    pdf_bytes = _read_pdf_bytes_for_conversion(path, source_page_number)
+    _, convert_from_bytes, exceptions = _load_pdf2image()
     info_not_installed, page_count_error, syntax_error, timeout_error = exceptions
     try:
-        pages = convert_from_path(
-            str(path),
+        pages = convert_from_bytes(
+            pdf_bytes,
             first_page=source_page_number,
             last_page=source_page_number,
         )
@@ -139,11 +141,30 @@ def load_retained_page_for_qr(
     return _validated_bgr(image)
 
 
+def _read_pdf_bytes_for_count(path: Path) -> bytes:
+    try:
+        return path.read_bytes()
+    except OSError as error:
+        raise QuillanPdfPageCountError(
+            f"Could not read retained PDF bytes: {error}"
+        ) from error
+
+
+def _read_pdf_bytes_for_conversion(path: Path, source_page_number: int) -> bytes:
+    try:
+        return path.read_bytes()
+    except OSError as error:
+        raise QuillanPdfPageConversionError(
+            "Could not read retained PDF bytes for page "
+            f"{source_page_number}: {error}"
+        ) from error
+
+
 def _load_pdf2image(
 ) -> tuple[Any, Any, tuple[type[BaseException], ...]]:
     """Load optional PDF support only when a retained PDF is processed."""
     try:
-        from pdf2image import convert_from_path, pdfinfo_from_path
+        from pdf2image import convert_from_bytes, pdfinfo_from_bytes
         from pdf2image.exceptions import (
             PDFInfoNotInstalledError,
             PDFPageCountError,
@@ -159,8 +180,8 @@ def _load_pdf2image(
             f"Unexpected PDF dependency loading failure: {error}"
         ) from error
     return (
-        pdfinfo_from_path,
-        convert_from_path,
+        pdfinfo_from_bytes,
+        convert_from_bytes,
         (
             PDFInfoNotInstalledError,
             PDFPageCountError,
