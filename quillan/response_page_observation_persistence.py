@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import os
 from pathlib import Path, PurePosixPath
 import tempfile
@@ -48,6 +48,7 @@ from quillan.response_page_observations import (
 from quillan.routed_evidence import (
     _PreparedRoutedPageEvidence,
     _prepare_routed_page_evidence,
+    verify_contextual_routed_page_evidence,
     verify_routed_page_evidence,
 )
 from quillan.work_paths import (
@@ -282,23 +283,18 @@ def persist_quillan_page_observation(
     work_ref = quillan_work_ref(result.class_id, result.assignment_id)
     observation_path = response_page_observation_path(root, work_ref, observation_id)
     expected_observation_bytes = canonical_response_page_observation_json(observation)
-    _preflight_destinations(root, result, observation_path, prepared.path)
 
     observation_exists = os.path.lexists(observation_path)
-    evidence_exists = os.path.lexists(prepared.path)
-    if observation_exists and evidence_exists:
+    if observation_exists:
         return _validate_existing(
             root,
             observation,
             observation_path,
             prepared,
         )
-    if observation_exists:
-        raise _integrity_failure(
-            "Observation exists without its routed evidence.",
-            observation_path,
-            prepared.path,
-        )
+
+    _preflight_destinations(root, result, observation_path, prepared.path)
+    evidence_exists = os.path.lexists(prepared.path)
     if evidence_exists:
         raise _integrity_failure(
             "Orphan routed evidence exists without its observation.",
@@ -719,21 +715,45 @@ def _validate_existing(
     observation_path: Path,
     prepared: _PreparedRoutedPageEvidence,
 ) -> PersistedQuillanPageObservation:
+    evidence_path = prepared.path
     try:
         work_ref = quillan_work_ref(expected.class_id, expected.assignment_id)
         existing = load_contextual_response_page_observation(
             root, work_ref, expected.observation_id
         )
-        if existing != expected:
+        normalized_existing = replace(
+            existing,
+            routed_evidence_path=expected.routed_evidence_path,
+        )
+        if normalized_existing != expected:
             raise QuillanObservationIntegrityError(
                 "Existing observation contradicts the expected immutable record."
             )
-        verify_routed_page_evidence(
-            prepared.path,
-            expected_sha256=prepared.sha256,
-            expected_size_bytes=prepared.size_bytes,
+        evidence_path = root.joinpath(
+            *PurePosixPath(existing.routed_evidence_path).parts
         )
-        if prepared.path.read_bytes() != prepared.content:
+        if evidence_path != prepared.path and os.path.lexists(prepared.path):
+            raise QuillanObservationIntegrityError(
+                "Existing legacy observation has an unexpected bounded evidence "
+                "artifact alongside its persisted evidence."
+            )
+        verified_path = verify_contextual_routed_page_evidence(
+            root,
+            work_ref,
+            issuance_id=existing.issuance_id,
+            student_id=existing.student_id,
+            logical_page=existing.logical_page,
+            observation_id=existing.observation_id,
+            extension=evidence_path.suffix,
+            relative_path=existing.routed_evidence_path,
+            expected_sha256=existing.routed_evidence_sha256,
+            expected_size_bytes=existing.routed_evidence_size_bytes,
+        )
+        if verified_path != evidence_path:
+            raise QuillanObservationIntegrityError(
+                "Existing routed evidence resolved to an unexpected path."
+            )
+        if evidence_path.read_bytes() != prepared.content:
             raise QuillanObservationIntegrityError(
                 "Existing evidence bytes contradict the expected artifact."
             )
@@ -750,15 +770,15 @@ def _validate_existing(
                 f"Existing observation transaction is invalid: {error}"
             )
         conflict.possible_observation_path = observation_path
-        conflict.possible_evidence_path = prepared.path
+        conflict.possible_evidence_path = evidence_path
         raise conflict from error
     return PersistedQuillanPageObservation(
         workspace_root=root,
         observation=existing,
         observation_path=observation_path,
         observation_relative_path=observation_path.relative_to(root).as_posix(),
-        evidence_path=prepared.path,
-        evidence_relative_path=prepared.relative_path,
+        evidence_path=evidence_path,
+        evidence_relative_path=existing.routed_evidence_path,
         status="existing",
     )
 

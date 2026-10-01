@@ -91,7 +91,9 @@ def test_existing_transaction_contradictions_are_typed(
             raise QuillanRoutedEvidenceIntegrityError("hash contradiction")
 
         monkeypatch.setattr(
-            observation_persistence, "verify_routed_page_evidence", fail_hash
+            observation_persistence,
+            "verify_contextual_routed_page_evidence",
+            fail_hash,
         )
     with pytest.raises(QuillanObservationIntegrityError) as caught:
         persist_quillan_page_observation(tmp_path, outcome)
