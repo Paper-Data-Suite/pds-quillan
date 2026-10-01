@@ -44,7 +44,7 @@ def test_installed_application_acceptance_accepts_explicit_core_endpoint() -> No
         encoding="utf-8"
     )
     assert '"--expected-core-version"' in source
-    assert 'choices=("0.6.0", "0.6.2", "0.6.3")' in source
+    assert 'choices=("0.6.0", "0.6.2", "0.6.3", "0.6.4")' in source
     assert 'default="0.6.0"' in source
     assert "core_distribution.version == args.expected_core_version" in source
     assert 'core_distribution.version == "0.6.0"' not in source

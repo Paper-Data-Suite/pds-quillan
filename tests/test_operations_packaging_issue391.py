@@ -32,6 +32,7 @@ def test_current_quillan_requires_first_core_module_operations_release() -> None
     requirement = Requirement(values[0])
     assert Version("0.6.2") in requirement.specifier
     assert Version("0.6.3") in requirement.specifier
+    assert Version("0.6.4") in requirement.specifier
     assert Version("0.6.1") not in requirement.specifier
     assert Version("0.7.0") not in requirement.specifier
 
@@ -74,13 +75,25 @@ def test_installed_operations_entry_point_resolves_exact_provider() -> None:
 def test_exact_core_wheel_verifier_keeps_historical_and_current_contracts() -> None:
     from scripts.verify_core_wheel import CORE_WHEEL_CONTRACTS
 
-    assert tuple(sorted(CORE_WHEEL_CONTRACTS)) == ("0.6.0", "0.6.2", "0.6.3")
+    assert tuple(sorted(CORE_WHEEL_CONTRACTS)) == (
+        "0.6.0",
+        "0.6.2",
+        "0.6.3",
+        "0.6.4",
+    )
     minimum = CORE_WHEEL_CONTRACTS["0.6.2"]
     assert minimum.filename == "pds_core-0.6.2-py3-none-any.whl"
     assert minimum.version == "0.6.2"
     assert (
         minimum.sha256
         == "b9d5de7d467d18716f415da87f359e940603d9c738a3a9ae9309272ebe78a848"
+    )
+    candidate = CORE_WHEEL_CONTRACTS["0.6.4"]
+    assert candidate.filename == "pds_core-0.6.4-py3-none-any.whl"
+    assert candidate.version == "0.6.4"
+    assert (
+        candidate.sha256
+        == "201e651f4b9aad0bfeb1565b37f425982513f2fb616b86a8835a10f4dcd7db62"
     )
 
 
@@ -114,5 +127,6 @@ def test_active_release_candidate_uses_module_operations_core_range() -> None:
     )
     assert "'--core-version', '0.6.2'" in source
     assert "'--core-version', '0.6.3'" in source
+    assert "'--core-version', '0.6.4'" in source
     assert "'--core-version', '0.6.0'" not in source
     assert "'--expected-core-version', '0.6.0'" not in source
