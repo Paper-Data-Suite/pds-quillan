@@ -100,7 +100,6 @@ def test_every_core_retention_identity_contradiction_is_rejected(
     arbitrary.write_bytes(b"sentinel")
     contradictions = (
         replace(source, source_scan_id="arbitrary_safe_id"),
-        replace(source, source_filename="different.pdf"),
         replace(source, source_filename="original.png"),
         replace(source, source_sha256="b" * 64),
         replace(

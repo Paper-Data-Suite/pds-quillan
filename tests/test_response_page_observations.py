@@ -348,7 +348,6 @@ def test_core_retention_components_are_one_identity(tmp_path: Path) -> None:
     timestamp = "2026-07-20T00:00:00+00:00"
     cases = (
         {"source_scan_id": "scan_arbitrary_safe"},
-        {"source_filename": "different.png"},
         {"source_filename": "selected.jpg"},
         {"source_sha256": "f" * 64},
         {"created_at": timestamp, "intake_timestamp": timestamp},
@@ -366,6 +365,20 @@ def test_core_retention_components_are_one_identity(tmp_path: Path) -> None:
     for changes in cases:
         with pytest.raises(QuillanObservationValidationError):
             _mutated_observation(observation, **changes)
+
+
+def test_core_source_filename_is_persisted_provenance_not_writer_identity(
+    tmp_path: Path,
+) -> None:
+    observation = persist_quillan_page_observation(
+        tmp_path, successful_image_page(tmp_path)
+    ).observation
+
+    changed = _mutated_observation(observation, source_filename="different.png")
+
+    assert changed.source_filename == "different.png"
+    assert changed.source_scan_id == observation.source_scan_id
+    assert changed.retained_source_path == observation.retained_source_path
 
 
 def test_explicit_core_intake_date_override_is_valid_at_model_level(
