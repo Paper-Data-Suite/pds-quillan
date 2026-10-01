@@ -76,7 +76,7 @@ world languages, arts/humanities, and interdisciplinary writing tasks.
 
 ## Current Status
 
-Quillan 0.10.3 is the current patch-release candidate. It builds on the
+Quillan 0.10.4 is the current patch-release candidate. It builds on the
 v0.10.2 redraw-scoped review-read architecture and keeps the active workflow
 standards-based:
 
@@ -483,10 +483,10 @@ powershell -ExecutionPolicy Bypass `
 The equivalent `PDS_CORE_WHEEL` environment variable may be used instead of
 `-PdsCoreWheel`; an explicit parameter takes precedence. The isolated validation
 checks package metadata, editable and noneditable installation, installed import
-origins, CLI availability, and workspace side effects. The v0.10.3 candidate runtime is PDS2-only and uses module-qualified storage throughout.
+origins, CLI availability, and workspace side effects. The v0.10.4 candidate runtime is PDS2-only and uses module-qualified storage throughout.
 
 Release-candidate validation qualifies the same built Quillan wheel against exact,
-authenticated Core 0.6.2 and Core 0.6.3 endpoint wheels. At each endpoint it runs
+authenticated Core 0.6.2 and Core 0.6.3 release wheels plus the exact Core 0.6.4 #226 candidate wheel. At each endpoint it runs
 the installed application workflow, producer lifecycle, module-operations checks,
 class-set acceptance, and release-edge/mixed-routing acceptance outside the source
 checkout. The ordinary installed workflow first proves that assignment, PDS2,

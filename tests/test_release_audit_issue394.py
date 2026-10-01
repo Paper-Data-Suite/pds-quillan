@@ -42,8 +42,8 @@ def test_readme_describes_final_compact_review_and_release_endpoints() -> None:
         "P. Previous Student",
         "W. Next Student Needing Review",
         "`pds-core>=0.6.2,<0.7` runtime dependency",
-        "The v0.10.3 candidate runtime is PDS2-only",
-        "authenticated Core 0.6.2 and Core 0.6.3 endpoint wheels",
+        "The v0.10.4 candidate runtime is PDS2-only",
+        "Core 0.6.4 #226 candidate wheel",
     ):
         assert expected in source
 
@@ -53,24 +53,22 @@ def test_readme_describes_final_compact_review_and_release_endpoints() -> None:
     assert "exact released Core 0.6.0 wheel" not in source
 
 
-def test_active_data_contract_index_uses_v0103_release_boundary() -> None:
+def test_active_data_contract_index_uses_v0104_release_boundary() -> None:
     source = _text("docs/data_contracts.md")
 
-    assert "Quillan v0.10.3 requires `pds-core>=0.6.2,<0.7`" in source
-    assert "Core 0.6.2 minimum endpoint and Core 0.6.3 current endpoint" in source
-    assert "The active v0.10.3 review model is standards-based:" in source
-    assert "This index documents the active v0.10.3 contracts." in source
+    assert "Quillan v0.10.4 requires `pds-core>=0.6.2,<0.7`" in source
+    assert "released Core 0.6.3 endpoint" in source
+    assert "Core 0.6.4 #226 candidate endpoint" in source
+    assert "The active v0.10.4 review model is standards-based:" in source
+    assert "This index documents the active v0.10.4 contracts." in source
     assert "Historical Core 0.6.0 producer" in source
 
-    assert "The active v0.8.6 review model is standards-based:" not in source
-    assert "This index documents the active v0.8.6 contracts." not in source
 
-
-def test_unreleased_changelog_reflects_issue415_patch_boundary() -> None:
+def test_unreleased_changelog_reflects_issue416_patch_boundary() -> None:
     source = _text("CHANGELOG.md")
-    current = source.split("## 0.10.2 - 2026-09-24", maxsplit=1)[0]
+    current = source.split("## 0.10.3 - 2026-09-25", maxsplit=1)[0]
 
-    assert "Resubmission / Rescan Review" in current
-    assert "immutable additional observations" in current
-    assert "never selects a winner" in current
-    assert "redraw-scoped projection" in current
+    assert "historical Core 0.6 retained-source provenance" in current
+    assert "Quillan-controlled byte reads" in current
+    assert "bounded" in current
+    assert "without rename, rewrite, or workspace migration" in current

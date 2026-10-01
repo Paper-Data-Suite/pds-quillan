@@ -15,7 +15,7 @@ import sys
 from typing import Any
 from zipfile import ZipFile
 
-EXPECTED_VERSION = "0.10.3"
+EXPECTED_VERSION = "0.10.4"
 CLASS_ID = "synthetic_release_class"
 ASSIGNMENT_ID = "synthetic_release_digital"
 STANDARD_ID = "synthetic:W.RELEASE.1"
@@ -871,7 +871,7 @@ def main() -> int:
     parser.add_argument(
         "--expected-core-version",
         default="0.6.0",
-        choices=("0.6.0", "0.6.2", "0.6.3"),
+        choices=("0.6.0", "0.6.2", "0.6.3", "0.6.4"),
         help=(
             "Exact installed PDS Core version expected by this isolated "
             "acceptance run. The 0.6.0 default preserves historical "

@@ -49,7 +49,7 @@ from quillan.publication_revision_policy import (
 )
 from quillan.work_paths import quillan_work_ref
 
-EXPECTED_QUILLAN_VERSION = "0.10.3"
+EXPECTED_QUILLAN_VERSION = "0.10.4"
 CLASS_ID = "synthetic_release_class"
 ASSIGNMENT_ID = "synthetic_release_digital"
 FOREIGN_MODULE_ID = "synthetic"
@@ -423,7 +423,7 @@ def main() -> int:
     parser.add_argument("--repository", type=Path, required=True)
     parser.add_argument(
         "--expected-core-version",
-        choices=("0.6.2", "0.6.3"),
+        choices=("0.6.2", "0.6.3", "0.6.4"),
         required=True,
     )
     args = parser.parse_args()
@@ -431,7 +431,7 @@ def main() -> int:
     workspace = args.workspace.resolve(strict=True)
     repository = args.repository.resolve(strict=True)
     if metadata.version("quillan") != EXPECTED_QUILLAN_VERSION:
-        raise AssertionError("installed Quillan version is not v0.10.3")
+        raise AssertionError("installed Quillan version is not v0.10.4")
     if metadata.version("pds-core") != args.expected_core_version:
         raise AssertionError("installed Core version disagrees with endpoint")
 

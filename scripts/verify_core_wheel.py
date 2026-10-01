@@ -1,4 +1,4 @@
-"""Authenticate explicitly known official PDS Core 0.6 release wheels."""
+"""Authenticate explicitly pinned PDS Core 0.6 release/candidate wheels."""
 
 from __future__ import annotations
 
@@ -36,6 +36,13 @@ CORE_063_SHA256: Final = (
 )
 CORE_063_VERSION: Final = "0.6.3"
 
+# Exact Core #226 handoff candidate used by Quillan #416 qualification.
+CORE_064_FILENAME: Final = "pds_core-0.6.4-py3-none-any.whl"
+CORE_064_SHA256: Final = (
+    "201e651f4b9aad0bfeb1565b37f425982513f2fb616b86a8835a10f4dcd7db62"
+)
+CORE_064_VERSION: Final = "0.6.4"
+
 
 class CoreWheelVerificationError(ValueError):
     """Raised when a supplied Core wheel is not the selected official release."""
@@ -65,6 +72,12 @@ CORE_WHEEL_CONTRACTS: Final[dict[str, CoreWheelContract]] = {
         distribution=AUTHORITATIVE_CORE_DISTRIBUTION,
         version=CORE_063_VERSION,
     ),
+    "0.6.4": CoreWheelContract(
+        filename=CORE_064_FILENAME,
+        sha256=CORE_064_SHA256,
+        distribution=AUTHORITATIVE_CORE_DISTRIBUTION,
+        version=CORE_064_VERSION,
+    ),
 }
 
 
@@ -81,7 +94,7 @@ class VerifiedCoreWheel:
 
 
 def known_core_wheel_contract(version: str) -> CoreWheelContract:
-    """Return one explicitly pinned known-release contract."""
+    """Return one explicitly pinned known Core wheel contract."""
     try:
         return CORE_WHEEL_CONTRACTS[version]
     except KeyError as error:

@@ -8,11 +8,11 @@ explicit Core publication/supersession/withdrawal/republication with full catalo
 reconciliation, consumer-neutral manifest/artifact reading through #364, and
 clean-wheel installed producer lifecycle acceptance through #365.
 
-Classification: **active authority** for the v0.10.3 patch-release candidate.
+Classification: **active authority** for the v0.10.4 patch-release candidate.
 
 ## Current status
 
-Quillan v0.10.3 is the current local-first, teacher-controlled writing-evidence
+Quillan v0.10.4 is the current local-first, teacher-controlled writing-evidence
 candidate for PDS Core 0.6. Its supported workflow is:
 
 ```text
@@ -33,6 +33,12 @@ The v0.10.3 patch adds #415's assignment-level
 [Resubmission / Rescan Review](resubmission_inbox.md), explicit evidence
 resolution, and submission-aware feedback freshness without changing physical
 scan intake, routing, or teacher-authored review semantics.
+
+The v0.10.4 patch repairs #416 historical Core retained-source provenance,
+moves retained PDF/image decoding behind Quillan-controlled byte reads, and
+bounds new routed-evidence leaves while retaining legacy evidence paths without
+migration. Release qualification adds the exact Core 0.6.4 #226 candidate as a
+third endpoint while preserving runtime compatibility `pds-core>=0.6.2,<0.7`.
 
 All assignment-owned records live below
 `classes/<class_id>/modules/quillan/work/<assignment_id>/`. Quillan neither reads
@@ -60,8 +66,8 @@ dashboards, and cross-assignment analytics are outside this milestone.
 
 PDF scan intake uses `pdf2image` and requires Poppler on the host. Supported
 Python versions are CPython 3.11 through 3.14. Runtime Core compatibility is
-`pds-core>=0.6.2,<0.7`, with released Core 0.6.2 and 0.6.3 as the candidate
-qualification endpoints.
+`pds-core>=0.6.2,<0.7`, with released Core 0.6.2 and 0.6.3 plus the exact Core 0.6.4 #226
+candidate as qualification endpoints.
 
 Quillan supports explicit Academic Work Registration for eligible managed
 assignments through Core under `quillan_academic_work_v1`; ordinary assignment,

@@ -6,7 +6,30 @@ Quillan is in early pre-1.0 development. Package versions describe the
 installable project state; GitHub issues and milestones may be used for
 planning and do not by themselves represent releases.
 
-## 0.10.3 - Unreleased
+## 0.10.4 - Unreleased
+
+### Fixed
+
+- Preserved historical Core 0.6 retained-source provenance without
+  reconstructing stored identity through the currently installed Core writer
+  (#416).
+- Moved retained PDF page counting/rendering and retained image loading behind
+  Quillan-controlled byte reads so Poppler/OpenCV no longer need to open the
+  canonical historical retained path directly.
+- Bounded newly created routed-evidence filenames to the fixed observation-ID
+  leaf while retaining legacy readable evidence paths and idempotent replay
+  without rename, rewrite, or workspace migration.
+
+### Validation
+
+- Added historical/fresh provenance, byte-decoding, bounded-evidence,
+  legacy-reader, and replay regression coverage.
+- Added installed deep-path acceptance against the exact Core 0.6.4 #226
+  candidate while preserving runtime compatibility `pds-core>=0.6.2,<0.7`.
+- Release qualification covers released Core 0.6.2 and 0.6.3 plus the exact
+  authenticated Core 0.6.4 #226 candidate endpoint.
+
+## 0.10.3 - 2026-09-25
 
 ### Added
 

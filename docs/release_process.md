@@ -1,83 +1,85 @@
-# v0.10.3 Release Process
+# v0.10.4 Release Process
 
-Classification: **active authority for the v0.10.3 patch candidate**.
+Classification: **active authority for the v0.10.4 #416 patch candidate**.
 
-Issue #415 owns the assignment-level resubmission/rescan inbox, explicit
-evidence resolution, feedback freshness after selection, exact-candidate
-installed acceptance, and release preparation. Passing automation does not
-itself grant tag or GitHub Release authority.
+Issue #416 owns historical Core retained-source provenance compatibility,
+path-independent retained PDF/image decoding, bounded new routed-evidence leaves,
+legacy routed-evidence read compatibility, Windows/deep-path installed
+qualification, and the Quillan patch needed to unblock Core #226.
+
+Passing automation does not itself grant tag or GitHub Release authority.
+
+## Core handoff identity
+
+Quillan v0.10.4 qualification uses released Core 0.6.2, released Core 0.6.3,
+and the exact Core 0.6.4 #226 candidate built from:
+
+```text
+2e47734  refresh released consumer compatibility
+```
+
+Authenticated handoff artifacts:
+
+```text
+pds_core-0.6.4-py3-none-any.whl
+SHA-256 201e651f4b9aad0bfeb1565b37f425982513f2fb616b86a8835a10f4dcd7db62
+
+pds_core-0.6.4.tar.gz
+SHA-256 8faa892a1e665d3d7dea1ad800ca5e03ffa235ef3b0fda224e8e96f5664aae6e
+```
+
+The Quillan release validator authenticates the exact wheel bytes. Core 0.6.4
+remains unpublished until the compatible Quillan patch is released and Core
+#226 completes its final released-consumer matrix.
+
+Runtime compatibility remains `pds-core>=0.6.2,<0.7`; Core 0.6.4 is a
+qualification endpoint, not the new runtime floor.
 
 ## Exact candidate construction
 
 1. Reconcile the release commit with `origin/main` and require a clean tree.
-2. Authenticate the supported Core endpoint wheels for 0.6.2 and 0.6.3.
-3. Run full source pytest, Ruff, strict mypy, compileall, documentation checks,
-   release compatibility, `pip check`, and diff hygiene.
-4. Build exactly one pair from that commit:
-   - `quillan-0.10.3-py3-none-any.whl`
-   - `quillan-0.10.3.tar.gz`
+2. Authenticate Core 0.6.2, Core 0.6.3, and the exact Core 0.6.4 #226 wheel.
+3. Run the repository development gate once.
+4. Build exactly one `quillan-0.10.4-py3-none-any.whl` and
+   `quillan-0.10.4.tar.gz`.
 5. Run Twine and archive inspection against that exact pair.
-6. Install the same wheel bytes into isolated Core 0.6.2 and Core 0.6.3
+6. Reuse the same Quillan wheel bytes in isolated Core 0.6.2, 0.6.3, and 0.6.4
    environments outside the checkout.
-7. Verify console entry point, Core routing, publication, module operations,
-   existing class-set workflows, release edges, and the selected-review
-   redraw/read boundary.
-8. Run the sdist smoke without rebuilding the candidate pair.
-9. Persist the exact tested pair outside the repository and record filenames,
-   lengths, and SHA-256 values.
+7. Run established installed application, producer, module-operations,
+   class-set, release-edge, selected-review, and resubmission acceptance at each
+   endpoint.
+8. Under Core 0.6.4, additionally run
+   `verify_installed_issue416_scan_paths.py`.
+9. Install the exact Quillan sdist with the authenticated Core 0.6.4 candidate
+   and run the installed smoke.
+10. Persist the exact tested Quillan pair outside the repository and record
+    filenames, lengths, and SHA-256 values.
 
 A rebuild has a different artifact identity and invalidates installed evidence
 for the previous bytes.
 
-## Resubmission inbox acceptance
+## Historical release evidence
 
-The source qualification includes newer candidate evidence, pending assembly,
-identical-byte later intake, feedback chronology, multiple rescans, explicit
-selection/dismissal, cancellation, and bounded attention states. One inbox
-redraw must perform exactly one assignment-context load, one roster load, one
-strict observation discovery pass, and one verification/hash per routed file.
+Quillan v0.10.3 was released on 2026-09-25. Its resubmission-inbox acceptance
+remains historical evidence for #415. The v0.10.2 selected-review read
+acceptance, v0.10.1 batch-feedback acceptance, and v0.10.0 class-set/physical
+acceptance remain historical evidence for their unchanged boundaries.
 
-The installed acceptance runs from the exact candidate wheel against both Core
-0.6.2 and Core 0.6.3 outside the checkout. It exercises initial assembly,
-real PDF/Markdown feedback export, later rescan, pre- and post-assembly
-freshness, inbox discovery, action-time verified exact evidence opening,
-explicit selection, a fresh empty inbox, and stale-feedback reporting.
-
-The [v0.10.2 Installed Selected-Review Read Acceptance](v0.10.2_installed_selected_review_read_acceptance.md)
-remains historical evidence for the unchanged redraw-scoped read boundary.
-See [v0.10.3 Installed Resubmission Inbox Acceptance](v0.10.3_installed_resubmission_inbox_acceptance.md)
-for the active exact-wheel workflow.
-
-## Historical patch evidence
-
-The released v0.10.1 batch-feedback acceptance remains historical evidence for
-the unchanged feedback-assembly workflow:
-
-[v0.10.1 Installed Batch Feedback Acceptance](v0.10.1_installed_batch_feedback_acceptance.md).
-
-## Physical acceptance boundary
-
-Issue #415 adds a derived evidence-management workflow; it does not
-change PDS2 generation, route registration, scan intake, retained-source
-handling, routed-evidence creation, printable packet generation, or physical
-page interpretation. The exact v0.10.0 physical-paper acceptance therefore
-remains applicable and is not repeated. Any later implementation change that
-crosses one of those boundaries invalidates that waiver and requires affected
-physical requalification.
-
-See the historical [v0.10.0 Physical Acceptance](physical_acceptance_v0.10.0.md).
-
-## Core and publication compatibility
-
-Runtime compatibility remains exactly `pds-core>=0.6.2,<0.7`. Issue #415 adds no
-Core API, Academic Work registration, Academic Result, Publication Record,
-Meridian handoff, grading, proficiency, or portfolio behavior. The workflow is
-a redraw-scoped projection only; no inbox cache survives a user action.
+Issue #416 crosses retained-source and routed-evidence execution boundaries.
+The old v0.10.0 physical-paper evidence is historical context, not proof of
+#416 path safety. The replacement evidence is the Windows/deep-path installed
+scan-processing acceptance documented in
+[v0.10.4 Installed Scan-Path Acceptance](v0.10.4_installed_scan_path_acceptance.md).
 
 ## Release authority
 
-After qualification, an owner must explicitly authorize the v0.10.3 release.
-Only then may the normal process create/push tag `v0.10.3` and make the exact
-qualified wheel/sdist available in the repository's release channel. Do not
-upload Quillan to an external package index without separate explicit
+After exact-candidate qualification, an owner must explicitly authorize the
+v0.10.4 release. Only then may the normal process create/push tag `v0.10.4` and
+make the exact qualified wheel/sdist available in the repository release
+channel.
+
+The released and authenticated Quillan 0.10.4 wheel is then supplied back to
+Core #226 for its final released-consumer matrix.
+
+Do not upload Quillan to an external package index without separate explicit
 authorization.

@@ -2,18 +2,20 @@ param(
     [string]$Python = "python",
     [Parameter(Mandatory)] [string]$PdsCore062Wheel,
     [Parameter(Mandatory)] [string]$PdsCore063Wheel,
+    [Parameter(Mandatory)] [string]$PdsCore064Wheel,
     [Parameter(Mandatory)] [string]$ArtifactOutputDirectory,
     [switch]$SkipRepositoryDevelopmentChecks
 )
 
 $ErrorActionPreference = "Stop"
-$Prefix = "pds-quillan-v0103-candidate-"
+$Prefix = "pds-quillan-v0104-candidate-"
 $Repository = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $RepositoryParent = Split-Path $Repository -Parent
 $OriginalLocation = (Get-Location).Path
 $ResolvedPython = (Get-Command $Python -ErrorAction Stop).Source
 $Core062Wheel = (Resolve-Path -LiteralPath $PdsCore062Wheel).Path
 $Core063Wheel = (Resolve-Path -LiteralPath $PdsCore063Wheel).Path
+$Core064Wheel = (Resolve-Path -LiteralPath $PdsCore064Wheel).Path
 $TemporaryRoot = Join-Path ([System.IO.Path]::GetTempPath()) (
     "$Prefix$([guid]::NewGuid().ToString('N'))"
 )
@@ -89,12 +91,16 @@ $ClassSetAcceptance = Join-Path $PSScriptRoot 'verify_installed_class_set_accept
 $ReleaseEdgeAcceptance = Join-Path $PSScriptRoot 'verify_installed_release_edges.py'
 $SelectedReviewAcceptance = Join-Path $PSScriptRoot 'verify_installed_selected_review_reads.py'
 $ResubmissionAcceptance = Join-Path $PSScriptRoot 'verify_installed_resubmission_inbox.py'
+$Issue416Acceptance = Join-Path $PSScriptRoot 'verify_installed_issue416_scan_paths.py'
 
 Invoke-Required "Authenticate official Core 0.6.2 wheel" $ResolvedPython @(
     $CoreVerifier, $Core062Wheel, '--core-version', '0.6.2'
 )
 Invoke-Required "Authenticate official Core 0.6.3 wheel" $ResolvedPython @(
     $CoreVerifier, $Core063Wheel, '--core-version', '0.6.3'
+)
+Invoke-Required "Authenticate Core 0.6.4 #226 candidate wheel" $ResolvedPython @(
+    $CoreVerifier, $Core064Wheel, '--core-version', '0.6.4'
 )
 
 foreach ($Target in $GeneratedBuildRoots) {
@@ -136,15 +142,16 @@ try {
     }
     finally { Pop-Location }
 
-    $Wheel = Join-Path $ArtifactRoot 'quillan-0.10.3-py3-none-any.whl'
-    $Sdist = Join-Path $ArtifactRoot 'quillan-0.10.3.tar.gz'
+    $Wheel = Join-Path $ArtifactRoot 'quillan-0.10.4-py3-none-any.whl'
+    $Sdist = Join-Path $ArtifactRoot 'quillan-0.10.4.tar.gz'
     Invoke-Required "Artifact inspection" $ResolvedPython @(
         $ArtifactInspector, $Wheel, $Sdist
     )
 
     $Endpoints = @(
         @{ Version = '0.6.2'; Wheel = $Core062Wheel },
-        @{ Version = '0.6.3'; Wheel = $Core063Wheel }
+        @{ Version = '0.6.3'; Wheel = $Core063Wheel },
+        @{ Version = '0.6.4'; Wheel = $Core064Wheel }
     )
 
     foreach ($Endpoint in $Endpoints) {
@@ -157,6 +164,7 @@ try {
         $OperationsWorkspace = Join-Path $ModeRoot 'operations-workspace'
         $SelectedReviewWorkspace = Join-Path $ModeRoot 'selected-review-workspace'
         $ResubmissionWorkspace = Join-Path $ModeRoot 'resubmission-workspace'
+        $Issue416Workspace = Join-Path $ModeRoot 'issue416-workspace'
         New-Item -ItemType Directory -Path $ModeRoot | Out-Null
         New-Item -ItemType Directory -Path $Work | Out-Null
         New-Item -ItemType Directory -Path $OperationsWorkspace | Out-Null
@@ -193,7 +201,7 @@ try {
                     $ProducerAcceptance,
                     '--workspace', (Join-Path $Acceptance 'workflow-workspace'),
                     '--repository', $Repository,
-                    '--version', '0.10.3',
+                    '--version', '0.10.4',
                     '--expected-core-version', $CoreVersion
                 )
             Invoke-Required "Installed module operations Core $CoreVersion" `
@@ -222,7 +230,7 @@ try {
                     $SelectedReviewAcceptance,
                     '--workspace', $SelectedReviewWorkspace,
                     '--repository', $Repository,
-                    '--expected-quillan-version', '0.10.3',
+                    '--expected-quillan-version', '0.10.4',
                     '--expected-core-version', $CoreVersion
                 )
             Invoke-Required "Installed resubmission inbox Core $CoreVersion" `
@@ -230,9 +238,19 @@ try {
                     $ResubmissionAcceptance,
                     '--workspace', $ResubmissionWorkspace,
                     '--repository', $Repository,
-                    '--expected-quillan-version', '0.10.3',
+                    '--expected-quillan-version', '0.10.4',
                     '--expected-core-version', $CoreVersion
                 )
+            if ($CoreVersion -eq '0.6.4') {
+                Invoke-Required "Installed Issue #416 scan paths Core 0.6.4" `
+                    $EnvironmentPython @(
+                        $Issue416Acceptance,
+                        '--workspace', $Issue416Workspace,
+                        '--repository', $Repository,
+                        '--expected-quillan-version', '0.10.4',
+                        '--expected-core-version', $CoreVersion
+                    )
+            }
         }
         finally { Pop-Location }
     }
@@ -246,8 +264,8 @@ try {
         '-m', 'venv', $SdistEnvironment
     )
     $SdistPython = Join-Path $SdistEnvironment 'Scripts\python.exe'
-    Invoke-Required "Install Core 0.6.3 for sdist smoke" $SdistPython @(
-        '-m', 'pip', 'install', $Core063Wheel
+    Invoke-Required "Install Core 0.6.4 candidate for sdist smoke" $SdistPython @(
+        '-m', 'pip', 'install', $Core064Wheel
     )
     Invoke-Required "Install exact Quillan sdist" $SdistPython @(
         '-m', 'pip', 'install', $Sdist
@@ -259,7 +277,7 @@ try {
             $InstalledAcceptance,
             '--work', (Join-Path $SdistRoot 'acceptance'),
             '--repository', $Repository,
-            '--expected-core-version', '0.6.3'
+            '--expected-core-version', '0.6.4'
         )
     }
     finally { Pop-Location }
@@ -276,12 +294,13 @@ try {
         Select-Object Name, Length |
         Format-Table -AutoSize
     Get-FileHash -Algorithm SHA256 -LiteralPath `
-        $Core062Wheel, $Core063Wheel, $Wheel, $Sdist |
+        $Core062Wheel, $Core063Wheel, $Core064Wheel, $Wheel, $Sdist |
         Format-Table -AutoSize
 
-    Write-Host "Automated v0.10.3 candidate validation: PASS"
-    Write-Host "v0.10.0 physical acceptance remains applicable: NOT REPEATED"
-    Write-Host "READY FOR #415 RELEASE AUTHORIZATION: NO"
+    Write-Host "Automated v0.10.4 candidate validation: PASS"
+    Write-Host "Issue #416 installed scan-path acceptance: PASS"
+    Write-Host "v0.10.0 physical acceptance is historical only: NOT USED FOR #416"
+    Write-Host "READY FOR #416 RELEASE AUTHORIZATION: NO"
     Write-Host "Release authorization: NOT GRANTED"
 }
 finally {

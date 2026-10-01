@@ -1,99 +1,65 @@
-# v0.10.3 Candidate Acceptance Checklist
+# v0.10.4 Candidate Acceptance Checklist
 
-Classification: **active #415 patch-release procedure**.
+Classification: **active #416 patch-release procedure**.
 
 ## Preparation
 
-- [x] Candidate identity is Quillan `0.10.3`.
+- [x] Candidate identity is Quillan `0.10.4`.
 - [x] Runtime dependency remains `pds-core>=0.6.2,<0.7`.
-- [x] `pypdf>=5,<7` remains a bounded runtime dependency.
-- [x] Released v0.10.1 batch-assembly evidence remains historical.
-- [x] Historical v0.10.0 physical-paper evidence remains unchanged.
-- [x] Core 0.6.2 and 0.6.3 exact wheels authenticated.
-- [x] Full source/static/documentation gates pass for the current repair
-  worktree; repeat from the reconciled candidate commit before artifact build.
-- [ ] Exactly one v0.10.3 wheel/sdist pair built from the qualified commit.
-- [ ] Twine and artifact inspection pass for that pair.
-- [ ] Candidate filenames, lengths, and SHA-256 values recorded.
+- [x] Core 0.6.2 and 0.6.3 released endpoint contracts remain authenticated.
+- [x] Core 0.6.4 #226 handoff candidate was built from `2e47734`.
+- [x] Core 0.6.4 wheel SHA-256 is `201e651f4b9aad0bfeb1565b37f425982513f2fb616b86a8835a10f4dcd7db62`.
+- [x] Core 0.6.4 sdist SHA-256 is `8faa892a1e665d3d7dea1ad800ca5e03ffa235ef3b0fda224e8e96f5664aae6e`.
+- [x] Pre-release #416 installed characterization passed against those Core
+  0.6.4 wheel bytes before the Quillan version bump.
+- [ ] Full source/static/documentation gate passes from the v0.10.4 candidate.
+- [ ] Exactly one v0.10.4 wheel/sdist pair is built and inspected.
+- [ ] Candidate filenames, lengths, and SHA-256 values are recorded.
 
-## Issue #415 source acceptance
+## Issue #416 source acceptance
 
-- [x] Assignment action 8 and the direct CLI share one structured read service.
-- [x] One redraw-scoped assignment review context is used.
-- [x] Exactly one strict routed-observation pass occurs per redraw.
-- [x] Every routed evidence file is path-checked, read, and SHA-256 verified.
-- [x] Later physical intake remains visible even when bytes match.
-- [x] Pending assembly, multiple rescans, selection, dismissal, and cancel pass.
-- [x] Selecting authoritative evidence makes prior feedback stale.
-- [x] Candidate routing, assembly, and dismissal leave feedback current.
-- [ ] Legacy v0.10.2 feedback remains current on upgrade and becomes stale only
-  after an explicit selection change binds the pre-change evidence fingerprint.
-- [ ] Resubmission detail is rebuilt from canonical state before every redraw.
-- [ ] Attention-required rescan rows identify the actual duplicate logical page(s).
-- [x] Full immutable observation and retained-source projection is shared by
-  assembly, inbox, resolution, and exact opening.
-- [x] Exact opening performs fresh action-time byte/hash/provenance validation.
-- [x] Initial intake is excluded and dismissal requires a current selection.
-- [x] Representative 30-student read-amplification coverage remains bounded.
-- [x] Inbox read/refresh/open/cancel remains read-only.
+- [x] Historical Core identity is validated from persisted provenance.
+- [x] Retained PDFs are read as bytes before Poppler processing.
+- [x] Retained images are read as bytes before OpenCV decoding.
+- [x] New routed-evidence leaves use bounded observation identity.
+- [x] Legacy routed-evidence paths remain readable without migration.
+- [x] Legacy observation/evidence replay remains idempotent without rewriting.
+- [x] Contradictory legacy/bounded duplicate evidence fails closed.
 
 ## Installed acceptance
 
-- [ ] Core 0.6.2 isolated install passes.
-- [ ] Core 0.6.3 isolated install passes.
-- [ ] No source checkout or `PYTHONPATH` shadowing.
-- [ ] Installed `quillan` console entry point verified.
-- [ ] Existing routing/publication/module-operation/class-set gates pass.
-- [ ] Installed resubmission-inbox acceptance passes for Core 0.6.2.
-- [ ] Installed resubmission-inbox acceptance passes for Core 0.6.3.
-- [ ] Installed workflow matches the active
-  [v0.10.3 acceptance contract](v0.10.3_installed_resubmission_inbox_acceptance.md).
-- [ ] Exact tested wheel/sdist persisted outside the repository.
+- [ ] Core 0.6.2 isolated install passes with exact Quillan 0.10.4 wheel.
+- [ ] Core 0.6.3 isolated install passes with exact Quillan 0.10.4 wheel.
+- [ ] Core 0.6.4 #226 candidate isolated install passes with exact Quillan 0.10.4 wheel.
+- [ ] No source-checkout or `PYTHONPATH` shadowing.
+- [ ] Existing installed application/producer/operations/class-set/release-edge
+  gates pass at all three endpoints.
+- [ ] Selected-review and resubmission acceptance pass at all three endpoints.
+- [ ] Fresh Core 0.6.4 provenance and PDF processing pass.
+- [ ] Historical Core 0.6.3 provenance, PDF processing, and image processing pass.
+- [ ] New routed-evidence filename remains bounded.
+- [ ] Legacy routed evidence remains readable without migration.
+- [ ] Windows path policy remains unchanged.
+- [ ] Exact tested wheel/sdist is persisted outside the repository.
 
-## Physical boundary
+## Package/release gate
 
-- [x] #415 does not intentionally touch generation, routing, scan intake,
-  retained-source handling, or physical-paper interpretation.
-- [x] Implementation diff reconfirmed not to invalidate that conclusion.
-- [x] Additional physical acceptance not triggered; v0.10.0 evidence remains
-  applicable.
+- [ ] Full pytest, Ruff, strict mypy, documentation, and diff hygiene pass.
+- [ ] wheel and sdist build.
+- [ ] `twine check` and archive inspection pass.
+- [ ] clean-wheel qualification passes.
+- [ ] clean-sdist installation/smoke passes.
+- [ ] release compatibility audit passes.
 
-## Authority
+## Authority and Core handback
 
-- [ ] Reconciled release commit qualified.
-- [ ] Installed acceptance passed against exact recorded bytes.
-- [ ] Artifact hashes recorded.
-- [ ] Owner explicitly authorized `v0.10.3`.
+- [ ] Reconciled v0.10.4 release commit qualified.
+- [ ] Quillan artifact hashes recorded.
+- [ ] Owner explicitly authorized `v0.10.4`.
 - [ ] Tag and repository release use those exact artifacts.
+- [ ] Released Quillan 0.10.4 wheel identity handed back to Core #226.
+- [ ] Core #226 final released-consumer matrix replaces Quillan 0.10.3 with
+  authenticated Quillan 0.10.4.
 
-## Invalidated 2026-09-24 pre-commit evidence
-
-- The earlier wheel `quillan-0.10.3-py3-none-any.whl`, 534041 bytes,
-  SHA-256 `0ce217f2050ccb6255e69300ae419bcb16dfddac89a3c6c93282896777db4f93`.
-- The earlier sdist `quillan-0.10.3.tar.gz`, 816835 bytes,
-  SHA-256 `3a25e0cd2af9ef78ee6d9a227803346b00eda4b38beffc029e58d6b4a988ffb7`.
-- Those artifacts were built before a candidate commit and before the repair
-  pass described above. They are explicitly invalid and must not be released.
-- No replacement artifacts may be qualified until a reconciled release commit
-  exists. Release authorization remains not granted.
-
-## 2026-09-24 baseline evidence at commit `7437364`
-
-- The committed Codex baseline passed full pytest: 2972 passed, 23 skipped.
-- Ruff, the reported strict mypy subset across 172 source files, compileall,
-  `pip check`, documentation integrity, release compatibility, and diff hygiene
-  passed before the post-commit reconciliation slice. The official `run_tests.ps1`
-  repository-wide mypy gate must be repeated after this fix is applied and committed.
-- Focused #415 repair coverage proves current feedback before selection, stale
-  feedback after selection, current feedback after candidate assembly/dismissal,
-  full projection validation, action-time tamper rejection, initial-intake
-  suppression, dismissal safety, multi-rescan comparison UX, and the
-  representative 30-student read boundary.
-- Installed-wheel and artifact checkboxes intentionally remain open until a
-  reconciled candidate commit exists.
-
-Do not upload to an external package index without separate explicit
-authorization.
-
-This checklist does not itself authorize a tag, GitHub Release, upload,
-publication, or deployment.
+This checklist does not itself authorize a tag, GitHub Release, external
+package-index upload, publication, or deployment.
