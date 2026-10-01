@@ -736,9 +736,24 @@ def _possible_paths(
         elif kind == "evidence":
             if not work_relative.as_posix().startswith("scans/evidence/"):
                 raise PostDispatchReviewError("Possible evidence path is noncanonical.")
-            if student_id is not None and f"response_{student_id}_" not in absolute.name:
+            ids = cast(tuple[str, ...], observation_ids)
+            stem = absolute.stem
+            bounded = (
+                stem.startswith("obs_")
+                and len(stem) == 36
+                and all(character in "0123456789abcdef" for character in stem[4:])
+            )
+            legacy = (
+                student_id is not None
+                and f"response_{student_id}_" in absolute.name
+            )
+            if not bounded and not legacy:
                 raise PostDispatchReviewError(
-                    "Possible evidence path disagrees with student identity."
+                    "Possible evidence path is neither bounded nor legacy canonical evidence."
+                )
+            if bounded and ids and stem not in ids:
+                raise PostDispatchReviewError(
+                    "Possible bounded evidence path disagrees with observation identity."
                 )
         elif kind == "manifest":
             if student_id is None or absolute != submission_manifest_path(

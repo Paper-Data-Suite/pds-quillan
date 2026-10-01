@@ -283,14 +283,14 @@ def test_changed_submission_bytes_fail_manifest_bound_integrity(
         )
 
 
-def test_another_students_routed_artifact_cannot_resolve_even_with_matching_bytes(
+def test_another_students_legacy_routed_artifact_cannot_resolve_with_matching_bytes(
     tmp_path: Path,
 ) -> None:
     manifest, class_id, assignment_id, student_id, _, routed = _manifest_and_paths(
         tmp_path
     )
     other_student_path = routed.with_name(
-        routed.name.replace(f"response_{student_id}_", "response_99999_", 1)
+        f"response_99999_pg_001__{routed.name}"
     )
     assert other_student_path != routed
     other_student_path.write_bytes(routed.read_bytes())
@@ -308,7 +308,7 @@ def test_another_students_routed_artifact_cannot_resolve_even_with_matching_byte
 
     with pytest.raises(
         QuillanAcademicResultArtifactIntegrityError,
-        match="exact canonical Quillan selected-evidence path",
+        match="cannot be derived canonically",
     ):
         read_authorized_academic_result_artifacts(
             tmp_path,

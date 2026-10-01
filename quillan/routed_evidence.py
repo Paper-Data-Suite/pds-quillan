@@ -36,6 +36,7 @@ from quillan.work_paths import (
     preflight_work_directory_destination,
     preflight_work_file_destination,
     quillan_work_ref,
+    resolve_routed_evidence_path,
     routed_evidence_path,
 )
 
@@ -267,24 +268,19 @@ def verify_contextual_routed_page_evidence(
 ) -> Path:
     """Recompute, preflight, and verify one canonical routed-evidence file."""
     root = _workspace_root(workspace_root)
-    expected = routed_evidence_path(
-        root,
-        work_ref,
-        issuance_id,
-        student_id,
-        logical_page,
-        observation_id,
-        extension,
-    )
-    expected_relative = expected.relative_to(root).as_posix()
-    if (
-        type(relative_path) is not str
-        or PurePosixPath(relative_path).as_posix() != relative_path
-        or relative_path != expected_relative
-    ):
-        raise QuillanRoutedEvidencePathError(
-            "Routed evidence path is not the canonical observation destination."
+    try:
+        expected = resolve_routed_evidence_path(
+            root,
+            work_ref,
+            issuance_id,
+            student_id,
+            logical_page,
+            observation_id,
+            extension,
+            relative_path,
         )
+    except QuillanWorkPathError as error:
+        raise QuillanRoutedEvidencePathError(str(error)) from error
     work_root = (
         root
         / "classes"

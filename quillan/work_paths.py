@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+from typing import Final
 
 from pds_core.identifiers import validate_identifier
 from pds_core.publication_records import (
@@ -21,6 +22,8 @@ from pds_core.routing_models import ModuleWorkRef
 
 from quillan._path_safety import is_link_like as _shared_is_link_like
 from quillan.pds_contract import QUILLAN_MODULE_ID
+
+ROUTED_EVIDENCE_FILENAME_MAX_LENGTH: Final[int] = 41
 
 
 class QuillanWorkPathError(ValueError):
@@ -220,6 +223,44 @@ def routed_evidence_issuance_dir(
     )
 
 
+def _routed_evidence_components(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    issuance_id: str,
+    student_id: str,
+    logical_page: int,
+    observation_id: str,
+    extension: str,
+) -> tuple[Path, str, str, str]:
+    from quillan.response_page_observations import validate_observation_id
+
+    validated_work = _require_quillan_work_ref(work_ref)
+    validated_student = validate_identifier(student_id, "student_id")
+    validated_observation = validate_observation_id(observation_id)
+    issuance_dir = routed_evidence_issuance_dir(
+        workspace_root, validated_work, issuance_id
+    )
+    if (
+        isinstance(logical_page, bool)
+        or not isinstance(logical_page, int)
+        or logical_page < 1
+    ):
+        raise QuillanWorkPathError("logical_page must be a positive integer.")
+    if not isinstance(extension, str):
+        raise QuillanWorkPathError("extension must be a string.")
+    normalized_extension = extension.lower()
+    if not normalized_extension.startswith("."):
+        normalized_extension = f".{normalized_extension}"
+    if normalized_extension not in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}:
+        raise QuillanWorkPathError("Unsupported routed-evidence extension.")
+    return (
+        issuance_dir,
+        validated_student,
+        validated_observation,
+        normalized_extension,
+    )
+
+
 def routed_evidence_path(
     workspace_root: str | Path,
     work_ref: ModuleWorkRef,
@@ -229,29 +270,104 @@ def routed_evidence_path(
     observation_id: str,
     extension: str,
 ) -> Path:
-    """Return a readable but non-authoritative routed-evidence path."""
-    from quillan.response_page_observations import validate_observation_id
-
-    validated_work = _require_quillan_work_ref(work_ref)
-    validated_student = validate_identifier(student_id, "student_id")
-    validated_observation = validate_observation_id(observation_id)
-    issuance_dir = routed_evidence_issuance_dir(
-        workspace_root, validated_work, issuance_id
+    """Return the bounded writer path for newly routed page evidence."""
+    issuance_dir, _, validated_observation, normalized_extension = (
+        _routed_evidence_components(
+            workspace_root,
+            work_ref,
+            issuance_id,
+            student_id,
+            logical_page,
+            observation_id,
+            extension,
+        )
     )
-    if isinstance(logical_page, bool) or not isinstance(logical_page, int) or logical_page < 1:
-        raise QuillanWorkPathError("logical_page must be a positive integer.")
-    if not isinstance(extension, str):
-        raise QuillanWorkPathError("extension must be a string.")
-    normalized_extension = extension.lower()
-    if not normalized_extension.startswith("."):
-        normalized_extension = f".{normalized_extension}"
-    if normalized_extension not in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}:
-        raise QuillanWorkPathError("Unsupported routed-evidence extension.")
-    filename = (
+    filename = f"{validated_observation}{normalized_extension}"
+    if len(filename) > ROUTED_EVIDENCE_FILENAME_MAX_LENGTH:
+        raise QuillanWorkPathError(
+            "Generated routed-evidence filename exceeds the writer bound."
+        )
+    return issuance_dir / filename
+
+
+def _legacy_routed_evidence_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    issuance_id: str,
+    student_id: str,
+    logical_page: int,
+    observation_id: str,
+    extension: str,
+) -> Path:
+    """Reconstruct the released pre-#416 routed-evidence path for reading."""
+    (
+        issuance_dir,
+        validated_student,
+        validated_observation,
+        normalized_extension,
+    ) = _routed_evidence_components(
+        workspace_root,
+        work_ref,
+        issuance_id,
+        student_id,
+        logical_page,
+        observation_id,
+        extension,
+    )
+    return issuance_dir / (
         f"response_{validated_student}_pg_{logical_page:03d}__"
         f"{validated_observation}{normalized_extension}"
     )
-    return issuance_dir / filename
+
+
+def resolve_routed_evidence_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+    issuance_id: str,
+    student_id: str,
+    logical_page: int,
+    observation_id: str,
+    extension: str,
+    relative_path: str,
+) -> Path:
+    """Resolve an exact persisted bounded or released legacy evidence path."""
+    if not isinstance(relative_path, str) or not relative_path or "\\" in relative_path:
+        raise QuillanWorkPathError(
+            "routed evidence path must be canonical workspace-relative POSIX text."
+        )
+    relative = PurePosixPath(relative_path)
+    if (
+        relative.is_absolute()
+        or relative.as_posix() != relative_path
+        or any(part in {"", ".", ".."} for part in relative.parts)
+    ):
+        raise QuillanWorkPathError(
+            "routed evidence path must be canonical workspace-relative POSIX text."
+        )
+    requested = Path(workspace_root).joinpath(*relative.parts)
+    bounded = routed_evidence_path(
+        workspace_root,
+        work_ref,
+        issuance_id,
+        student_id,
+        logical_page,
+        observation_id,
+        extension,
+    )
+    legacy = _legacy_routed_evidence_path(
+        workspace_root,
+        work_ref,
+        issuance_id,
+        student_id,
+        logical_page,
+        observation_id,
+        extension,
+    )
+    if requested not in {bounded, legacy}:
+        raise QuillanWorkPathError(
+            "routed evidence path is neither the bounded nor legacy canonical form."
+        )
+    return requested
 
 
 def submission_manifest_path(
@@ -697,6 +813,7 @@ def _lexists(path: Path) -> bool:
 
 __all__ = [
     "QuillanWorkPathError",
+    "ROUTED_EVIDENCE_FILENAME_MAX_LENGTH",
     "QuillanWorkPaths",
     "academic_result_manifest_relative_path",
     "academic_result_manifest_revision_path",
@@ -727,6 +844,7 @@ __all__ = [
     "response_page_observations_dir",
     "response_page_issuance_path",
     "response_page_record_path",
+    "resolve_routed_evidence_path",
     "routed_evidence_issuance_dir",
     "routed_evidence_path",
     "routed_evidence_root",

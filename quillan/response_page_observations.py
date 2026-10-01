@@ -49,7 +49,7 @@ from quillan.work_paths import (
     quillan_work_ref,
     response_page_observation_path,
     response_page_observations_dir,
-    routed_evidence_path,
+    resolve_routed_evidence_path,
 )
 
 OBSERVATION_SCHEMA_VERSION: Final[str] = "1"
@@ -495,16 +495,25 @@ def discover_quillan_page_observations_status(
                 "Observation is not stored at its canonical path."
             )
         extension = PurePosixPath(observation.routed_evidence_path).suffix
-        expected_evidence = routed_evidence_path(
-            root,
-            work_ref,
-            observation.issuance_id,
-            observation.student_id,
-            observation.logical_page,
-            observation.observation_id,
-            extension,
-        )
-        if root.joinpath(*PurePosixPath(observation.routed_evidence_path).parts) != expected_evidence:
+        try:
+            resolved_evidence = resolve_routed_evidence_path(
+                root,
+                work_ref,
+                observation.issuance_id,
+                observation.student_id,
+                observation.logical_page,
+                observation.observation_id,
+                extension,
+                observation.routed_evidence_path,
+            )
+        except QuillanWorkPathError as error:
+            raise QuillanObservationValidationError(
+                "Observation routed_evidence_path is not canonical."
+            ) from error
+        if (
+            root.joinpath(*PurePosixPath(observation.routed_evidence_path).parts)
+            != resolved_evidence
+        ):
             raise QuillanObservationValidationError(
                 "Observation routed_evidence_path is not canonical."
             )

@@ -56,6 +56,7 @@ from quillan.work_paths import (
     preflight_work_file_destination,
     quillan_work_ref,
     response_page_observation_path,
+    resolve_routed_evidence_path,
     routed_evidence_path,
 )
 
@@ -90,15 +91,27 @@ class PersistedQuillanPageObservation:
         expected_observation_path = response_page_observation_path(
             root, work_ref, self.observation.observation_id
         )
-        expected_evidence_path = routed_evidence_path(
-            root,
-            work_ref,
-            self.observation.issuance_id,
-            self.observation.student_id,
-            self.observation.logical_page,
-            self.observation.observation_id,
-            self.evidence_path.suffix,
-        )
+        if self.status == "created":
+            expected_evidence_path = routed_evidence_path(
+                root,
+                work_ref,
+                self.observation.issuance_id,
+                self.observation.student_id,
+                self.observation.logical_page,
+                self.observation.observation_id,
+                self.evidence_path.suffix,
+            )
+        else:
+            expected_evidence_path = resolve_routed_evidence_path(
+                root,
+                work_ref,
+                self.observation.issuance_id,
+                self.observation.student_id,
+                self.observation.logical_page,
+                self.observation.observation_id,
+                self.evidence_path.suffix,
+                self.evidence_relative_path,
+            )
         if self.observation_path != expected_observation_path:
             raise ValueError(
                 "observation_path is not the canonical observation destination."

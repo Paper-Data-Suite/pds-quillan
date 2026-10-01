@@ -37,7 +37,7 @@ from quillan.work_paths import (
     quillan_work_paths,
     quillan_work_ref,
     review_record_path,
-    routed_evidence_path,
+    resolve_routed_evidence_path,
     submission_manifest_path,
 )
 
@@ -515,7 +515,7 @@ def _artifact_path(
             "Authorized routed evidence does not remain inside the exact Quillan work root."
         ) from error
     try:
-        canonical = routed_evidence_path(
+        canonical = resolve_routed_evidence_path(
             root,
             work_ref,
             reference.issuance_id,
@@ -523,6 +523,7 @@ def _artifact_path(
             page_number,
             reference.observation_id,
             path.suffix,
+            relative,
         )
     except (QuillanWorkPathError, TypeError, ValueError) as error:
         raise QuillanAcademicResultArtifactIntegrityError(
