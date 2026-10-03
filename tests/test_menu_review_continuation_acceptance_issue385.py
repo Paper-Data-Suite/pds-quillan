@@ -89,9 +89,9 @@ def test_continue_review_canceled_rating_input_does_not_advance_or_write(
             "1",  # Rating.
             "Unsaved rationale",
             "",  # Default include-in-feedback.
-            "2",  # Decline save/confirmation.
+            "B",  # Cancel save/confirmation.
             "B",  # Leave rating-entry workflow.
-            "4",  # Back from ratings submenu.
+            "B",  # Back from ratings submenu.
             "b",  # Back from selected-student root.
         )
     )

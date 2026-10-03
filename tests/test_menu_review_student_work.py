@@ -429,7 +429,7 @@ def test_review_menu_defines_review_units(
             "2",
             "1",
             "",
-            "4",
+            "B",
             "b", "b", "", "b", "q",
         ],
     )
@@ -494,7 +494,7 @@ def test_review_menu_records_applicable_focus_standard_observation(
             "1",
             "",
             "B",
-            "4",
+            "B",
             "b", "b", "", "b", "q",
         ],
     )
@@ -880,7 +880,7 @@ def test_overall_rating_parent_menu_has_no_pause_after_entry_back(
     workspace: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _menu_input(monkeypatch, ["2", "B", "4"])
+    _menu_input(monkeypatch, ["2", "B", "B"])
 
     review_menu._menu_overall_focus_standard_ratings(
         workspace, CLASS_ID, ASSIGNMENT_ID, STUDENT_ID
@@ -923,7 +923,7 @@ def test_review_menu_blocks_observations_for_returned_without_full_review(
             "1",
             "1",
             "",
-            "4",
+            "B",
             "b", "b", "", "b", "q",
         ],
     )
@@ -1401,7 +1401,7 @@ def test_review_menu_adds_custom_focus_standard_feedback_comment(
             "n",
             "1",
             "",
-            "5",
+            "b",
             "b", "b", "", "b", "q",
         ],
     )
@@ -1450,7 +1450,7 @@ def test_review_menu_saves_default_custom_comment_text_for_reuse(
             "1", "",  # Reject invalid default-yes input, then accept its default.
             "1", "y",  # Reject invalid default-no input, then choose yes.
             "General feedback", "1", "", "", "1",
-            "", "5", "b", "b", "", "b", "q",
+            "", "b", "b", "", "b", "q",
         ],
     )
 
@@ -1495,7 +1495,7 @@ def test_review_menu_keeps_revised_reusable_text_separate(
             "Avery, revise paragraph 2.", "", "y", "General revision", "2",
             "Revise the relevant paragraph.", "",
             "Character, Scene Development, dialogue", "1",
-            "", "5", "b", "b", "", "b", "q",
+            "", "b", "b", "", "b", "q",
         ],
     )
 
@@ -1533,14 +1533,14 @@ def test_review_menu_back_while_saving_reusable_comment_writes_nothing(
     review_path.write_text(json.dumps(review), encoding="utf-8")
     original_review = review_path.read_bytes()
     reusable_steps = ["Cancelable feedback.", "", "y", "Cancelable label"]
-    reusable_steps.extend(["3"] if back_at_text_step else ["1", "", "", "2"])
+    reusable_steps.extend(["B"] if back_at_text_step else ["1", "", "", "B"])
 
     _menu_input(
         monkeypatch,
         [
             "2", "1", "1", "1", "1", "1", "a", "5", "2", "1",
             *reusable_steps,
-            "", "5", "b", "b", "", "b", "q",
+            "", "b", "b", "", "b", "q",
         ],
     )
 
@@ -1615,7 +1615,7 @@ def test_review_menu_selects_reusable_focus_standard_feedback_comment(
             "",
             "1",
             "",
-            "5",
+            "b",
             "b", "b", "", "b", "q",
         ],
     )

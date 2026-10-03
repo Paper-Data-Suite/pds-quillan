@@ -184,6 +184,28 @@ Existing child save/confirmation/cancellation rules remain authoritative. Back o
 cancel never becomes an implicit save, phase completion, export, or student
 advance.
 
+## Canonical review-menu navigation
+
+Teacher-review menus use the shared navigation contract:
+
+```text
+B. Back
+M. Main Menu
+Q. Quit
+```
+
+Numbered choices are reserved for review, reporting, export, and other domain
+actions. Review menus do not display numbered Back entries and do not retain
+hidden numeric Back aliases.
+
+Screens that previously displayed choices such as `2. Back`, `3. Back`, or
+`4. Back` now use `print_navigation_options()` and
+`parse_navigation_choice(...)`. Main Menu and Quit therefore propagate through
+the same shared navigation signals used by the rest of Quillan.
+
+Blank input may still cancel or return safely where that prompt already used a
+blank default. It is not documented as a numbered navigation command.
+
 ## Privacy
 
 Routine presentation is limited to exact selected identity already needed for the

@@ -46,6 +46,9 @@ planning and do not by themselves represent releases.
   completion return directly to Selected Student Review. The root then rebuilds
   canonical read state and recalculates `C. Continue Review`; canceled, failed,
   and no-change terminal attempts remain in the child workflow.
+- Standardized teacher-review Back navigation on the shared `B. Back`,
+  `M. Main Menu`, and `Q. Quit` contract. Removed numbered Back displays and
+  hidden numeric Back aliases so numbered choices represent domain actions.
 
 ### Fixed
 
@@ -73,6 +76,9 @@ planning and do not by themselves represent releases.
 - Updated the recorder-backed complete-review acceptance to remove redundant
   post-completion Back navigation and added explicit terminal-result, child
   unwind, cancellation/failure/no-change, and fresh-root continuation coverage.
+- Added source-level and interactive review-navigation regressions covering
+  shared B/M/Q rendering, Main Menu propagation, rejection of legacy numeric
+  Back aliases, and updated recorder inputs for the canonical letter contract.
 
 ## 0.10.4 - 2026-10-01
 
