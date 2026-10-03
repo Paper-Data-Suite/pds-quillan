@@ -8,6 +8,17 @@ planning and do not by themselves represent releases.
 
 ## 0.10.5 - Unreleased
 
+### Changed
+
+- Added one immutable assignment-reporting snapshot shared by Student
+  Performance, Comprehensive Class, and Focus Standard CSV renderers (#417).
+  The snapshot loads canonical assignment, roster/student, standards, review,
+  rating, and feedback-export status once and exposes no student writing,
+  private notes, feedback text, or scan contents.
+- Added snapshot-backed renderer entry points so a later reporting-packet
+  workflow can generate multiple formats from one coherent canonical read
+  without introducing a persisted cache or second source of truth.
+
 ### Fixed
 
 - Made all three assignment-local report CSV writers use one spreadsheet-safe
@@ -21,6 +32,8 @@ planning and do not by themselves represent releases.
   student names, curly punctuation, exactly one UTF-8 BOM, BOM-aware logical
   headers, and overwrite regeneration across Student Performance,
   Comprehensive Class, and Focus Standard summaries.
+- Added snapshot immutability/non-mutation, one-load canonical read, and
+  one-snapshot/multi-renderer regression coverage.
 
 ## 0.10.4 - 2026-10-01
 

@@ -64,6 +64,46 @@ student evidence -> review unit -> Focus Standard -> teacher judgment -> feedbac
 
 Assignment-level reports are derived artifacts generated from canonical Quillan records. They are not the canonical source of teacher judgment.
 
+## Shared Assignment Reporting Snapshot
+
+Runtime report generation uses one immutable, in-memory assignment reporting
+snapshot as the common projection between canonical Quillan records and report
+renderers.
+
+The snapshot is built fresh from:
+
+```text
+assignment.json
+class roster, when available
+submission.json
+review.json
+workspace standards metadata
+feedback-export metadata and file status
+```
+
+It contains only reportable assignment-local facts needed by the reporting
+layer, including assignment metadata, Focus Standard metadata and rating scale,
+student identity/display status, submission/review validity and state,
+minimum-requirement outcome, teacher-entered overall Focus Standard ratings,
+feedback-export status, and bounded warnings.
+
+The snapshot must not contain student writing, private teacher notes, full
+feedback text, scan contents, routed-evidence contents, or retained-source
+contents.
+
+The snapshot is:
+
+* immutable after construction;
+* read-only with respect to canonical records;
+* redraw/generation scoped rather than persisted;
+* not a cache, database, or second source of truth; and
+* reusable by multiple report renderers during one reporting operation.
+
+Existing direct CSV export commands may each build a fresh snapshot. A combined
+reporting-packet workflow should build one snapshot and pass that same object to
+the CSV, PDF, and JSON renderers so all outputs describe one coherent canonical
+read.
+
 ## Quillan-Owned Assignment Reports
 
 Quillan owns three target assignment-local reporting artifacts.

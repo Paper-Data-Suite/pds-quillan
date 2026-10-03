@@ -8,26 +8,21 @@ import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
-from pds_core.standards import find_standard_definition, load_workspace_standards_library
-
-from quillan.assignment_summary_context import (
-    LoadedStudentRecord,
-    discover_students,
-    load_assignment,
-    load_student_record,
-    rating_labels,
-    relative_path_for,
+from quillan.assignment_reporting_snapshot import (
+    AssignmentReportingSnapshot,
+    AssignmentReportingSnapshotError,
+    ReportingStudent,
+    build_assignment_reporting_snapshot,
 )
+from quillan.assignment_summary_context import relative_path_for
 from quillan.work_paths import (
     QuillanWorkPathError,
     preflight_work_file_destination,
     quillan_work_ref,
     student_performance_summary_path,
 )
-from quillan.record_context import canonical_workspace_root
 from quillan.report_csv import REPORT_CSV_ENCODING
 
 MISSING_RATING = ""
@@ -83,27 +78,57 @@ def export_student_performance_summary(
     created_at: datetime | str | None = None,
 ) -> ExportedStudentPerformanceSummary:
     """Export one compact row per rostered or discovered student."""
-    timestamp = _normalize_timestamp(created_at)
+    normalized_created_at = _normalize_timestamp(created_at)
     try:
-        root = canonical_workspace_root(workspace_root)
-        path = student_performance_summary_export_path(root, class_id, assignment_id)
-        assignment = load_assignment(root, class_id, assignment_id)
+        snapshot = build_assignment_reporting_snapshot(
+            workspace_root,
+            class_id,
+            assignment_id,
+        )
+    except AssignmentReportingSnapshotError as error:
+        raise StudentPerformanceSummaryExportError(str(error)) from error
+    return _export_student_performance_summary_from_snapshot(
+        snapshot,
+        overwrite=overwrite,
+        normalized_created_at=normalized_created_at,
+    )
+
+
+def export_student_performance_summary_from_snapshot(
+    snapshot: AssignmentReportingSnapshot,
+    *,
+    overwrite: bool = False,
+    created_at: datetime | str | None = None,
+) -> ExportedStudentPerformanceSummary:
+    """Render the compact summary from an already-loaded reporting snapshot."""
+    return _export_student_performance_summary_from_snapshot(
+        snapshot,
+        overwrite=overwrite,
+        normalized_created_at=_normalize_timestamp(created_at),
+    )
+
+
+def _export_student_performance_summary_from_snapshot(
+    snapshot: AssignmentReportingSnapshot,
+    *,
+    overwrite: bool,
+    normalized_created_at: str,
+) -> ExportedStudentPerformanceSummary:
+    try:
+        path = student_performance_summary_export_path(
+            snapshot.workspace_root,
+            snapshot.class_id,
+            snapshot.assignment_id,
+        )
         expected_path = preflight_work_file_destination(
-            root,
-            quillan_work_ref(class_id, assignment_id),
+            snapshot.workspace_root,
+            quillan_work_ref(snapshot.class_id, snapshot.assignment_id),
             Path("exports") / "student_performance_summary.csv",
         )
         if path != expected_path:
             raise StudentPerformanceSummaryExportError(
                 "Student performance summary path is not canonical."
             )
-        standard_ids = list(assignment["focus_standard_ids"])
-        labels = rating_labels(assignment)
-        records = [
-            load_student_record(student, class_id, assignment_id)
-            for student in discover_students(root, class_id, assignment_id)
-        ]
-        headers, metadata_missing = _standard_headers(root, standard_ids)
     except (
         OSError,
         RuntimeError,
@@ -119,96 +144,104 @@ def export_student_performance_summary(
             f"Student performance summary export already exists: {path}. "
             "Use --overwrite to replace it."
         )
+
+    headers, metadata_missing = _standard_headers(snapshot)
     rows = [
-        _student_row(record, standard_ids, headers, labels, metadata_missing)
-        for record in records
+        _student_row(
+            student,
+            snapshot,
+            headers,
+            metadata_missing,
+        )
+        for student in snapshot.students
     ]
-    _write_csv(path, rows, BASE_CSV_COLUMNS + tuple(headers.values()) + ("notes_flags",), overwrite)
+    fields = (
+        BASE_CSV_COLUMNS
+        + tuple(headers[standard_id] for standard_id in snapshot.focus_standard_ids)
+        + ("notes_flags",)
+    )
+    _write_csv(path, rows, fields, overwrite)
     return ExportedStudentPerformanceSummary(
-        class_id=class_id,
-        assignment_id=assignment_id,
+        class_id=snapshot.class_id,
+        assignment_id=snapshot.assignment_id,
         summary_path=path,
-        summary_relative_path=relative_path_for(path, root),
+        summary_relative_path=relative_path_for(
+            path,
+            snapshot.workspace_root,
+        ),
         row_count=len(rows),
         reviewed_count=sum(row["review_status"] == "Reviewed" for row in rows),
-        returned_without_full_review_count=sum(row["review_status"] == "Returned" for row in rows),
-        missing_submission_count=_warning_count(records, "missing_submission"),
-        missing_review_count=_warning_count(records, "missing_review"),
-        invalid_submission_count=_warning_count(records, "invalid_submission"),
-        invalid_review_count=_warning_count(records, "invalid_review"),
-        identity_mismatch_count=_warning_count(records, "identity_mismatch"),
-        created_at=timestamp,
+        returned_without_full_review_count=sum(
+            row["review_status"] == "Returned" for row in rows
+        ),
+        missing_submission_count=_warning_count(snapshot, "missing_submission"),
+        missing_review_count=_warning_count(snapshot, "missing_review"),
+        invalid_submission_count=_warning_count(snapshot, "invalid_submission"),
+        invalid_review_count=_warning_count(snapshot, "invalid_review"),
+        identity_mismatch_count=_warning_count(snapshot, "identity_mismatch"),
+        created_at=normalized_created_at,
         overwrote_existing=existed,
     )
 
 
-def _standard_headers(root: Path, standard_ids: list[str]) -> tuple[dict[str, str], set[str]]:
-    try:
-        library = load_workspace_standards_library(root)
-    except OSError:
-        library = None
+def _standard_headers(
+    snapshot: AssignmentReportingSnapshot,
+) -> tuple[dict[str, str], bool]:
     headers: dict[str, str] = {}
-    missing: set[str] = set()
     used: set[str] = set()
-    for standard_id in standard_ids:
-        definition = None if library is None else find_standard_definition(library, standard_id)
-        header = standard_id
-        if definition is not None:
-            header = f"{definition.code} — {definition.short_name}"
+    metadata_missing = False
+    for standard in snapshot.focus_standards:
+        header = standard.standard_id
+        if standard.metadata_missing:
+            metadata_missing = True
         else:
-            missing.add(standard_id)
+            header = f"{standard.display_code} — {standard.display_name}"
         if header in used:
-            header = standard_id
+            header = standard.standard_id
         used.add(header)
-        headers[standard_id] = header
-    return headers, missing
+        headers[standard.standard_id] = header
+    return headers, metadata_missing
 
 
 def _student_row(
-    loaded: LoadedStudentRecord,
-    standard_ids: list[str],
+    student: ReportingStudent,
+    snapshot: AssignmentReportingSnapshot,
     headers: dict[str, str],
-    labels: dict[int, str],
-    metadata_missing: set[str],
+    metadata_missing: bool,
 ) -> dict[str, str]:
-    review = loaded.review
-    warnings = list(loaded.warnings)
+    warnings = list(student.warnings)
     if metadata_missing:
         warnings.append("standard_metadata_missing")
-    returned = _returned(review)
-    ratings: dict[str, dict[str, Any]] = {}
-    if review is not None:
-        for rating in review["overall_standard_ratings"]:
-            standard_id = str(rating["standard_id"])
-            if standard_id not in standard_ids:
-                warnings.append("rating_for_non_assignment_standard")
-            else:
-                ratings[standard_id] = rating
+    returned = student.returned_without_full_review is True
+    ratings = {
+        rating.standard_id: rating
+        for rating in student.overall_standard_ratings
+    }
 
     row = {
-        "student_id": loaded.student.student_id,
-        "student_display_name": loaded.student.display_name,
-        "review_status": _review_status(loaded),
-        "minimum_requirements": _minimum_requirements(review),
+        "student_id": student.student_id,
+        "student_display_name": student.display_name,
+        "review_status": _review_status(student),
+        "minimum_requirements": _minimum_requirements(student),
     }
-    for standard_id in standard_ids:
+    for standard_id in snapshot.focus_standard_ids:
         rating = None if returned else ratings.get(standard_id)
         if rating is None:
             row[headers[standard_id]] = MISSING_RATING
             continue
-        value = int(rating["rating"])
-        label = labels.get(value)
-        if label is None:
+        if rating.label is None:
             warnings.append("unknown_rating_value")
-        row[headers[standard_id]] = str(value) if label is None else f"{value} - {label}"
+            row[headers[standard_id]] = str(rating.value)
+        else:
+            row[headers[standard_id]] = f"{rating.value} - {rating.label}"
     if returned:
         warnings.append("returned_without_full_review")
     row["notes_flags"] = ";".join(dict.fromkeys(warnings))
     return row
 
 
-def _review_status(loaded: LoadedStudentRecord) -> str:
-    warnings = set(loaded.warnings)
+def _review_status(student: ReportingStudent) -> str:
+    warnings = set(student.warnings)
     if "identity_mismatch" in warnings:
         return "Needs attention"
     if "invalid_submission" in warnings:
@@ -217,11 +250,11 @@ def _review_status(loaded: LoadedStudentRecord) -> str:
         return "Not submitted"
     if "invalid_review" in warnings:
         return "Invalid review"
-    if loaded.review is None:
+    if not student.review_valid:
         return "Not reviewed"
-    if _returned(loaded.review):
+    if student.returned_without_full_review:
         return "Returned"
-    state = str(loaded.review["review_state"])
+    state = student.review_state or ""
     if state in {"ready_for_export", "reviewed", "completed"}:
         return "Reviewed"
     if state in {"in_progress", "reviewing"}:
@@ -229,25 +262,21 @@ def _review_status(loaded: LoadedStudentRecord) -> str:
     return "Not reviewed"
 
 
-def _minimum_requirements(review: dict[str, Any] | None) -> str:
-    if review is None:
+def _minimum_requirements(student: ReportingStudent) -> str:
+    if not student.review_valid or student.minimum_requirement_status is None:
         return "Not checked"
-    outcome = review["minimum_requirement_outcome"]
-    if outcome["returned_without_full_review"]:
+    if student.returned_without_full_review:
         return "Not met"
-    return {"met": "Met", "not_met": "Not met", "not_checked": "Not checked"}.get(
-        str(outcome["status"]), str(outcome["status"]).replace("_", " ").title()
-    )
+    status = student.minimum_requirement_status
+    return {
+        "met": "Met",
+        "not_met": "Not met",
+        "not_checked": "Not checked",
+    }.get(status, status.replace("_", " ").title())
 
 
-def _returned(review: dict[str, Any] | None) -> bool:
-    return review is not None and bool(
-        review["minimum_requirement_outcome"]["returned_without_full_review"]
-    )
-
-
-def _warning_count(records: list[LoadedStudentRecord], warning: str) -> int:
-    return sum(warning in record.warnings for record in records)
+def _warning_count(snapshot: AssignmentReportingSnapshot, warning: str) -> int:
+    return sum(warning in student.warnings for student in snapshot.students)
 
 
 def _write_csv(path: Path, rows: list[dict[str, str]], fields: tuple[str, ...], overwrite: bool) -> None:

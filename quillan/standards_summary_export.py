@@ -9,35 +9,23 @@ import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Final
+from typing import Final
 
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
-from pds_core.standards import (
-    StandardsLibrary,
-    find_standard_definition,
-    load_workspace_standards_library,
+from quillan.assignment_reporting_snapshot import (
+    AssignmentReportingSnapshot,
+    AssignmentReportingSnapshotError,
+    ReportingStandard,
+    build_assignment_reporting_snapshot,
 )
-
-from quillan.assignment_summary_context import (
-    LoadedStudentRecord,
-    discover_students,
-    feedback_status,
-    load_assignment,
-    load_student_record,
-    rating_values,
-    relative_path_for,
-    standard_column_keys,
-)
+from quillan.assignment_summary_context import relative_path_for
 from quillan.work_paths import (
     QuillanWorkPathError,
-    feedback_pdf_path,
     preflight_work_file_destination,
     quillan_work_ref,
     standards_summary_path,
 )
-from quillan.record_context import canonical_workspace_root
 from quillan.report_csv import REPORT_CSV_ENCODING
-from quillan.submission_evidence_validation import selected_evidence_fingerprint
 
 CSV_COLUMNS: Final[tuple[str, ...]] = (
     "class_id",
@@ -112,24 +100,55 @@ def export_standards_summary(
     """Export assignment-local Focus Standard rating aggregates."""
     normalized_created_at = _normalize_timestamp(created_at)
     try:
-        resolved_root = canonical_workspace_root(workspace_root)
-        output_path = standards_summary_export_path(
-            resolved_root, class_id, assignment_id
+        snapshot = build_assignment_reporting_snapshot(
+            workspace_root,
+            class_id,
+            assignment_id,
         )
-        assignment = load_assignment(resolved_root, class_id, assignment_id)
+    except AssignmentReportingSnapshotError as error:
+        raise StandardsSummaryExportError(str(error)) from error
+    return _export_standards_summary_from_snapshot(
+        snapshot,
+        overwrite=overwrite,
+        normalized_created_at=normalized_created_at,
+    )
+
+
+def export_standards_summary_from_snapshot(
+    snapshot: AssignmentReportingSnapshot,
+    *,
+    overwrite: bool = False,
+    created_at: datetime | str | None = None,
+) -> ExportedStandardsSummary:
+    """Render the standards summary from an already-loaded reporting snapshot."""
+    return _export_standards_summary_from_snapshot(
+        snapshot,
+        overwrite=overwrite,
+        normalized_created_at=_normalize_timestamp(created_at),
+    )
+
+
+def _export_standards_summary_from_snapshot(
+    snapshot: AssignmentReportingSnapshot,
+    *,
+    overwrite: bool,
+    normalized_created_at: str,
+) -> ExportedStandardsSummary:
+    try:
+        output_path = standards_summary_export_path(
+            snapshot.workspace_root,
+            snapshot.class_id,
+            snapshot.assignment_id,
+        )
         expected_output = preflight_work_file_destination(
-            resolved_root,
-            quillan_work_ref(class_id, assignment_id),
+            snapshot.workspace_root,
+            quillan_work_ref(snapshot.class_id, snapshot.assignment_id),
             Path("exports") / "standards_summary.csv",
         )
         if output_path != expected_output:
             raise StandardsSummaryExportError(
                 "Standards summary path is not canonical."
             )
-        focus_standard_ids = list(assignment["focus_standard_ids"])
-        column_keys, key_warnings = standard_column_keys(focus_standard_ids)
-        values = rating_values(assignment)
-        students = discover_students(resolved_root, class_id, assignment_id)
     except (
         OSError,
         RuntimeError,
@@ -146,46 +165,29 @@ def export_standards_summary(
             "Use --overwrite to replace it."
         )
 
-    loaded_records = [
-        load_student_record(student, class_id, assignment_id) for student in students
-    ]
-    standards_library = _load_standards_library(resolved_root)
-    rows = [
-        _build_row(
-            resolved_root,
-            class_id,
-            assignment_id,
-            assignment,
-            standard_id,
-            index,
-            column_keys[standard_id],
-            values,
-            loaded_records,
-            standards_library,
-            key_warnings,
-        )
-        for index, standard_id in enumerate(focus_standard_ids, start=1)
-    ]
+    rows = [_build_row(snapshot, standard) for standard in snapshot.focus_standards]
     _write_csv(output_path, rows, overwrite=overwrite)
 
-    warning_counts = _warning_counts(loaded_records)
     return ExportedStandardsSummary(
-        class_id=class_id,
-        assignment_id=assignment_id,
+        class_id=snapshot.class_id,
+        assignment_id=snapshot.assignment_id,
         summary_path=output_path,
-        summary_relative_path=relative_path_for(output_path, resolved_root),
+        summary_relative_path=relative_path_for(
+            output_path,
+            snapshot.workspace_root,
+        ),
         row_count=len(rows),
         standard_count=len(rows),
-        student_count=len(students),
-        review_count=sum(record.review is not None for record in loaded_records),
-        missing_review_count=warning_counts["missing_review"],
-        invalid_review_count=warning_counts["invalid_review"],
-        missing_submission_count=warning_counts["missing_submission"],
-        invalid_submission_count=warning_counts["invalid_submission"],
-        identity_mismatch_count=warning_counts["identity_mismatch"],
+        student_count=len(snapshot.students),
+        review_count=sum(student.review_valid for student in snapshot.students),
+        missing_review_count=_warning_count(snapshot, "missing_review"),
+        invalid_review_count=_warning_count(snapshot, "invalid_review"),
+        missing_submission_count=_warning_count(snapshot, "missing_submission"),
+        invalid_submission_count=_warning_count(snapshot, "invalid_submission"),
+        identity_mismatch_count=_warning_count(snapshot, "identity_mismatch"),
         returned_without_full_review_count=sum(
-            _returned_without_full_review(record.review)
-            for record in loaded_records
+            student.returned_without_full_review is True
+            for student in snapshot.students
         ),
         created_at=normalized_created_at,
         overwrote_existing=overwrote_existing,
@@ -193,24 +195,14 @@ def export_standards_summary(
 
 
 def _build_row(
-    workspace_root: Path,
-    class_id: str,
-    assignment_id: str,
-    assignment: dict[str, Any],
-    standard_id: str,
-    focus_order: int,
-    standard_column_key: str,
-    rating_scale_values: tuple[int, ...],
-    records: list[LoadedStudentRecord],
-    standards_library: StandardsLibrary,
-    key_warnings: tuple[str, ...],
+    snapshot: AssignmentReportingSnapshot,
+    standard: ReportingStandard,
 ) -> dict[str, str]:
-    warnings = list(key_warnings)
-    definition = find_standard_definition(standards_library, standard_id)
-    if definition is None:
+    warnings = list(snapshot.column_key_warnings)
+    if standard.metadata_missing:
         warnings.append("standard_metadata_missing")
 
-    rating_counts = {str(value): 0 for value in rating_scale_values}
+    rating_counts = {str(value): 0 for value in snapshot.rating_values}
     students_with_submissions = 0
     students_with_valid_reviews = 0
     students_reviewed_for_standard = 0
@@ -220,69 +212,53 @@ def _build_row(
     feedback_pdf_present = 0
     feedback_pdf_stale = 0
 
-    for record in records:
-        if record.submission is not None:
+    for student in snapshot.students:
+        if student.submission_valid:
             students_with_submissions += 1
-        review = record.review
-        if review is None:
+        if not student.review_valid:
             continue
         students_with_valid_reviews += 1
-        pdf_path = feedback_pdf_path(
-            workspace_root,
-            record.student.work_ref,
-            record.student.student_id,
-        )
-        _, pdf_status, _, _ = feedback_status(
-            workspace_root,
-            review,
-            "feedback_pdf",
-            pdf_path,
-            selected_evidence_fingerprint=(
-                None
-                if record.submission is None
-                else selected_evidence_fingerprint(record.submission)
-            ),
-        )
-        if pdf_status == "present":
+
+        if student.feedback_pdf.status == "present":
             feedback_pdf_present += 1
-        elif pdf_status == "stale":
+        elif student.feedback_pdf.status == "stale":
             feedback_pdf_stale += 1
 
-        if _returned_without_full_review(review):
+        if student.returned_without_full_review:
             students_returned += 1
             continue
 
         ratings_by_standard = {
-            rating["standard_id"]: rating
-            for rating in review["overall_standard_ratings"]
+            rating.standard_id: rating
+            for rating in student.overall_standard_ratings
         }
-        extra_ratings = set(ratings_by_standard) - set(assignment["focus_standard_ids"])
-        if extra_ratings:
+        if "rating_for_non_assignment_standard" in student.warnings:
             warnings.append("rating_for_non_assignment_standard")
 
-        rating = ratings_by_standard.get(standard_id)
+        rating = ratings_by_standard.get(standard.standard_id)
         if rating is None:
             students_missing_rating += 1
             continue
+
         students_reviewed_for_standard += 1
-        value = str(rating["rating"])
+        value = str(rating.value)
         if value not in rating_counts:
             warnings.append("unknown_rating_value")
             rating_counts[value] = 0
         rating_counts[value] += 1
-        if rating["include_in_feedback"]:
+        if rating.include_in_feedback:
             students_included += 1
 
     return {
-        "class_id": class_id,
-        "assignment_id": assignment_id,
-        "standards_profile_id": str(assignment["standards_profile_id"]),
-        "focus_standard_order": str(focus_order),
-        "standard_id": standard_id,
-        "standard_column_key": standard_column_key,
-        "standard_display_code": definition.code if definition is not None else "",
-        "standard_display_name": definition.short_name if definition is not None else "",
-        "students_expected": str(len(records)),
+        "class_id": snapshot.class_id,
+        "assignment_id": snapshot.assignment_id,
+        "standards_profile_id": snapshot.standards_profile_id,
+        "focus_standard_order": str(standard.order),
+        "standard_id": standard.standard_id,
+        "standard_column_key": standard.column_key,
+        "standard_display_code": standard.display_code,
+        "standard_display_name": standard.display_name,
+        "students_expected": str(len(snapshot.students)),
         "students_with_submissions": str(students_with_submissions),
         "students_with_valid_reviews": str(students_with_valid_reviews),
         "students_reviewed_for_standard": str(students_reviewed_for_standard),
@@ -291,35 +267,17 @@ def _build_row(
         "students_with_rating_included_in_feedback": str(students_included),
         "feedback_pdf_present_count": str(feedback_pdf_present),
         "feedback_pdf_stale_count": str(feedback_pdf_stale),
-        "rating_counts_json": json.dumps(rating_counts, sort_keys=True, separators=(",", ":")),
+        "rating_counts_json": json.dumps(
+            rating_counts,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
         "warnings": ";".join(dict.fromkeys(warnings)),
     }
 
 
-def _warning_counts(records: list[LoadedStudentRecord]) -> dict[str, int]:
-    return {
-        warning: sum(warning in record.warnings for record in records)
-        for warning in (
-            "missing_review",
-            "invalid_review",
-            "missing_submission",
-            "invalid_submission",
-            "identity_mismatch",
-        )
-    }
-
-
-def _returned_without_full_review(review: dict[str, Any] | None) -> bool:
-    if review is None:
-        return False
-    return bool(review["minimum_requirement_outcome"]["returned_without_full_review"])
-
-
-def _load_standards_library(workspace_root: Path) -> StandardsLibrary:
-    try:
-        return load_workspace_standards_library(workspace_root)
-    except OSError:
-        return StandardsLibrary(standards=(), profiles=())
+def _warning_count(snapshot: AssignmentReportingSnapshot, warning: str) -> int:
+    return sum(warning in student.warnings for student in snapshot.students)
 
 
 def _write_csv(
