@@ -157,7 +157,27 @@ Suggested path:
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_results_manifest.json
 ```
 
-The assignment results manifest is forward-looking. It should make future Paper Data Suite reporting integration easier without making Quillan responsible for cross-assignment or cross-module reporting.
+The assignment results manifest is implemented at:
+
+```text
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_results_manifest.json
+```
+
+It is schema version `1`, machine-readable, assignment-local derived reporting
+state. It is rendered from the same immutable assignment reporting snapshot as
+the CSV family and is not canonical review state.
+
+The manifest records assignment identity, configured rating-scale metadata,
+ordered Focus Standard metadata, assignment-level completion/data-quality
+counts, per-standard rating distributions, student reporting rows, warnings,
+and a generated-artifact inventory. Distribution percentages use the explicit
+`rated_students` denominator and preserve unrated, returned-without-full-review,
+and invalid/attention-required records as separate counts.
+
+Student rows contain only the minimum assignment-local identity and reporting
+state required for the handoff. They do not contain student writing, private
+teacher notes, feedback text, rating rationales, scans, routed evidence, or
+retained-source details.
 
 ## Spreadsheet CSV Encoding
 

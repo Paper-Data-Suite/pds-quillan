@@ -18,6 +18,14 @@ planning and do not by themselves represent releases.
 - Added snapshot-backed renderer entry points so a later reporting-packet
   workflow can generate multiple formats from one coherent canonical read
   without introducing a persisted cache or second source of truth.
+- Added schema-version `1` `assignment_results_manifest.json` as the
+  machine-readable assignment-local handoff. It carries assignment/rating-scale
+  metadata, explicit completion and data-quality counts, per-standard
+  distributions with rated-student denominators, privacy-bounded student rows,
+  warnings, and generated-artifact inventory.
+- Completed the snapshot aggregate projection with assignment summary counts and
+  per-Focus-Standard distributions so JSON and later PDF rendering do not
+  independently reinterpret canonical review state.
 
 ### Fixed
 
@@ -34,6 +42,8 @@ planning and do not by themselves represent releases.
   Comprehensive Class, and Focus Standard summaries.
 - Added snapshot immutability/non-mutation, one-load canonical read, and
   one-snapshot/multi-renderer regression coverage.
+- Added manifest schema, explicit-denominator distribution, privacy exclusion,
+  create-only/overwrite, no-reread, and canonical-source non-mutation coverage.
 
 ## 0.10.4 - 2026-10-01
 
