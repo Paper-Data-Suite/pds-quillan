@@ -48,6 +48,18 @@ from quillan.class_summary_export import (
     ClassSummaryExportError,
     export_class_review_summary,
 )
+from quillan.assignment_reporting_packet import (
+    AssignmentReportingPacketError,
+    export_assignment_reporting_packet,
+)
+from quillan.assignment_results_manifest_export import (
+    AssignmentResultsManifestExportError,
+    export_assignment_results_manifest,
+)
+from quillan.assignment_review_report_export import (
+    AssignmentReviewReportExportError,
+    export_assignment_review_report,
+)
 from quillan.cli_app.output import (
     print_added_review_note,
     print_batch_feedback_export_plan,
@@ -4457,6 +4469,88 @@ def _student_feedback_export_choice_label(selection: str) -> str:
     return labels.get(selection, "unknown")
 
 
+
+def _menu_export_reporting_packet(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    print(
+        "This generates the three CSV reports, Assignment Review PDF, and "
+        "Assignment Results JSON from one reporting snapshot."
+    )
+    print()
+    overwrite = _prompt_overwrite_export()
+    if overwrite is _CANCEL:
+        return
+    assert isinstance(overwrite, bool)
+    try:
+        exported = export_assignment_reporting_packet(
+            workspace_root,
+            class_id,
+            assignment_id,
+            overwrite=overwrite,
+        )
+    except (AssignmentReportingPacketError, OSError) as error:
+        print(f"Error: could not generate reporting packet: {error}")
+        completed = getattr(error, "completed_relative_paths", ())
+        if completed:
+            print("Derived outputs completed before the failure:")
+            for path in completed:
+                print(f"- {path}")
+        return
+
+    print("Generated assignment reporting packet:")
+    for path in exported.relative_paths:
+        print(f"- {path}")
+
+
+def _menu_export_assignment_review_report(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    overwrite = _prompt_overwrite_export()
+    if overwrite is _CANCEL:
+        return
+    assert isinstance(overwrite, bool)
+    try:
+        exported = export_assignment_review_report(
+            workspace_root,
+            class_id,
+            assignment_id,
+            overwrite=overwrite,
+        )
+    except (AssignmentReviewReportExportError, OSError) as error:
+        print(f"Error: could not export assignment review PDF: {error}")
+        return
+    print("Exported Assignment Review PDF:")
+    print(f"File: {exported.report_relative_path}")
+
+
+def _menu_export_assignment_results_manifest(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    overwrite = _prompt_overwrite_export()
+    if overwrite is _CANCEL:
+        return
+    assert isinstance(overwrite, bool)
+    try:
+        exported = export_assignment_results_manifest(
+            workspace_root,
+            class_id,
+            assignment_id,
+            overwrite=overwrite,
+        )
+    except (AssignmentResultsManifestExportError, OSError) as error:
+        print(f"Error: could not export assignment results JSON: {error}")
+        return
+    print("Exported Assignment Results JSON:")
+    print(f"File: {exported.manifest_relative_path}")
+
+
 def _menu_export_class_summary(
     workspace_root: Path,
     class_id: str,
@@ -5725,9 +5819,12 @@ def _menu_export_assignment_reports(
         clear_screen()
         print_menu_header("Assignment Reports")
         print_active_context(workspace_root, class_id, assignment_id)
-        print("1. Comprehensive Class Summary")
-        print("2. Focus Standard Summary")
-        print("3. Student Performance Summary")
+        print("1. Generate reporting packet")
+        print("2. Comprehensive Class Summary")
+        print("3. Focus Standard Summary")
+        print("4. Student Performance Summary")
+        print("5. Assignment Review PDF")
+        print("6. Assignment Results JSON")
         print("B. Back")
         print()
         choice = input("Select report: ").strip()
@@ -5735,17 +5832,33 @@ def _menu_export_assignment_reports(
             return
         clear_screen()
         if choice == "1":
+            print_menu_header("Generate Reporting Packet")
+            print_active_context(workspace_root, class_id, assignment_id)
+            _menu_export_reporting_packet(workspace_root, class_id, assignment_id)
+        elif choice == "2":
             print_menu_header("Export Comprehensive Class Summary")
             print_active_context(workspace_root, class_id, assignment_id)
             _menu_export_class_summary(workspace_root, class_id, assignment_id)
-        elif choice == "2":
+        elif choice == "3":
             print_menu_header("Export Focus Standard Summary")
             print_active_context(workspace_root, class_id, assignment_id)
             _menu_export_standards_summary(workspace_root, class_id, assignment_id)
-        elif choice == "3":
+        elif choice == "4":
             print_menu_header("Export Student Performance Summary")
             print_active_context(workspace_root, class_id, assignment_id)
             _menu_export_student_performance_summary(
+                workspace_root, class_id, assignment_id
+            )
+        elif choice == "5":
+            print_menu_header("Export Assignment Review PDF")
+            print_active_context(workspace_root, class_id, assignment_id)
+            _menu_export_assignment_review_report(
+                workspace_root, class_id, assignment_id
+            )
+        elif choice == "6":
+            print_menu_header("Export Assignment Results JSON")
+            print_active_context(workspace_root, class_id, assignment_id)
+            _menu_export_assignment_results_manifest(
                 workspace_root, class_id, assignment_id
             )
         else:

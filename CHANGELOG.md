@@ -34,6 +34,13 @@ planning and do not by themselves represent releases.
   rationales, Grades, or cross-assignment analysis.
 - Added explicit rostered-student and unrostered-submission counts to the shared
   snapshot and JSON handoff.
+- Added coherent reporting-packet orchestration: one snapshot and one generation
+  timestamp now drive the three CSV reports, Assignment Review PDF, and
+  Assignment Results JSON. Packet generation preflights create-only conflicts
+  across all five destinations before writing and reports any bounded partial
+  derived outputs if an unexpected runtime write fails.
+- Expanded the teacher-facing Assignment Reports menu with deliberate whole-packet,
+  PDF, and JSON generation while preserving the three existing CSV actions.
 
 ### Fixed
 
@@ -55,6 +62,9 @@ planning and do not by themselves represent releases.
 - Added PDF content/privacy, explicit-denominator, multi-page layout,
   no-source-reread, create-only/overwrite, and canonical-source non-mutation
   regression coverage.
+- Added single-snapshot/single-timestamp packet, five-artifact inventory,
+  preflight conflict/no-partial-write, bounded runtime-partial reporting, and
+  Assignment Reports menu-surface regression coverage.
 
 ## 0.10.4 - 2026-10-01
 

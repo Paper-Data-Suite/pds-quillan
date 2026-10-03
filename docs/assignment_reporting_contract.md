@@ -215,6 +215,42 @@ The report is create-only by default and requires explicit overwrite to replace
 an existing generated PDF. Generation is read-only with respect to canonical
 Quillan academic/review records.
 
+
+## Coherent Reporting Packet
+
+The teacher-facing `Assignment Reports` workflow can deliberately generate the
+complete assignment-local reporting packet:
+
+```text
+student_performance_summary.csv
+class_summary.csv
+standards_summary.csv
+assignment_review_report.pdf
+assignment_results_manifest.json
+```
+
+`Generate reporting packet` builds exactly one immutable
+`AssignmentReportingSnapshot` and passes that same snapshot to every renderer.
+All five artifacts receive the same timezone-aware generation timestamp. The
+JSON manifest is generated last so its artifact inventory observes the other
+four completed outputs from the same operation.
+
+When overwrite is disabled, the packet workflow checks all five canonical
+destinations before writing anything. If any destination already exists, the
+operation stops without creating the other packet outputs. Explicit overwrite
+applies to the complete packet.
+
+Filesystem writes cannot provide a true multi-file transaction. If an
+unexpected runtime filesystem/rendering failure occurs after preflight, already
+completed files remain ordinary derived reports rather than being deleted or
+rolled back. The packet operation reports the paths completed before the
+failure so partial derived output is never presented as a complete packet.
+Canonical assignment, submission, review, evidence, feedback, Academic Work,
+Academic Result, and Core publication state remain unchanged.
+
+The `Assignment Reports` menu also exposes the PDF and JSON individually in
+addition to preserving the three existing CSV report actions.
+
 ## Spreadsheet CSV Encoding
 
 Quillan assignment-local CSV reports are spreadsheet-facing interchange
