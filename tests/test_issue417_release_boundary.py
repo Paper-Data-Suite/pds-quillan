@@ -49,6 +49,10 @@ def test_ci_operations_wheel_matrix_includes_released_core_064() -> None:
     assert 'core: "0.6.4"' in matrix
     assert "releases/download/v{version}/{filename}" in matrix
     assert "--core-version ${{ matrix.core }}" in matrix
+    harness = (
+        ROOT / "scripts" / "run_operations_wheel_acceptance.py"
+    ).read_text(encoding="utf-8")
+    assert 'choices=("0.6.2", "0.6.3", "0.6.4")' in harness
 
 
 def test_candidate_validator_runs_issue417_before_core064_specific_regression() -> None:

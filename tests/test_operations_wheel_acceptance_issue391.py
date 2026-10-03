@@ -35,7 +35,7 @@ def test_operations_wheel_harness_is_explicit_built_artifact_acceptance() -> Non
     assert '"--full-workflow"' in source
     assert "verify_installed_producer_acceptance.py" in source
     assert "verify_installed_operations_acceptance.py" in source
-    assert 'choices=("0.6.2", "0.6.3")' in source
+    assert 'choices=("0.6.2", "0.6.3", "0.6.4")' in source
     assert '"-e"' not in source
 
 
