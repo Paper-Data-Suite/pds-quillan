@@ -41,6 +41,11 @@ planning and do not by themselves represent releases.
   derived outputs if an unexpected runtime write fails.
 - Expanded the teacher-facing Assignment Reports menu with deliberate whole-packet,
   PDF, and JSON generation while preserving the three existing CSV actions.
+- Streamlined guided review continuation so successful minimum-requirement
+  finalization, observation completion, overall-rating completion, and feedback
+  completion return directly to Selected Student Review. The root then rebuilds
+  canonical read state and recalculates `C. Continue Review`; canceled, failed,
+  and no-change terminal attempts remain in the child workflow.
 
 ### Fixed
 
@@ -65,6 +70,9 @@ planning and do not by themselves represent releases.
 - Added single-snapshot/single-timestamp packet, five-artifact inventory,
   preflight conflict/no-partial-write, bounded runtime-partial reporting, and
   Assignment Reports menu-surface regression coverage.
+- Updated the recorder-backed complete-review acceptance to remove redundant
+  post-completion Back navigation and added explicit terminal-result, child
+  unwind, cancellation/failure/no-change, and fresh-root continuation coverage.
 
 ## 0.10.4 - 2026-10-01
 

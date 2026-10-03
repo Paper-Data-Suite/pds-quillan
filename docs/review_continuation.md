@@ -230,6 +230,33 @@ This feature is Quillan-owned and requires no Core schema/API change, no suite
 shell dependency, no data migration, and no dependency-floor change beyond the
 existing `pds-core>=0.6,<0.7` support line.
 
+## Successful Stage Completion Returns to the Selected-Student Root
+
+The guided review child workflows use an explicit terminal menu result:
+
+```text
+COMPLETED
+CANCELED
+FAILED
+NO_CHANGE
+```
+
+Only `COMPLETED` unwinds the current stage automatically. This applies to
+minimum-requirement finalization, observation completion, overall Focus Standard
+rating completion, and feedback-composition completion.
+
+After the canonical write succeeds, the child-stage parent returns immediately
+to `Selected Student Review`. The selected-student loop then discards its prior
+read context, reloads current canonical state, and recalculates
+`C. Continue Review`.
+
+Canceled actions, write failures, and precondition/no-change states do not
+masquerade as completion. They remain in the current child workflow so the
+teacher can correct, retry, or deliberately go Back.
+
+This changes navigation only. It does not infer or auto-fill any teacher
+judgment.
+
 ## Scope boundary
 
 #385 adds one deterministic convenience route. It does not perform the compact

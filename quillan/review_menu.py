@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from pathlib import Path
 from typing import Any, cast
 
@@ -252,6 +253,15 @@ from quillan.plain_paper_submission import (
     plan_plain_paper_submission,
 )
 from quillan.work_paths import quillan_work_ref
+
+class ReviewStageActionResult(Enum):
+    """Explicit terminal result for teacher-facing review stage actions."""
+
+    COMPLETED = "completed"
+    CANCELED = "canceled"
+    FAILED = "failed"
+    NO_CHANGE = "no_change"
+
 
 _BACK = object()
 _CANCEL = object()
@@ -2193,9 +2203,11 @@ def _menu_review_unit_observations(
                 workspace_root, class_id, assignment_id, student_id, assignment
             )
         elif choice == "3":
-            _menu_mark_observations_complete(
+            result = _menu_mark_observations_complete(
                 workspace_root, class_id, assignment_id, student_id
             )
+            if result is ReviewStageActionResult.COMPLETED:
+                return
             input("Press Enter to continue...")
         else:
             print("Invalid selection. Please enter a number from 1 to 4.")
@@ -2423,11 +2435,11 @@ def _menu_mark_observations_complete(
     class_id: str,
     assignment_id: str,
     student_id: str,
-) -> None:
+) -> ReviewStageActionResult:
     record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
     if record is None or not record.get("review_units"):
         print("Define review units before marking observations complete.")
-        return
+        return ReviewStageActionResult.NO_CHANGE
     print(
         "Observations may be marked complete without observing every unit-standard pair."
     )
@@ -2436,19 +2448,20 @@ def _menu_mark_observations_complete(
     print()
     if input("Select an option: ").strip() != "1":
         print("Observations were not changed.")
-        return
+        return ReviewStageActionResult.CANCELED
     try:
         completed = mark_observations_complete(
             workspace_root, class_id, assignment_id, student_id
         )
     except ReviewObservationError as error:
         print(f"Error: could not mark observations complete: {error}")
-        return
+        return ReviewStageActionResult.FAILED
     if completed.missing_focus_standard_pairs:
         print(
             f"Unobserved unit-standard pairs: {completed.missing_focus_standard_pairs}"
         )
     print_completed_review_unit_observations(completed)
+    return ReviewStageActionResult.COMPLETED
 
 
 def _menu_overall_focus_standard_ratings(
@@ -2496,9 +2509,11 @@ def _menu_overall_focus_standard_ratings(
                 workspace_root, class_id, assignment_id, student_id, assignment
             )
         elif choice == "3":
-            _menu_mark_overall_ratings_complete(
+            result = _menu_mark_overall_ratings_complete(
                 workspace_root, class_id, assignment_id, student_id, assignment
             )
+            if result is ReviewStageActionResult.COMPLETED:
+                return
             input("Press Enter to continue...")
         else:
             print("Invalid selection. Please enter a number from 1 to 4.")
@@ -2558,9 +2573,11 @@ def _menu_compose_focus_standard_feedback(
             )
             input("Press Enter to continue...")
         elif choice == "4":
-            _menu_mark_feedback_composed(
+            result = _menu_mark_feedback_composed(
                 workspace_root, class_id, assignment_id, student_id, assignment
             )
+            if result is ReviewStageActionResult.COMPLETED:
+                return
             input("Press Enter to continue...")
         else:
             print("Invalid selection. Please enter a number from 1 to 5.")
@@ -2958,14 +2975,14 @@ def _menu_mark_feedback_composed(
     assignment_id: str,
     student_id: str,
     assignment: dict[str, Any],
-) -> None:
+) -> ReviewStageActionResult:
     record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
     if record is None:
         print("A review record must exist before marking feedback composed.")
-        return
+        return ReviewStageActionResult.NO_CHANGE
     if record["review_state"] == "returned_without_full_review":
         _print_returned_feedback_guard()
-        return
+        return ReviewStageActionResult.NO_CHANGE
     focus_standard_count = len(assignment["focus_standard_ids"])
     feedback_records = {
         item["standard_id"]
@@ -3000,15 +3017,16 @@ def _menu_mark_feedback_composed(
     print()
     if input("Select an option: ").strip() != "1":
         print("Feedback composition was not changed.")
-        return
+        return ReviewStageActionResult.CANCELED
     try:
         completed = mark_feedback_composed(
             workspace_root, class_id, assignment_id, student_id
         )
     except ReviewFeedbackError as error:
         print(f"Error: could not mark feedback composed: {error}")
-        return
+        return ReviewStageActionResult.FAILED
     print_completed_feedback_composition(completed)
+    return ReviewStageActionResult.COMPLETED
 
 
 def _print_overall_rating_status(
@@ -3237,11 +3255,11 @@ def _menu_mark_overall_ratings_complete(
     assignment_id: str,
     student_id: str,
     assignment: dict[str, Any],
-) -> None:
+) -> ReviewStageActionResult:
     record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
     if record is not None and record["review_state"] == "returned_without_full_review":
         _print_overall_rating_warnings(record)
-        return
+        return ReviewStageActionResult.NO_CHANGE
     focus_standard_ids = assignment["focus_standard_ids"]
     ratings = record.get("overall_standard_ratings", []) if record is not None else []
     rated = {
@@ -3261,15 +3279,16 @@ def _menu_mark_overall_ratings_complete(
     print()
     if input("Select an option: ").strip() != "1":
         print("Overall ratings were not changed.")
-        return
+        return ReviewStageActionResult.CANCELED
     try:
         completed = mark_overall_ratings_complete(
             workspace_root, class_id, assignment_id, student_id
         )
     except ReviewRatingError as error:
         print(f"Error: could not mark overall ratings complete: {error}")
-        return
+        return ReviewStageActionResult.FAILED
     print_completed_overall_standard_ratings(completed)
+    return ReviewStageActionResult.COMPLETED
 
 
 def _prompt_focus_standard_with_rating_status(
@@ -3732,7 +3751,7 @@ def _menu_review_minimum_requirements(
                 requirements,
             )
         elif selection == "2":
-            _menu_finalize_minimum_requirement_outcome(
+            result = _menu_finalize_minimum_requirement_outcome(
                 workspace_root,
                 class_id,
                 assignment_id,
@@ -3741,6 +3760,8 @@ def _menu_review_minimum_requirements(
                 requirements,
                 existing,
             )
+            if result is ReviewStageActionResult.COMPLETED:
+                return
             input("Press Enter to continue...")
         elif selection == "3":
             _menu_export_student_feedback(
@@ -3807,7 +3828,7 @@ def _menu_finalize_minimum_requirement_outcome(
     assignment: dict[str, Any],
     requirements: list[dict[str, Any]],
     existing: dict[str, dict[str, Any]],
-) -> None:
+) -> ReviewStageActionResult:
     _print_review_action_header(
         "Finalize Minimum Requirements", class_id, assignment_id, student_id
     )
@@ -3848,7 +3869,7 @@ def _menu_finalize_minimum_requirement_outcome(
         print()
     if not options:
         print("No final outcome is available yet. Record requirement checks first.")
-        return
+        return ReviewStageActionResult.NO_CHANGE
 
     for index, (_status, label) in enumerate(options, start=1):
         print(f"{index}. {label}")
@@ -3857,10 +3878,10 @@ def _menu_finalize_minimum_requirement_outcome(
     selection = input("Select outcome: ").strip()
     if selection == "" or selection.casefold() == "b":
         print("Minimum-requirements outcome was not changed.")
-        return
+        return ReviewStageActionResult.CANCELED
     if not selection.isdigit() or not (1 <= int(selection) <= len(options)):
         print("Invalid outcome selection. Please choose a listed item or Back.")
-        return
+        return ReviewStageActionResult.CANCELED
 
     status, label = options[int(selection) - 1]
     _print_review_action_header(
@@ -3886,7 +3907,7 @@ def _menu_finalize_minimum_requirement_outcome(
         )
     except (ReviewRequirementError, OSError) as error:
         print(f"Error: could not finalize minimum requirements: {error}")
-        return
+        return ReviewStageActionResult.FAILED
 
     print()
     print("Finalized minimum-requirements outcome:")
@@ -3897,6 +3918,7 @@ def _menu_finalize_minimum_requirement_outcome(
     )
     print(f"Review state: {updated.review_state}")
     print(f"Review record: {updated.review_record_relative_path}")
+    return ReviewStageActionResult.COMPLETED
 
 
 def _prompt_and_set_requirement_check(
