@@ -133,7 +133,6 @@ Suggested paths:
 
 ```text
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
-classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.pdf
 ```
 
 ### Standards Summary
@@ -144,7 +143,6 @@ Suggested paths:
 
 ```text
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
-classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.pdf
 ```
 
 ### Assignment Results Manifest
@@ -296,7 +294,7 @@ Quillan must not produce:
 * parent or administrator dashboards;
 * gradebook averages;
 * grades;
-* percentages;
+* grade percentages or percentages presented as Grades;
 * automatic mastery determinations;
 * weighted scores;
 * module-combined reporting, such as Quillan plus ScoreForm;
@@ -520,11 +518,11 @@ PDF reports should:
 
 * be derived from the same canonical data as CSV reports;
 * preserve the same privacy and teacher-control rules;
-* avoid implying grades or percentages;
+* avoid implying Grades or treating descriptive distribution percentages as Grades;
 * show clear titles, timestamps, and assignment identity; and
 * avoid including raw JSON or internal IDs except where useful for teacher troubleshooting.
 
-PDF layout, typography, pagination, and visual design belong to later implementation work.
+The implemented consolidated Assignment Review PDF owns its layout, typography, pagination, and privacy-bounded presentation.
 
 ### JSON
 
@@ -603,7 +601,7 @@ Rules:
 * Reports must not convert missing ratings into `0`.
 * Reports must not convert missing ratings into the lowest rating level.
 * Reports must not calculate averages unless a later contract explicitly allows assignment-local descriptive statistics.
-* Reports must not convert ratings into percentages or grades.
+* Reports may show descriptive rating-distribution percentages only with an explicit rated-student denominator; they must not convert those percentages into Grades, proficiency, or mastery.
 
 Example rating-scale level:
 
@@ -682,7 +680,6 @@ It is not:
 
 ```text
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
-classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.pdf
 ```
 
 ### Row Population
@@ -834,7 +831,6 @@ It is not:
 
 ```text
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
-classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.pdf
 ```
 
 ### Row Population
@@ -1525,19 +1521,14 @@ This contract does not implement:
 
 * class summary runtime rewrite;
 * standards summary runtime rewrite;
-* PDF report generation;
-* CSV report generation;
-* assignment results manifest generation;
 * CLI command changes;
-* menu changes;
 * runtime validation for schema version `2`;
 * migration from schema version `1` reports;
 * deletion of legacy report code;
-* tests;
 * cross-assignment reporting;
 * cross-module reporting;
 * grade calculations;
-* percentages;
+* grade percentages or percentages presented as Grades;
 * mastery calculations;
 * student portfolio reports;
 * parent/admin dashboards;

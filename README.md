@@ -76,9 +76,9 @@ world languages, arts/humanities, and interdisciplinary writing tasks.
 
 ## Current Status
 
-Quillan 0.10.4 is the current patch-release candidate. It builds on the
-v0.10.2 redraw-scoped review-read architecture and keeps the active workflow
-standards-based:
+Quillan 0.10.5 is the current patch-release candidate. It adds coherent
+assignment-local reporting and streamlined review continuation/navigation while
+keeping the active workflow standards-based:
 
 ```text
 student evidence -> review unit -> Focus Standard -> teacher judgment -> feedback/reporting
@@ -112,8 +112,11 @@ Quillan currently supports:
 * student feedback export to Markdown, PDF, or both;
 * assignment-level print-packet and sharing-ZIP assembly from current PDFs;
 * assignment-local Student Performance Summary export;
-* assignment-local Comprehensive Class Summary export; and
-* assignment-local Focus Standard summary export.
+* assignment-local Comprehensive Class Summary export;
+* assignment-local Focus Standard summary export;
+* supervisor/administrator-ready Assignment Review PDF export;
+* structured Assignment Results JSON export; and
+* one-snapshot five-artifact assignment reporting packets.
 
 The old generic tag, comment-bank, rubric, and criterion-score workflow has
 been removed. Quillan has no runtime compatibility path for that model.
@@ -134,6 +137,8 @@ classes/<class_id>/modules/quillan/work/<assignment_id>/submissions/<student_id>
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/student_performance_summary.csv
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_review_report.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_results_manifest.json
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/manifests/academic_results/<revision>.json
 shared/review_configuration_presets/<preset_id>.json
 shared/focus_standard_comments/<comment_set_id>.json
@@ -368,6 +373,8 @@ The three assignment-local CSV reports are:
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/student_performance_summary.csv
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_review_report.pdf
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_results_manifest.json
 ```
 
 Student Performance Summary is the compact ordinary teacher-facing table.
@@ -483,10 +490,10 @@ powershell -ExecutionPolicy Bypass `
 The equivalent `PDS_CORE_WHEEL` environment variable may be used instead of
 `-PdsCoreWheel`; an explicit parameter takes precedence. The isolated validation
 checks package metadata, editable and noneditable installation, installed import
-origins, CLI availability, and workspace side effects. The v0.10.4 candidate runtime is PDS2-only and uses module-qualified storage throughout.
+origins, CLI availability, and workspace side effects. The v0.10.5 candidate runtime is PDS2-only and uses module-qualified storage throughout.
 
 Release-candidate validation qualifies the same built Quillan wheel against exact,
-authenticated Core 0.6.2 and Core 0.6.3 release wheels plus the exact Core 0.6.4 #226 candidate wheel. At each endpoint it runs
+authenticated Core 0.6.2 and Core 0.6.3 release wheels plus the exact released Core 0.6.4 wheel. At each endpoint it runs
 the installed application workflow, producer lifecycle, module-operations checks,
 class-set acceptance, and release-edge/mixed-routing acceptance outside the source
 checkout. The ordinary installed workflow first proves that assignment, PDS2,

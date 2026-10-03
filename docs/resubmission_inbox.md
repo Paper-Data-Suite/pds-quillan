@@ -1,6 +1,6 @@
 # Resubmission / Rescan Review
 
-Classification: **active Quillan v0.10.4 workflow contract**.
+Classification: **active Quillan v0.10.5 workflow contract**.
 
 ## Purpose
 

@@ -86,7 +86,7 @@ def test_known_contracts_pin_exact_060_062_063_and_064_assets() -> None:
 
     candidate = known_core_wheel_contract("0.6.4")
     assert candidate.filename == CORE_064_FILENAME
-    assert candidate.sha256 == CORE_064_SHA256 == "201e651f4b9aad0bfeb1565b37f425982513f2fb616b86a8835a10f4dcd7db62"
+    assert candidate.sha256 == CORE_064_SHA256 == "48cea9317f2967bdc0f2d4c14349a56677c7c3f8211f0f33978ccb1a1c75859b"
     assert candidate.version == "0.6.4"
 
 

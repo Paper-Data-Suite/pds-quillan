@@ -36,10 +36,10 @@ CORE_063_SHA256: Final = (
 )
 CORE_063_VERSION: Final = "0.6.3"
 
-# Exact Core #226 handoff candidate used by Quillan #416 qualification.
+# Exact released Core 0.6.4 wheel used by Quillan v0.10.5 qualification.
 CORE_064_FILENAME: Final = "pds_core-0.6.4-py3-none-any.whl"
 CORE_064_SHA256: Final = (
-    "201e651f4b9aad0bfeb1565b37f425982513f2fb616b86a8835a10f4dcd7db62"
+    "48cea9317f2967bdc0f2d4c14349a56677c7c3f8211f0f33978ccb1a1c75859b"
 )
 CORE_064_VERSION: Final = "0.6.4"
 

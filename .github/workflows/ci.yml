@@ -183,6 +183,9 @@ jobs:
           - os: ubuntu-latest
             python: "3.14"
             core: "0.6.3"
+          - os: windows-latest
+            python: "3.13"
+            core: "0.6.4"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

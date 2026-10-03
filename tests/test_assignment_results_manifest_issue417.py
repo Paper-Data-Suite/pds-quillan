@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -26,7 +26,10 @@ from tests.test_class_summary_export import (
 
 
 def _read(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return cast(
+        dict[str, Any],
+        json.loads(path.read_text(encoding="utf-8")),
+    )
 
 
 def test_manifest_serializes_snapshot_aggregates_with_explicit_denominators(

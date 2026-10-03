@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_candidate_validator_builds_v0104_once_and_qualifies_three_core_endpoints() -> None:
+def test_candidate_validator_builds_v0105_once_and_qualifies_three_core_endpoints() -> None:
     text = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
         encoding="utf-8"
     )
@@ -15,22 +15,24 @@ def test_candidate_validator_builds_v0104_once_and_qualifies_three_core_endpoint
     assert "'--core-version', '0.6.2'" in text
     assert "'--core-version', '0.6.3'" in text
     assert "'--core-version', '0.6.4'" in text
-    assert "quillan-0.10.4-py3-none-any.whl" in text
-    assert "quillan-0.10.4.tar.gz" in text
+    assert "quillan-0.10.5-py3-none-any.whl" in text
+    assert "quillan-0.10.5.tar.gz" in text
     assert text.count('"Build one wheel and sdist"') == 1
     assert "verify_installed_producer_acceptance.py" in text
     assert "verify_installed_operations_acceptance.py" in text
     assert "verify_installed_selected_review_reads.py" in text
     assert "verify_installed_resubmission_inbox.py" in text
     assert "verify_installed_issue416_scan_paths.py" in text
+    assert "verify_installed_issue417_acceptance.py" in text
     assert "Installed selected-review reads Core $CoreVersion" in text
     assert "Installed resubmission inbox Core $CoreVersion" in text
+    assert "Installed Issue #417 reporting/review Core $CoreVersion" in text
     assert "Installed Issue #416 scan paths Core 0.6.4" in text
-    assert "'--expected-quillan-version', '0.10.4'" in text
-    assert "'--version', '0.10.4'" in text
+    assert "'--expected-quillan-version', '0.10.5'" in text
+    assert "'--version', '0.10.5'" in text
     assert "'--expected-core-version', $CoreVersion" in text
     assert "if ($CoreVersion -eq '0.6.4')" in text
-    assert "v0.10.0 physical acceptance is historical only: NOT USED FOR #416" in text
+    assert "v0.10.0 physical acceptance is historical only: NOT REQUIRED FOR #417" in text
 
 
 def test_candidate_validator_has_no_active_v090_or_core060_assumption() -> None:

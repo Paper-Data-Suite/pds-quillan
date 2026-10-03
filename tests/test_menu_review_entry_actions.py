@@ -255,7 +255,7 @@ def test_review_menu_records_minimum_requirement_check(
             "",
             "",
             "b",
-            "4",
+            "B",
         ]
         + _exit_selected_student_to_main(),
     )
@@ -341,7 +341,7 @@ def test_review_menu_requirement_status_back_returns_to_selector_without_mutatio
 ) -> None:
     recorder = MenuScreenRecorder(
         _enter_selected_student()
-        + ["a", "2", "1", "1", "b", "b", "4"]
+        + ["a", "2", "1", "1", "b", "b", "B"]
         + _exit_selected_student_to_main()
     )
     recorder.install(monkeypatch)
@@ -369,7 +369,7 @@ def test_review_menu_invalid_requirement_selection_stays_in_workflow_without_mut
 ) -> None:
     recorder = MenuScreenRecorder(
         _enter_selected_student()
-        + ["a", "2", "1", invalid_choice, "", "b", "4"]
+        + ["a", "2", "1", invalid_choice, "", "b", "B"]
         + _exit_selected_student_to_main()
     )
     recorder.install(monkeypatch)
@@ -395,7 +395,7 @@ def test_review_menu_invalid_requirement_status_returns_to_selector_without_muta
 ) -> None:
     recorder = MenuScreenRecorder(
         _enter_selected_student()
-        + ["a", "2", "1", "1", "invalid", "", "b", "4"]
+        + ["a", "2", "1", "1", "invalid", "", "b", "B"]
         + _exit_selected_student_to_main()
     )
     recorder.install(monkeypatch)
@@ -467,8 +467,6 @@ def test_review_menu_returns_without_full_review_when_policy_allows(
             "2",
             "2",
             "Add the required paragraph before resubmitting.",
-            "",
-            "4",
         ]
         + _exit_selected_student_to_main(),
     )

@@ -14,6 +14,9 @@ from quillan.assignment_reporting_packet import (
     AssignmentReportingPacketError,
     export_assignment_reporting_packet,
 )
+from quillan.assignment_review_report_export import (
+    AssignmentReviewReportExportError,
+)
 from tests.review_test_support import ASSIGNMENT_ID, CLASS_ID
 from tests.test_assignment_reporting_snapshot_issue417 import _prepare_workspace
 from tests.test_class_summary_export import TIMESTAMP
@@ -25,7 +28,7 @@ def test_packet_generates_all_five_outputs_from_one_snapshot_and_timestamp(
 ) -> None:
     _prepare_workspace(tmp_path)
 
-    original_builder = packet_module.build_assignment_reporting_snapshot
+    original_builder = getattr(packet_module, "build_assignment_reporting_snapshot")
     build_count = 0
 
     def counted_builder(*args: Any, **kwargs: Any) -> Any:
@@ -133,7 +136,7 @@ def test_packet_runtime_failure_reports_completed_derived_outputs(
     _prepare_workspace(tmp_path)
 
     def fail_pdf(*args: Any, **kwargs: Any) -> Any:
-        raise packet_module.AssignmentReviewReportExportError("synthetic failure")
+        raise AssignmentReviewReportExportError("synthetic failure")
 
     monkeypatch.setattr(
         packet_module,

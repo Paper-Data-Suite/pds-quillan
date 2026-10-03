@@ -159,11 +159,11 @@ def test_snapshot_loads_canonical_reporting_inputs_once(
         "feedback": 0,
     }
 
-    real_assignment = snapshot_module.load_assignment
-    real_discover = snapshot_module.discover_students
-    real_student = snapshot_module.load_student_record
-    real_standards = snapshot_module.load_workspace_standards_library
-    real_feedback = snapshot_module.feedback_status
+    real_assignment = getattr(snapshot_module, "load_assignment")
+    real_discover = getattr(snapshot_module, "discover_students")
+    real_student = getattr(snapshot_module, "load_student_record")
+    real_standards = getattr(snapshot_module, "load_workspace_standards_library")
+    real_feedback = getattr(snapshot_module, "feedback_status")
 
     def counted_assignment(*args: Any, **kwargs: Any) -> Any:
         counts["assignment"] += 1

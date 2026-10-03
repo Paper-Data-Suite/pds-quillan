@@ -55,7 +55,7 @@ planning and do not by themselves represent releases.
 - Made all three assignment-local report CSV writers use one spreadsheet-safe
   UTF-8-with-BOM encoding contract so Windows spreadsheet applications preserve
   Unicode standards labels and student names instead of producing mojibake
-  such as `â€”` (#417).
+  such as a misdecoded em dash (#417).
 
 ### Validation
 
@@ -79,6 +79,19 @@ planning and do not by themselves represent releases.
 - Added source-level and interactive review-navigation regressions covering
   shared B/M/Q rendering, Main Menu propagation, rejection of legacy numeric
   Back aliases, and updated recorder inputs for the canonical letter contract.
+- Added exact installed-wheel #417 acceptance for the five-artifact reporting
+  packet, UTF-8 BOM/Unicode round-trip, privacy/non-mutation boundary, and
+  installed shared B/M/Q navigation at Core 0.6.2/0.6.3/0.6.4 endpoints.
+
+### Compatibility
+
+- Runtime compatibility remains `pds-core>=0.6.2,<0.7`; exact v0.10.5
+  qualification uses released Core 0.6.2, 0.6.3, and final 0.6.4 wheel bytes.
+- Existing workspaces require no migration. #417 adds only derived reporting
+  artifacts and review-menu flow behavior; assignment, submission, review,
+  evidence, routing, publication, and Academic Work contracts are unchanged.
+- Final Core 0.6.4 authentication uses the released wheel rather than the
+  pre-release #226 handoff artifact retained in historical v0.10.4 evidence.
 
 ## 0.10.4 - 2026-10-01
 

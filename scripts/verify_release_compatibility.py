@@ -1,4 +1,4 @@
-"""Verify the Quillan v0.10.4 patch-release compatibility boundary."""
+"""Verify the Quillan v0.10.5 patch-release compatibility boundary."""
 
 from __future__ import annotations
 
@@ -25,10 +25,11 @@ from quillan.pds_operations import get_module_operations_profile
 from quillan.pds_publication import get_publication_producer_profile
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RELEASE_VERSION = "0.10.4"
-PREVIOUS_RELEASE_VERSION = "0.10.3"
-PRIOR_RELEASE_VERSION = "0.10.2"
-SECOND_PRIOR_RELEASE_VERSION = "0.10.1"
+RELEASE_VERSION = "0.10.5"
+PREVIOUS_RELEASE_VERSION = "0.10.4"
+PRIOR_RELEASE_VERSION = "0.10.3"
+SECOND_PRIOR_RELEASE_VERSION = "0.10.2"
+THIRD_PRIOR_RELEASE_VERSION = "0.10.1"
 BASE_RELEASE_VERSION = "0.10.0"
 EXPECTED_CORE_SPECIFIER = SpecifierSet(">=0.6.2,<0.7")
 EXPECTED_CAPABILITIES = frozenset({"standards_ratings"})
@@ -62,7 +63,7 @@ ACTIVE_VERSION_FILES = (
     Path("docs/release_process.md"),
     Path("docs/release_checklist.md"),
     Path("docs/resubmission_inbox.md"),
-    Path("docs/v0.10.4_installed_scan_path_acceptance.md"),
+    Path("docs/v0.10.5_installed_reporting_review_acceptance.md"),
     Path("scripts/inspect_release_artifacts.py"),
     Path("scripts/persist_release_artifacts.py"),
     Path("scripts/run_installed_acceptance.py"),
@@ -70,24 +71,25 @@ ACTIVE_VERSION_FILES = (
 )
 
 HISTORICAL_PREVIOUS_RELEASE_FILES = (
+    Path("docs/v0.10.4_installed_scan_path_acceptance.md"),
+)
+HISTORICAL_PRIOR_RELEASE_FILES = (
     Path("docs/v0.10.3_installed_resubmission_inbox_acceptance.md"),
 )
-
-HISTORICAL_PRIOR_RELEASE_FILES = (
+HISTORICAL_SECOND_PRIOR_RELEASE_FILES = (
     Path("docs/v0.10.2_installed_selected_review_read_acceptance.md"),
 )
-
-HISTORICAL_SECOND_PRIOR_RELEASE_FILES = (
+HISTORICAL_THIRD_PRIOR_RELEASE_FILES = (
     Path("docs/v0.10.1_installed_batch_feedback_acceptance.md"),
 )
-
 HISTORICAL_BASE_RELEASE_FILES = (
     Path("docs/v0.10.0_installed_class_set_acceptance.md"),
     Path("docs/physical_acceptance_v0.10.0.md"),
 )
 
+
 class ReleaseCompatibilityError(RuntimeError):
-    """Raised when the v0.10.4 patch-release boundary is inconsistent."""
+    """Raised when the v0.10.5 patch-release boundary is inconsistent."""
 
 
 def _read(relative: Path) -> str:
@@ -109,63 +111,47 @@ def validate_release_identity() -> None:
     project = tomllib.loads(_read(Path("pyproject.toml")))["project"]
     if project.get("name") != "quillan" or __version__ != RELEASE_VERSION:
         raise ReleaseCompatibilityError(
-            "distribution/runtime version must be quillan 0.10.4"
+            "distribution/runtime version must be quillan 0.10.5"
         )
 
     for relative in ACTIVE_VERSION_FILES:
         text = _read(relative)
         if RELEASE_VERSION not in text:
             raise ReleaseCompatibilityError(
-                f"active release surface lacks 0.10.4: {relative}"
+                f"active release surface lacks 0.10.5: {relative}"
             )
 
-    for relative in HISTORICAL_PREVIOUS_RELEASE_FILES:
-        text = _read(relative)
-        if PREVIOUS_RELEASE_VERSION not in text:
-            raise ReleaseCompatibilityError(
-                f"historical v0.10.2 release evidence lost its identity: {relative}"
-            )
-    for relative in HISTORICAL_PRIOR_RELEASE_FILES:
-        text = _read(relative)
-        if PRIOR_RELEASE_VERSION not in text:
-            raise ReleaseCompatibilityError(
-                f"historical v0.10.2 release evidence lost its identity: {relative}"
-            )
-    for relative in HISTORICAL_SECOND_PRIOR_RELEASE_FILES:
-        text = _read(relative)
-        if SECOND_PRIOR_RELEASE_VERSION not in text:
-            raise ReleaseCompatibilityError(
-                f"historical v0.10.1 release evidence lost its identity: {relative}"
-            )
-    for relative in HISTORICAL_BASE_RELEASE_FILES:
-        text = _read(relative)
-        if BASE_RELEASE_VERSION not in text:
-            raise ReleaseCompatibilityError(
-                f"historical v0.10.0 release evidence lost its identity: {relative}"
-            )
+    historical = (
+        (HISTORICAL_PREVIOUS_RELEASE_FILES, PREVIOUS_RELEASE_VERSION),
+        (HISTORICAL_PRIOR_RELEASE_FILES, PRIOR_RELEASE_VERSION),
+        (HISTORICAL_SECOND_PRIOR_RELEASE_FILES, SECOND_PRIOR_RELEASE_VERSION),
+        (HISTORICAL_THIRD_PRIOR_RELEASE_FILES, THIRD_PRIOR_RELEASE_VERSION),
+        (HISTORICAL_BASE_RELEASE_FILES, BASE_RELEASE_VERSION),
+    )
+    for files, version in historical:
+        for relative in files:
+            if version not in _read(relative):
+                raise ReleaseCompatibilityError(
+                    f"historical v{version} release evidence lost its identity: "
+                    f"{relative}"
+                )
 
     changelog = _read(Path("CHANGELOG.md"))
-    candidate_heading = "## 0.10.4 - Unreleased"
-    previous_heading = "## 0.10.3 - 2026-09-25"
-    prior_heading = "## 0.10.2 - 2026-09-24"
-    base_heading = "## 0.10.0 - 2026-08-26"
-    if (
-        candidate_heading not in changelog
-        or previous_heading not in changelog
-        or prior_heading not in changelog
-        or base_heading not in changelog
-    ):
+    headings = (
+        "## 0.10.5 - Unreleased",
+        "## 0.10.4 - 2026-10-01",
+        "## 0.10.3 - 2026-09-25",
+        "## 0.10.2 - 2026-09-24",
+        "## 0.10.0 - 2026-08-26",
+    )
+    if any(heading not in changelog for heading in headings):
         raise ReleaseCompatibilityError(
-            "changelog must preserve v0.10.4 candidate and released patch history"
+            "changelog must preserve v0.10.5 candidate and released patch history"
         )
-    if not (
-        changelog.index(candidate_heading)
-        < changelog.index(previous_heading)
-        < changelog.index(prior_heading)
-        < changelog.index(base_heading)
-    ):
+    indexes = tuple(changelog.index(heading) for heading in headings)
+    if indexes != tuple(sorted(indexes)):
         raise ReleaseCompatibilityError(
-            "v0.10.4 candidate changelog entry must precede released history"
+            "v0.10.5 candidate changelog entry must precede released history"
         )
 
 
@@ -324,7 +310,7 @@ def main() -> int:
     ) as error:
         print(f"Release compatibility audit failed: {error}")
         return 1
-    print("Quillan v0.10.4 compatibility: PASS")
+    print("Quillan v0.10.5 compatibility: PASS")
     return 0
 
 

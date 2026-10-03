@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 import quillan.review_menu as review_menu
+from quillan.review_observations import ReviewObservationError
 from tests.test_menu_review_student_work import ASSIGNMENT_ID, CLASS_ID, STUDENT_ID
 
 
@@ -141,7 +142,7 @@ def test_observation_terminal_distinguishes_cancel_failure_and_no_change(
         review_menu,
         "mark_observations_complete",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            review_menu.ReviewObservationError("synthetic failure")
+            ReviewObservationError("synthetic failure")
         ),
     )
     _inputs(monkeypatch, ("1",))
