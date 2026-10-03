@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from pathlib import Path
 from typing import Any, cast
 
@@ -47,6 +48,18 @@ from quillan.class_review_completion import (
 from quillan.class_summary_export import (
     ClassSummaryExportError,
     export_class_review_summary,
+)
+from quillan.assignment_reporting_packet import (
+    AssignmentReportingPacketError,
+    export_assignment_reporting_packet,
+)
+from quillan.assignment_results_manifest_export import (
+    AssignmentResultsManifestExportError,
+    export_assignment_results_manifest,
+)
+from quillan.assignment_review_report_export import (
+    AssignmentReviewReportExportError,
+    export_assignment_review_report,
 )
 from quillan.cli_app.output import (
     print_added_review_note,
@@ -240,6 +253,15 @@ from quillan.plain_paper_submission import (
     plan_plain_paper_submission,
 )
 from quillan.work_paths import quillan_work_ref
+
+class ReviewStageActionResult(Enum):
+    """Explicit terminal result for teacher-facing review stage actions."""
+
+    COMPLETED = "completed"
+    CANCELED = "canceled"
+    FAILED = "failed"
+    NO_CHANGE = "no_change"
+
 
 _BACK = object()
 _CANCEL = object()
@@ -1468,11 +1490,12 @@ def _menu_update_review_workflow_state(
     }
     for index, state_opt in enumerate(REVIEW_WORKFLOW_STATES, start=1):
         print(f"{index}. {state_opt} - {descriptions[state_opt]}")
-    print("B. Back")
+    print_navigation_options()
     print()
 
     selection = input("Select review workflow state: ").strip()
-    if not selection or selection.casefold() == "b":
+    navigation = parse_navigation_choice(selection)
+    if not selection or navigation is NavigationChoice.BACK:
         print("Update review workflow state canceled.")
         return
 
@@ -1498,9 +1521,9 @@ def _menu_update_review_workflow_state(
     print(f"Change review workflow state to {selected_state}?")
     print()
     print("1. Save")
-    print("2. Back")
+    print_navigation_options()
     print()
-    if input("Select an option: ").strip() != "1":
+    if not _prompt_confirm_review_action():
         print("Update review workflow state canceled.")
         return
 
@@ -1533,6 +1556,18 @@ def _prompt_yes_no_default_yes(prompt: str) -> bool:
         if response in {"n", "no"}:
             return False
         print("Invalid response. Enter y or n, or press Enter for the default.")
+
+
+def _prompt_confirm_review_action() -> bool:
+    # Return True only for explicit action 1; B/M/Q use shared navigation.
+    selection = input("Select an option: ").strip()
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
+        return False
+    if selection == "1":
+        return True
+    print(f"Invalid selection. {navigation_hint()}")
+    return False
 
 
 def _format_yes_no(value: bool) -> str:
@@ -1642,10 +1677,11 @@ def _prompt_review_unit(units: list[dict[str, Any]]) -> dict[str, Any] | None:
     for index, unit in enumerate(units, start=1):
         observation_count = len(unit.get("standard_observations", []))
         print(f"{index}. {unit['label']} ({observation_count} observations)")
-    print("B. Back")
+    print_navigation_options()
     print()
     selection = input("Select review unit: ").strip()
-    if selection == "" or selection.casefold() == "b":
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
         return None
     if selection.isdigit() and 1 <= int(selection) <= len(units):
         return units[int(selection) - 1]
@@ -1663,10 +1699,11 @@ def _prompt_focus_standard(
     print("Focus Standards:")
     for index, standard_id in enumerate(focus_standard_ids, start=1):
         print(f"{index}. {_format_standard_display(workspace_root, standard_id)}")
-    print("B. Back")
+    print_navigation_options()
     print()
     selection = input("Select Focus Standard: ").strip()
-    if selection == "" or selection.casefold() == "b":
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
         return None
     if selection.isdigit() and 1 <= int(selection) <= len(focus_standard_ids):
         return focus_standard_ids[int(selection) - 1]
@@ -2015,10 +2052,11 @@ def _open_submission_evidence(
             f"candidates={len(page.candidates)}"
         )
     print("A. Open all selected pages")
-    print("B. Back")
+    print_navigation_options()
     print()
     choice = input("Select page: ").strip()
-    if choice.casefold() == "b" or choice == "":
+    navigation = parse_navigation_choice(choice)
+    if choice == "" or navigation is NavigationChoice.BACK:
         return
     evidence_id: str | None = None
     page_number: int | None = None
@@ -2040,13 +2078,17 @@ def _open_submission_evidence(
                 f"{index}. {label}; state={candidate.evidence_state}; "
                 f"evidence={candidate.evidence_id}"
             )
-        print("B. Back")
+        print_navigation_options()
         print()
         candidate_choice = input("Select candidate: ").strip()
+        navigation = parse_navigation_choice(candidate_choice)
+        if candidate_choice == "" or navigation is NavigationChoice.BACK:
+            return
         if (
             not candidate_choice.isdigit()
             or not 1 <= int(candidate_choice) <= len(page.candidates)
         ):
+            print(f"Invalid selection. {navigation_hint()}")
             return
         candidate = page.candidates[int(candidate_choice) - 1]
         clear_screen()
@@ -2169,7 +2211,7 @@ def _menu_review_unit_observations(
         choice = input("Select an option: ").strip()
         navigation = parse_navigation_choice(choice)
         print()
-        if choice in {"", "4"} or navigation is NavigationChoice.BACK:
+        if choice == "" or navigation is NavigationChoice.BACK:
             return
         if choice == "1":
             _menu_define_review_units(
@@ -2181,12 +2223,14 @@ def _menu_review_unit_observations(
                 workspace_root, class_id, assignment_id, student_id, assignment
             )
         elif choice == "3":
-            _menu_mark_observations_complete(
+            result = _menu_mark_observations_complete(
                 workspace_root, class_id, assignment_id, student_id
             )
+            if result is ReviewStageActionResult.COMPLETED:
+                return
             input("Press Enter to continue...")
         else:
-            print("Invalid selection. Please enter a number from 1 to 4.")
+            print(f"Invalid selection. {navigation_hint()}")
             input("Press Enter to continue...")
 
 
@@ -2228,9 +2272,9 @@ def _menu_define_review_units(
     print()
     print(f"Create {unit_count} {plural_label}?")
     print("1. Save review units")
-    print("2. Back")
+    print_navigation_options()
     print()
-    if input("Select an option: ").strip() != "1":
+    if not _prompt_confirm_review_action():
         print("Review unit definition canceled.")
         return
     try:
@@ -2325,7 +2369,7 @@ def _record_review_unit_observation(
     print("Applicability")
     print("1. Applicable")
     print("2. Not applicable")
-    print("B. Back")
+    print_navigation_options()
     print()
     applicability = input("Select applicability: ").strip().casefold()
     if applicability in {"", "b"}:
@@ -2380,9 +2424,9 @@ def _record_review_unit_observation(
     print(f"Rationale/note: {rationale if rationale else 'none'}")
     print()
     print("1. Save observation")
-    print("2. Back")
+    print_navigation_options()
     print()
-    if input("Select an option: ").strip() != "1":
+    if not _prompt_confirm_review_action():
         print("Observation entry canceled.")
         return
     try:
@@ -2411,32 +2455,33 @@ def _menu_mark_observations_complete(
     class_id: str,
     assignment_id: str,
     student_id: str,
-) -> None:
+) -> ReviewStageActionResult:
     record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
     if record is None or not record.get("review_units"):
         print("Define review units before marking observations complete.")
-        return
+        return ReviewStageActionResult.NO_CHANGE
     print(
         "Observations may be marked complete without observing every unit-standard pair."
     )
     print("1. Mark observations complete")
-    print("2. Back")
+    print_navigation_options()
     print()
-    if input("Select an option: ").strip() != "1":
+    if not _prompt_confirm_review_action():
         print("Observations were not changed.")
-        return
+        return ReviewStageActionResult.CANCELED
     try:
         completed = mark_observations_complete(
             workspace_root, class_id, assignment_id, student_id
         )
     except ReviewObservationError as error:
         print(f"Error: could not mark observations complete: {error}")
-        return
+        return ReviewStageActionResult.FAILED
     if completed.missing_focus_standard_pairs:
         print(
             f"Unobserved unit-standard pairs: {completed.missing_focus_standard_pairs}"
         )
     print_completed_review_unit_observations(completed)
+    return ReviewStageActionResult.COMPLETED
 
 
 def _menu_overall_focus_standard_ratings(
@@ -2467,12 +2512,12 @@ def _menu_overall_focus_standard_ratings(
         print("1. View Focus Standard observation summary")
         print("2. Record/update overall Focus Standard rating")
         print("3. Mark overall ratings complete")
-        print("4. Back")
+        print_navigation_options()
         print()
         choice = input("Select an option: ").strip()
         navigation = parse_navigation_choice(choice)
         print()
-        if choice in {"", "4"} or navigation is NavigationChoice.BACK:
+        if choice == "" or navigation is NavigationChoice.BACK:
             return
         if choice == "1":
             _menu_view_focus_standard_observation_summary(
@@ -2484,12 +2529,14 @@ def _menu_overall_focus_standard_ratings(
                 workspace_root, class_id, assignment_id, student_id, assignment
             )
         elif choice == "3":
-            _menu_mark_overall_ratings_complete(
+            result = _menu_mark_overall_ratings_complete(
                 workspace_root, class_id, assignment_id, student_id, assignment
             )
+            if result is ReviewStageActionResult.COMPLETED:
+                return
             input("Press Enter to continue...")
         else:
-            print("Invalid selection. Please enter a number from 1 to 4.")
+            print(f"Invalid selection. {navigation_hint()}")
             input("Press Enter to continue...")
 
 
@@ -2528,7 +2575,7 @@ def _menu_compose_focus_standard_feedback(
         choice = input("Select an option: ").strip()
         navigation = parse_navigation_choice(choice)
         print()
-        if choice in {"", "5"} or navigation is NavigationChoice.BACK:
+        if choice == "" or navigation is NavigationChoice.BACK:
             return
         if choice == "1":
             _menu_configure_standard_feedback_options(
@@ -2546,12 +2593,14 @@ def _menu_compose_focus_standard_feedback(
             )
             input("Press Enter to continue...")
         elif choice == "4":
-            _menu_mark_feedback_composed(
+            result = _menu_mark_feedback_composed(
                 workspace_root, class_id, assignment_id, student_id, assignment
             )
+            if result is ReviewStageActionResult.COMPLETED:
+                return
             input("Press Enter to continue...")
         else:
-            print("Invalid selection. Please enter a number from 1 to 5.")
+            print(f"Invalid selection. {navigation_hint()}")
             input("Press Enter to continue...")
 
 
@@ -2644,9 +2693,9 @@ def _menu_configure_standard_feedback_options(
     print(f"Included observations: {len(included_observation_ids)}")
     print()
     print("1. Save options")
-    print("2. Back")
+    print_navigation_options()
     print()
-    if input("Select an option: ").strip() != "1":
+    if not _prompt_confirm_review_action():
         print("Feedback options update canceled.")
         return
     try:
@@ -2798,9 +2847,9 @@ def _menu_add_custom_focus_standard_feedback_comment(
             print(f"Teacher tags: {', '.join(teacher_tags)}")
     print()
     print("1. Save comment")
-    print("2. Back")
+    print_navigation_options()
     print()
-    if input("Select an option: ").strip() != "1":
+    if not _prompt_confirm_review_action():
         print("Custom feedback comment canceled.")
         return
     try:
@@ -2884,10 +2933,11 @@ def _menu_select_reusable_focus_standard_feedback_comment(
     for index, comment in enumerate(matches, start=1):
         print(f"{index}. {comment.label}")
         print(f"   {_preview_text(comment.text)}")
-    print("B. Back")
+    print_navigation_options()
     print()
     selection = input("Select reusable comment: ").strip()
-    if selection == "" or selection.casefold() == "b":
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
         print("Reusable feedback comment selection canceled.")
         return
     if not selection.isdigit() or not (1 <= int(selection) <= len(matches)):
@@ -2918,9 +2968,9 @@ def _menu_select_reusable_focus_standard_feedback_comment(
     print(f"Include in feedback: {_format_yes_no(include_in_feedback)}")
     print()
     print("1. Copy comment")
-    print("2. Back")
+    print_navigation_options()
     print()
-    if input("Select an option: ").strip() != "1":
+    if not _prompt_confirm_review_action():
         print("Reusable feedback comment selection canceled.")
         return
     try:
@@ -2946,14 +2996,14 @@ def _menu_mark_feedback_composed(
     assignment_id: str,
     student_id: str,
     assignment: dict[str, Any],
-) -> None:
+) -> ReviewStageActionResult:
     record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
     if record is None:
         print("A review record must exist before marking feedback composed.")
-        return
+        return ReviewStageActionResult.NO_CHANGE
     if record["review_state"] == "returned_without_full_review":
         _print_returned_feedback_guard()
-        return
+        return ReviewStageActionResult.NO_CHANGE
     focus_standard_count = len(assignment["focus_standard_ids"])
     feedback_records = {
         item["standard_id"]
@@ -2984,19 +3034,20 @@ def _menu_mark_feedback_composed(
         print("Warning: no feedback comments are included.")
     print()
     print("1. Mark feedback composed")
-    print("2. Back")
+    print_navigation_options()
     print()
-    if input("Select an option: ").strip() != "1":
+    if not _prompt_confirm_review_action():
         print("Feedback composition was not changed.")
-        return
+        return ReviewStageActionResult.CANCELED
     try:
         completed = mark_feedback_composed(
             workspace_root, class_id, assignment_id, student_id
         )
     except ReviewFeedbackError as error:
         print(f"Error: could not mark feedback composed: {error}")
-        return
+        return ReviewStageActionResult.FAILED
     print_completed_feedback_composition(completed)
+    return ReviewStageActionResult.COMPLETED
 
 
 def _print_overall_rating_status(
@@ -3195,9 +3246,9 @@ def _record_overall_focus_standard_rating(
     print(f"Include in feedback: {_format_yes_no(include_in_feedback)}")
     print()
     print("1. Save rating")
-    print("2. Back")
+    print_navigation_options()
     print()
-    if input("Select an option: ").strip() != "1":
+    if not _prompt_confirm_review_action():
         print("Overall rating entry canceled.")
         return
     try:
@@ -3225,11 +3276,11 @@ def _menu_mark_overall_ratings_complete(
     assignment_id: str,
     student_id: str,
     assignment: dict[str, Any],
-) -> None:
+) -> ReviewStageActionResult:
     record = _current_review_record(workspace_root, class_id, assignment_id, student_id)
     if record is not None and record["review_state"] == "returned_without_full_review":
         _print_overall_rating_warnings(record)
-        return
+        return ReviewStageActionResult.NO_CHANGE
     focus_standard_ids = assignment["focus_standard_ids"]
     ratings = record.get("overall_standard_ratings", []) if record is not None else []
     rated = {
@@ -3245,19 +3296,20 @@ def _menu_mark_overall_ratings_complete(
         print("Warning: some Focus Standards do not have overall ratings.")
     print()
     print("1. Mark overall ratings complete")
-    print("2. Back")
+    print_navigation_options()
     print()
-    if input("Select an option: ").strip() != "1":
+    if not _prompt_confirm_review_action():
         print("Overall ratings were not changed.")
-        return
+        return ReviewStageActionResult.CANCELED
     try:
         completed = mark_overall_ratings_complete(
             workspace_root, class_id, assignment_id, student_id
         )
     except ReviewRatingError as error:
         print(f"Error: could not mark overall ratings complete: {error}")
-        return
+        return ReviewStageActionResult.FAILED
     print_completed_overall_standard_ratings(completed)
+    return ReviewStageActionResult.COMPLETED
 
 
 def _prompt_focus_standard_with_rating_status(
@@ -3281,10 +3333,11 @@ def _prompt_focus_standard_with_rating_status(
             f"{index}. {_format_standard_display(workspace_root, standard_id)} "
             f"({suffix})"
         )
-    print("B. Back")
+    print_navigation_options()
     print()
     selection = input("Select Focus Standard: ").strip()
-    if selection == "" or selection.casefold() == "b":
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
         return None
     if selection.isdigit() and 1 <= int(selection) <= len(focus_standard_ids):
         return focus_standard_ids[int(selection) - 1]
@@ -3339,10 +3392,11 @@ def _prompt_focus_standard_with_feedback_status(
             f"{index}. {_format_standard_display(workspace_root, standard_id)} "
             f"({rating_status}; {feedback_status})"
         )
-    print("B. Back")
+    print_navigation_options()
     print()
     selection = input("Select Focus Standard: ").strip()
-    if selection == "" or selection.casefold() == "b":
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
         return None
     if selection.isdigit() and 1 <= int(selection) <= len(focus_standard_ids):
         return focus_standard_ids[int(selection) - 1]
@@ -3573,9 +3627,12 @@ def _prompt_reusable_comment_text(default_text: str) -> str | object:
         print("Use this text as the reusable comment?")
         print("1. Use as-is")
         print("2. Edit reusable text")
-        print("3. Back")
+        print_navigation_options()
         print()
         selection = input("Select an option: ").strip()
+        navigation = parse_navigation_choice(selection)
+        if selection == "" or navigation is NavigationChoice.BACK:
+            return _BACK
         if selection == "1":
             return default_text
         if selection == "2":
@@ -3584,9 +3641,7 @@ def _prompt_reusable_comment_text(default_text: str) -> str | object:
                 "(press Enter to keep the current/default text):\n"
             ).strip()
             return revised_text or default_text
-        if selection == "3":
-            return _BACK
-        print("Invalid response. Select 1, 2, or 3.")
+        print(f"Invalid selection. {navigation_hint()}")
         print()
 
 
@@ -3709,7 +3764,7 @@ def _menu_review_minimum_requirements(
         print()
         selection = input("Select an option: ").strip()
         navigation = parse_navigation_choice(selection)
-        if selection in {"", "4"} or navigation is NavigationChoice.BACK:
+        if selection == "" or navigation is NavigationChoice.BACK:
             return
         if selection == "1":
             _menu_record_requirement_checks(
@@ -3720,7 +3775,7 @@ def _menu_review_minimum_requirements(
                 requirements,
             )
         elif selection == "2":
-            _menu_finalize_minimum_requirement_outcome(
+            result = _menu_finalize_minimum_requirement_outcome(
                 workspace_root,
                 class_id,
                 assignment_id,
@@ -3729,6 +3784,8 @@ def _menu_review_minimum_requirements(
                 requirements,
                 existing,
             )
+            if result is ReviewStageActionResult.COMPLETED:
+                return
             input("Press Enter to continue...")
         elif selection == "3":
             _menu_export_student_feedback(
@@ -3739,7 +3796,7 @@ def _menu_review_minimum_requirements(
             )
             input("Press Enter to continue...")
         else:
-            print("Invalid selection. Please enter a number from 1 to 4.")
+            print(f"Invalid selection. {navigation_hint()}")
             input("Press Enter to continue...")
 
 
@@ -3764,13 +3821,14 @@ def _menu_record_requirement_checks(
                 f"{index}. {requirement['label']}: "
                 f"{_requirement_status(existing.get(requirement['key']))}"
             )
-        print("B. Back")
+        print_navigation_options()
         print()
         selection = input("Select requirement: ").strip()
-        if selection == "" or selection.casefold() == "b":
+        navigation = parse_navigation_choice(selection)
+        if selection == "" or navigation is NavigationChoice.BACK:
             return
         if not selection.isdigit() or not (1 <= int(selection) <= len(requirements)):
-            print("Invalid requirement selection. Please choose a listed item or Back.")
+            print(f"Invalid requirement selection. {navigation_hint()}")
             input("Press Enter to continue...")
             continue
 
@@ -3795,7 +3853,7 @@ def _menu_finalize_minimum_requirement_outcome(
     assignment: dict[str, Any],
     requirements: list[dict[str, Any]],
     existing: dict[str, dict[str, Any]],
-) -> None:
+) -> ReviewStageActionResult:
     _print_review_action_header(
         "Finalize Minimum Requirements", class_id, assignment_id, student_id
     )
@@ -3836,19 +3894,20 @@ def _menu_finalize_minimum_requirement_outcome(
         print()
     if not options:
         print("No final outcome is available yet. Record requirement checks first.")
-        return
+        return ReviewStageActionResult.NO_CHANGE
 
     for index, (_status, label) in enumerate(options, start=1):
         print(f"{index}. {label}")
-    print("B. Back")
+    print_navigation_options()
     print()
     selection = input("Select outcome: ").strip()
-    if selection == "" or selection.casefold() == "b":
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
         print("Minimum-requirements outcome was not changed.")
-        return
+        return ReviewStageActionResult.CANCELED
     if not selection.isdigit() or not (1 <= int(selection) <= len(options)):
-        print("Invalid outcome selection. Please choose a listed item or Back.")
-        return
+        print(f"Invalid outcome selection. {navigation_hint()}")
+        return ReviewStageActionResult.CANCELED
 
     status, label = options[int(selection) - 1]
     _print_review_action_header(
@@ -3874,7 +3933,7 @@ def _menu_finalize_minimum_requirement_outcome(
         )
     except (ReviewRequirementError, OSError) as error:
         print(f"Error: could not finalize minimum requirements: {error}")
-        return
+        return ReviewStageActionResult.FAILED
 
     print()
     print("Finalized minimum-requirements outcome:")
@@ -3885,6 +3944,7 @@ def _menu_finalize_minimum_requirement_outcome(
     )
     print(f"Review state: {updated.review_state}")
     print(f"Review record: {updated.review_record_relative_path}")
+    return ReviewStageActionResult.COMPLETED
 
 
 def _prompt_and_set_requirement_check(
@@ -3905,10 +3965,11 @@ def _prompt_and_set_requirement_check(
     print()
     print("1. True / Yes / Met")
     print("2. False / No / Not met")
-    print("B. Back")
+    print_navigation_options()
     print()
     selection = input("Select status: ").strip()
-    if selection == "" or selection.casefold() == "b":
+    navigation = parse_navigation_choice(selection)
+    if selection == "" or navigation is NavigationChoice.BACK:
         return _BACK
     if selection == "1":
         met = True
@@ -4190,9 +4251,9 @@ def _menu_change_submission_page(
     print("The evidence record and underlying file will be preserved.")
     print()
     print("1. Save page change")
-    print("2. Back")
+    print_navigation_options()
     print()
-    if input("Select an option: ").strip() != "1":
+    if not _prompt_confirm_review_action():
         print("Page action canceled. No file was changed.")
         return
 
@@ -4251,10 +4312,11 @@ def _prompt_review_target(
         print("3. Specific page")
         print("4. Specific page and paragraph(s)")
         print("5. Skip location")
-        print("B. Back")
+        print_navigation_options()
         print()
         selection = input("Select target: ").strip()
-        if selection == "" or selection.casefold() == "b":
+        navigation = parse_navigation_choice(selection)
+        if selection == "" or navigation is NavigationChoice.BACK:
             return _BACK
         if selection == "1":
             return {"location_type": "whole_submission", "location_value": None}
@@ -4283,7 +4345,7 @@ def _prompt_review_target(
         if selection == "5":
             return {}
 
-        print("Invalid selection. Please enter a number from 1 to 5 or B.")
+        print(f"Invalid selection. {navigation_hint()}")
 
 
 def _prompt_paragraph_numbers() -> int | list[int] | object:
@@ -4350,7 +4412,7 @@ def _menu_export_student_feedback(
     print("1. Export PDF feedback")
     print("2. Export Markdown feedback")
     print("3. Export both PDF and Markdown")
-    print("4. Back")
+    print_navigation_options()
     print()
     export_choice = input("Select an option: ").strip()
     navigation = parse_navigation_choice(export_choice)
@@ -4455,6 +4517,88 @@ def _student_feedback_export_choice_label(selection: str) -> str:
         "3": "PDF and Markdown feedback",
     }
     return labels.get(selection, "unknown")
+
+
+
+def _menu_export_reporting_packet(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    print(
+        "This generates the three CSV reports, Assignment Review PDF, and "
+        "Assignment Results JSON from one reporting snapshot."
+    )
+    print()
+    overwrite = _prompt_overwrite_export()
+    if overwrite is _CANCEL:
+        return
+    assert isinstance(overwrite, bool)
+    try:
+        exported = export_assignment_reporting_packet(
+            workspace_root,
+            class_id,
+            assignment_id,
+            overwrite=overwrite,
+        )
+    except (AssignmentReportingPacketError, OSError) as error:
+        print(f"Error: could not generate reporting packet: {error}")
+        completed = getattr(error, "completed_relative_paths", ())
+        if completed:
+            print("Derived outputs completed before the failure:")
+            for path in completed:
+                print(f"- {path}")
+        return
+
+    print("Generated assignment reporting packet:")
+    for path in exported.relative_paths:
+        print(f"- {path}")
+
+
+def _menu_export_assignment_review_report(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    overwrite = _prompt_overwrite_export()
+    if overwrite is _CANCEL:
+        return
+    assert isinstance(overwrite, bool)
+    try:
+        exported = export_assignment_review_report(
+            workspace_root,
+            class_id,
+            assignment_id,
+            overwrite=overwrite,
+        )
+    except (AssignmentReviewReportExportError, OSError) as error:
+        print(f"Error: could not export assignment review PDF: {error}")
+        return
+    print("Exported Assignment Review PDF:")
+    print(f"File: {exported.report_relative_path}")
+
+
+def _menu_export_assignment_results_manifest(
+    workspace_root: Path,
+    class_id: str,
+    assignment_id: str,
+) -> None:
+    overwrite = _prompt_overwrite_export()
+    if overwrite is _CANCEL:
+        return
+    assert isinstance(overwrite, bool)
+    try:
+        exported = export_assignment_results_manifest(
+            workspace_root,
+            class_id,
+            assignment_id,
+            overwrite=overwrite,
+        )
+    except (AssignmentResultsManifestExportError, OSError) as error:
+        print(f"Error: could not export assignment results JSON: {error}")
+        return
+    print("Exported Assignment Results JSON:")
+    print(f"File: {exported.manifest_relative_path}")
 
 
 def _menu_export_class_summary(
@@ -5261,9 +5405,10 @@ def _prompt_open_feedback_assembly(
     print()
     print(f"1. Open {label}")
     print("2. Open output folder")
-    print("3. Back")
+    print_navigation_options()
     choice = input("Select an option: ").strip()
-    if choice in {"", "3"} or parse_navigation_choice(choice) is NavigationChoice.BACK:
+    navigation = parse_navigation_choice(choice)
+    if choice == "" or navigation is NavigationChoice.BACK:
         return
     try:
         if choice == "1":
@@ -5272,6 +5417,8 @@ def _prompt_open_feedback_assembly(
         elif choice == "2":
             opened = open_generated_output_folder(workspace_root, primary)
             print(f"Opened output folder: {opened.relative_path}")
+        else:
+            print(f"Invalid selection. {navigation_hint()}")
     except GeneratedOutputOpeningError as error:
         print(f"Error: could not open generated output: {error}")
 
@@ -5725,27 +5872,46 @@ def _menu_export_assignment_reports(
         clear_screen()
         print_menu_header("Assignment Reports")
         print_active_context(workspace_root, class_id, assignment_id)
-        print("1. Comprehensive Class Summary")
-        print("2. Focus Standard Summary")
-        print("3. Student Performance Summary")
-        print("B. Back")
+        print("1. Generate reporting packet")
+        print("2. Comprehensive Class Summary")
+        print("3. Focus Standard Summary")
+        print("4. Student Performance Summary")
+        print("5. Assignment Review PDF")
+        print("6. Assignment Results JSON")
+        print_navigation_options()
         print()
         choice = input("Select report: ").strip()
         if choice == "" or parse_navigation_choice(choice) is NavigationChoice.BACK:
             return
         clear_screen()
         if choice == "1":
+            print_menu_header("Generate Reporting Packet")
+            print_active_context(workspace_root, class_id, assignment_id)
+            _menu_export_reporting_packet(workspace_root, class_id, assignment_id)
+        elif choice == "2":
             print_menu_header("Export Comprehensive Class Summary")
             print_active_context(workspace_root, class_id, assignment_id)
             _menu_export_class_summary(workspace_root, class_id, assignment_id)
-        elif choice == "2":
+        elif choice == "3":
             print_menu_header("Export Focus Standard Summary")
             print_active_context(workspace_root, class_id, assignment_id)
             _menu_export_standards_summary(workspace_root, class_id, assignment_id)
-        elif choice == "3":
+        elif choice == "4":
             print_menu_header("Export Student Performance Summary")
             print_active_context(workspace_root, class_id, assignment_id)
             _menu_export_student_performance_summary(
+                workspace_root, class_id, assignment_id
+            )
+        elif choice == "5":
+            print_menu_header("Export Assignment Review PDF")
+            print_active_context(workspace_root, class_id, assignment_id)
+            _menu_export_assignment_review_report(
+                workspace_root, class_id, assignment_id
+            )
+        elif choice == "6":
+            print_menu_header("Export Assignment Results JSON")
+            print_active_context(workspace_root, class_id, assignment_id)
+            _menu_export_assignment_results_manifest(
                 workspace_root, class_id, assignment_id
             )
         else:

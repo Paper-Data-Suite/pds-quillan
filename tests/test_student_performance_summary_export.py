@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+from quillan.report_csv import REPORT_CSV_ENCODING
 from quillan.student_performance_summary_export import (
     MISSING_RATING,
     export_student_performance_summary,
@@ -62,7 +63,7 @@ def test_compact_rows_preserve_missing_and_returned_ratings(tmp_path: Path) -> N
     result = export_student_performance_summary(
         tmp_path, CLASS_ID, ASSIGNMENT_ID
     )
-    with result.summary_path.open(encoding="utf-8", newline="") as file:
+    with result.summary_path.open(encoding=REPORT_CSV_ENCODING, newline="") as file:
         reader = csv.DictReader(file)
         fields = reader.fieldnames or []
         rows = {row["student_id"]: row for row in reader}

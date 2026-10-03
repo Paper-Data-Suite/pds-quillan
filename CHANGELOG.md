@@ -6,7 +6,94 @@ Quillan is in early pre-1.0 development. Package versions describe the
 installable project state; GitHub issues and milestones may be used for
 planning and do not by themselves represent releases.
 
-## 0.10.4 - Unreleased
+## 0.10.5 - Unreleased
+
+### Changed
+
+- Added one immutable assignment-reporting snapshot shared by Student
+  Performance, Comprehensive Class, and Focus Standard CSV renderers (#417).
+  The snapshot loads canonical assignment, roster/student, standards, review,
+  rating, and feedback-export status once and exposes no student writing,
+  private notes, feedback text, or scan contents.
+- Added snapshot-backed renderer entry points so a later reporting-packet
+  workflow can generate multiple formats from one coherent canonical read
+  without introducing a persisted cache or second source of truth.
+- Added schema-version `1` `assignment_results_manifest.json` as the
+  machine-readable assignment-local handoff. It carries assignment/rating-scale
+  metadata, explicit completion and data-quality counts, per-standard
+  distributions with rated-student denominators, privacy-bounded student rows,
+  warnings, and generated-artifact inventory.
+- Completed the snapshot aggregate projection with assignment summary counts and
+  per-Focus-Standard distributions so JSON and later PDF rendering do not
+  independently reinterpret canonical review state.
+- Added `assignment_review_report.pdf`, a supervisor/administrator-ready
+  assignment-local PDF rendered from the same reporting snapshot. It includes
+  explicit roster/submission/review counts, Focus Standard distributions with
+  rated-student denominators, scalable student detail, and attention/data-quality
+  summaries without student writing, private notes, feedback text, rating
+  rationales, Grades, or cross-assignment analysis.
+- Added explicit rostered-student and unrostered-submission counts to the shared
+  snapshot and JSON handoff.
+- Added coherent reporting-packet orchestration: one snapshot and one generation
+  timestamp now drive the three CSV reports, Assignment Review PDF, and
+  Assignment Results JSON. Packet generation preflights create-only conflicts
+  across all five destinations before writing and reports any bounded partial
+  derived outputs if an unexpected runtime write fails.
+- Expanded the teacher-facing Assignment Reports menu with deliberate whole-packet,
+  PDF, and JSON generation while preserving the three existing CSV actions.
+- Streamlined guided review continuation so successful minimum-requirement
+  finalization, observation completion, overall-rating completion, and feedback
+  completion return directly to Selected Student Review. The root then rebuilds
+  canonical read state and recalculates `C. Continue Review`; canceled, failed,
+  and no-change terminal attempts remain in the child workflow.
+- Standardized teacher-review Back navigation on the shared `B. Back`,
+  `M. Main Menu`, and `Q. Quit` contract. Removed numbered Back displays and
+  hidden numeric Back aliases so numbered choices represent domain actions.
+
+### Fixed
+
+- Made all three assignment-local report CSV writers use one spreadsheet-safe
+  UTF-8-with-BOM encoding contract so Windows spreadsheet applications preserve
+  Unicode standards labels and student names instead of producing mojibake
+  such as a misdecoded em dash (#417).
+
+### Validation
+
+- Added regression coverage for the real standards-header em dash, accented
+  student names, curly punctuation, exactly one UTF-8 BOM, BOM-aware logical
+  headers, and overwrite regeneration across Student Performance,
+  Comprehensive Class, and Focus Standard summaries.
+- Added snapshot immutability/non-mutation, one-load canonical read, and
+  one-snapshot/multi-renderer regression coverage.
+- Added manifest schema, explicit-denominator distribution, privacy exclusion,
+  create-only/overwrite, no-reread, and canonical-source non-mutation coverage.
+- Added PDF content/privacy, explicit-denominator, multi-page layout,
+  no-source-reread, create-only/overwrite, and canonical-source non-mutation
+  regression coverage.
+- Added single-snapshot/single-timestamp packet, five-artifact inventory,
+  preflight conflict/no-partial-write, bounded runtime-partial reporting, and
+  Assignment Reports menu-surface regression coverage.
+- Updated the recorder-backed complete-review acceptance to remove redundant
+  post-completion Back navigation and added explicit terminal-result, child
+  unwind, cancellation/failure/no-change, and fresh-root continuation coverage.
+- Added source-level and interactive review-navigation regressions covering
+  shared B/M/Q rendering, Main Menu propagation, rejection of legacy numeric
+  Back aliases, and updated recorder inputs for the canonical letter contract.
+- Added exact installed-wheel #417 acceptance for the five-artifact reporting
+  packet, UTF-8 BOM/Unicode round-trip, privacy/non-mutation boundary, and
+  installed shared B/M/Q navigation at Core 0.6.2/0.6.3/0.6.4 endpoints.
+
+### Compatibility
+
+- Runtime compatibility remains `pds-core>=0.6.2,<0.7`; exact v0.10.5
+  qualification uses released Core 0.6.2, 0.6.3, and final 0.6.4 wheel bytes.
+- Existing workspaces require no migration. #417 adds only derived reporting
+  artifacts and review-menu flow behavior; assignment, submission, review,
+  evidence, routing, publication, and Academic Work contracts are unchanged.
+- Final Core 0.6.4 authentication uses the released wheel rather than the
+  pre-release #226 handoff artifact retained in historical v0.10.4 evidence.
+
+## 0.10.4 - 2026-10-01
 
 ### Fixed
 

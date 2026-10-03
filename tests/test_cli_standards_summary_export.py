@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from quillan.cli import main
+from quillan.report_csv import REPORT_CSV_ENCODING
 import quillan.cli_app.handlers.exports as cli_exports
 from quillan.standards_summary_export import standards_summary_export_path
 from tests.review_test_support import ASSIGNMENT_ID, CLASS_ID
@@ -57,7 +58,7 @@ def test_cli_exports_standards_rows_and_prints_summary(
     assert f"Summary file: {relative}" in output
     with standards_summary_export_path(
         tmp_path, CLASS_ID, ASSIGNMENT_ID
-    ).open("r", encoding="utf-8", newline="") as file:
+    ).open("r", encoding=REPORT_CSV_ENCODING, newline="") as file:
         assert list(csv.DictReader(file))[0]["standard_id"] == STANDARD_A
     for path, original in originals.items():
         assert path.read_bytes() == original
@@ -109,7 +110,7 @@ def test_cli_writes_header_only_when_no_standard_artifacts(
 
     with standards_summary_export_path(
         tmp_path, CLASS_ID, ASSIGNMENT_ID
-    ).open("r", encoding="utf-8", newline="") as file:
+    ).open("r", encoding=REPORT_CSV_ENCODING, newline="") as file:
         rows = list(csv.DictReader(file))
     assert len(rows) == 2
     assert all(row["students_reviewed_for_standard"] == "0" for row in rows)

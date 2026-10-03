@@ -93,7 +93,7 @@ def test_exact_core_wheel_verifier_keeps_historical_and_current_contracts() -> N
     assert candidate.version == "0.6.4"
     assert (
         candidate.sha256
-        == "201e651f4b9aad0bfeb1565b37f425982513f2fb616b86a8835a10f4dcd7db62"
+        == "48cea9317f2967bdc0f2d4c14349a56677c7c3f8211f0f33978ccb1a1c75859b"
     )
 
 

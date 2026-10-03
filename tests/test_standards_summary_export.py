@@ -10,6 +10,7 @@ from typing import Any
 
 import pytest
 
+from quillan.report_csv import REPORT_CSV_ENCODING
 from quillan.standards_summary_export import (
     CSV_COLUMNS,
     ExportedStandardsSummary,
@@ -84,7 +85,7 @@ def _rating(
 
 
 def _read_rows(path: Path) -> list[dict[str, str]]:
-    with path.open("r", encoding="utf-8", newline="") as file:
+    with path.open("r", encoding=REPORT_CSV_ENCODING, newline="") as file:
         return list(csv.DictReader(file))
 
 
@@ -195,7 +196,7 @@ def test_focus_standard_rows_follow_assignment_order_and_count_ratings(
         created_at=TIMESTAMP,
         overwrote_existing=False,
     )
-    with expected_path.open("r", encoding="utf-8", newline="") as file:
+    with expected_path.open("r", encoding=REPORT_CSV_ENCODING, newline="") as file:
         reader = csv.DictReader(file)
         assert tuple(reader.fieldnames or ()) == CSV_COLUMNS
         rows = list(reader)

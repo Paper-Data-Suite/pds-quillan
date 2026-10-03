@@ -82,4 +82,4 @@ def test_candidate_validator_invokes_installed_resubmission_acceptance() -> None
     )
     assert "verify_installed_resubmission_inbox.py" in source
     assert "Installed resubmission inbox Core $CoreVersion" in source
-    assert "'--expected-quillan-version', '0.10.4'" in source
+    assert "'--expected-quillan-version', '0.10.5'" in source

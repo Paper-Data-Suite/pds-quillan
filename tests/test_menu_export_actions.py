@@ -553,7 +553,7 @@ def test_menu_export_class_summary_creates_summary_file(
 
     recorder = MenuScreenRecorder(
         _enter_assignment_review_actions()
-        + ["4", "1", ""]
+        + ["4", "2", ""]
         + _exit_after_report_action_to_main(),
     )
     recorder.install(monkeypatch)
@@ -565,10 +565,10 @@ def test_menu_export_class_summary_creates_summary_file(
         screens,
         heading="Export Comprehensive Class Summary",
         required_text=(f"Class: {CLASS_ID}", "Exported assignment-local class summary:"),
-        forbidden_parent_text="2. Export Focus Standard summary",
+        forbidden_parent_text="3. Focus Standard Summary",
         parent_heading="Assignment Reports",
         result_heading="Exported assignment-local class summary:",
-        unrelated_previous_text="4. Back",
+        unrelated_previous_text="4. Student Performance Summary",
     )
     assert "Exported assignment-local class summary:" in output
     assert "Overwrote existing: no" in output
@@ -597,7 +597,7 @@ def test_menu_export_standards_summary_creates_summary_file(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["4", "2", ""]
+        + ["4", "3", ""]
         + _exit_after_report_action_to_main(),
     )
 
@@ -773,7 +773,7 @@ def test_menu_export_class_summary_requires_overwrite_when_existing(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["4", "1", ""]
+        + ["4", "2", ""]
         + _exit_after_report_action_to_main(),
     )
 
@@ -807,7 +807,7 @@ def test_menu_export_class_summary_overwrites_existing_export(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["4", "1", "y"]
+        + ["4", "2", "y"]
         + _exit_after_report_action_to_main(),
     )
 
@@ -839,7 +839,7 @@ def test_menu_export_class_summary_invalid_overwrite_cancels_without_writing(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["4", "1", "maybe"]
+        + ["4", "2", "maybe"]
         + _exit_after_report_action_to_main(),
     )
 
@@ -871,7 +871,7 @@ def test_menu_export_standards_summary_overwrites_existing_export(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["4", "2", "y"]
+        + ["4", "3", "y"]
         + _exit_after_report_action_to_main(),
     )
 
@@ -905,7 +905,7 @@ def test_menu_export_standards_summary_requires_overwrite_when_existing(
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["4", "2", ""]
+        + ["4", "3", ""]
         + _exit_after_report_action_to_main(),
     )
 
@@ -937,7 +937,7 @@ def test_menu_export_standards_summary_invalid_overwrite_cancels_without_writing
     _menu_input(
         monkeypatch,
         _enter_assignment_review_actions()
-        + ["4", "2", "maybe"]
+        + ["4", "3", "maybe"]
         + _exit_after_report_action_to_main(),
     )
 

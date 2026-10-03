@@ -20,7 +20,7 @@ def test_release_version_has_one_runtime_source() -> None:
     assert configuration["tool"]["setuptools"]["dynamic"]["version"] == {
         "attr": "quillan._version.__version__"
     }
-    assert quillan.__version__ == __version__ == "0.10.4"
+    assert quillan.__version__ == __version__ == "0.10.5"
 
 
 def test_release_license_and_python_metadata_are_current() -> None:
@@ -42,13 +42,14 @@ def test_active_release_documents_name_the_candidate_version() -> None:
         "docs/release_process.md",
         "docs/release_checklist.md",
         "docs/resubmission_inbox.md",
-        "docs/v0.10.4_installed_scan_path_acceptance.md",
+        "docs/v0.10.5_installed_reporting_review_acceptance.md",
     ):
-        assert "0.10.4" in (ROOT / relative).read_text(encoding="utf-8"), relative
+        assert "0.10.5" in (ROOT / relative).read_text(encoding="utf-8"), relative
 
 
 def test_prior_release_evidence_remains_historical() -> None:
     required = (
+        ("docs/v0.10.4_installed_scan_path_acceptance.md", "0.10.4"),
         ("docs/v0.10.3_installed_resubmission_inbox_acceptance.md", "0.10.3"),
         ("docs/v0.10.2_installed_selected_review_read_acceptance.md", "0.10.2"),
         ("docs/v0.10.1_installed_batch_feedback_acceptance.md", "0.10.1"),

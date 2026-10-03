@@ -1,8 +1,8 @@
 # Quillan Data Contracts
 
-Quillan v0.10.4 requires `pds-core>=0.6.2,<0.7`. Release qualification covers the
+Quillan v0.10.5 requires `pds-core>=0.6.2,<0.7`. Release qualification covers the
 exact authenticated Core 0.6.2 minimum endpoint, released Core 0.6.3 endpoint,
-and the exact Core 0.6.4 #226 candidate endpoint.
+and released Core 0.6.4 endpoint.
 This dependency floor preserves routing contract `"1"`, PDS2 payloads,
 route-registration schema `"1"`, and the existing Quillan producer contracts. The
 Core dependency itself does not create Academic Work Registration, Academic Period,
@@ -62,10 +62,9 @@ The installed composition of these producer contracts is covered by
 historical [v0.10.1 Installed Batch Feedback Acceptance](v0.10.1_installed_batch_feedback_acceptance.md),
 historical [v0.10.2 Installed Selected-Review Read Acceptance](v0.10.2_installed_selected_review_read_acceptance.md),
 historical [v0.10.3 Resubmission / Rescan Review](resubmission_inbox.md),
-and active [v0.10.4 Installed Scan-Path Acceptance](v0.10.4_installed_scan_path_acceptance.md).
-The v0.10.4 release gate installs the same candidate wheel against authenticated
-Core 0.6.2 and Core 0.6.3 release endpoints plus the exact authenticated
-Core 0.6.4 #226 candidate endpoint. It first proves that ordinary installed
+historical [v0.10.4 Installed Scan-Path Acceptance](v0.10.4_installed_scan_path_acceptance.md), and active [v0.10.5 Installed Reporting and Review Acceptance](v0.10.5_installed_reporting_review_acceptance.md).
+The v0.10.5 release gate installs the same candidate wheel against authenticated
+released Core 0.6.2, Core 0.6.3, and Core 0.6.4 endpoints. It first proves that ordinary installed
 PDS2/review workflows create no academic registry state, then explicitly exercises
 registration, immutable manifest generation, publication, discovery, verification,
 authorized artifact access, correction, supersession, withdrawal, module operations,
@@ -117,14 +116,14 @@ those source schemas.
 Quillan stores structured evidence and teacher review data in local files under
 the teacher-selected Paper Data Suite workspace.
 
-The active v0.10.4 review model is standards-based:
+The active v0.10.5 review model is standards-based:
 
 ```text
 student evidence -> review unit -> Focus Standard -> teacher judgment -> feedback/reporting
 ```
 
 The old generic tag, comment-bank, rubric, and criterion-score runtime model
-has been removed. This index documents the active v0.10.4 contracts.
+has been removed. This index documents the active v0.10.5 contracts.
 
 The assignment-level resubmission inbox is a non-persistent projection over
 canonical observations, manifests, review timestamps, and export metadata. See

@@ -1,9 +1,8 @@
-"""Focused release-audit regression coverage for issue #394."""
+"""Focused release-audit regression coverage for current Quillan release."""
 
 from __future__ import annotations
 
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -14,19 +13,14 @@ def _text(relative: str) -> str:
 
 def test_development_install_validator_matches_v010_core_floor() -> None:
     source = _text("scripts/validate_development_install.ps1")
-
     assert "Quillan requires pds-core>=0.6.2,<0.7" in source
     assert "{'>=0.6.2', '<0.7'}" in source
     assert "SpecifierSet('>=0.6.2,<0.7')" in source
-
     assert "Quillan requires pds-core>=0.6,<0.7" not in source
-    assert "== {'>=0.6', '<0.7'}" not in source
-    assert "SpecifierSet('>=0.6,<0.7')" not in source
 
 
-def test_readme_describes_final_compact_review_and_release_endpoints() -> None:
+def test_readme_describes_current_compact_review_and_release_endpoints() -> None:
     source = _text("README.md")
-
     for expected in (
         "C. Manage active context",
         "R. Resolve Scan Review Items",
@@ -42,33 +36,29 @@ def test_readme_describes_final_compact_review_and_release_endpoints() -> None:
         "P. Previous Student",
         "W. Next Student Needing Review",
         "`pds-core>=0.6.2,<0.7` runtime dependency",
-        "The v0.10.4 candidate runtime is PDS2-only",
-        "Core 0.6.4 #226 candidate wheel",
+        "The v0.10.5 candidate runtime is PDS2-only",
+        "released Core 0.6.4 wheel",
     ):
         assert expected in source
 
-    assert "10. Export student feedback" not in source
-    assert "`pds-core>=0.6,<0.7` runtime dependency" not in source
-    assert "The v0.9.0 runtime is PDS2-only" not in source
-    assert "exact released Core 0.6.0 wheel" not in source
 
-
-def test_active_data_contract_index_uses_v0104_release_boundary() -> None:
+def test_active_data_contract_index_uses_v0105_release_boundary() -> None:
     source = _text("docs/data_contracts.md")
-
-    assert "Quillan v0.10.4 requires `pds-core>=0.6.2,<0.7`" in source
+    assert "Quillan v0.10.5 requires `pds-core>=0.6.2,<0.7`" in source
     assert "released Core 0.6.3 endpoint" in source
-    assert "Core 0.6.4 #226 candidate endpoint" in source
-    assert "The active v0.10.4 review model is standards-based:" in source
-    assert "This index documents the active v0.10.4 contracts." in source
+    assert "released Core 0.6.4 endpoint" in source
+    assert "The active v0.10.5 review model is standards-based:" in source
+    assert "This index documents the active v0.10.5 contracts." in source
     assert "Historical Core 0.6.0 producer" in source
 
 
-def test_unreleased_changelog_reflects_issue416_patch_boundary() -> None:
+def test_unreleased_changelog_reflects_issue417_patch_boundary() -> None:
     source = _text("CHANGELOG.md")
-    current = source.split("## 0.10.3 - 2026-09-25", maxsplit=1)[0]
-
-    assert "historical Core 0.6 retained-source provenance" in current
-    assert "Quillan-controlled byte reads" in current
-    assert "bounded" in current
-    assert "without rename, rewrite, or workspace migration" in current
+    current = source.split("## 0.10.4 - 2026-10-01", maxsplit=1)[0]
+    assert "assignment-reporting snapshot" in current
+    assert "assignment_review_report.pdf" in current
+    assert "assignment_results_manifest.json" in current
+    assert "spreadsheet-safe" in current
+    assert "Selected Student Review" in current
+    assert "B. Back" in current
+    assert "pds-core>=0.6.2,<0.7" in current

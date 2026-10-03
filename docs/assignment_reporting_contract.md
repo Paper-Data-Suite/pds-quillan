@@ -64,6 +64,46 @@ student evidence -> review unit -> Focus Standard -> teacher judgment -> feedbac
 
 Assignment-level reports are derived artifacts generated from canonical Quillan records. They are not the canonical source of teacher judgment.
 
+## Shared Assignment Reporting Snapshot
+
+Runtime report generation uses one immutable, in-memory assignment reporting
+snapshot as the common projection between canonical Quillan records and report
+renderers.
+
+The snapshot is built fresh from:
+
+```text
+assignment.json
+class roster, when available
+submission.json
+review.json
+workspace standards metadata
+feedback-export metadata and file status
+```
+
+It contains only reportable assignment-local facts needed by the reporting
+layer, including assignment metadata, Focus Standard metadata and rating scale,
+student identity/display status, submission/review validity and state,
+minimum-requirement outcome, teacher-entered overall Focus Standard ratings,
+feedback-export status, and bounded warnings.
+
+The snapshot must not contain student writing, private teacher notes, full
+feedback text, scan contents, routed-evidence contents, or retained-source
+contents.
+
+The snapshot is:
+
+* immutable after construction;
+* read-only with respect to canonical records;
+* redraw/generation scoped rather than persisted;
+* not a cache, database, or second source of truth; and
+* reusable by multiple report renderers during one reporting operation.
+
+Existing direct CSV export commands may each build a fresh snapshot. A combined
+reporting-packet workflow should build one snapshot and pass that same object to
+the CSV, PDF, and JSON renderers so all outputs describe one coherent canonical
+read.
+
 ## Quillan-Owned Assignment Reports
 
 Quillan owns three target assignment-local reporting artifacts.
@@ -93,7 +133,6 @@ Suggested paths:
 
 ```text
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
-classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.pdf
 ```
 
 ### Standards Summary
@@ -104,7 +143,6 @@ Suggested paths:
 
 ```text
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
-classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.pdf
 ```
 
 ### Assignment Results Manifest
@@ -117,7 +155,131 @@ Suggested path:
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_results_manifest.json
 ```
 
-The assignment results manifest is forward-looking. It should make future Paper Data Suite reporting integration easier without making Quillan responsible for cross-assignment or cross-module reporting.
+The assignment results manifest is implemented at:
+
+```text
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_results_manifest.json
+```
+
+It is schema version `1`, machine-readable, assignment-local derived reporting
+state. It is rendered from the same immutable assignment reporting snapshot as
+the CSV family and is not canonical review state.
+
+The manifest records assignment identity, configured rating-scale metadata,
+ordered Focus Standard metadata, assignment-level completion/data-quality
+counts, per-standard rating distributions, student reporting rows, warnings,
+and a generated-artifact inventory. Distribution percentages use the explicit
+`rated_students` denominator and preserve unrated, returned-without-full-review,
+and invalid/attention-required records as separate counts.
+
+Student rows contain only the minimum assignment-local identity and reporting
+state required for the handoff. They do not contain student writing, private
+teacher notes, feedback text, rating rationales, scans, routed evidence, or
+retained-source details.
+
+
+### Assignment Review Report PDF
+
+The implemented supervisor/administrator-ready human report is:
+
+```text
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_review_report.pdf
+```
+
+It is generated from the same immutable assignment reporting snapshot used by
+the structured report family. It does not reread or reinterpret canonical
+assignment/review records after snapshot construction.
+
+The PDF contains:
+
+* assignment identity, title, writing type, generation timestamp, Focus
+  Standards, and configured rating scale;
+* rostered-student and unrostered-submission counts;
+* submission, review, return-without-full-review, attention, and feedback-export
+  counts;
+* one rating distribution per Focus Standard;
+* descriptive percentages using the explicit rated-student denominator;
+* separate unrated, returned-without-full-review, and
+  invalid/attention-required counts;
+* a readable student-by-standard detail section; and
+* an attention/data-quality summary.
+
+The PDF does not contain student writing, scans, private teacher notes, feedback
+text, rating rationales, retained-source details, routed evidence paths,
+absolute filesystem paths, Grades, inferred mastery, or cross-assignment
+analytics.
+
+The report is create-only by default and requires explicit overwrite to replace
+an existing generated PDF. Generation is read-only with respect to canonical
+Quillan academic/review records.
+
+
+## Coherent Reporting Packet
+
+The teacher-facing `Assignment Reports` workflow can deliberately generate the
+complete assignment-local reporting packet:
+
+```text
+student_performance_summary.csv
+class_summary.csv
+standards_summary.csv
+assignment_review_report.pdf
+assignment_results_manifest.json
+```
+
+`Generate reporting packet` builds exactly one immutable
+`AssignmentReportingSnapshot` and passes that same snapshot to every renderer.
+All five artifacts receive the same timezone-aware generation timestamp. The
+JSON manifest is generated last so its artifact inventory observes the other
+four completed outputs from the same operation.
+
+When overwrite is disabled, the packet workflow checks all five canonical
+destinations before writing anything. If any destination already exists, the
+operation stops without creating the other packet outputs. Explicit overwrite
+applies to the complete packet.
+
+Filesystem writes cannot provide a true multi-file transaction. If an
+unexpected runtime filesystem/rendering failure occurs after preflight, already
+completed files remain ordinary derived reports rather than being deleted or
+rolled back. The packet operation reports the paths completed before the
+failure so partial derived output is never presented as a complete packet.
+Canonical assignment, submission, review, evidence, feedback, Academic Work,
+Academic Result, and Core publication state remain unchanged.
+
+The `Assignment Reports` menu also exposes the PDF and JSON individually in
+addition to preserving the three existing CSV report actions.
+
+## Spreadsheet CSV Encoding
+
+Quillan assignment-local CSV reports are spreadsheet-facing interchange
+artifacts. They are written as UTF-8 with a single UTF-8 byte-order mark
+(`utf-8-sig`) so common Windows spreadsheet applications reliably detect
+Unicode rather than interpreting UTF-8 bytes through a legacy code page.
+
+This contract applies to:
+
+```text
+exports/student_performance_summary.csv
+exports/class_summary.csv
+exports/standards_summary.csv
+```
+
+and to later spreadsheet-oriented assignment-report CSVs unless a newer
+explicit contract supersedes it.
+
+The BOM is an encoding marker only. It is not part of the first logical column
+name. Quillan and its tests should use a BOM-aware UTF-8 decoder when parsing
+these report files.
+
+Legitimate Unicode must round-trip unchanged, including:
+
+* standards punctuation such as em/en dashes and curly quotation marks;
+* accented student names;
+* assignment titles and standards metadata containing Unicode.
+
+Writers must not replace legitimate Unicode with ASCII merely to accommodate
+spreadsheet encoding detection. Existing create-only, explicit-overwrite,
+atomic-write, containment, and non-mutation behavior remains unchanged.
 
 ## Out-of-Scope Reporting
 
@@ -132,7 +294,7 @@ Quillan must not produce:
 * parent or administrator dashboards;
 * gradebook averages;
 * grades;
-* percentages;
+* grade percentages or percentages presented as Grades;
 * automatic mastery determinations;
 * weighted scores;
 * module-combined reporting, such as Quillan plus ScoreForm;
@@ -356,11 +518,11 @@ PDF reports should:
 
 * be derived from the same canonical data as CSV reports;
 * preserve the same privacy and teacher-control rules;
-* avoid implying grades or percentages;
+* avoid implying Grades or treating descriptive distribution percentages as Grades;
 * show clear titles, timestamps, and assignment identity; and
 * avoid including raw JSON or internal IDs except where useful for teacher troubleshooting.
 
-PDF layout, typography, pagination, and visual design belong to later implementation work.
+The implemented consolidated Assignment Review PDF owns its layout, typography, pagination, and privacy-bounded presentation.
 
 ### JSON
 
@@ -439,7 +601,7 @@ Rules:
 * Reports must not convert missing ratings into `0`.
 * Reports must not convert missing ratings into the lowest rating level.
 * Reports must not calculate averages unless a later contract explicitly allows assignment-local descriptive statistics.
-* Reports must not convert ratings into percentages or grades.
+* Reports may show descriptive rating-distribution percentages only with an explicit rated-student denominator; they must not convert those percentages into Grades, proficiency, or mastery.
 
 Example rating-scale level:
 
@@ -518,7 +680,6 @@ It is not:
 
 ```text
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.csv
-classes/<class_id>/modules/quillan/work/<assignment_id>/exports/class_summary.pdf
 ```
 
 ### Row Population
@@ -670,7 +831,6 @@ It is not:
 
 ```text
 classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.csv
-classes/<class_id>/modules/quillan/work/<assignment_id>/exports/standards_summary.pdf
 ```
 
 ### Row Population
@@ -1361,19 +1521,14 @@ This contract does not implement:
 
 * class summary runtime rewrite;
 * standards summary runtime rewrite;
-* PDF report generation;
-* CSV report generation;
-* assignment results manifest generation;
 * CLI command changes;
-* menu changes;
 * runtime validation for schema version `2`;
 * migration from schema version `1` reports;
 * deletion of legacy report code;
-* tests;
 * cross-assignment reporting;
 * cross-module reporting;
 * grade calculations;
-* percentages;
+* grade percentages or percentages presented as Grades;
 * mastery calculations;
 * student portfolio reports;
 * parent/admin dashboards;

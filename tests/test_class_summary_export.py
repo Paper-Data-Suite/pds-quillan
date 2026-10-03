@@ -18,6 +18,7 @@ from quillan.class_summary_export import (
     class_summary_export_path,
     export_class_review_summary,
 )
+from quillan.report_csv import REPORT_CSV_ENCODING
 from quillan.submission_evidence_validation import selected_evidence_fingerprint
 from tests.review_test_support import (
     ASSIGNMENT_ID,
@@ -134,7 +135,7 @@ def _write_records(
 
 
 def _read_rows(path: Path) -> list[dict[str, str]]:
-    with path.open("r", encoding="utf-8", newline="") as file:
+    with path.open("r", encoding=REPORT_CSV_ENCODING, newline="") as file:
         return list(csv.DictReader(file))
 
 
@@ -290,7 +291,7 @@ def test_exports_assignment_local_rows_with_focus_standard_ratings(
         created_at=TIMESTAMP,
         overwrote_existing=False,
     )
-    with expected_path.open("r", encoding="utf-8", newline="") as file:
+    with expected_path.open("r", encoding=REPORT_CSV_ENCODING, newline="") as file:
         reader = csv.DictReader(file)
         fieldnames = tuple(reader.fieldnames or ())
         rows = list(reader)

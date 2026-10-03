@@ -89,9 +89,9 @@ def test_continue_review_canceled_rating_input_does_not_advance_or_write(
             "1",  # Rating.
             "Unsaved rationale",
             "",  # Default include-in-feedback.
-            "2",  # Decline save/confirmation.
+            "B",  # Cancel save/confirmation.
             "B",  # Leave rating-entry workflow.
-            "4",  # Back from ratings submenu.
+            "B",  # Back from ratings submenu.
             "b",  # Back from selected-student root.
         )
     )
@@ -199,8 +199,7 @@ def test_continue_review_complete_individual_review_uses_real_teacher_session(
             "2",
             "1",
             "",
-            "",
-            "b",
+            # Successful finalization returns directly to selected-student root.
             # C -> review units / observations.
             "c",
             "1",
@@ -219,8 +218,7 @@ def test_continue_review_complete_individual_review_uses_real_teacher_session(
             "B",
             "3",
             "1",
-            "",
-            "4",
+            # Successful observation completion returns directly to root.
             # C -> overall Focus Standard ratings.
             "c",
             "2",
@@ -233,8 +231,7 @@ def test_continue_review_complete_individual_review_uses_real_teacher_session(
             "B",
             "3",
             "1",
-            "",
-            "4",
+            # Successful ratings completion returns directly to root.
             # C -> Focus Standard feedback.
             "c",
             "2",
@@ -246,8 +243,7 @@ def test_continue_review_complete_individual_review_uses_real_teacher_session(
             "",
             "4",
             "1",
-            "",
-            "b",
+            # Successful feedback completion returns directly to root.
             # C -> feedback export.
             "c",
             "2",

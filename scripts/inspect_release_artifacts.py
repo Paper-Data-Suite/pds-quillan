@@ -15,7 +15,7 @@ import zipfile
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
-EXPECTED_VERSION = "0.10.4"
+EXPECTED_VERSION = "0.10.5"
 REQUIRED_PACKAGE_FILES = {
     "quillan/pds_module.py",
     "quillan/pds_publication.py",
@@ -31,6 +31,11 @@ REQUIRED_PACKAGE_FILES = {
     "quillan/batch_feedback_assembly.py",
     "quillan/review_read_context.py",
     "quillan/resubmission_inbox.py",
+    "quillan/assignment_reporting_snapshot.py",
+    "quillan/assignment_reporting_packet.py",
+    "quillan/assignment_review_report_export.py",
+    "quillan/assignment_results_manifest_export.py",
+    "quillan/report_csv.py",
     "quillan/retained_scan_pages.py",
     "quillan/retained_source_provenance.py",
     "quillan/routed_evidence.py",

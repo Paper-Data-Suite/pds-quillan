@@ -469,6 +469,32 @@ def student_performance_summary_path(
     )
 
 
+
+
+def assignment_review_report_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+) -> Path:
+    """Return the canonical assignment review report PDF path."""
+    return safe_module_work_descendant(
+        workspace_root,
+        _require_quillan_work_ref(work_ref),
+        Path("exports") / "assignment_review_report.pdf",
+    )
+
+
+def assignment_results_manifest_path(
+    workspace_root: str | Path,
+    work_ref: ModuleWorkRef,
+) -> Path:
+    """Return the canonical assignment-results reporting manifest path."""
+    return safe_module_work_descendant(
+        workspace_root,
+        _require_quillan_work_ref(work_ref),
+        Path("exports") / "assignment_results_manifest.json",
+    )
+
+
 def manifest_exports_dir(
     workspace_root: str | Path,
     work_ref: ModuleWorkRef,
@@ -816,6 +842,8 @@ __all__ = [
     "ROUTED_EVIDENCE_FILENAME_MAX_LENGTH",
     "QuillanWorkPaths",
     "academic_result_manifest_relative_path",
+    "assignment_results_manifest_path",
+    "assignment_review_report_path",
     "academic_result_manifest_revision_path",
     "academic_result_manifests_dir",
     "class_summary_path",

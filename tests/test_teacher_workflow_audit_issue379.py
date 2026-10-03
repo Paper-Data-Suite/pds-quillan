@@ -262,8 +262,7 @@ def test_complete_individual_review_audit_uses_one_real_teacher_session(
             "2",
             "1",
             "",
-            "",
-            "b",
+            # Successful finalization returns directly to selected-student root.
             # Continue -> review units / observations.
             "c",
             "1",
@@ -283,8 +282,7 @@ def test_complete_individual_review_audit_uses_one_real_teacher_session(
             # Mark observations complete and return to the student screen.
             "3",
             "1",
-            "",
-            "4",
+            # Successful observation completion returns directly to root.
             # Continue -> overall Focus Standard ratings.
             "c",
             "2",
@@ -297,8 +295,7 @@ def test_complete_individual_review_audit_uses_one_real_teacher_session(
             "B",
             "3",
             "1",
-            "",
-            "4",
+            # Successful ratings completion returns directly to root.
             # Continue -> teacher-authored Focus Standard feedback.
             "c",
             "2",
@@ -310,8 +307,7 @@ def test_complete_individual_review_audit_uses_one_real_teacher_session(
             "",
             "4",
             "1",
-            "",
-            "b",
+            # Successful feedback completion returns directly to root.
             # Export explicitly from the compact root.
             "e",
             "2",

@@ -8,30 +8,24 @@ import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Final
+from typing import Final
 
 from pds_core.identifiers import IdentifierValidationError, validate_identifier
 
-from quillan.assignment_summary_context import (
-    LoadedStudentRecord,
-    discover_students,
-    feedback_status,
-    load_assignment,
-    load_student_record,
-    rating_labels,
-    relative_path_for,
-    standard_column_keys,
+from quillan.assignment_reporting_snapshot import (
+    AssignmentReportingSnapshot,
+    AssignmentReportingSnapshotError,
+    ReportingStudent,
+    build_assignment_reporting_snapshot,
 )
+from quillan.assignment_summary_context import relative_path_for
 from quillan.work_paths import (
     QuillanWorkPathError,
     class_summary_path,
-    feedback_markdown_path,
-    feedback_pdf_path,
     preflight_work_file_destination,
     quillan_work_ref,
 )
-from quillan.record_context import canonical_workspace_root
-from quillan.submission_evidence_validation import selected_evidence_fingerprint
+from quillan.report_csv import REPORT_CSV_ENCODING
 
 BASE_CSV_COLUMNS: Final[tuple[str, ...]] = (
     "class_id",
@@ -108,22 +102,53 @@ def export_class_review_summary(
     """Export one deterministic CSV row per rostered or discovered student."""
     normalized_created_at = _normalize_timestamp(created_at)
     try:
-        resolved_root = canonical_workspace_root(workspace_root)
-        output_path = class_summary_export_path(
-            resolved_root, class_id, assignment_id
+        snapshot = build_assignment_reporting_snapshot(
+            workspace_root,
+            class_id,
+            assignment_id,
         )
-        assignment = load_assignment(resolved_root, class_id, assignment_id)
+    except AssignmentReportingSnapshotError as error:
+        raise ClassSummaryExportError(str(error)) from error
+    return _export_class_review_summary_from_snapshot(
+        snapshot,
+        overwrite=overwrite,
+        normalized_created_at=normalized_created_at,
+    )
+
+
+def export_class_review_summary_from_snapshot(
+    snapshot: AssignmentReportingSnapshot,
+    *,
+    overwrite: bool = False,
+    created_at: datetime | str | None = None,
+) -> ExportedClassSummary:
+    """Render the class summary from an already-loaded reporting snapshot."""
+    return _export_class_review_summary_from_snapshot(
+        snapshot,
+        overwrite=overwrite,
+        normalized_created_at=_normalize_timestamp(created_at),
+    )
+
+
+def _export_class_review_summary_from_snapshot(
+    snapshot: AssignmentReportingSnapshot,
+    *,
+    overwrite: bool,
+    normalized_created_at: str,
+) -> ExportedClassSummary:
+    try:
+        output_path = class_summary_export_path(
+            snapshot.workspace_root,
+            snapshot.class_id,
+            snapshot.assignment_id,
+        )
         expected_output = preflight_work_file_destination(
-            resolved_root,
-            quillan_work_ref(class_id, assignment_id),
+            snapshot.workspace_root,
+            quillan_work_ref(snapshot.class_id, snapshot.assignment_id),
             Path("exports") / "class_summary.csv",
         )
         if output_path != expected_output:
             raise ClassSummaryExportError("Class summary path is not canonical.")
-        focus_standard_ids = list(assignment["focus_standard_ids"])
-        column_keys, key_warnings = standard_column_keys(focus_standard_ids)
-        labels = rating_labels(assignment)
-        students = discover_students(resolved_root, class_id, assignment_id)
     except (
         OSError,
         RuntimeError,
@@ -140,169 +165,122 @@ def export_class_review_summary(
             "Use --overwrite to replace it."
         )
 
-    fieldnames = _fieldnames(focus_standard_ids, column_keys)
-    loaded_records = [
-        load_student_record(student, class_id, assignment_id) for student in students
-    ]
-    rows = [
-        _build_student_row(
-            resolved_root,
-            class_id,
-            assignment_id,
-            record,
-            focus_standard_ids,
-            column_keys,
-            labels,
-            key_warnings,
-        )
-        for record in loaded_records
-    ]
+    fieldnames = _fieldnames(snapshot)
+    rows = [_build_student_row(snapshot, student) for student in snapshot.students]
     _write_csv(output_path, rows, fieldnames=fieldnames, overwrite=overwrite)
 
     return ExportedClassSummary(
-        class_id=class_id,
-        assignment_id=assignment_id,
+        class_id=snapshot.class_id,
+        assignment_id=snapshot.assignment_id,
         summary_path=output_path,
-        summary_relative_path=relative_path_for(output_path, resolved_root),
-        row_count=len(rows),
-        ready_count=sum(row["review_valid"] == "true" for row in rows),
-        missing_review_count=sum("missing_review" in row["warnings"].split(";") for row in rows),
-        invalid_review_count=sum("invalid_review" in row["warnings"].split(";") for row in rows),
-        missing_submission_count=sum("missing_submission" in row["warnings"].split(";") for row in rows),
-        invalid_submission_count=sum("invalid_submission" in row["warnings"].split(";") for row in rows),
-        identity_mismatch_count=sum("identity_mismatch" in row["warnings"].split(";") for row in rows),
-        returned_without_full_review_count=sum(
-            row["returned_without_full_review"] == "true" for row in rows
+        summary_relative_path=relative_path_for(
+            output_path,
+            snapshot.workspace_root,
         ),
-        feedback_pdf_present_count=sum(row["feedback_pdf_status"] == "present" for row in rows),
-        feedback_pdf_stale_count=sum(row["feedback_pdf_status"] == "stale" for row in rows),
+        row_count=len(rows),
+        ready_count=sum(student.review_valid for student in snapshot.students),
+        missing_review_count=_warning_count(snapshot, "missing_review"),
+        invalid_review_count=_warning_count(snapshot, "invalid_review"),
+        missing_submission_count=_warning_count(snapshot, "missing_submission"),
+        invalid_submission_count=_warning_count(snapshot, "invalid_submission"),
+        identity_mismatch_count=_warning_count(snapshot, "identity_mismatch"),
+        returned_without_full_review_count=sum(
+            student.returned_without_full_review is True
+            for student in snapshot.students
+        ),
+        feedback_pdf_present_count=sum(
+            student.feedback_pdf.status == "present"
+            for student in snapshot.students
+        ),
+        feedback_pdf_stale_count=sum(
+            student.feedback_pdf.status == "stale"
+            for student in snapshot.students
+        ),
         created_at=normalized_created_at,
         overwrote_existing=overwrote_existing,
     )
 
 
-def _fieldnames(
-    focus_standard_ids: list[str], column_keys: dict[str, str]
-) -> tuple[str, ...]:
+def _fieldnames(snapshot: AssignmentReportingSnapshot) -> tuple[str, ...]:
     dynamic_columns: list[str] = []
-    for standard_id in focus_standard_ids:
-        key = column_keys[standard_id]
+    for standard in snapshot.focus_standards:
         dynamic_columns.extend(
             (
-                f"rating__{key}",
-                f"rating_label__{key}",
-                f"rating_included_in_feedback__{key}",
-                f"rating_missing__{key}",
+                f"rating__{standard.column_key}",
+                f"rating_label__{standard.column_key}",
+                f"rating_included_in_feedback__{standard.column_key}",
+                f"rating_missing__{standard.column_key}",
             )
         )
     return BASE_CSV_COLUMNS[:-1] + tuple(dynamic_columns) + ("warnings",)
 
 
 def _build_student_row(
-    workspace_root: Path,
-    class_id: str,
-    assignment_id: str,
-    loaded: LoadedStudentRecord,
-    focus_standard_ids: list[str],
-    column_keys: dict[str, str],
-    labels: dict[int, str],
-    key_warnings: tuple[str, ...],
+    snapshot: AssignmentReportingSnapshot,
+    student: ReportingStudent,
 ) -> dict[str, str]:
-    student = loaded.student
-    review = loaded.review
-    warnings = list(loaded.warnings) + list(key_warnings)
-    canonical_pdf_path = feedback_pdf_path(
-        workspace_root, student.work_ref, student.student_id
-    )
-    canonical_markdown_path = feedback_markdown_path(
-        workspace_root, student.work_ref, student.student_id
-    )
-    pdf_path, pdf_status, pdf_stale, pdf_warnings = feedback_status(
-        workspace_root,
-        review,
-        "feedback_pdf",
-        canonical_pdf_path,
-        selected_evidence_fingerprint=(
-            None
-            if loaded.submission is None
-            else selected_evidence_fingerprint(loaded.submission)
-        ),
-    )
-    md_path, md_status, md_stale, md_warnings = feedback_status(
-        workspace_root,
-        review,
-        "feedback_markdown",
-        canonical_markdown_path,
-        selected_evidence_fingerprint=(
-            None
-            if loaded.submission is None
-            else selected_evidence_fingerprint(loaded.submission)
-        ),
-    )
-    warnings.extend(pdf_warnings)
-    warnings.extend(md_warnings)
-
+    warnings = [
+        *student.warnings,
+        *snapshot.column_key_warnings,
+        *student.feedback_pdf.warnings,
+        *student.feedback_markdown.warnings,
+    ]
     row = {
-        "class_id": class_id,
-        "assignment_id": assignment_id,
+        "class_id": snapshot.class_id,
+        "assignment_id": snapshot.assignment_id,
         "student_id": student.student_id,
         "student_display_name": student.display_name,
         "roster_status": student.roster_status,
-        "submission_manifest_path": relative_path_for(
-            loaded.submission_manifest_path, workspace_root
+        "submission_manifest_path": student.submission_manifest_path,
+        "submission_state": student.submission_state or "",
+        "submission_valid": _csv_bool(student.submission_valid),
+        "review_record_path": student.review_record_path,
+        "review_state": student.review_state or "",
+        "review_valid": _csv_bool(student.review_valid),
+        "minimum_requirement_status": student.minimum_requirement_status or "",
+        "returned_without_full_review": (
+            ""
+            if student.returned_without_full_review is None
+            else _csv_bool(student.returned_without_full_review)
         ),
-        "submission_state": _record_value(loaded.submission, "submission_state"),
-        "submission_valid": loaded.submission_valid,
-        "review_record_path": relative_path_for(loaded.review_record_path, workspace_root),
-        "review_state": _record_value(review, "review_state"),
-        "review_valid": loaded.review_valid,
-        "minimum_requirement_status": "",
-        "returned_without_full_review": "",
-        "feedback_pdf_path": pdf_path,
-        "feedback_pdf_status": pdf_status,
-        "feedback_pdf_stale": pdf_stale,
-        "feedback_markdown_path": md_path,
-        "feedback_markdown_status": md_status,
-        "feedback_markdown_stale": md_stale,
+        "feedback_pdf_path": student.feedback_pdf.path,
+        "feedback_pdf_status": student.feedback_pdf.status,
+        "feedback_pdf_stale": student.feedback_pdf.stale,
+        "feedback_markdown_path": student.feedback_markdown.path,
+        "feedback_markdown_status": student.feedback_markdown.status,
+        "feedback_markdown_stale": student.feedback_markdown.stale,
     }
 
-    ratings_by_standard: dict[str, dict[str, Any]] = {}
-    if review is not None:
-        outcome = review["minimum_requirement_outcome"]
-        row["minimum_requirement_status"] = str(outcome["status"])
-        row["returned_without_full_review"] = _csv_bool(
-            bool(outcome["returned_without_full_review"])
-        )
-        for rating in review["overall_standard_ratings"]:
-            standard_id = rating["standard_id"]
-            if standard_id not in focus_standard_ids:
-                warnings.append("rating_for_non_assignment_standard")
-                continue
-            ratings_by_standard[standard_id] = rating
-
-    for standard_id in focus_standard_ids:
-        key = column_keys[standard_id]
-        rating = ratings_by_standard.get(standard_id)
+    ratings_by_standard = {
+        rating.standard_id: rating
+        for rating in student.overall_standard_ratings
+    }
+    for standard in snapshot.focus_standards:
+        key = standard.column_key
+        rating = ratings_by_standard.get(standard.standard_id)
         if rating is None:
             row[f"rating__{key}"] = ""
             row[f"rating_label__{key}"] = ""
             row[f"rating_included_in_feedback__{key}"] = ""
             row[f"rating_missing__{key}"] = "true"
             continue
-        value = int(rating["rating"])
-        label = labels.get(value)
+        label = rating.label
         if label is None:
             warnings.append("unknown_rating_value")
             label = ""
-        row[f"rating__{key}"] = str(value)
+        row[f"rating__{key}"] = str(rating.value)
         row[f"rating_label__{key}"] = label
         row[f"rating_included_in_feedback__{key}"] = _csv_bool(
-            bool(rating["include_in_feedback"])
+            rating.include_in_feedback
         )
         row[f"rating_missing__{key}"] = "false"
 
     row["warnings"] = ";".join(dict.fromkeys(warnings))
     return row
+
+
+def _warning_count(snapshot: AssignmentReportingSnapshot, warning: str) -> int:
+    return sum(warning in student.warnings for student in snapshot.students)
 
 
 def _write_csv(
@@ -328,7 +306,7 @@ def _write_csv(
     try:
         with tempfile.NamedTemporaryFile(
             mode="w",
-            encoding="utf-8",
+            encoding=REPORT_CSV_ENCODING,
             newline="",
             prefix=f".{path.name}.",
             suffix=".tmp",
@@ -399,12 +377,6 @@ def _validate_identifier(value: str, field: str) -> None:
         validate_identifier(value, field)
     except IdentifierValidationError as error:
         raise ClassSummaryExportError(str(error)) from error
-
-
-def _record_value(record: dict[str, Any] | None, field: str) -> str:
-    if record is None:
-        return ""
-    return str(record[field])
 
 
 def _csv_bool(value: bool) -> str:
