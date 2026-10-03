@@ -23,6 +23,7 @@ from quillan.assignment_summary_context import relative_path_for
 from quillan.work_paths import (
     QuillanWorkPathError,
     assignment_results_manifest_path,
+    assignment_review_report_path,
     class_summary_path,
     preflight_work_file_destination,
     quillan_work_ref,
@@ -194,6 +195,10 @@ def _manifest_payload(
         ],
         "assignment_summary": {
             "students_expected": snapshot.assignment_summary.students_expected,
+            "rostered_students": snapshot.assignment_summary.rostered_students,
+            "unrostered_submissions": (
+                snapshot.assignment_summary.unrostered_submissions
+            ),
             "students_with_submissions": (
                 snapshot.assignment_summary.students_with_submissions
             ),
@@ -372,6 +377,12 @@ def _artifact_inventory(
             "standards_summary_csv",
             standards_summary_path(snapshot.workspace_root, work_ref),
             "csv",
+            False,
+        ),
+        (
+            "assignment_review_report_pdf",
+            assignment_review_report_path(snapshot.workspace_root, work_ref),
+            "pdf",
             False,
         ),
         (

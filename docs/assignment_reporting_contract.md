@@ -179,6 +179,42 @@ state required for the handoff. They do not contain student writing, private
 teacher notes, feedback text, rating rationales, scans, routed evidence, or
 retained-source details.
 
+
+### Assignment Review Report PDF
+
+The implemented supervisor/administrator-ready human report is:
+
+```text
+classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_review_report.pdf
+```
+
+It is generated from the same immutable assignment reporting snapshot used by
+the structured report family. It does not reread or reinterpret canonical
+assignment/review records after snapshot construction.
+
+The PDF contains:
+
+* assignment identity, title, writing type, generation timestamp, Focus
+  Standards, and configured rating scale;
+* rostered-student and unrostered-submission counts;
+* submission, review, return-without-full-review, attention, and feedback-export
+  counts;
+* one rating distribution per Focus Standard;
+* descriptive percentages using the explicit rated-student denominator;
+* separate unrated, returned-without-full-review, and
+  invalid/attention-required counts;
+* a readable student-by-standard detail section; and
+* an attention/data-quality summary.
+
+The PDF does not contain student writing, scans, private teacher notes, feedback
+text, rating rationales, retained-source details, routed evidence paths,
+absolute filesystem paths, Grades, inferred mastery, or cross-assignment
+analytics.
+
+The report is create-only by default and requires explicit overwrite to replace
+an existing generated PDF. Generation is read-only with respect to canonical
+Quillan academic/review records.
+
 ## Spreadsheet CSV Encoding
 
 Quillan assignment-local CSV reports are spreadsheet-facing interchange

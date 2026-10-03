@@ -100,6 +100,8 @@ class ReportingAssignmentSummary:
     """Assignment-local counts derived from one coherent reporting snapshot."""
 
     students_expected: int
+    rostered_students: int
+    unrostered_submissions: int
     students_with_submissions: int
     students_without_submissions: int
     students_with_valid_reviews: int
@@ -264,6 +266,12 @@ def _assignment_summary(
 ) -> ReportingAssignmentSummary:
     return ReportingAssignmentSummary(
         students_expected=len(students),
+        rostered_students=sum(
+            student.roster_status == "rostered" for student in students
+        ),
+        unrostered_submissions=sum(
+            student.roster_status == "unrostered_submission" for student in students
+        ),
         students_with_submissions=sum(student.submission_valid for student in students),
         students_without_submissions=sum(
             "missing_submission" in student.warnings for student in students

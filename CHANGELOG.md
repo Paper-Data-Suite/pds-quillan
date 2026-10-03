@@ -26,6 +26,14 @@ planning and do not by themselves represent releases.
 - Completed the snapshot aggregate projection with assignment summary counts and
   per-Focus-Standard distributions so JSON and later PDF rendering do not
   independently reinterpret canonical review state.
+- Added `assignment_review_report.pdf`, a supervisor/administrator-ready
+  assignment-local PDF rendered from the same reporting snapshot. It includes
+  explicit roster/submission/review counts, Focus Standard distributions with
+  rated-student denominators, scalable student detail, and attention/data-quality
+  summaries without student writing, private notes, feedback text, rating
+  rationales, Grades, or cross-assignment analysis.
+- Added explicit rostered-student and unrostered-submission counts to the shared
+  snapshot and JSON handoff.
 
 ### Fixed
 
@@ -44,6 +52,9 @@ planning and do not by themselves represent releases.
   one-snapshot/multi-renderer regression coverage.
 - Added manifest schema, explicit-denominator distribution, privacy exclusion,
   create-only/overwrite, no-reread, and canonical-source non-mutation coverage.
+- Added PDF content/privacy, explicit-denominator, multi-page layout,
+  no-source-reread, create-only/overwrite, and canonical-source non-mutation
+  regression coverage.
 
 ## 0.10.4 - 2026-10-01
 
