@@ -31,6 +31,7 @@ from quillan.work_paths import (
     quillan_work_ref,
 )
 from quillan.record_context import canonical_workspace_root
+from quillan.report_csv import REPORT_CSV_ENCODING
 from quillan.submission_evidence_validation import selected_evidence_fingerprint
 
 BASE_CSV_COLUMNS: Final[tuple[str, ...]] = (
@@ -328,7 +329,7 @@ def _write_csv(
     try:
         with tempfile.NamedTemporaryFile(
             mode="w",
-            encoding="utf-8",
+            encoding=REPORT_CSV_ENCODING,
             newline="",
             prefix=f".{path.name}.",
             suffix=".tmp",

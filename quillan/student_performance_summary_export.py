@@ -28,6 +28,7 @@ from quillan.work_paths import (
     student_performance_summary_path,
 )
 from quillan.record_context import canonical_workspace_root
+from quillan.report_csv import REPORT_CSV_ENCODING
 
 MISSING_RATING = ""
 BASE_CSV_COLUMNS = (
@@ -254,7 +255,7 @@ def _write_csv(path: Path, rows: list[dict[str, str]], fields: tuple[str, ...], 
     temporary: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", newline="", prefix=f".{path.name}.",
+            mode="w", encoding=REPORT_CSV_ENCODING, newline="", prefix=f".{path.name}.",
             suffix=".tmp", dir=path.parent, delete=False
         ) as file:
             temporary = Path(file.name)

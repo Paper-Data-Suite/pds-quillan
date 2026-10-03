@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from quillan.class_summary_export import class_summary_export_path
+from quillan.report_csv import REPORT_CSV_ENCODING
 from quillan.cli import main
 import quillan.cli_app.handlers.exports as cli_exports
 from tests.test_class_summary_export import _student_dir, _write_assignment, _write_records
@@ -53,7 +54,7 @@ def test_cli_exports_ready_and_non_ready_rows_and_prints_summary(
     summary_path = class_summary_export_path(
         tmp_path, CLASS_ID, ASSIGNMENT_ID
     )
-    with summary_path.open("r", encoding="utf-8", newline="") as file:
+    with summary_path.open("r", encoding=REPORT_CSV_ENCODING, newline="") as file:
         rows = list(csv.DictReader(file))
     assert [row["review_valid"] for row in rows] == ["true", "false"]
     assert "missing_submission" in rows[1]["warnings"]

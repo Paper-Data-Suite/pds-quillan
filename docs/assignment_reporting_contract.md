@@ -119,6 +119,38 @@ classes/<class_id>/modules/quillan/work/<assignment_id>/exports/assignment_resul
 
 The assignment results manifest is forward-looking. It should make future Paper Data Suite reporting integration easier without making Quillan responsible for cross-assignment or cross-module reporting.
 
+## Spreadsheet CSV Encoding
+
+Quillan assignment-local CSV reports are spreadsheet-facing interchange
+artifacts. They are written as UTF-8 with a single UTF-8 byte-order mark
+(`utf-8-sig`) so common Windows spreadsheet applications reliably detect
+Unicode rather than interpreting UTF-8 bytes through a legacy code page.
+
+This contract applies to:
+
+```text
+exports/student_performance_summary.csv
+exports/class_summary.csv
+exports/standards_summary.csv
+```
+
+and to later spreadsheet-oriented assignment-report CSVs unless a newer
+explicit contract supersedes it.
+
+The BOM is an encoding marker only. It is not part of the first logical column
+name. Quillan and its tests should use a BOM-aware UTF-8 decoder when parsing
+these report files.
+
+Legitimate Unicode must round-trip unchanged, including:
+
+* standards punctuation such as em/en dashes and curly quotation marks;
+* accented student names;
+* assignment titles and standards metadata containing Unicode.
+
+Writers must not replace legitimate Unicode with ASCII merely to accommodate
+spreadsheet encoding detection. Existing create-only, explicit-overwrite,
+atomic-write, containment, and non-mutation behavior remains unchanged.
+
 ## Out-of-Scope Reporting
 
 Quillan must not produce:

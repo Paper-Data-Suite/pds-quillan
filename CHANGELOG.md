@@ -6,7 +6,23 @@ Quillan is in early pre-1.0 development. Package versions describe the
 installable project state; GitHub issues and milestones may be used for
 planning and do not by themselves represent releases.
 
-## 0.10.4 - Unreleased
+## 0.10.5 - Unreleased
+
+### Fixed
+
+- Made all three assignment-local report CSV writers use one spreadsheet-safe
+  UTF-8-with-BOM encoding contract so Windows spreadsheet applications preserve
+  Unicode standards labels and student names instead of producing mojibake
+  such as `â€”` (#417).
+
+### Validation
+
+- Added regression coverage for the real standards-header em dash, accented
+  student names, curly punctuation, exactly one UTF-8 BOM, BOM-aware logical
+  headers, and overwrite regeneration across Student Performance,
+  Comprehensive Class, and Focus Standard summaries.
+
+## 0.10.4 - 2026-10-01
 
 ### Fixed
 
