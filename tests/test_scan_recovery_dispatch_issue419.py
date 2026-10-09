@@ -4,14 +4,20 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
+from typing import cast
 
 import pytest
-from pds_core.module_dispatch import RouteDispatchRequest, RouteDispatchSuccess
+from pds_core.module_dispatch import (
+    RouteDispatchRequest,
+    RouteDispatchSuccess,
+    dispatch_route,
+)
 from pds_core.module_profiles import ModuleRegistry
 from pds_core.routes import route_registration_path
 
 import quillan.pds2_scan_intake as intake
 import quillan.scan_recovery_dispatch as recovery_dispatch
+from quillan.response_page_dispatch import QuillanResponsePageDispatchResult
 from quillan.pds_module import get_module_profile
 from quillan.scan_recovery_dispatch import (
     ScanRecoveryDispatchError,
@@ -147,13 +153,18 @@ def test_tampered_dispatch_page_identity_is_rejected(
     prepared = prepare_scan_review_recovery(
         root, FAILURE_ID, route_locator=locator, target=target
     )
-    original = recovery_dispatch.dispatch_route
+    original = dispatch_route
 
-    def wrong_student(*args: object) -> RouteDispatchSuccess:
-        success = original(*args)
+    def wrong_student(
+        workspace_root: str | Path, registry: ModuleRegistry, request: RouteDispatchRequest
+    ) -> RouteDispatchSuccess:
+        success = original(workspace_root, registry, request)
         return replace(
             success,
-            module_result=replace(success.module_result, student_id="other_student"),
+            module_result=replace(
+                cast(QuillanResponsePageDispatchResult, success.module_result),
+                student_id="other_student",
+            ),
         )
 
     monkeypatch.setattr(recovery_dispatch, "dispatch_route", wrong_student)
@@ -168,10 +179,12 @@ def test_tampered_dispatch_request_is_rejected(
     prepared = prepare_scan_review_recovery(
         root, FAILURE_ID, route_locator=locator, target=target
     )
-    original = recovery_dispatch.dispatch_route
+    original = dispatch_route
 
-    def wrong_request(*args: object) -> RouteDispatchSuccess:
-        success = original(*args)
+    def wrong_request(
+        workspace_root: str | Path, registry: ModuleRegistry, request: RouteDispatchRequest
+    ) -> RouteDispatchSuccess:
+        success = original(workspace_root, registry, request)
         different = RouteDispatchRequest(
             locator=success.request.locator,
             retained_source=success.request.retained_source,
@@ -191,10 +204,14 @@ def test_tampered_dispatch_result_type_is_rejected(
     prepared = prepare_scan_review_recovery(
         root, FAILURE_ID, route_locator=locator, target=target
     )
-    original = recovery_dispatch.dispatch_route
+    original = dispatch_route
 
-    def wrong_type(*args: object) -> RouteDispatchSuccess:
-        return replace(original(*args), module_result=object())
+    def wrong_type(
+        workspace_root: str | Path, registry: ModuleRegistry, request: RouteDispatchRequest
+    ) -> RouteDispatchSuccess:
+        return replace(
+            original(workspace_root, registry, request), module_result=object()
+        )
 
     monkeypatch.setattr(recovery_dispatch, "dispatch_route", wrong_type)
     with pytest.raises(ScanRecoveryDispatchError, match="exact Quillan response-page"):
@@ -208,10 +225,12 @@ def test_detects_retained_source_change_during_core_dispatch(
     prepared = prepare_scan_review_recovery(
         root, FAILURE_ID, route_locator=locator, target=target
     )
-    original = recovery_dispatch.dispatch_route
+    original = dispatch_route
 
-    def change_source(*args: object) -> RouteDispatchSuccess:
-        success = original(*args)
+    def change_source(
+        workspace_root: str | Path, registry: ModuleRegistry, request: RouteDispatchRequest
+    ) -> RouteDispatchSuccess:
+        success = original(workspace_root, registry, request)
         retained.retained_source_path.write_bytes(b"changed while Core dispatched")
         return success
 

@@ -6,7 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from pds_core.routing_models import RouteLocator
+from pds_core.routing_models import ModuleRecordRef, RouteLocator
+from pds_core.scan_retention import RetainedSourceScan
 
 import pytest
 
@@ -21,7 +22,9 @@ from tests.test_scan_recovery_assembly_issue419 import _prior_selected
 from tests.test_scan_recovery_preflight_issue419 import FAILURE_ID, _files, _fixture
 
 
-def _setup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def _setup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Path, RetainedSourceScan, RouteLocator, ModuleRecordRef]:
     root, retained, locator, target = _fixture(tmp_path)
     _write_assignment(root, class_id=locator.class_id, assignment_id=locator.work_id)
     monkeypatch.setattr(cli_recovery, "resolve_workspace_root", lambda: root)

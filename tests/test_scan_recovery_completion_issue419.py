@@ -5,9 +5,17 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pds_core.module_profiles import ModuleRegistry
+from pds_core.routing_models import ModuleRecordRef, RouteLocator
+from pds_core.scan_retention import RetainedSourceScan
 
 import quillan.pds2_scan_intake as intake
 import quillan.scan_recovery_completion as completion
+from quillan.scan_recovery_assembly import assemble_persisted_scan_recovery
+from quillan.scan_recovery_persistence import (
+    PersistedScanRecovery,
+    persist_dispatched_scan_recovery,
+)
 from quillan.scan_recovery_completion import (
     ScanRecoveryExecutionError,
     execute_prepared_scan_recovery,
@@ -26,7 +34,9 @@ from tests.test_scan_recovery_dispatch_issue419 import _registry
 from tests.test_scan_recovery_preflight_issue419 import FAILURE_ID, _files, _fixture
 
 
-def _setup(tmp_path: Path):
+def _setup(
+    tmp_path: Path,
+) -> tuple[Path, RetainedSourceScan, RouteLocator, ModuleRecordRef]:
     root, retained, locator, target = _fixture(tmp_path)
     _write_assignment(root, class_id=locator.class_id, assignment_id=locator.work_id)
     return root, retained, locator, target
@@ -166,7 +176,7 @@ def test_persistence_interruption_never_reports_durable_success(
 ) -> None:
     root, _, locator, target = _setup(tmp_path)
     before = _files(root)
-    original = completion.persist_dispatched_scan_recovery
+    original = persist_dispatched_scan_recovery
 
     def interrupted(*_args: object, **_kwargs: object) -> object:
         raise RuntimeError("injected persistence interruption")
@@ -191,7 +201,7 @@ def test_interrupted_assembly_recovers_existing_observation_on_fresh_retry(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root, _, locator, target = _setup(tmp_path)
-    original = completion.assemble_persisted_scan_recovery
+    original = assemble_persisted_scan_recovery
 
     def interrupted(*_args: object, **_kwargs: object) -> object:
         raise RuntimeError("injected assembly interruption")
@@ -222,10 +232,15 @@ def test_interruption_after_manifest_write_is_idempotently_recovered(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root, _, locator, target = _setup(tmp_path)
-    original = completion.assemble_persisted_scan_recovery
+    original = assemble_persisted_scan_recovery
 
-    def after_write(*args: object, **kwargs: object) -> object:
-        original(*args, **kwargs)
+    def after_write(
+        workspace_root: str | Path,
+        persisted: PersistedScanRecovery,
+        *,
+        registry: ModuleRegistry | None = None,
+    ) -> None:
+        original(workspace_root, persisted, registry=registry)
         raise RuntimeError("crash after manifest persistence")
 
     monkeypatch.setattr(completion, "assemble_persisted_scan_recovery", after_write)

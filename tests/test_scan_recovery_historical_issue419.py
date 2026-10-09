@@ -5,15 +5,19 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pds_core.routing_models import ModuleRecordRef, RouteLocator
+from pds_core.scan_retention import RetainedSourceScan
 
 import quillan.pds2_scan_intake as intake
 import quillan.scan_recovery_completion as completion
+from quillan.scan_recovery_assembly import assemble_persisted_scan_recovery
 from quillan.scan_recovery_historical import (
     HistoricalScanRecoveryError,
+    HistoricalScanRecoveryItem,
     discover_historical_scan_recoveries,
     replay_historical_scan_recovery,
 )
-from quillan.scan_review_resolution import resolve_scan_review_item
+from quillan.scan_review_resolution import QuillanResolutionResult, resolve_scan_review_item
 from quillan.submission_page_management import (
     exclude_submission_page,
     mark_submission_page_needs_rescan,
@@ -24,7 +28,9 @@ from tests.test_scan_recovery_dispatch_issue419 import _registry
 from tests.test_scan_recovery_preflight_issue419 import FAILURE_ID, _files, _fixture
 
 
-def _setup(tmp_path: Path):
+def _setup(
+    tmp_path: Path,
+) -> tuple[Path, RetainedSourceScan, RouteLocator, ModuleRecordRef, QuillanResolutionResult]:
     root, retained, locator, target = _fixture(tmp_path)
     _write_assignment(root, class_id=locator.class_id, assignment_id=locator.work_id)
     historical = resolve_scan_review_item(
@@ -37,7 +43,7 @@ def _setup(tmp_path: Path):
     return root, retained, locator, target, historical
 
 
-def _only(root: Path):
+def _only(root: Path) -> HistoricalScanRecoveryItem:
     discovered = discover_historical_scan_recoveries(root)
     assert len(discovered.items) == 1
     return discovered.items[0]
@@ -127,7 +133,7 @@ def test_assembly_interruption_is_discoverable_and_replayable(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root, _, _, _, historical = _setup(tmp_path)
-    original = completion.assemble_persisted_scan_recovery
+    original = assemble_persisted_scan_recovery
 
     def interrupted(*_args: object, **_kwargs: object) -> object:
         raise RuntimeError("intentional assembly interruption")

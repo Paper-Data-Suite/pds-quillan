@@ -6,6 +6,8 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from pds_core.routing_models import ModuleRecordRef, RouteLocator
+from pds_core.scan_retention import RetainedSourceScan
 
 import quillan.scan_recovery_menu as recovery_menu
 import quillan.scan_review_menu as scan_review_menu
@@ -32,7 +34,9 @@ def _inputs(monkeypatch: pytest.MonkeyPatch, responses: list[str]) -> list[str]:
     return prompts
 
 
-def _ready(tmp_path: Path):
+def _ready(
+    tmp_path: Path,
+) -> tuple[Path, RetainedSourceScan, RouteLocator, ModuleRecordRef]:
     # Scoped failure keeps route selection within the issued assignment.
     root, retained, locator, target = _fixture(tmp_path, scoped=True)
     _write_assignment(root, class_id=locator.class_id, assignment_id=locator.work_id)

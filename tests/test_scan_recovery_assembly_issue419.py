@@ -8,8 +8,8 @@ from types import SimpleNamespace
 import pytest
 from PIL import Image
 from pds_core.module_dispatch import RouteDispatchRequest, dispatch_route
-from pds_core.routing_models import RouteLocator
-from pds_core.scan_retention import retain_source_scan
+from pds_core.routing_models import ModuleRecordRef, RouteLocator
+from pds_core.scan_retention import RetainedSourceScan, retain_source_scan
 
 import quillan.scan_recovery_assembly as recovery_assembly
 import quillan.submission_review_opening as review_opening
@@ -24,7 +24,10 @@ from quillan.scan_recovery_assembly import (
     assemble_persisted_scan_recovery,
 )
 from quillan.scan_recovery_dispatch import dispatch_prepared_scan_recovery
-from quillan.scan_recovery_persistence import persist_dispatched_scan_recovery
+from quillan.scan_recovery_persistence import (
+    PersistedScanRecovery,
+    persist_dispatched_scan_recovery,
+)
 from quillan.scan_recovery_preflight import prepare_scan_review_recovery
 from quillan.scan_review_resolution import resolve_scan_review_item
 from quillan.submission_manifest import load_submission_manifest
@@ -40,7 +43,9 @@ from tests.test_scan_recovery_dispatch_issue419 import _registry
 from tests.test_scan_recovery_preflight_issue419 import FAILURE_ID, _files, _fixture
 
 
-def _setup(tmp_path: Path):
+def _setup(
+    tmp_path: Path,
+) -> tuple[Path, RetainedSourceScan, RouteLocator, ModuleRecordRef, PersistedScanRecovery]:
     root, retained, locator, target = _fixture(tmp_path)
     _write_assignment(root, class_id=locator.class_id, assignment_id=locator.work_id)
     preview = prepare_scan_review_recovery(
@@ -77,7 +82,9 @@ def _prior_selected(root: Path, locator: RouteLocator) -> str:
 
 def _setup_with_prior_page(
     tmp_path: Path, *, teacher_state: str | None = None
-):
+) -> tuple[
+    Path, RetainedSourceScan, RouteLocator, ModuleRecordRef, PersistedScanRecovery, str
+]:
     """Assemble a selected original BEFORE persisting the recovered occurrence.
 
     The assembler discovers every observation belonging to the student even
@@ -118,7 +125,7 @@ def test_missing_page_becomes_selected_and_openable(
     before_source = retained.retained_source_path.read_bytes()
     opened_paths: list[Path] = []
 
-    def fake_open(workspace_root: Path, relative_path: str):
+    def fake_open(workspace_root: Path, relative_path: str) -> SimpleNamespace:
         path = workspace_root.joinpath(*Path(relative_path).parts)
         assert path.is_file()
         opened_paths.append(path)
@@ -235,11 +242,11 @@ def test_assembly_failure_keeps_verified_observation_and_evidence(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root, _, _, _, persisted = _setup(tmp_path)
-    original = recovery_assembly.assemble_quillan_submission_manifests
+    original = assemble_quillan_submission_manifests
     observation_before = persisted.persisted.observation_path.read_bytes()
     evidence_before = persisted.persisted.evidence_path.read_bytes()
 
-    def fail(*_args: object, **_kwargs: object):
+    def fail(*_args: object, **_kwargs: object) -> None:
         raise RuntimeError("simulated assembly interruption")
 
     monkeypatch.setattr(

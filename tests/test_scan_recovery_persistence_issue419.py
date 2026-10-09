@@ -7,6 +7,8 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from numpy.typing import NDArray
+from pds_core.routing_models import ModuleRecordRef, RouteLocator
 
 import quillan.pds2_scan_intake as intake
 import quillan.response_page_observation_persistence as observation_writer
@@ -21,7 +23,10 @@ from quillan.response_page_observation_persistence import (
     persist_quillan_page_observation,
 )
 from quillan.response_page_observations import list_quillan_page_observations
-from quillan.scan_recovery_dispatch import dispatch_prepared_scan_recovery
+from quillan.scan_recovery_dispatch import (
+    DispatchedScanRecovery,
+    dispatch_prepared_scan_recovery,
+)
 from quillan.scan_recovery_persistence import (
     ScanRecoveryPersistenceError,
     persist_dispatched_scan_recovery,
@@ -32,7 +37,9 @@ from tests.test_scan_recovery_dispatch_issue419 import _registry
 from tests.test_scan_recovery_preflight_issue419 import FAILURE_ID, _files, _fixture
 
 
-def _dispatched(root: Path, locator: object, target: object):
+def _dispatched(
+    root: Path, locator: RouteLocator, target: ModuleRecordRef
+) -> DispatchedScanRecovery:
     prepared = prepare_scan_review_recovery(
         root, FAILURE_ID, route_locator=locator, target=target
     )
@@ -200,7 +207,7 @@ def test_persistence_transaction_rolls_back_on_observation_write_failure(
     original_install = observation_writer._install_exclusive
     count = 0
 
-    def fail_second(temp: Path, dest: Path):
+    def fail_second(temp: Path, dest: Path) -> object:
         nonlocal count
         count += 1
         if count == 2:
@@ -228,7 +235,9 @@ def test_recovery_pdf_page_two_produces_one_png(
     )
     physical_pages: list[int] = []
 
-    def render_one(_retained: object, number: int, *, workspace_root: Path):
+    def render_one(
+        _retained: object, number: int, *, workspace_root: Path
+    ) -> NDArray[np.uint8]:
         physical_pages.append(number)
         return np.full((16, 16, 3), 255, dtype=np.uint8)
 
