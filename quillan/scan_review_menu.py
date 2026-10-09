@@ -142,6 +142,7 @@ def _launch_global_scan_review_menu(
             print("2. Unscoped Core routing problems")
         if has_core:
             print("3. All Core routing problems")
+        print("R. Recover retained Core scan pages")
         print("B. Back")
         print()
         choice = input("Select scan review scope: ").strip()
@@ -157,6 +158,10 @@ def _launch_global_scan_review_menu(
             _launch_core_review_menu(workspace_root, unscoped_only=True)
         elif choice == "3" and has_core:
             _launch_core_review_menu(workspace_root)
+        elif choice.casefold() == "r":
+            from quillan.scan_recovery_menu import launch_scan_recovery_menu
+
+            launch_scan_recovery_menu(workspace_root)
 
 
 def _active_scan_review_work_refs(
@@ -222,6 +227,7 @@ def _launch_review_source_menu(
         print("1. Core routing problems")
         print("2. Quillan post-dispatch problems")
         print("3. All active problems")
+        print("4. Recover retained Core scan pages")
         print("B. Back")
         print()
         choice = input("Select problem source: ").strip()
@@ -235,6 +241,10 @@ def _launch_review_source_menu(
             )
         elif choice == "3":
             _launch_combined_review_menu(workspace_root, class_id, assignment_id)
+        elif choice == "4":
+            from quillan.scan_recovery_menu import launch_scan_recovery_menu
+
+            launch_scan_recovery_menu(workspace_root, class_id, assignment_id)
 
 
 def _launch_core_review_menu(
@@ -283,8 +293,18 @@ def _launch_core_review_menu(
                     f"Skipped {len(discovery.warnings)} malformed or unreadable "
                     "metadata file(s)."
                 )
+            print("R. Recover retained Core scan pages")
+            print("B. Back")
             print()
-            pause_for_user()
+            choice = input("Select scan recovery or press Enter to return: ").strip()
+            if choice.casefold() == "r":
+                from quillan.scan_recovery_menu import launch_scan_recovery_menu
+
+                launch_scan_recovery_menu(
+                    workspace_root, class_id, assignment_id,
+                    unscoped_only=unscoped_only,
+                )
+                continue
             return 0
 
         for index, item in enumerate(discovery.items, start=1):
@@ -298,9 +318,18 @@ def _launch_core_review_menu(
                 f"\nSkipped {len(discovery.warnings)} malformed or unreadable "
                 "metadata file(s)."
             )
+        print("R. Recover retained Core scan pages")
         print_navigation_options()
         print()
         choice = input("Select a review item: ").strip()
+        if choice.casefold() == "r":
+            from quillan.scan_recovery_menu import launch_scan_recovery_menu
+
+            launch_scan_recovery_menu(
+                workspace_root, class_id, assignment_id,
+                unscoped_only=unscoped_only,
+            )
+            continue
         navigation = parse_navigation_choice(choice)
         if choice == "" or navigation is NavigationChoice.BACK:
             return 0
@@ -509,9 +538,15 @@ def _launch_post_dispatch_review_menu(
             )
         if discovery.warnings:
             print(f"Skipped malformed records: {len(discovery.warnings)}")
+        print("R. Recover retained Core scan pages")
         print("B. Back")
         print()
         choice = input("Select a post-dispatch problem: ").strip()
+        if choice.casefold() == "r":
+            from quillan.scan_recovery_menu import launch_scan_recovery_menu
+
+            launch_scan_recovery_menu(workspace_root, class_id, assignment_id)
+            continue
         if choice == "" or parse_navigation_choice(choice) is NavigationChoice.BACK:
             return 0
         if choice.isdigit() and 1 <= int(choice) <= len(discovery.items):

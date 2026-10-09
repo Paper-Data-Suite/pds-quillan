@@ -103,6 +103,20 @@ not calculate a Grade.
 
 See [Academic Result Publication Lifecycle](academic_result_publication.md).
 
+## Direct retained scan recovery — Issue #419
+
+Four direct commands expose read-only recovery discovery and preflight, explicit
+registered-route recovery, and exact historical-route replay. Recovery writes
+require `--yes` and never infer a route, re-decode an unreadable QR, silently
+change a teacher's evidence selection, or overwrite Core resolution history.
+
+`--format json` supplies versioned success and error payloads; a successful
+recovery may still report `selection_needed` or `teacher_action_needed` rather
+than a selected reviewable page. A Core `resolved` route decision is not proof
+of recovered evidence. See
+[Scan Recovery CLI Contract](issue419_scan_recovery_cli.md) for flags, stage
+errors, exit codes, privacy scope, and byte-preserving retry behavior.
+
 ## Direct Review Work Queue
 
 `quillan review-queue <class_id> <assignment_id> [--format text|json]`
@@ -427,6 +441,10 @@ quillan printable-responses generate <class_id> <assignment_id> [--pages-per-stu
 quillan route-scan <source-image-or-pdf-or-folder>
 quillan list-scan-review [--include-resolved] [--limit N] [--class-id <class_id>] [--assignment-id <assignment_id>] [--failure-category <category>]
 quillan resolve-scan-review <failure_id> --action <action> [--message "..."] [--evidence-path <workspace-relative-path>] [--route-id <route_id> --route-class-id <class_id> --route-assignment-id <assignment_id>]
+quillan list-scan-recoveries [--format text|json]
+quillan preflight-scan-recovery <failure_id> (--recorded-route | --route-id <route_id> --route-class-id <class_id> --route-assignment-id <assignment_id>) [--format text|json]
+quillan recover-scan-review <failure_id> --route-id <route_id> --route-class-id <class_id> --route-assignment-id <assignment_id> --yes [--format text|json]
+quillan replay-scan-recovery <failure_id> --expected-resolution-id <resolution_id> --yes [--format text|json]
 quillan list-post-dispatch-review <class_id> <assignment_id> [--include-resolved] [--limit N] [--category <category>]
 quillan resolve-post-dispatch-review <class_id> <assignment_id> <failure_id> --action <action> [--message "..."]
 quillan decode-scan <source-file> [--show-payload]

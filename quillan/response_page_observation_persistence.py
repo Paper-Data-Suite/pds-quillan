@@ -8,11 +8,12 @@ from pathlib import Path, PurePosixPath
 import tempfile
 from typing import Literal
 
-from pds_core.module_dispatch import RouteDispatchSuccess
+from pds_core.module_dispatch import RouteDispatchRequest, RouteDispatchSuccess
 from pds_core.identifiers import validate_identifier
 
 from quillan._path_safety import is_link_like as _shared_is_link_like
 from quillan.module_errors import (
+    QuillanDispatchResultError,
     QuillanObservationAuthorityError,
     QuillanObservationIntegrityError,
     QuillanObservationPersistenceError,
@@ -272,6 +273,26 @@ def persist_quillan_page_observation(
     """Persist one exact successful Quillan outcome idempotently."""
     root = _workspace_root(workspace_root)
     result = _authoritative_result(root, page_outcome)
+    return _persist_authoritative_page_result(root, result)
+
+
+def persist_quillan_dispatch_success(
+    workspace_root: Path,
+    success: RouteDispatchSuccess,
+) -> PersistedQuillanPageObservation:
+    """Persist one exact Core success using the normal intake transaction.
+
+    No synthetic QR payload or intake page wrapper is required.
+    """
+    root = _workspace_root(workspace_root)
+    result = _authoritative_dispatch_result(root, success)
+    return _persist_authoritative_page_result(root, result)
+
+
+def _persist_authoritative_page_result(
+    root: Path, result: QuillanResponsePageDispatchResult
+) -> PersistedQuillanPageObservation:
+    """Shared canonical exclusive-write, verify, and retry transaction."""
     observation_id = derive_observation_id(
         result.source_scan_id,
         result.source_page_number,
@@ -535,24 +556,17 @@ def _authoritative_result(
     root: Path,
     page_outcome: object,
 ) -> QuillanResponsePageDispatchResult:
+    """Validate the normal QR-intake envelope, then its common Core success."""
     try:
         if type(page_outcome) is not QuillanScanPageOutcome:
             raise ValueError("page_outcome must be an exact QuillanScanPageOutcome.")
         if page_outcome.terminal_category != "dispatch_success":
             raise ValueError("page_outcome must be a dispatch_success.")
         success = page_outcome.dispatch_outcome
-        if (
-            not isinstance(success, RouteDispatchSuccess)
-            or type(success) is not RouteDispatchSuccess
-        ):
-            raise ValueError("dispatch_success requires an exact Core success.")
-        if success.profile.module_id != QUILLAN_MODULE_ID:
-            raise ValueError("Core success is owned by a foreign module.")
-        if type(success.module_result) is not QuillanResponsePageDispatchResult:
-            raise ValueError("Quillan success has the wrong result type.")
-        result = validate_quillan_response_page_dispatch_result(success.module_result)
         request = page_outcome.dispatch_request
-        if request is None or success.request != request:
+        if type(success) is not RouteDispatchSuccess:
+            raise ValueError("dispatch_success requires an exact Core success.")
+        if type(request) is not RouteDispatchRequest or success.request != request:
             raise ValueError("Core success contradicts the exact dispatch request.")
         if request.retained_source is not page_outcome.retained_source:
             raise ValueError(
@@ -560,11 +574,35 @@ def _authoritative_result(
             )
         if request.source_page_number != page_outcome.source_page_number:
             raise ValueError("Dispatch request contradicts the physical source page.")
-        if (
-            page_outcome.locator != request.locator
-            or success.resolution.locator != request.locator
-        ):
-            raise ValueError("Page, request, and resolution locators disagree.")
+        if page_outcome.locator != request.locator:
+            raise ValueError("Page and request locators disagree.")
+    except (ValueError, TypeError, AttributeError) as error:
+        raise QuillanObservationAuthorityError(
+            f"Page outcome is not authoritative for observation persistence: {error}"
+        ) from error
+    return _authoritative_dispatch_result(root, success)
+
+
+def _authoritative_dispatch_result(
+    root: Path,
+    success: object,
+) -> QuillanResponsePageDispatchResult:
+    """Validate exact Core dispatch authority shared by intake and recovery."""
+    try:
+        if type(success) is not RouteDispatchSuccess:
+            raise ValueError("An exact Core RouteDispatchSuccess is required.")
+        request = success.request
+        if type(request) is not RouteDispatchRequest:
+            raise ValueError("Core success must contain an exact dispatch request.")
+        if success.profile.module_id != QUILLAN_MODULE_ID:
+            raise ValueError("Core success is owned by a foreign module.")
+        if type(success.module_result) is not QuillanResponsePageDispatchResult:
+            raise ValueError("Quillan success has the wrong result type.")
+        if success.resolution.locator != request.locator:
+            raise ValueError("Core resolution contradicts the exact dispatch request.")
+        if success.resolution.registration.locator != request.locator:
+            raise ValueError("Resolved registration contradicts the request locator.")
+        result = validate_quillan_response_page_dispatch_result(success.module_result)
         locator = request.locator
         if (
             locator.module_id != QUILLAN_MODULE_ID
@@ -573,17 +611,17 @@ def _authoritative_result(
             or locator.route_id != result.route_id
         ):
             raise ValueError("Dispatch locator contradicts result identity.")
+        retained = request.retained_source
         if (
-            result.source_scan_id != page_outcome.retained_source.source_scan_id
-            or result.source_page_number != page_outcome.source_page_number
-            or result.retained_source_path
-            != page_outcome.retained_source.retained_source_path
+            result.source_scan_id != retained.source_scan_id
+            or result.source_page_number != request.source_page_number
+            or result.retained_source_path != retained.retained_source_path
             or result.retained_source_relative_path
-            != page_outcome.retained_source.retained_source_relative_path
-            or result.source_sha256 != page_outcome.retained_source.source_sha256
-            or result.source_filename != page_outcome.retained_source.source_filename
-            or result.intake_timestamp != page_outcome.retained_source.intake_timestamp
-            or result.intake_date != page_outcome.retained_source.intake_date
+            != retained.retained_source_relative_path
+            or result.source_sha256 != retained.source_sha256
+            or result.source_filename != retained.source_filename
+            or result.intake_timestamp != retained.intake_timestamp
+            or result.intake_date != retained.intake_date
         ):
             raise ValueError("Dispatch result contradicts retained provenance.")
         work_ref = quillan_work_ref(result.class_id, result.assignment_id)
@@ -628,12 +666,13 @@ def _authoritative_result(
         raise
     except (
         PrintableResponsePersistenceError,
+        QuillanDispatchResultError,
         ValueError,
         TypeError,
         AttributeError,
     ) as error:
         raise QuillanObservationAuthorityError(
-            f"Page outcome is not authoritative for observation persistence: {error}"
+            f"Core success is not authoritative for observation persistence: {error}"
         ) from error
 
 
@@ -962,5 +1001,6 @@ __all__ = [
     "QuillanObservationPersistenceBatch",
     "QuillanObservationPersistenceFailure",
     "persist_quillan_page_observation",
+    "persist_quillan_dispatch_success",
     "persist_quillan_scan_observations",
 ]

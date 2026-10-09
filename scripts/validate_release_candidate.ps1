@@ -93,6 +93,7 @@ $SelectedReviewAcceptance = Join-Path $PSScriptRoot 'verify_installed_selected_r
 $ResubmissionAcceptance = Join-Path $PSScriptRoot 'verify_installed_resubmission_inbox.py'
 $Issue416Acceptance = Join-Path $PSScriptRoot 'verify_installed_issue416_scan_paths.py'
 $Issue417Acceptance = Join-Path $PSScriptRoot 'verify_installed_issue417_acceptance.py'
+$Issue419Acceptance = Join-Path $PSScriptRoot 'verify_installed_issue419_recovery.py'
 
 Invoke-Required "Authenticate official Core 0.6.2 wheel" $ResolvedPython @(
     $CoreVerifier, $Core062Wheel, '--core-version', '0.6.2'
@@ -167,6 +168,7 @@ try {
         $ResubmissionWorkspace = Join-Path $ModeRoot 'resubmission-workspace'
         $Issue416Workspace = Join-Path $ModeRoot 'issue416-workspace'
         $Issue417Workspace = Join-Path $ModeRoot 'issue417-workspace'
+$Issue419Workspace = Join-Path $ModeRoot 'issue419-workspace'
         New-Item -ItemType Directory -Path $ModeRoot | Out-Null
         New-Item -ItemType Directory -Path $Work | Out-Null
         New-Item -ItemType Directory -Path $OperationsWorkspace | Out-Null
@@ -256,6 +258,14 @@ try {
                     $EnvironmentPython @(
                         $Issue416Acceptance,
                         '--workspace', $Issue416Workspace,
+                        '--repository', $Repository,
+                        '--expected-quillan-version', '0.10.5',
+                        '--expected-core-version', $CoreVersion
+                    )
+                Invoke-Required "Installed Issue #419 scan recovery Core 0.6.4" `
+                    $EnvironmentPython @(
+                        $Issue419Acceptance,
+                        '--workspace', $Issue419Workspace,
                         '--repository', $Repository,
                         '--expected-quillan-version', '0.10.5',
                         '--expected-core-version', $CoreVersion

@@ -81,6 +81,12 @@ from quillan.cli_app.handlers.rosters import (
     handle_roster_validate,
 )
 from quillan.cli_app.handlers.routing import handle_route_scan
+from quillan.cli_app.handlers.scan_recovery import (
+    handle_list_scan_recoveries,
+    handle_preflight_scan_recovery,
+    handle_recover_scan_review,
+    handle_replay_scan_recovery,
+)
 from quillan.cli_app.handlers.scan_review import (
     handle_list_scan_review,
     handle_list_post_dispatch_review,
@@ -1362,6 +1368,99 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     resolve_scan_review_parser.set_defaults(handler=handle_resolve_scan_review)
+
+    list_recoveries_parser = subparsers.add_parser(
+        "list-scan-recoveries",
+        help="List unresolved and historical retained-page recovery states (read-only).",
+        description=(
+            "Discover Quillan failed scan pages and current verified historical "
+            "evidence status without scanning QR payloads or writing state."
+        ),
+    )
+    list_recoveries_parser.add_argument(
+        "--format", choices=("text", "json"), default="text",
+        help="Choose a human-readable summary or schema-1 machine-readable JSON.",
+    )
+    list_recoveries_parser.set_defaults(handler=handle_list_scan_recoveries)
+
+    preflight_recovery_parser = subparsers.add_parser(
+        "preflight-scan-recovery",
+        help="Verify one retained physical page and exact route without writes.",
+        description=(
+            "Read-only preflight for an explicitly named registered Quillan route "
+            "or deliberately selected latest recorded teacher route."
+        ),
+    )
+    preflight_recovery_parser.add_argument("failure_id", help="Exact failure ID.")
+    preflight_recovery_parser.add_argument(
+        "--recorded-route", action="store_true",
+        help="Reuse only the latest validated historical route decision.",
+    )
+    preflight_recovery_parser.add_argument(
+        "--route-id", help="Exact registered route ID for explicit preflight."
+    )
+    preflight_recovery_parser.add_argument(
+        "--route-class-id", help="Exact registered route class ID."
+    )
+    preflight_recovery_parser.add_argument(
+        "--route-assignment-id", help="Exact registered route assignment ID."
+    )
+    preflight_recovery_parser.add_argument(
+        "--format", choices=("text", "json"), default="text",
+        help="Output text or schema-1 JSON without writing state.",
+    )
+    preflight_recovery_parser.set_defaults(handler=handle_preflight_scan_recovery)
+
+    recover_review_parser = subparsers.add_parser(
+        "recover-scan-review",
+        help="Recover a failed retained physical page through an explicit route.",
+        description=(
+            "Requires exact registered route identity and --yes. Revalidates, "
+            "dispatches, persists and assembles existing Quillan evidence."
+        ),
+    )
+    recover_review_parser.add_argument("failure_id", help="Exact failure ID.")
+    recover_review_parser.add_argument(
+        "--route-id", required=True, help="Exact registered route ID."
+    )
+    recover_review_parser.add_argument(
+        "--route-class-id", required=True, help="Exact route class ID."
+    )
+    recover_review_parser.add_argument(
+        "--route-assignment-id", required=True, help="Exact route assignment ID."
+    )
+    recover_review_parser.add_argument(
+        "--yes", action="store_true",
+        help="Explicitly authorize recovery evidence and submission writes.",
+    )
+    recover_review_parser.add_argument(
+        "--format", choices=("text", "json"), default="text",
+        help="Output text or schema-1 completion JSON.",
+    )
+    recover_review_parser.set_defaults(handler=handle_recover_scan_review)
+
+    replay_recovery_parser = subparsers.add_parser(
+        "replay-scan-recovery",
+        help="Replay one exact latest historical teacher route decision.",
+        description=(
+            "Requires the expected immutable resolution ID and --yes. Never "
+            "automatically replays multiple decisions or modifies Core history."
+        ),
+    )
+    replay_recovery_parser.add_argument("failure_id", help="Exact failure ID.")
+    replay_recovery_parser.add_argument(
+        "--expected-resolution-id", required=True,
+        help="Exact immutable latest route-resolution ID that the teacher confirmed.",
+    )
+    replay_recovery_parser.add_argument(
+        "--yes", action="store_true",
+        help="Explicitly authorize recovery evidence and submission writes.",
+    )
+    replay_recovery_parser.add_argument(
+        "--format", choices=("text", "json"), default="text",
+        help="Output text or schema-1 completion JSON.",
+    )
+    replay_recovery_parser.set_defaults(handler=handle_replay_scan_recovery)
 
     list_post_dispatch_parser = subparsers.add_parser(
         "list-post-dispatch-review",

@@ -3631,6 +3631,236 @@
     {
       "path": [
         "quillan",
+        "list-scan-recoveries"
+      ],
+      "aliases": [],
+      "short_help": "List unresolved and historical retained-page recovery states (read-only).",
+      "description": "Discover Quillan failed scan pages and current verified historical evidence status without scanning QR payloads or writing state.",
+      "arguments": [
+        {
+          "names": [
+            "--format"
+          ],
+          "required": false,
+          "choices": [
+            "text",
+            "json"
+          ],
+          "default": "text",
+          "help": "Choose a human-readable summary or schema-1 machine-readable JSON.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "preflight-scan-recovery"
+      ],
+      "aliases": [],
+      "short_help": "Verify one retained physical page and exact route without writes.",
+      "description": "Read-only preflight for an explicitly named registered Quillan route or deliberately selected latest recorded teacher route.",
+      "arguments": [
+        {
+          "names": [
+            "failure_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact failure ID.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--recorded-route"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Reuse only the latest validated historical route decision.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--route-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Exact registered route ID for explicit preflight.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--route-class-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Exact registered route class ID.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--route-assignment-id"
+          ],
+          "required": false,
+          "choices": [],
+          "default": null,
+          "help": "Exact registered route assignment ID.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--format"
+          ],
+          "required": false,
+          "choices": [
+            "text",
+            "json"
+          ],
+          "default": "text",
+          "help": "Output text or schema-1 JSON without writing state.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "recover-scan-review"
+      ],
+      "aliases": [],
+      "short_help": "Recover a failed retained physical page through an explicit route.",
+      "description": "Requires exact registered route identity and --yes. Revalidates, dispatches, persists and assembles existing Quillan evidence.",
+      "arguments": [
+        {
+          "names": [
+            "failure_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact failure ID.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--route-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact registered route ID.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--route-class-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact route class ID.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--route-assignment-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact route assignment ID.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly authorize recovery evidence and submission writes.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--format"
+          ],
+          "required": false,
+          "choices": [
+            "text",
+            "json"
+          ],
+          "default": "text",
+          "help": "Output text or schema-1 completion JSON.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
+        "replay-scan-recovery"
+      ],
+      "aliases": [],
+      "short_help": "Replay one exact latest historical teacher route decision.",
+      "description": "Requires the expected immutable resolution ID and --yes. Never automatically replays multiple decisions or modifies Core history.",
+      "arguments": [
+        {
+          "names": [
+            "failure_id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact failure ID.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--expected-resolution-id"
+          ],
+          "required": true,
+          "choices": [],
+          "default": null,
+          "help": "Exact immutable latest route-resolution ID that the teacher confirmed.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "required": false,
+          "choices": [],
+          "default": false,
+          "help": "Explicitly authorize recovery evidence and submission writes.",
+          "mutex_group": null
+        },
+        {
+          "names": [
+            "--format"
+          ],
+          "required": false,
+          "choices": [
+            "text",
+            "json"
+          ],
+          "default": "text",
+          "help": "Output text or schema-1 completion JSON.",
+          "mutex_group": null
+        }
+      ],
+      "mutex_groups": []
+    },
+    {
+      "path": [
+        "quillan",
         "list-post-dispatch-review"
       ],
       "aliases": [],
