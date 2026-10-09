@@ -67,7 +67,7 @@ NOW = datetime(2026, 7, 19, 18, 30, tzinfo=timezone.utc)
 def _assert_installed(repository: Path, version: str, core_version: str) -> None:
     assert metadata.version("quillan") == version, "wrong Quillan distribution"
     assert metadata.version("pds-core") == core_version, "wrong Core distribution"
-    assert core_version == "0.6.4", "qualification requires released Core 0.6.4"
+    assert core_version in {"0.6.4", "0.6.5"}, "qualification requires released Core 0.6.4 or 0.6.5"
     for name in (
         "quillan", "quillan.scan_recovery_completion",
         "quillan.scan_recovery_historical", "quillan.scan_recovery_menu",

@@ -41,7 +41,7 @@ def _metadata(*requirements: str) -> str:
     )
     return f"""Metadata-Version: 2.4
 Name: quillan
-Version: 0.10.5
+Version: 0.10.6
 Requires-Python: >=3.11
 {requires_dist}\
 License-Expression: MIT
@@ -49,7 +49,7 @@ License-File: LICENSE
 """
 
 
-VALID_METADATA = _metadata("pds-core<0.7,>=0.6.2", "pypdf<7,>=5")
+VALID_METADATA = _metadata("pds-core<0.7,>=0.6.5", "pypdf<7,>=5")
 
 
 def _wheel(
@@ -89,11 +89,11 @@ def _wheel(
             "cli_app/handlers/resubmission_inbox.py",
         ):
             archive.writestr(f"quillan/{required}", "")
-        archive.writestr("quillan/_version.py", '__version__ = "0.10.5"\n')
+        archive.writestr("quillan/_version.py", '__version__ = "0.10.6"\n')
         archive.writestr(extra_name, "")
-        archive.writestr("quillan-0.10.5.dist-info/METADATA", metadata)
+        archive.writestr("quillan-0.10.6.dist-info/METADATA", metadata)
         archive.writestr(
-            "quillan-0.10.5.dist-info/entry_points.txt",
+            "quillan-0.10.6.dist-info/entry_points.txt",
             "[console_scripts]\nquillan = quillan.cli:main\n"
             "[paper_data_suite.modules]\n"
             "quillan = quillan.pds_module:get_module_profile\n"
@@ -102,7 +102,7 @@ def _wheel(
             "[paper_data_suite.module_operations]\n"
             "quillan = quillan.pds_operations:get_module_operations_profile\n",
         )
-        archive.writestr("quillan-0.10.5.dist-info/licenses/LICENSE", "MIT\n")
+        archive.writestr("quillan-0.10.6.dist-info/licenses/LICENSE", "MIT\n")
     return path
 
 
@@ -111,7 +111,7 @@ def _sdist(
     extra_name: str = "quillan/current.py",
     *,
     metadata: str = VALID_METADATA,
-    package_name: str = "quillan-0.10.5",
+    package_name: str = "quillan-0.10.6",
 ) -> Path:
     root = path.parent / f"{path.name}.source"
     package = root / package_name
@@ -120,7 +120,7 @@ def _sdist(
     (package / "LICENSE").write_text("MIT\n", encoding="utf-8")
     (package / "README.md").write_text("Quillan\n", encoding="utf-8")
     (package / "quillan" / "_version.py").write_text(
-        '__version__ = "0.10.5"\n', encoding="utf-8"
+        '__version__ = "0.10.6"\n', encoding="utf-8"
     )
     for required in (
         "pds_module.py",
@@ -177,8 +177,8 @@ def test_sdist_rejects_each_removed_module(tmp_path: Path, removed: str) -> None
 
 
 def test_ordinary_current_package_paths_are_accepted(tmp_path: Path) -> None:
-    assert inspect_wheel(_wheel(tmp_path / "current.whl"))["version"] == "0.10.5"
-    assert inspect_sdist(_sdist(tmp_path / "current.tar.gz"))["version"] == "0.10.5"
+    assert inspect_wheel(_wheel(tmp_path / "current.whl"))["version"] == "0.10.6"
+    assert inspect_sdist(_sdist(tmp_path / "current.tar.gz"))["version"] == "0.10.6"
 
 
 @pytest.mark.parametrize(
@@ -248,7 +248,7 @@ def test_artifacts_reject_bundled_sibling_source(
 def test_sdist_requires_exact_release_root(tmp_path: Path) -> None:
     artifact = _sdist(
         tmp_path / "wrong-root.tar.gz",
-        package_name="not-quillan-0.10.5",
+        package_name="not-quillan-0.10.6",
     )
     with pytest.raises(AssertionError):
         inspect_sdist(artifact)
@@ -257,27 +257,27 @@ def test_sdist_requires_exact_release_root(tmp_path: Path) -> None:
 INVALID_CORE_REQUIREMENTS = (
     pytest.param((), id="missing"),
     pytest.param(
-        ("pds-core>=0.6.2,<0.7", "pds-core>=0.6.2,<0.7"),
+        ("pds-core>=0.6.5,<0.7", "pds-core>=0.6.5,<0.7"),
         id="duplicate-canonical",
     ),
     pytest.param(
-        ("pds-core>=0.6.2,<0.7", "pds_core>=0.6.2,<0.7"),
+        ("pds-core>=0.6.5,<0.7", "pds_core>=0.6.5,<0.7"),
         id="duplicate-underscore-alias",
     ),
     pytest.param(
-        ("pds-core>=0.6.2,<0.7", "PDS.Core>=0.6.2,<0.7"),
+        ("pds-core>=0.6.5,<0.7", "PDS.Core>=0.6.5,<0.7"),
         id="duplicate-dot-case-alias",
     ),
     pytest.param(("pds-core>=0.6,<0.7",), id="old-floor"),
     pytest.param(("pds-core>=0.7,<0.8",), id="core-07-only"),
-    pytest.param(("pds-core>=0.6.2",), id="unbounded"),
+    pytest.param(("pds-core>=0.6.5",), id="unbounded"),
     pytest.param(
         ("pds-core @ https://example.invalid/pds_core.whl",),
         id="direct-url",
     ),
-    pytest.param(("pds-core[test]>=0.6.2,<0.7",), id="extra"),
+    pytest.param(("pds-core[test]>=0.6.5,<0.7",), id="extra"),
     pytest.param(
-        ('pds-core>=0.6.2,<0.7; python_version >= "3.11"',),
+        ('pds-core>=0.6.5,<0.7; python_version >= "3.11"',),
         id="environment-marker",
     ),
 )

@@ -22,20 +22,17 @@ def _project() -> dict[str, object]:
     return tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
 
-def test_current_quillan_requires_first_core_module_operations_release() -> None:
+def test_current_quillan_requires_reader_metadata_core_release() -> None:
     project = _project()["project"]
     assert isinstance(project, dict)
-    dependencies = project["dependencies"]
-    assert isinstance(dependencies, list)
-    values = [str(item) for item in dependencies if str(item).startswith("pds-core")]
-    assert values == ["pds-core>=0.6.2,<0.7"]
+    deps = project["dependencies"]
+    assert isinstance(deps, list)
+    values = [str(item) for item in deps if str(item).startswith("pds-core")]
+    assert values == ["pds-core>=0.6.5,<0.7"]
     requirement = Requirement(values[0])
-    assert Version("0.6.2") in requirement.specifier
-    assert Version("0.6.3") in requirement.specifier
-    assert Version("0.6.4") in requirement.specifier
-    assert Version("0.6.1") not in requirement.specifier
+    assert Version("0.6.5") in requirement.specifier
+    assert Version("0.6.4") not in requirement.specifier
     assert Version("0.7.0") not in requirement.specifier
-
 
 def test_pyproject_declares_exact_operations_entry_point() -> None:
     project = _project()["project"]
@@ -72,61 +69,24 @@ def test_installed_operations_entry_point_resolves_exact_provider() -> None:
     assert provider() == get_module_operations_profile()
 
 
-def test_exact_core_wheel_verifier_keeps_historical_and_current_contracts() -> None:
+def test_core_wheel_verifier_keeps_historical_and_current_contracts() -> None:
     from scripts.verify_core_wheel import CORE_WHEEL_CONTRACTS
 
     assert tuple(sorted(CORE_WHEEL_CONTRACTS)) == (
-        "0.6.0",
-        "0.6.2",
-        "0.6.3",
-        "0.6.4",
+        "0.6.0", "0.6.2", "0.6.3", "0.6.4", "0.6.5"
     )
-    minimum = CORE_WHEEL_CONTRACTS["0.6.2"]
-    assert minimum.filename == "pds_core-0.6.2-py3-none-any.whl"
-    assert minimum.version == "0.6.2"
-    assert (
-        minimum.sha256
-        == "b9d5de7d467d18716f415da87f359e940603d9c738a3a9ae9309272ebe78a848"
-    )
-    candidate = CORE_WHEEL_CONTRACTS["0.6.4"]
-    assert candidate.filename == "pds_core-0.6.4-py3-none-any.whl"
-    assert candidate.version == "0.6.4"
-    assert (
-        candidate.sha256
-        == "48cea9317f2967bdc0f2d4c14349a56677c7c3f8211f0f33978ccb1a1c75859b"
-    )
+    assert CORE_WHEEL_CONTRACTS["0.6.4"].version == "0.6.4"
+    assert CORE_WHEEL_CONTRACTS["0.6.5"].sha256 == "9ace75f17b23b7f0ed6a709d531af5120db43d0325b4148d26f2d6ba1d4b3c18"
 
+def test_ci_uses_exact_core_065_and_no_historical_matrix() -> None:
+    source = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "Download released Core 0.6.5" in source
+    assert "--core-version 0.6.5" in source
+    assert "core-063-qualification:" not in source
+    assert "operations-wheel-qualification:" not in source
+    assert "installed-wheel:" in source
 
-def test_ci_uses_062_as_current_minimum_and_keeps_063_qualification() -> None:
-    source = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
-        encoding="utf-8"
-    )
-    assert "Download released Core 0.6.2" in source
-    assert source.count("pds_core-0.6.2-py3-none-any.whl") >= 4
-    assert source.count("--core-version 0.6.2") >= 2
-    assert (
-        'verify_core_wheel.py "${{ runner.temp }}/pds_core-0.6.2-py3-none-any.whl" '
-        "--core-version 0.6.2"
-    ) in source
-    assert (
-        'verify_core_wheel.py "${{ runner.temp }}/pds_core-0.6.2-py3-none-any.whl" '
-        "--core-version 0.6.2 --verify-installed"
-    ) in source
-    validation_prefix = source.split("core-063-qualification:", 1)[0]
-    assert "pds_core-0.6.0-py3-none-any.whl" not in validation_prefix
-    assert "--core-version 0.6.0" not in validation_prefix
-    assert "Download released Core 0.6.0" not in source
-    assert "core-063-qualification:" in source
-    assert "Download released Core 0.6.3" in source
-    assert "--core-version 0.6.3" in source
-
-
-def test_active_release_candidate_uses_module_operations_core_range() -> None:
-    source = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
-        encoding="utf-8"
-    )
-    assert "'--core-version', '0.6.2'" in source
-    assert "'--core-version', '0.6.3'" in source
-    assert "'--core-version', '0.6.4'" in source
-    assert "'--core-version', '0.6.0'" not in source
-    assert "'--expected-core-version', '0.6.0'" not in source
+def test_active_release_candidate_uses_core_065() -> None:
+    source = (ROOT / "scripts/validate_release_candidate.ps1").read_text(encoding="utf-8")
+    assert "'--core-version', '0.6.5'" in source
+    assert "$PdsCore064Wheel" not in source

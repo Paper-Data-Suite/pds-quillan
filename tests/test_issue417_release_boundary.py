@@ -20,17 +20,11 @@ def test_reporting_runtime_modules_are_required_in_release_artifacts() -> None:
         assert relative in REQUIRED_PACKAGE_FILES
 
 
-def test_release_docs_use_final_released_core_064_identity() -> None:
-    process = (ROOT / "docs" / "release_process.md").read_text(encoding="utf-8")
-    checklist = (ROOT / "docs" / "release_checklist.md").read_text(
-        encoding="utf-8"
-    )
-    for text in (process, checklist):
-        assert "48cea9317f2967bdc0f2d4c14349a56677c7c3f8211f0f33978ccb1a1c75859b" in text
-        assert "152d1c65064c4f8fe55249ff2ca3379d7c4d6ccb" in text
-        assert "released Core 0.6.4" in text
-        assert "pds-core>=0.6.2,<0.7" in text
-
+def test_issue417_historical_evidence_and_new_core_are_independent() -> None:
+    historical = (ROOT / "docs/v0.10.5_installed_reporting_review_acceptance.md").read_text(encoding="utf-8")
+    current = (ROOT / "docs/release_process.md").read_text(encoding="utf-8")
+    assert "released Core 0.6.4" in historical
+    assert "pds-core>=0.6.5,<0.7" in current
 
 def test_reporting_contract_matches_implemented_consolidated_pdf() -> None:
     text = (ROOT / "docs" / "assignment_reporting_contract.md").read_text(
@@ -43,26 +37,13 @@ def test_reporting_contract_matches_implemented_consolidated_pdf() -> None:
     assert "Reports must not convert ratings into percentages or grades." not in text
 
 
-def test_ci_operations_wheel_matrix_includes_released_core_064() -> None:
-    text = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-    matrix = text.split("operations-wheel-qualification:", 1)[1]
-    assert 'core: "0.6.4"' in matrix
-    assert "releases/download/v{version}/{filename}" in matrix
-    assert "--core-version ${{ matrix.core }}" in matrix
-    harness = (
-        ROOT / "scripts" / "run_operations_wheel_acceptance.py"
-    ).read_text(encoding="utf-8")
-    assert 'choices=("0.6.2", "0.6.3", "0.6.4")' in harness
+def test_current_ci_runs_one_core_065_wheel_gate() -> None:
+    current = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "installed-wheel:" in current
+    assert "--expected-core-version 0.6.5" in current
 
-
-def test_candidate_validator_runs_issue417_before_core064_specific_regression() -> None:
-    text = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
-        encoding="utf-8"
-    )
-    issue417 = text.index("Installed Issue #417 reporting/review Core $CoreVersion")
-    issue416 = text.index("if ($CoreVersion -eq '0.6.4')")
-    assert issue417 < issue416
-    assert "verify_installed_issue417_acceptance.py" in text
-    assert "'--expected-quillan-version', '0.10.5'" in text
-    assert "READY FOR #417 RELEASE AUTHORIZATION: NO" in text
-    assert "READY FOR #416 RELEASE AUTHORIZATION" not in text
+def test_historical_issue417_is_not_repeated_in_current_candidate() -> None:
+    current = (ROOT / "scripts/validate_release_candidate.ps1").read_text(encoding="utf-8")
+    assert "verify_installed_issue417_acceptance.py" not in current
+    assert "verify_installed_issue419_recovery.py" in current
+    assert "verify_installed_issue421_reader_contract.py" in current

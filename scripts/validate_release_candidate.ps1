@@ -1,331 +1,147 @@
 param(
     [string]$Python = "python",
-    [Parameter(Mandatory)] [string]$PdsCore062Wheel,
-    [Parameter(Mandatory)] [string]$PdsCore063Wheel,
-    [Parameter(Mandatory)] [string]$PdsCore064Wheel,
+    [Parameter(Mandatory)] [string]$PdsCore065Wheel,
     [Parameter(Mandatory)] [string]$ArtifactOutputDirectory,
     [switch]$SkipRepositoryDevelopmentChecks
 )
 
 $ErrorActionPreference = "Stop"
-$Prefix = "pds-quillan-v0105-candidate-"
-$Repository = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$RepositoryParent = Split-Path $Repository -Parent
-$OriginalLocation = (Get-Location).Path
-$ResolvedPython = (Get-Command $Python -ErrorAction Stop).Source
-$Core062Wheel = (Resolve-Path -LiteralPath $PdsCore062Wheel).Path
-$Core063Wheel = (Resolve-Path -LiteralPath $PdsCore063Wheel).Path
-$Core064Wheel = (Resolve-Path -LiteralPath $PdsCore064Wheel).Path
-$TemporaryRoot = Join-Path ([System.IO.Path]::GetTempPath()) (
-    "$Prefix$([guid]::NewGuid().ToString('N'))"
-)
-$GeneratedBuildRoots = @(
-    (Join-Path $Repository 'build'),
-    (Join-Path $Repository 'quillan.egg-info')
-)
+$Repository = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
+$PythonExe = (Get-Command $Python -ErrorAction Stop).Source
+$CoreWheel = (Resolve-Path -LiteralPath $PdsCore065Wheel).Path
+$ArtifactOut = [System.IO.Path]::GetFullPath($ArtifactOutputDirectory)
+$Prefix = "pds-quillan-v0106-"
+$TempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ($Prefix + [guid]::NewGuid().ToString('N'))
+$WheelName = "quillan-0.10.6-py3-none-any.whl"
+$SdistName = "quillan-0.10.6.tar.gz"
+$Artifacts = Join-Path $TempRoot "artifacts"
+$Environment = Join-Path $TempRoot "venv"
+$Outside = Join-Path $TempRoot "outside-source"
+$Work = Join-Path $TempRoot "application"
+$RecoveryWork = Join-Path $TempRoot "scan-recovery"
+$InstalledPython = Join-Path $Environment 'Scripts\python.exe'
 
 function Invoke-Required {
-    param([string]$Label, [string]$FilePath, [string[]]$Arguments)
+    param([string]$Label, [string]$Executable, [string[]]$Arguments)
     Write-Host "=== $Label ==="
-    $SavedPythonPath = $env:PYTHONPATH
+    $PriorPythonPath = $env:PYTHONPATH
     try {
         Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
-        & $FilePath @Arguments
-        $ExitCode = $LASTEXITCODE
+        & $Executable @Arguments
+        if ($LASTEXITCODE -ne 0) { throw "$Label failed with exit code $LASTEXITCODE" }
     }
-    finally {
-        if ($null -eq $SavedPythonPath) {
-            Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
-        }
-        else { $env:PYTHONPATH = $SavedPythonPath }
-    }
-    if ($ExitCode -ne 0) { throw "$Label failed with exit code $ExitCode" }
+    finally { if ($null -eq $PriorPythonPath) { Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue } else { $env:PYTHONPATH = $PriorPythonPath } }
 }
 
-function Remove-ValidatedTemporaryRoot {
-    if (-not (Test-Path -LiteralPath $TemporaryRoot)) { return }
-    $Resolved = (Resolve-Path -LiteralPath $TemporaryRoot).Path.TrimEnd('\')
-    $Temp = [System.IO.Path]::GetFullPath(
-        [System.IO.Path]::GetTempPath()
-    ).TrimEnd('\')
-    $HomePath = [System.IO.Path]::GetFullPath(
-        [Environment]::GetFolderPath('UserProfile')
-    ).TrimEnd('\')
-    $Drive = [System.IO.Path]::GetPathRoot($Resolved).TrimEnd('\')
-    $Forbidden = @(
-        $Repository.TrimEnd('\'), $RepositoryParent.TrimEnd('\'),
-        $OriginalLocation.TrimEnd('\'), $HomePath, $Drive
-    )
-    if (-not $Resolved.StartsWith($Temp + '\')) {
-        throw "Refusing cleanup outside OS temp: $Resolved"
-    }
-    if (-not (Split-Path $Resolved -Leaf).StartsWith($Prefix)) {
-        throw "Refusing cleanup with unexpected prefix: $Resolved"
-    }
-    if ($Forbidden -contains $Resolved) {
-        throw "Refusing protected cleanup: $Resolved"
-    }
-    $Item = Get-Item -LiteralPath $Resolved -Force
-    if ($Item.LinkType) { throw "Refusing linked cleanup root: $Resolved" }
-    Remove-Item -LiteralPath $Resolved -Recurse -Force
+if ((git -C $Repository status --porcelain --untracked-files=all)) {
+    throw 'Candidate validation requires a clean Git working tree.'
+}
+$Head = (git -C $Repository rev-parse HEAD).Trim()
+if ([string]::IsNullOrWhiteSpace($Head)) { throw 'Could not resolve source commit.' }
+foreach ($Relative in @('build', 'quillan.egg-info')) {
+    $Candidate = Join-Path $Repository $Relative
+    if (Test-Path -LiteralPath $Candidate) { throw "Remove generated build residue before validation: $Relative" }
+}
+if (Test-Path -LiteralPath $ArtifactOut) {
+    $Existing = Get-Item -LiteralPath $ArtifactOut -Force
+    if ($Existing.LinkType -or -not $Existing.PSIsContainer) { throw 'Artifact destination is not an ordinary directory.' }
+    if (Get-ChildItem -LiteralPath $ArtifactOut -Force | Select-Object -First 1) { throw 'Artifact output must be empty.' }
 }
 
-function Remove-ValidatedGeneratedBuildRoots {
-    foreach ($Target in $GeneratedBuildRoots) {
-        if (-not (Test-Path -LiteralPath $Target)) { continue }
-        $Item = Get-Item -LiteralPath $Target -Force
-        if ($Item.FullName -ne $Target -or $Item.LinkType) {
-            throw "Refusing unsafe generated-build cleanup: $($Item.FullName)"
-        }
-        Remove-Item -LiteralPath $Target -Recurse -Force
-    }
-}
-
-$CoreVerifier = Join-Path $PSScriptRoot 'verify_core_wheel.py'
-$ArtifactPersister = Join-Path $PSScriptRoot 'persist_release_artifacts.py'
-$ArtifactInspector = Join-Path $PSScriptRoot 'inspect_release_artifacts.py'
-$InstalledAcceptance = Join-Path $PSScriptRoot 'run_installed_acceptance.py'
-$ProducerAcceptance = Join-Path $PSScriptRoot 'verify_installed_producer_acceptance.py'
-$OperationsAcceptance = Join-Path $PSScriptRoot 'verify_installed_operations_acceptance.py'
-$ClassSetAcceptance = Join-Path $PSScriptRoot 'verify_installed_class_set_acceptance.py'
-$ReleaseEdgeAcceptance = Join-Path $PSScriptRoot 'verify_installed_release_edges.py'
-$SelectedReviewAcceptance = Join-Path $PSScriptRoot 'verify_installed_selected_review_reads.py'
-$ResubmissionAcceptance = Join-Path $PSScriptRoot 'verify_installed_resubmission_inbox.py'
-$Issue416Acceptance = Join-Path $PSScriptRoot 'verify_installed_issue416_scan_paths.py'
-$Issue417Acceptance = Join-Path $PSScriptRoot 'verify_installed_issue417_acceptance.py'
-$Issue419Acceptance = Join-Path $PSScriptRoot 'verify_installed_issue419_recovery.py'
-
-Invoke-Required "Authenticate official Core 0.6.2 wheel" $ResolvedPython @(
-    $CoreVerifier, $Core062Wheel, '--core-version', '0.6.2'
+Invoke-Required 'Authenticate released Core 0.6.5' $PythonExe @(
+    (Join-Path $PSScriptRoot 'verify_core_wheel.py'), $CoreWheel,
+    '--core-version', '0.6.5'
 )
-Invoke-Required "Authenticate official Core 0.6.3 wheel" $ResolvedPython @(
-    $CoreVerifier, $Core063Wheel, '--core-version', '0.6.3'
-)
-Invoke-Required "Authenticate released Core 0.6.4 wheel" $ResolvedPython @(
-    $CoreVerifier, $Core064Wheel, '--core-version', '0.6.4'
-)
-
-foreach ($Target in $GeneratedBuildRoots) {
-    if (Test-Path -LiteralPath $Target) {
-        throw "Refusing to overwrite pre-existing generated-build path: $Target"
-    }
-}
 
 try {
-    New-Item -ItemType Directory -Path $TemporaryRoot | Out-Null
-    $ArtifactRoot = Join-Path $TemporaryRoot "artifacts"
-    New-Item -ItemType Directory -Path $ArtifactRoot | Out-Null
+    New-Item -ItemType Directory -Path $Artifacts, $Outside -Force | Out-Null
+    if (-not $SkipRepositoryDevelopmentChecks) {
+        Invoke-Required 'Repository development checks (run once)' 'powershell' @(
+            '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', (Join-Path $Repository 'run_tests.ps1'), '-Python', $PythonExe
+        )
+    } else { Write-Host 'Repository checks reused from passing CI; full pytest not repeated.' }
 
     Push-Location $Repository
     try {
-        if ($SkipRepositoryDevelopmentChecks) {
-            Write-Host "=== Repository development checks ==="
-            Write-Host (
-                "REUSED: repository development checks already passed in this qualification cycle; " +
-                "full pytest is not being repeated."
-            )
-        }
-        else {
-            Invoke-Required "Repository development checks" 'powershell' @(
-                '-NoProfile', '-ExecutionPolicy', 'Bypass',
-                '-File', (Join-Path $Repository 'run_tests.ps1'),
-                '-Python', $ResolvedPython
-            )
-        }
-        Invoke-Required "compileall" $ResolvedPython @(
-            '-m', 'compileall', '-q', 'quillan', 'tests'
-        )
-        Invoke-Required "Build one wheel and sdist" $ResolvedPython @(
-            '-m', 'build', '--wheel', '--sdist', '--outdir', $ArtifactRoot
-        )
-        Invoke-Required "Twine" $ResolvedPython @(
-            '-m', 'twine', 'check', (Join-Path $ArtifactRoot '*')
+        Invoke-Required 'Build exact release wheel and sdist' $PythonExe @(
+            '-m', 'build', '--wheel', '--sdist', '--outdir', $Artifacts
         )
     }
     finally { Pop-Location }
-
-    $Wheel = Join-Path $ArtifactRoot 'quillan-0.10.5-py3-none-any.whl'
-    $Sdist = Join-Path $ArtifactRoot 'quillan-0.10.5.tar.gz'
-    Invoke-Required "Artifact inspection" $ResolvedPython @(
-        $ArtifactInspector, $Wheel, $Sdist
+    $Wheel = Join-Path $Artifacts $WheelName
+    $Sdist = Join-Path $Artifacts $SdistName
+    if (-not (Test-Path -LiteralPath $Wheel -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $Sdist -PathType Leaf)) { throw 'Exact release artifacts missing.' }
+    Invoke-Required 'Twine distribution check' $PythonExe @('-m', 'twine', 'check', $Wheel, $Sdist)
+    Invoke-Required 'Inspect exact artifacts' $PythonExe @(
+        (Join-Path $PSScriptRoot 'inspect_release_artifacts.py'), $Wheel, $Sdist
     )
 
-    $Endpoints = @(
-        @{ Version = '0.6.2'; Wheel = $Core062Wheel },
-        @{ Version = '0.6.3'; Wheel = $Core063Wheel },
-        @{ Version = '0.6.4'; Wheel = $Core064Wheel }
-    )
-
-    foreach ($Endpoint in $Endpoints) {
-        $CoreVersion = $Endpoint.Version
-        $CoreWheel = $Endpoint.Wheel
-        $ModeRoot = Join-Path $TemporaryRoot ("core-" + $CoreVersion.Replace('.', ''))
-        $Environment = Join-Path $ModeRoot 'venv'
-        $Work = Join-Path $ModeRoot 'outside-source'
-        $Acceptance = Join-Path $ModeRoot 'acceptance'
-        $OperationsWorkspace = Join-Path $ModeRoot 'operations-workspace'
-        $SelectedReviewWorkspace = Join-Path $ModeRoot 'selected-review-workspace'
-        $ResubmissionWorkspace = Join-Path $ModeRoot 'resubmission-workspace'
-        $Issue416Workspace = Join-Path $ModeRoot 'issue416-workspace'
-        $Issue417Workspace = Join-Path $ModeRoot 'issue417-workspace'
-$Issue419Workspace = Join-Path $ModeRoot 'issue419-workspace'
-        New-Item -ItemType Directory -Path $ModeRoot | Out-Null
-        New-Item -ItemType Directory -Path $Work | Out-Null
-        New-Item -ItemType Directory -Path $OperationsWorkspace | Out-Null
-
-        Invoke-Required "Create Core $CoreVersion environment" $ResolvedPython @(
-            '-m', 'venv', $Environment
-        )
-        $EnvironmentPython = Join-Path $Environment 'Scripts\python.exe'
-        Invoke-Required "Install Core $CoreVersion" $EnvironmentPython @(
-            '-m', 'pip', 'install', $CoreWheel
-        )
-        Invoke-Required "Verify installed Core $CoreVersion" $EnvironmentPython @(
-            $CoreVerifier, $CoreWheel, '--core-version', $CoreVersion,
-            '--verify-installed'
-        )
-        Invoke-Required "Install exact Quillan wheel for Core $CoreVersion" `
-            $EnvironmentPython @('-m', 'pip', 'install', $Wheel)
-        Invoke-Required "pip check Core $CoreVersion" $EnvironmentPython @(
-            '-m', 'pip', 'check'
-        )
-
-        Push-Location $Work
-        try {
-            Invoke-Required "Installed application workflow Core $CoreVersion" `
-                $EnvironmentPython @(
-                    $InstalledAcceptance,
-                    '--work', $Acceptance,
-                    '--repository', $Repository,
-                    '--full-workflow',
-                    '--expected-core-version', $CoreVersion
-                )
-            Invoke-Required "Installed producer lifecycle Core $CoreVersion" `
-                $EnvironmentPython @(
-                    $ProducerAcceptance,
-                    '--workspace', (Join-Path $Acceptance 'workflow-workspace'),
-                    '--repository', $Repository,
-                    '--version', '0.10.5',
-                    '--expected-core-version', $CoreVersion
-                )
-            Invoke-Required "Installed module operations Core $CoreVersion" `
-                $EnvironmentPython @(
-                    $OperationsAcceptance,
-                    '--workspace', $OperationsWorkspace,
-                    '--repository', $Repository,
-                    '--expected-core-version', $CoreVersion
-                )
-            Invoke-Required "Installed class-set acceptance Core $CoreVersion" `
-                $EnvironmentPython @(
-                    $ClassSetAcceptance,
-                    '--workspace', (Join-Path $Acceptance 'workflow-workspace'),
-                    '--repository', $Repository,
-                    '--expected-core-version', $CoreVersion
-                )
-            Invoke-Required "Installed release-edge acceptance Core $CoreVersion" `
-                $EnvironmentPython @(
-                    $ReleaseEdgeAcceptance,
-                    '--workspace', (Join-Path $Acceptance 'workflow-workspace'),
-                    '--repository', $Repository,
-                    '--expected-core-version', $CoreVersion
-                )
-            Invoke-Required "Installed selected-review reads Core $CoreVersion" `
-                $EnvironmentPython @(
-                    $SelectedReviewAcceptance,
-                    '--workspace', $SelectedReviewWorkspace,
-                    '--repository', $Repository,
-                    '--expected-quillan-version', '0.10.5',
-                    '--expected-core-version', $CoreVersion
-                )
-            Invoke-Required "Installed resubmission inbox Core $CoreVersion" `
-                $EnvironmentPython @(
-                    $ResubmissionAcceptance,
-                    '--workspace', $ResubmissionWorkspace,
-                    '--repository', $Repository,
-                    '--expected-quillan-version', '0.10.5',
-                    '--expected-core-version', $CoreVersion
-                )
-            Invoke-Required "Installed Issue #417 reporting/review Core $CoreVersion" `
-                $EnvironmentPython @(
-                    $Issue417Acceptance,
-                    '--workspace', $Issue417Workspace,
-                    '--repository', $Repository,
-                    '--expected-quillan-version', '0.10.5',
-                    '--expected-core-version', $CoreVersion
-                )
-            if ($CoreVersion -eq '0.6.4') {
-                Invoke-Required "Installed Issue #416 scan paths Core 0.6.4" `
-                    $EnvironmentPython @(
-                        $Issue416Acceptance,
-                        '--workspace', $Issue416Workspace,
-                        '--repository', $Repository,
-                        '--expected-quillan-version', '0.10.5',
-                        '--expected-core-version', $CoreVersion
-                    )
-                Invoke-Required "Installed Issue #419 scan recovery Core 0.6.4" `
-                    $EnvironmentPython @(
-                        $Issue419Acceptance,
-                        '--workspace', $Issue419Workspace,
-                        '--repository', $Repository,
-                        '--expected-quillan-version', '0.10.5',
-                        '--expected-core-version', $CoreVersion
-                    )
-            }
-        }
-        finally { Pop-Location }
-    }
-
-    $SdistRoot = Join-Path $TemporaryRoot 'sdist'
-    $SdistEnvironment = Join-Path $SdistRoot 'venv'
-    $SdistWork = Join-Path $SdistRoot 'outside-source'
-    New-Item -ItemType Directory -Path $SdistRoot | Out-Null
-    New-Item -ItemType Directory -Path $SdistWork | Out-Null
-    Invoke-Required "Create sdist environment" $ResolvedPython @(
-        '-m', 'venv', $SdistEnvironment
-    )
-    $SdistPython = Join-Path $SdistEnvironment 'Scripts\python.exe'
-    Invoke-Required "Install released Core 0.6.4 for sdist smoke" $SdistPython @(
-        '-m', 'pip', 'install', $Core064Wheel
-    )
-    Invoke-Required "Install exact Quillan sdist" $SdistPython @(
-        '-m', 'pip', 'install', $Sdist
-    )
-    Invoke-Required "pip check sdist" $SdistPython @('-m', 'pip', 'check')
-    Push-Location $SdistWork
+    Invoke-Required 'Create isolated environment' $PythonExe @('-m', 'venv', $Environment)
+    Push-Location $Outside
     try {
-        Invoke-Required "Installed sdist smoke" $SdistPython @(
-            $InstalledAcceptance,
-            '--work', (Join-Path $SdistRoot 'acceptance'),
-            '--repository', $Repository,
-            '--expected-core-version', '0.6.4'
+        Invoke-Required 'Install exact Core 0.6.5' $InstalledPython @('-m', 'pip', 'install', $CoreWheel)
+        Invoke-Required 'Verify installed Core provenance' $InstalledPython @(
+            (Join-Path $PSScriptRoot 'verify_core_wheel.py'), $CoreWheel,
+            '--core-version', '0.6.5', '--verify-installed'
+        )
+        Invoke-Required 'Install exact Quillan 0.10.6' $InstalledPython @('-m', 'pip', 'install', $Wheel)
+        Invoke-Required 'Dependency integrity' $InstalledPython @('-m', 'pip', 'check')
+        Invoke-Required 'Installed reader declaration' $InstalledPython @(
+            (Join-Path $PSScriptRoot 'verify_installed_issue421_reader_contract.py'),
+            '--fixture', (Join-Path $Repository 'tests\fixtures\publication\quillan_academic_result_manifest_v1.json'),
+            '--repository', $Repository
+        )
+        Invoke-Required 'Installed publication and application workflow' $InstalledPython @(
+            (Join-Path $PSScriptRoot 'run_installed_acceptance.py'),
+            '--work', $Work, '--repository', $Repository,
+            '--full-workflow', '--expected-core-version', '0.6.5'
+        )
+        Invoke-Required 'Installed publication producer acceptance' $InstalledPython @(
+            (Join-Path $PSScriptRoot 'verify_installed_producer_acceptance.py'),
+            '--workspace', (Join-Path $Work 'workflow-workspace'),
+            '--repository', $Repository, '--version', '0.10.6',
+            '--expected-core-version', '0.6.5'
+        )
+        Invoke-Required 'Installed Issue #419 scan recovery' $InstalledPython @(
+            (Join-Path $PSScriptRoot 'verify_installed_issue419_recovery.py'),
+            '--workspace', $RecoveryWork, '--repository', $Repository,
+            '--expected-quillan-version', '0.10.6',
+            '--expected-core-version', '0.6.5'
         )
     }
     finally { Pop-Location }
 
-    Invoke-Required "Persist exact tested artifacts" $ResolvedPython @(
-        $ArtifactPersister,
-        '--repository', $Repository,
-        '--output-directory', $ArtifactOutputDirectory,
-        '--wheel', $Wheel,
-        '--sdist', $Sdist
+    Invoke-Required 'Persist exact tested artifacts' $PythonExe @(
+        (Join-Path $PSScriptRoot 'persist_release_artifacts.py'),
+        '--repository', $Repository, '--output-directory', $ArtifactOut,
+        '--wheel', $Wheel, '--sdist', $Sdist
     )
-
-    Get-Item -LiteralPath $Wheel, $Sdist |
-        Select-Object Name, Length |
-        Format-Table -AutoSize
-    Get-FileHash -Algorithm SHA256 -LiteralPath `
-        $Core062Wheel, $Core063Wheel, $Core064Wheel, $Wheel, $Sdist |
-        Format-Table -AutoSize
-
-    Write-Host "Automated v0.10.5 candidate validation: PASS"
-    Write-Host "Issue #417 installed reporting/review acceptance: PASS"
-    Write-Host "Issue #416 installed scan-path acceptance: PASS"
-    Write-Host "v0.10.0 physical acceptance is historical only: NOT REQUIRED FOR #417"
-    Write-Host "READY FOR #417 RELEASE AUTHORIZATION: NO"
-    Write-Host "Release authorization: NOT GRANTED"
+    Write-Host "Source commit: $Head"
+    Get-FileHash -Algorithm SHA256 -LiteralPath $Wheel, $Sdist | Format-Table -AutoSize
+    Write-Host 'Quillan 0.10.6 Core 0.6.5 qualification: PASS'
+    Write-Host 'Release authorization: NOT GRANTED (owner must authorize tag and GitHub release)'
 }
 finally {
-    Set-Location $OriginalLocation
-    Remove-ValidatedGeneratedBuildRoots
-    Remove-ValidatedTemporaryRoot
+    foreach ($Relative in @('build', 'quillan.egg-info')) {
+        $Candidate = Join-Path $Repository $Relative
+        if (Test-Path -LiteralPath $Candidate) {
+            $Item = Get-Item -LiteralPath $Candidate -Force
+            if ($Item.LinkType -or -not $Item.PSIsContainer -or $Item.FullName -ne $Candidate) {
+                throw "Unsafe generated path; refusing deletion: $Candidate"
+            }
+            Remove-Item -LiteralPath $Candidate -Recurse -Force
+        }
+    }
+    if (Test-Path -LiteralPath $TempRoot) {
+        $ResolvedTemp = (Resolve-Path -LiteralPath $TempRoot).Path
+        $ExpectedPrefix = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\') + '\' + $Prefix
+        if (-not $ResolvedTemp.StartsWith($ExpectedPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Unexpected temporary cleanup root: $ResolvedTemp"
+        }
+        $Item = Get-Item -LiteralPath $ResolvedTemp -Force
+        if ($Item.LinkType) { throw 'Refusing linked temporary cleanup root.' }
+        Remove-Item -LiteralPath $ResolvedTemp -Recurse -Force
+    }
 }

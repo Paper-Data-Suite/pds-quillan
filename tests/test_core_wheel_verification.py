@@ -21,6 +21,8 @@ from scripts.verify_core_wheel import (
     CORE_063_SHA256,
     CORE_064_FILENAME,
     CORE_064_SHA256,
+    CORE_065_FILENAME,
+    CORE_065_SHA256,
     CORE_WHEEL_CONTRACTS,
     CoreWheelContract,
     CoreWheelVerificationError,
@@ -67,7 +69,7 @@ def _matching_contract(
 
 
 def test_known_contracts_pin_exact_060_062_063_and_064_assets() -> None:
-    assert tuple(sorted(CORE_WHEEL_CONTRACTS)) == ("0.6.0", "0.6.2", "0.6.3", "0.6.4")
+    assert tuple(sorted(CORE_WHEEL_CONTRACTS)) == ("0.6.0", "0.6.2", "0.6.3", "0.6.4", "0.6.5")
 
     historical = known_core_wheel_contract("0.6.0")
     assert historical.filename == AUTHORITATIVE_CORE_FILENAME
@@ -89,13 +91,18 @@ def test_known_contracts_pin_exact_060_062_063_and_064_assets() -> None:
     assert candidate.sha256 == CORE_064_SHA256 == "48cea9317f2967bdc0f2d4c14349a56677c7c3f8211f0f33978ccb1a1c75859b"
     assert candidate.version == "0.6.4"
 
+    latest = known_core_wheel_contract("0.6.5")
+    assert latest.filename == CORE_065_FILENAME
+    assert latest.sha256 == CORE_065_SHA256 == "9ace75f17b23b7f0ed6a709d531af5120db43d0325b4148d26f2d6ba1d4b3c18"
+    assert latest.version == "0.6.5"
+
 
 def test_unknown_release_contract_is_rejected() -> None:
     with pytest.raises(CoreWheelVerificationError, match="must be one of"):
         known_core_wheel_contract("0.6.1")
 
 
-@pytest.mark.parametrize("version", ("0.6.0", "0.6.2", "0.6.3", "0.6.4"))
+@pytest.mark.parametrize("version", ("0.6.0", "0.6.2", "0.6.3", "0.6.4", "0.6.5"))
 def test_correct_metadata_and_hash_contract_is_accepted(
     tmp_path: Path,
     version: str,
@@ -184,7 +191,7 @@ def _installed_identity(
     )
 
 
-@pytest.mark.parametrize("version", ("0.6.0", "0.6.2", "0.6.3", "0.6.4"))
+@pytest.mark.parametrize("version", ("0.6.0", "0.6.2", "0.6.3", "0.6.4", "0.6.5"))
 def test_installed_identity_accepts_explicit_selected_release(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -44,18 +44,12 @@ def test_acceptance_covers_cli_menu_and_failure_invariants() -> None:
         assert name in content
 
 
-def test_release_candidate_runs_419_only_against_released_core_064() -> None:
-    candidate = (ROOT / "scripts/validate_release_candidate.ps1").read_text(
-        encoding="utf-8"
-    )
+def test_release_candidate_qualifies_419_once_at_released_core_065() -> None:
+    candidate = (ROOT / "scripts/validate_release_candidate.ps1").read_text(encoding="utf-8")
     assert "verify_installed_issue419_recovery.py" in candidate
-    assert "$Issue419Acceptance" in candidate
-    assert "$Issue419Workspace" in candidate
-    assert 'if ($CoreVersion -eq \'0.6.4\')' in candidate
-    assert '"Installed Issue #419 scan recovery Core 0.6.4"' in candidate
-    assert "'--expected-core-version', $CoreVersion" in candidate
-    assert "quillan-0.10.5-py3-none-any.whl" in candidate
-
+    assert "'--expected-core-version', '0.6.5'" in candidate
+    assert "'--expected-quillan-version', '0.10.6'" in candidate
+    assert "quillan-0.10.6-py3-none-any.whl" in candidate
 
 def test_standalone_runner_authenticates_exact_core_and_does_not_touch_repo() -> None:
     source = (ROOT / "scripts/run_issue419_wheel_acceptance.ps1").read_text(

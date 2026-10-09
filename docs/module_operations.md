@@ -11,10 +11,12 @@ system, or a new source of authoritative workflow state.
 
 The provider requires the module-operations API introduced by PDS Core 0.6.2.
 
+Quillan now declares the higher Core 0.6.5 floor for publication reader metadata; the module-operations provider itself continues to use the unchanged Core 0.6.2 operations API.
+
 Quillan therefore declares:
 
 ```text
-pds-core>=0.6.2,<0.7
+pds-core>=0.6.5,<0.7
 ```
 
 The provider uses:

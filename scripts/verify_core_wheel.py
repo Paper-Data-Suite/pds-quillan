@@ -43,6 +43,13 @@ CORE_064_SHA256: Final = (
 )
 CORE_064_VERSION: Final = "0.6.4"
 
+# Released Core 0.6.5: manifest-specific producer reader contracts.
+CORE_065_FILENAME: Final = "pds_core-0.6.5-py3-none-any.whl"
+CORE_065_SHA256: Final = (
+    "9ace75f17b23b7f0ed6a709d531af5120db43d0325b4148d26f2d6ba1d4b3c18"
+)
+CORE_065_VERSION: Final = "0.6.5"
+
 
 class CoreWheelVerificationError(ValueError):
     """Raised when a supplied Core wheel is not the selected official release."""
@@ -77,6 +84,12 @@ CORE_WHEEL_CONTRACTS: Final[dict[str, CoreWheelContract]] = {
         sha256=CORE_064_SHA256,
         distribution=AUTHORITATIVE_CORE_DISTRIBUTION,
         version=CORE_064_VERSION,
+    ),
+    "0.6.5": CoreWheelContract(
+        filename=CORE_065_FILENAME,
+        sha256=CORE_065_SHA256,
+        distribution=AUTHORITATIVE_CORE_DISTRIBUTION,
+        version=CORE_065_VERSION,
     ),
 }
 

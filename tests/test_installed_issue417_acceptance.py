@@ -51,15 +51,7 @@ def test_issue417_installed_program_uses_only_production_modules() -> None:
     assert "is_relative_to(repository)" in source
 
 
-def test_release_validator_runs_issue417_acceptance_at_every_core_endpoint() -> None:
-    source = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
-        encoding="utf-8"
-    )
-
-    assert "verify_installed_issue417_acceptance.py" in source
-    assert "Installed Issue #417 reporting/review Core $CoreVersion" in source
-    assert "'--expected-quillan-version', '0.10.5'" in source
-    assert "'--expected-core-version', $CoreVersion" in source
-    assert source.index("Installed Issue #417 reporting/review Core $CoreVersion") < (
-        source.index("if ($CoreVersion -eq '0.6.4')")
-    )
+def test_issue417_acceptance_remains_historical_not_release_blocker() -> None:
+    source = (ROOT / "scripts/validate_release_candidate.ps1").read_text(encoding="utf-8")
+    assert "verify_installed_issue417_acceptance.py" not in source
+    assert "verify_installed_issue421_reader_contract.py" in source

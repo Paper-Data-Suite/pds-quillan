@@ -1,5 +1,7 @@
 # Quillan Development Plan
 
+Quillan 0.10.6 adopts Core 0.6.5 reader-contract metadata, retains its unchanged manifest reader identity, includes the #419 scan recovery workflow, and uses one lightweight installed release gate. Older release-endpoint descriptions below are historical.
+
 Quillan now has the complete producer-side foundation through #365:
 Academic Result Manifest v1, privacy projection, revision policy, Core 0.6
 compatibility, explicit Academic Work Registration, explicit immutable workspace
@@ -8,11 +10,11 @@ explicit Core publication/supersession/withdrawal/republication with full catalo
 reconciliation, consumer-neutral manifest/artifact reading through #364, and
 clean-wheel installed producer lifecycle acceptance through #365.
 
-Classification: **active authority** for the v0.10.5 patch-release candidate.
+Classification: **active authority** for the v0.10.6 Core 0.6.5 release candidate.
 
 ## Current status
 
-Quillan v0.10.5 is the current local-first, teacher-controlled writing-evidence
+Quillan v0.10.6 is the current local-first, teacher-controlled writing-evidence
 candidate for PDS Core 0.6. Its supported workflow is:
 
 ```text

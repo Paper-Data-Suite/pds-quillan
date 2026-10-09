@@ -76,10 +76,7 @@ def test_installed_acceptance_fixture_exercises_rescan_and_resolution(
     ).items
 
 
-def test_candidate_validator_invokes_installed_resubmission_acceptance() -> None:
-    source = Path("scripts/validate_release_candidate.ps1").read_text(
-        encoding="utf-8"
-    )
-    assert "verify_installed_resubmission_inbox.py" in source
-    assert "Installed resubmission inbox Core $CoreVersion" in source
-    assert "'--expected-quillan-version', '0.10.5'" in source
+def test_resubmission_remains_under_source_ci_not_repeated_in_release_gate() -> None:
+    source = Path("scripts/validate_release_candidate.ps1").read_text(encoding="utf-8")
+    assert "verify_installed_resubmission_inbox.py" not in source
+    assert "verify_installed_issue419_recovery.py" in source

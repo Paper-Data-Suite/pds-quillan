@@ -42,7 +42,7 @@ a workspace, publish records, expose a reader, or change routing behavior.
 Operational interoperability is discovered independently through
 `paper_data_suite.module_operations`, with
 `quillan = quillan.pds_operations:get_module_operations_profile`. Quillan
-requires `pds-core>=0.6.2,<0.7` because Core 0.6.2 introduced this contract.
+requires `pds-core>=0.6.5,<0.7` because its new reader declaration requires Core 0.6.5; the operations interface itself was introduced in Core 0.6.2.
 The v1 profile exposes independent read-only attention and readiness providers.
 Attention aggregates current Quillan-owned workflow projections; readiness
 answers whether the supplied workspace/class context is structurally usable.
@@ -76,7 +76,7 @@ world languages, arts/humanities, and interdisciplinary writing tasks.
 
 ## Current Status
 
-Quillan 0.10.5 is the current patch-release candidate. It adds coherent
+Quillan 0.10.6 is the current patch-release candidate. It declares the stable Core 0.6.5 reader contract independently of the Quillan package version. It adds Core 0.6.5 reader-contract metadata, completed #419 scan recovery, coherent
 assignment-local reporting and streamlined review continuation/navigation while
 keeping the active workflow standards-based:
 
@@ -466,14 +466,14 @@ development extras:
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install "C:\path\to\pds_core-0.6.2-py3-none-any.whl"
+python -m pip install "C:\path\to\pds_core-0.6.5-py3-none-any.whl"
 python -m pip install -e ".[dev]"
 python -m pip check
 ```
 
 When normal dependency resolution is unavailable, install a verified compatible
 PDS Core wheel first. Pip then confirms that wheel satisfies Quillan's declared
-`pds-core>=0.6.2,<0.7` runtime dependency. A sibling Core checkout is not required,
+`pds-core>=0.6.5,<0.7` runtime dependency. A sibling Core checkout is not required,
 and no neighboring Core source path is used. `requirements-dev.txt` is a
 convenience wrapper around `.[dev]` and may be used instead of the direct
 editable-install command.
@@ -484,23 +484,20 @@ To validate clean editable and noneditable installations, run:
 powershell -ExecutionPolicy Bypass `
     -File .\scripts\validate_development_install.ps1 `
     -Python .\.venv\Scripts\python.exe `
-    -PdsCoreWheel "C:\path\to\pds_core-0.6.2-py3-none-any.whl"
+    -PdsCoreWheel "C:\path\to\pds_core-0.6.5-py3-none-any.whl"
 ```
 
 The equivalent `PDS_CORE_WHEEL` environment variable may be used instead of
 `-PdsCoreWheel`; an explicit parameter takes precedence. The isolated validation
 checks package metadata, editable and noneditable installation, installed import
-origins, CLI availability, and workspace side effects. The v0.10.5 candidate runtime is PDS2-only and uses module-qualified storage throughout.
+origins, CLI availability, and workspace side effects. The v0.10.6 candidate runtime is PDS2-only and uses module-qualified storage throughout.
 
-Release-candidate validation qualifies the same built Quillan wheel against exact,
-authenticated Core 0.6.2 and Core 0.6.3 release wheels plus the exact released Core 0.6.4 wheel. At each endpoint it runs
-the installed application workflow, producer lifecycle, module-operations checks,
-class-set acceptance, and release-edge/mixed-routing acceptance outside the source
-checkout. The ordinary installed workflow first proves that assignment, PDS2,
-review, feedback, and report operations create no academic registry state; explicit
-producer phases then exercise registration, immutable manifests, publication,
-supersession/withdrawal, authorization, and audit behavior. This acceptance neither
-grants release authorization nor adds grading, proficiency, or portfolio policy.
+Release qualification builds one exact Quillan 0.10.6 wheel/sdist pair,
+authenticates released Core 0.6.5, and executes installed reader-contract,
+publication lifecycle and Issue #419 recovery acceptance in one isolated
+environment. Source CI is run once, without historical multi-Core matrices.
+These checks never grant release authorization or make reader metadata a
+consumer authorization decision.
 
 Core 0.6 adoption is compatibility infrastructure only. It does not register
 Academic Work, generate or publish Academic Result manifests, create Publication

@@ -15,7 +15,7 @@ import zipfile
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
-EXPECTED_VERSION = "0.10.5"
+EXPECTED_VERSION = "0.10.6"
 REQUIRED_PACKAGE_FILES = {
     "quillan/pds_module.py",
     "quillan/pds_publication.py",
@@ -125,7 +125,7 @@ def _metadata_contract(raw: str) -> dict[str, object]:
     assert core_requirement.marker is None, core_requirement
     assert not core_requirement.extras, core_requirement
     assert {str(value) for value in core_requirement.specifier} == {
-        ">=0.6.2",
+        ">=0.6.5",
         "<0.7",
     }, core_requirement
     pdf_requirements = [

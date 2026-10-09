@@ -5,35 +5,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_candidate_validator_builds_v0105_once_and_qualifies_three_core_endpoints() -> None:
-    text = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
-        encoding="utf-8"
-    )
-    assert "$PdsCore062Wheel" in text
-    assert "$PdsCore063Wheel" in text
-    assert "$PdsCore064Wheel" in text
-    assert "'--core-version', '0.6.2'" in text
-    assert "'--core-version', '0.6.3'" in text
-    assert "'--core-version', '0.6.4'" in text
-    assert "quillan-0.10.5-py3-none-any.whl" in text
-    assert "quillan-0.10.5.tar.gz" in text
-    assert text.count('"Build one wheel and sdist"') == 1
-    assert "verify_installed_producer_acceptance.py" in text
-    assert "verify_installed_operations_acceptance.py" in text
-    assert "verify_installed_selected_review_reads.py" in text
-    assert "verify_installed_resubmission_inbox.py" in text
-    assert "verify_installed_issue416_scan_paths.py" in text
-    assert "verify_installed_issue417_acceptance.py" in text
-    assert "Installed selected-review reads Core $CoreVersion" in text
-    assert "Installed resubmission inbox Core $CoreVersion" in text
-    assert "Installed Issue #417 reporting/review Core $CoreVersion" in text
-    assert "Installed Issue #416 scan paths Core 0.6.4" in text
-    assert "'--expected-quillan-version', '0.10.5'" in text
-    assert "'--version', '0.10.5'" in text
-    assert "'--expected-core-version', $CoreVersion" in text
-    assert "if ($CoreVersion -eq '0.6.4')" in text
-    assert "v0.10.0 physical acceptance is historical only: NOT REQUIRED FOR #417" in text
-
+def test_candidate_validator_builds_once_and_qualifies_core_065() -> None:
+    source = (ROOT / "scripts/validate_release_candidate.ps1").read_text(encoding="utf-8")
+    assert "$PdsCore065Wheel" in source
+    assert "$PdsCore062Wheel" not in source
+    assert "$PdsCore063Wheel" not in source
+    assert "$PdsCore064Wheel" not in source
+    assert "quillan-0.10.6-py3-none-any.whl" in source
+    assert "quillan-0.10.6.tar.gz" in source
+    assert "verify_installed_issue421_reader_contract.py" in source
+    assert "verify_installed_issue419_recovery.py" in source
+    assert source.count("Build exact release wheel and sdist") == 1
 
 def test_candidate_validator_has_no_active_v090_or_core060_assumption() -> None:
     text = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
@@ -64,26 +46,13 @@ def test_installed_class_set_document_preserves_suite_boundary() -> None:
     assert "attention and readiness" in text
 
 
-def test_candidate_validator_runs_repository_full_gate_once() -> None:
-    text = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
-        encoding="utf-8"
-    )
-    assert text.count("run_tests.ps1") == 1
-    assert 'Invoke-Required "Source pytest"' not in text
-    assert 'Invoke-Required "Ruff"' not in text
-    assert 'Invoke-Required "mypy"' not in text
-    assert 'Invoke-Required "pip check"' not in text
-    assert 'Invoke-Required "Documentation"' not in text
-    assert 'Invoke-Required "Release compatibility"' not in text
-    assert 'Invoke-Required "Diff whitespace"' not in text
-    assert 'Invoke-Required "compileall"' in text
+def test_candidate_validator_reuses_full_ci_gate() -> None:
+    source = (ROOT / "scripts/validate_release_candidate.ps1").read_text(encoding="utf-8")
+    assert source.count("run_tests.ps1") == 1
+    assert "[switch]$SkipRepositoryDevelopmentChecks" in source
+    assert "Repository checks reused from passing CI" in source
 
-
-def test_candidate_validator_can_reuse_completed_repository_gate() -> None:
-    text = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
-        encoding="utf-8"
-    )
-    assert "[switch]$SkipRepositoryDevelopmentChecks" in text
-    assert "if ($SkipRepositoryDevelopmentChecks)" in text
-    assert "full pytest is not being repeated." in text
-    assert text.count("(Join-Path $Repository 'run_tests.ps1')") == 1
+def test_candidate_has_one_source_isolated_venv() -> None:
+    source = (ROOT / "scripts/validate_release_candidate.ps1").read_text(encoding="utf-8")
+    assert "New-Item -ItemType Directory -Path $Artifacts, $Outside" in source
+    assert "'--core-version', '0.6.5'" in source

@@ -35,7 +35,7 @@ def test_operations_wheel_harness_is_explicit_built_artifact_acceptance() -> Non
     assert '"--full-workflow"' in source
     assert "verify_installed_producer_acceptance.py" in source
     assert "verify_installed_operations_acceptance.py" in source
-    assert 'choices=("0.6.2", "0.6.3", "0.6.4")' in source
+    assert 'choices=("0.6.2", "0.6.3", "0.6.4", "0.6.5")' in source
     assert '"-e"' not in source
 
 
@@ -44,7 +44,7 @@ def test_installed_application_acceptance_accepts_explicit_core_endpoint() -> No
         encoding="utf-8"
     )
     assert '"--expected-core-version"' in source
-    assert 'choices=("0.6.0", "0.6.2", "0.6.3", "0.6.4")' in source
+    assert 'choices=("0.6.0", "0.6.2", "0.6.3", "0.6.4", "0.6.5")' in source
     assert 'default="0.6.0"' in source
     assert "core_distribution.version == args.expected_core_version" in source
     assert 'core_distribution.version == "0.6.0"' not in source
@@ -76,25 +76,20 @@ def test_current_artifact_contract_requires_operations_provider_and_core062() ->
     assert '"quillan/pds_operations.py"' in source
     assert '"quillan/attention_provider.py"' in source
     assert '"paper_data_suite.module_operations"' in source
-    assert '">=0.6.2"' in source
+    assert '">=0.6.5"' in source
 
 
-def test_ci_runs_built_wheel_acceptance_for_minimum_and_current_core() -> None:
-    source = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
-        encoding="utf-8"
-    )
-    assert "operations-wheel-qualification:" in source
-    assert 'core: "0.6.2"' in source
-    assert 'core: "0.6.3"' in source
+def test_ci_runs_exact_current_core_wheel_once() -> None:
+    source = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert "installed-wheel:" in source
     assert "run_operations_wheel_acceptance.py" in source
-    assert "--expected-core-version" in source
+    assert "--expected-core-version 0.6.5" in source
     assert "windows-latest" in source
     assert "ubuntu-latest" in source
 
-
 def test_active_dependency_contract_matches_artifact_acceptance_floor() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    assert "pds-core>=0.6.2,<0.7" in project["project"]["dependencies"]
+    assert "pds-core>=0.6.5,<0.7" in project["project"]["dependencies"]
 
 
 def test_harness_refuses_nonempty_work_directory(tmp_path: Path) -> None:
