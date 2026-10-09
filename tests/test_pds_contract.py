@@ -19,6 +19,7 @@ from pds_core.routing_models import (
 from quillan.pds_contract import (
     ACADEMIC_RESULT_MANIFEST_CONTRACT_VERSION,
     DISPATCHABLE_ROUTE_STATUSES,
+    QUILLAN_ACADEMIC_RESULT_READER_CONTRACT_VERSION,
     QUILLAN_ACADEMIC_WORK_CONTRACT_VERSION,
     QUILLAN_DISPLAY_NAME,
     QUILLAN_MODULE_ID,
@@ -34,6 +35,7 @@ PUBLIC_CONTRACT_CONSTANTS = {
     "ACADEMIC_RESULT_MANIFEST_CONTRACT_VERSION",
     "DISPATCHABLE_ROUTE_STATUSES",
     "QUILLAN_DISPLAY_NAME",
+    "QUILLAN_ACADEMIC_RESULT_READER_CONTRACT_VERSION",
     "QUILLAN_ACADEMIC_WORK_CONTRACT_VERSION",
     "QUILLAN_MODULE_ID",
     "RESPONSE_PAGE_CONTRACT_VERSION",
@@ -48,6 +50,10 @@ def test_quillan_contract_has_approved_values() -> None:
     assert QUILLAN_MODULE_ID == "quillan"
     assert QUILLAN_DISPLAY_NAME == "Quillan"
     assert QUILLAN_ACADEMIC_WORK_CONTRACT_VERSION == "quillan_academic_work_v1"
+    assert (
+        QUILLAN_ACADEMIC_RESULT_READER_CONTRACT_VERSION
+        == "quillan_academic_result_reader_v1"
+    )
     assert (
         ACADEMIC_RESULT_MANIFEST_CONTRACT_VERSION
         == "quillan_academic_result_manifest_v1"

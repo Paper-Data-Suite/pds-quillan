@@ -92,28 +92,23 @@ def test_harness_does_not_import_sibling_products() -> None:
         assert sibling not in source
 
 
-def test_release_harness_orders_installed_acceptance_before_persistence() -> None:
+def test_current_release_harness_orders_installed_acceptance_before_persistence() -> None:
     source = RELEASE.read_text(encoding="utf-8")
-    ordinary = source.index(
-        'Invoke-Required "Installed application workflow Core $CoreVersion"'
+    stages = (
+        "Invoke-Required 'Installed reader declaration'",
+        "Invoke-Required 'Installed publication and application workflow'",
+        "Invoke-Required 'Installed publication producer acceptance'",
+        "Invoke-Required 'Installed Issue #419 scan recovery'",
+        "Invoke-Required 'Persist exact tested artifacts'",
     )
-    producer = source.index(
-        'Invoke-Required "Installed producer lifecycle Core $CoreVersion"'
-    )
-    class_set = source.index(
-        'Invoke-Required "Installed class-set acceptance Core $CoreVersion"'
-    )
-    release_edge = source.index(
-        'Invoke-Required "Installed release-edge acceptance Core $CoreVersion"'
-    )
-    persistence = source.index('Invoke-Required "Persist exact tested artifacts"')
-    assert ordinary < producer < class_set < release_edge < persistence
+    positions = tuple(source.index(marker) for marker in stages)
+    assert positions == tuple(sorted(positions))
     assert "verify_installed_producer_acceptance.py" in source
-    assert "verify_installed_class_set_acceptance.py" in source
-    assert "verify_installed_release_edges.py" in source
-    assert "(Join-Path $Acceptance 'workflow-workspace')" in source
+    assert "verify_installed_issue421_reader_contract.py" in source
+    assert "verify_installed_issue419_recovery.py" in source
+    assert "'--expected-core-version', '0.6.5'" in source
     assert "Remove-Item Env:PYTHONPATH" in source
-    assert 'Write-Host "Release authorization: NOT GRANTED"' in source
+    assert "Release authorization: NOT GRANTED" in source
 
 
 def test_manifest_authorization_precedes_core_verification_and_read() -> None:

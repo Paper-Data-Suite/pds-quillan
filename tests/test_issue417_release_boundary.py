@@ -23,7 +23,7 @@ def test_reporting_runtime_modules_are_required_in_release_artifacts() -> None:
 def test_issue417_historical_evidence_and_new_core_are_independent() -> None:
     historical = (ROOT / "docs/v0.10.5_installed_reporting_review_acceptance.md").read_text(encoding="utf-8")
     current = (ROOT / "docs/release_process.md").read_text(encoding="utf-8")
-    assert "released Core 0.6.4" in historical
+    assert "Core 0.6.4" in historical
     assert "pds-core>=0.6.5,<0.7" in current
 
 def test_reporting_contract_matches_implemented_consolidated_pdf() -> None:

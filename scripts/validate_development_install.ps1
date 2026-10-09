@@ -224,7 +224,7 @@ assert len(core) == 1, core
 assert core[0].url is None, core[0]
 assert {str(value) for value in core[0].specifier} == {'>=0.6.5', '<0.7'}, core[0]
 installed_core = metadata.distribution('pds-core')
-assert Version(installed_core.version) in SpecifierSet('>=0.6.2,<0.7'), installed_core.version
+assert Version(installed_core.version) in SpecifierSet('>=0.6.5,<0.7'), installed_core.version
 scripts = [entry for entry in quillan.entry_points if entry.group == 'console_scripts']
 assert any(entry.name == 'quillan' and entry.value == 'quillan.cli:main' for entry in scripts), scripts
 print(json.dumps({

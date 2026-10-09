@@ -15,4 +15,6 @@ Issue #421: Core 0.6.5 reader-contract compatibility and a lightweight release.
 Do not require historic three-Core wheel qualification, another full pytest run,
 physical-paper acceptance, or synchronized Meridian/Vitrine releases.
 
+No external package-index upload or publication, Git tag, GitHub Release, or deployment is authorized without explicit owner approval.
+
 **Release authorization is not implicit in automated test success.**
