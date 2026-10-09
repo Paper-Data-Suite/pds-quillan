@@ -296,3 +296,12 @@ boundaries for authorized consumers.
 
 Issue #365 owns the complete clean-wheel producer-to-Core end-to-end acceptance flow.
 Issue #366 owns final compatibility/release authorization.
+
+## Stable reader identity (Core 0.6.5, Quillan #421)
+
+The producer profile declares `quillan_academic_result_reader_v1` for
+`quillan_academic_result_manifest_v1`. The declaration is exact and
+manifest-specific. The API, canonical-byte requirement, returned models,
+exception classes, and read/authorization boundary documented above have
+**not** changed. No consumer is obligated to adopt this identity solely due
+to a Quillan package update.
