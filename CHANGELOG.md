@@ -6,7 +6,19 @@ Quillan is in early pre-1.0 development. Package versions describe the
 installable project state; GitHub issues and milestones may be used for
 planning and do not by themselves represent releases.
 
-## 0.10.5 - Unreleased
+## 0.10.6 - Unreleased
+
+- Adopt PDS Core 0.6.5 producer reader-support metadata; declare exact
+  `quillan_academic_result_reader_v1` for `quillan_academic_result_manifest_v1`.
+- Raise the Core floor to `pds-core>=0.6.5,<0.7`; no workspace migration.
+- Include #419 registered-route failed scan recovery, historical replay,
+  teacher-confirmed menu and CLI operations, and idempotent evidence persistence.
+- Preserve the exact public manifest and reader contract, so Quillan package
+  version changes alone do not require Meridian or Vitrine releases.
+- Replace the historical multi-Core release matrix with one authenticated
+  Core 0.6.5 installed-wheel qualification.
+
+## 0.10.5 - 2026-10-03
 
 ### Changed
 

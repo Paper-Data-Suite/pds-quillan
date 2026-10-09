@@ -68,3 +68,28 @@ Core's package version, Publication Record schema, routing contract, registratio
 schema, Quillan producer contract, manifest contract, and package version are
 independent version axes. The Core dataclass is not a serialized Quillan profile
 schema and Quillan defines no profile revision or compatibility schema.
+
+## Core 0.6.5 manifest-specific reader declaration (#421)
+
+Quillan declares an exact `PublicationReaderSupport` row for
+`academic_result_set` / `quillan_academic_result_manifest_v1`:
+
+| Metadata field | Identity |
+| --- | --- |
+| Distribution | `quillan` |
+| Reader contract | `quillan_academic_result_reader_v1` |
+| Public reader | `quillan.academic_result_reader` |
+| Core minimum | `pds-core>=0.6.5,<0.7` |
+
+The declaration identifies an **existing public behavior contract**, not a
+Quillan package version, parsing callback, import path in Core metadata, or
+authorization. Core's exact lookup never imports the reader, and Core's
+publication-compatibility evaluation remains separate and unchanged. An unknown
+manifest contract is not granted a reader by this declaration.
+
+Meridian and Vitrine may consume this metadata only after their own adapters
+support the exact reader contract. They must still authorize access, verify
+canonical manifest bytes, and enforce their own grading/portfolio policies.
+Changing the Quillan distribution version alone does not revise this reader
+contract. Changes to its public semantics require a separately versioned
+reader contract and consumer qualification.

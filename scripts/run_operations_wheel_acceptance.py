@@ -248,7 +248,7 @@ def main() -> int:
     parser.add_argument(
         "--expected-core-version",
         required=True,
-        choices=("0.6.2", "0.6.3", "0.6.4"),
+        choices=("0.6.2", "0.6.3", "0.6.4", "0.6.5"),
     )
     args = parser.parse_args()
     try:

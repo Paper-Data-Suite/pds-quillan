@@ -1,8 +1,8 @@
 # Quillan Data Contracts
 
-Quillan v0.10.5 requires `pds-core>=0.6.2,<0.7`. Release qualification covers the
-exact authenticated Core 0.6.2 minimum endpoint, released Core 0.6.3 endpoint,
-and released Core 0.6.4 endpoint.
+Current Core 0.6.5 reader binding: `quillan_academic_result_reader_v1` for `quillan_academic_result_manifest_v1`. Manifest serialization and consumer-neutral reader behavior are unchanged.
+
+Quillan v0.10.6 requires `pds-core>=0.6.5,<0.7`. Current release qualification uses the exact authenticated Core 0.6.5 endpoint.
 This dependency floor preserves routing contract `"1"`, PDS2 payloads,
 route-registration schema `"1"`, and the existing Quillan producer contracts. The
 Core dependency itself does not create Academic Work Registration, Academic Period,
@@ -63,7 +63,7 @@ historical [v0.10.1 Installed Batch Feedback Acceptance](v0.10.1_installed_batch
 historical [v0.10.2 Installed Selected-Review Read Acceptance](v0.10.2_installed_selected_review_read_acceptance.md),
 historical [v0.10.3 Resubmission / Rescan Review](resubmission_inbox.md),
 historical [v0.10.4 Installed Scan-Path Acceptance](v0.10.4_installed_scan_path_acceptance.md), and active [v0.10.5 Installed Reporting and Review Acceptance](v0.10.5_installed_reporting_review_acceptance.md).
-The v0.10.5 release gate installs the same candidate wheel against authenticated
+The historical v0.10.5 release gate installs the same candidate wheel against authenticated
 released Core 0.6.2, Core 0.6.3, and Core 0.6.4 endpoints. It first proves that ordinary installed
 PDS2/review workflows create no academic registry state, then explicitly exercises
 registration, immutable manifest generation, publication, discovery, verification,
@@ -116,14 +116,14 @@ those source schemas.
 Quillan stores structured evidence and teacher review data in local files under
 the teacher-selected Paper Data Suite workspace.
 
-The active v0.10.5 review model is standards-based:
+The active v0.10.6 review model is standards-based:
 
 ```text
 student evidence -> review unit -> Focus Standard -> teacher judgment -> feedback/reporting
 ```
 
 The old generic tag, comment-bank, rubric, and criterion-score runtime model
-has been removed. This index documents the active v0.10.5 contracts.
+has been removed. This index documents the active v0.10.6 contracts.
 
 The assignment-level resubmission inbox is a non-persistent projection over
 canonical observations, manifests, review timestamps, and export metadata. See

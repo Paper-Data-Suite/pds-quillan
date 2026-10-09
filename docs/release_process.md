@@ -1,107 +1,53 @@
-# v0.10.5 Release Process
+# Quillan v0.10.6 Release Process — Issue #421
 
-Classification: **active authority for the v0.10.5 #417 patch candidate**.
+## Boundary
 
-Issue #417 expands assignment-local reporting and streamlines teacher review
-continuation/navigation. It does not change PDS2 routing, physical scan intake,
-publication schemas, assignment/review schemas, or the runtime Core dependency
-range.
+Quillan v0.10.6 adopts Core v0.6.5 publication reader-support metadata and includes
+completed scan recovery (#419). The public `quillan_academic_result_manifest_v1`
+and `quillan_academic_result_reader_v1` contracts are **unchanged**. The runtime
+floor is `pds-core>=0.6.5,<0.7`, with no sibling runtime dependencies or migration.
 
-Passing automation does not itself grant tag or GitHub Release authority.
+Reader metadata is not authorization, not consumer adapter approval, and not a
+compatibility promise for any future reader-contract change. Meridian #111 and
+Vitrine #103 independently decide adapter compatibility against the declared
+reader contract rather than a producer package-version allowlist.
 
-## Core release identities
+## Exact released Core dependency
 
-Runtime compatibility remains:
+- `pds_core-0.6.5-py3-none-any.whl`
+- SHA-256: `9ace75f17b23b7f0ed6a709d531af5120db43d0325b4148d26f2d6ba1d4b3c18`
+- Release source commit: `64da9d2e4884ffe78a020aed87b1d5b9500927ad`
 
-```text
-pds-core>=0.6.2,<0.7
+## Short candidate gate
+
+1. Reconcile the merged Issue #421 source commit and require a clean checkout.
+2. Reuse passing CI source checks, rather than rerunning the full suite. CI includes
+   pytest, Ruff, strict mypy, documentation and compatibility checks.
+3. Authenticate released Core 0.6.5 by exact filename, embedded metadata and SHA-256.
+4. Build **one** Quillan 0.10.6 wheel/sdist pair and inspect its metadata, provider
+   entry points and archive contents; run Twine check.
+5. In **one** source-isolated venv, install the exact Core wheel and exact Quillan
+   wheel, run `pip check`, and qualify: the reader declaration and actual reader,
+   representative publication/installed application workflow, and Issue #419
+   synthetic scan recovery.
+6. Persist exactly the qualified pair outside the repository with SHA-256 hashes,
+   source commit and Core identity recorded.
+7. Only after owner authorization create the tag/GitHub Release. No external
+   package-index upload without distinct authorization.
+
+Run with:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File scripts/validate_release_candidate.ps1 `
+  -PdsCore065Wheel "$HOME\Downloads\pds_core-0.6.5-py3-none-any.whl" `
+  -ArtifactOutputDirectory "$HOME\Downloads\quillan-v0.10.6-qualified" `
+  -SkipRepositoryDevelopmentChecks
 ```
 
-Quillan v0.10.5 qualification uses three exact released Core endpoints:
+Historical v0.10.5, v0.10.4, and older acceptance records are retained as
+historic evidence and are **not** repeated against obsolete Core endpoints.
+Physical paper/QR testing is not repeated because the physical contract did not change.
 
-```text
-pds_core-0.6.2-py3-none-any.whl
-SHA-256 b9d5de7d467d18716f415da87f359e940603d9c738a3a9ae9309272ebe78a848
-
-pds_core-0.6.3-py3-none-any.whl
-SHA-256 98d7596ce0eed26e4d56a17bbbbd644db3014259b56a45783a173fe8237af5e5
-
-pds_core-0.6.4-py3-none-any.whl
-SHA-256 48cea9317f2967bdc0f2d4c14349a56677c7c3f8211f0f33978ccb1a1c75859b
-release commit 152d1c65064c4f8fe55249ff2ca3379d7c4d6ccb
-```
-
-The released Core 0.6.4 bytes supersede the pre-release #226 handoff wheel used
-during Quillan v0.10.4 qualification. Historical v0.10.4 evidence remains
-historical and is not rewritten.
-
-## Exact candidate construction
-
-1. Reconcile the release commit with `origin/main` and require a clean tree.
-2. Authenticate released Core 0.6.2, 0.6.3, and 0.6.4 wheels.
-3. Run the repository development gate once.
-4. Build exactly one `quillan-0.10.5-py3-none-any.whl` and
-   `quillan-0.10.5.tar.gz`.
-5. Run Twine and archive inspection against that exact pair.
-6. Reuse the same Quillan wheel bytes in isolated Core 0.6.2, 0.6.3, and 0.6.4
-   environments outside the checkout.
-7. Run the established installed application, producer, module-operations,
-   class-set, release-edge, selected-review, and resubmission gates at each
-   endpoint.
-8. Run `verify_installed_issue417_acceptance.py` at each Core endpoint to prove
-   the five-artifact reporting packet, BOM-aware Unicode CSV boundary,
-   privacy/non-mutation contract, and shared B/M/Q review navigation from the
-   installed wheel.
-9. Under released Core 0.6.4, also rerun
-   `verify_installed_issue416_scan_paths.py` as historical path-safety
-   regression coverage.
-10. Install the exact Quillan sdist with released Core 0.6.4 and run the
-    installed smoke.
-11. Persist the exact tested Quillan pair outside the repository and record
-    filenames, lengths, and SHA-256 values.
-
-A rebuild has a different artifact identity and invalidates installed evidence
-for the previous bytes.
-
-## #417 installed acceptance
-
-The active installed contract is
-[v0.10.5 Installed Reporting and Review Acceptance](v0.10.5_installed_reporting_review_acceptance.md).
-
-The harness must prove from an installed, source-isolated wheel that:
-
-- one assignment reporting operation creates exactly the three CSVs, the
-  consolidated Assignment Review PDF, and the Assignment Results JSON;
-- all three spreadsheet CSVs begin with exactly one UTF-8 BOM and preserve
-  Unicode student/standard text without mojibake;
-- private teacher notes, rating rationale, and the assignment prompt do not leak
-  into the reporting packet;
-- canonical assignment, roster, submission, review, and standards files are not
-  modified by reporting;
-- the JSON inventory sees the other four generated artifacts;
-- the installed review menu has no numbered Back display and uses the shared
-  `B. Back`, `M. Main Menu`, `Q. Quit` navigation signals.
-
-## Historical release evidence
-
-Quillan v0.10.4 was released on 2026-10-01. Its #416 installed scan-path
-acceptance remains historical evidence for provenance/path compatibility and
-retains the exact pre-release Core #226 handoff identity it originally tested.
-
-The v0.10.3 resubmission-inbox, v0.10.2 selected-review read, v0.10.1
-batch-feedback, and v0.10.0 class-set/physical acceptance documents likewise
-remain historical evidence for unchanged boundaries.
-
-Issue #417 does not change physical packet generation, QR routing, retained scan
-intake, or evidence decoding, so the v0.10.0 owner-operated physical-paper
-acceptance is not repeated as a v0.10.5 release gate.
-
-## Release authority
-
-After exact-candidate qualification, an owner must explicitly authorize the
-v0.10.5 release. Only then may the normal process create/push tag `v0.10.5` and
-make the exact qualified wheel/sdist available in the repository release
-channel.
-
-Do not upload Quillan to an external package index without separate explicit
-authorization.
+This acceptance qualifies producer behavior, not the completeness of Meridian/Vitrine
+consumer-side #111/#103 upgrades.

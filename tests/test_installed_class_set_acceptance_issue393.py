@@ -53,20 +53,15 @@ def test_class_set_acceptance_preserves_teacher_controlled_boundaries() -> None:
     assert "for forbidden in" in text
 
 
-def test_candidate_validator_runs_class_set_for_each_core_endpoint() -> None:
-    text = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
-        encoding="utf-8"
-    )
-    assert "verify_installed_class_set_acceptance.py" in text
-    assert "Installed class-set acceptance Core $CoreVersion" in text
-    assert "'--expected-core-version', $CoreVersion" in text
-    assert "(Join-Path $Acceptance 'workflow-workspace')" in text
-
+def test_historical_class_set_is_not_repeated_at_release() -> None:
+    source = (ROOT / "scripts/validate_release_candidate.ps1").read_text(encoding="utf-8")
+    assert "verify_installed_class_set_acceptance.py" not in source
+    assert "verify_installed_producer_acceptance.py" in source
 
 def test_class_set_acceptance_is_source_isolated_and_version_exact() -> None:
     text = _script()
-    assert 'EXPECTED_QUILLAN_VERSION = "0.10.5"' in text
-    assert 'choices=("0.6.2", "0.6.3", "0.6.4")' in text
+    assert 'EXPECTED_QUILLAN_VERSION = "0.10.6"' in text
+    assert 'choices=("0.6.2", "0.6.3", "0.6.4", "0.6.5")' in text
     assert "quillan_source_isolated" in text
     assert "core_source_isolated" in text
     assert "is_relative_to(repository)" in text

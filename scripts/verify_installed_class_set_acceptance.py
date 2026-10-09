@@ -41,7 +41,7 @@ from quillan.review_student_navigation import build_review_student_navigation
 from quillan.review_work_queue import build_assignment_review_work_queue
 from quillan.pds_operations import get_module_operations_profile
 
-EXPECTED_QUILLAN_VERSION = "0.10.5"
+EXPECTED_QUILLAN_VERSION = "0.10.6"
 CLASS_ID = "synthetic_release_class"
 ASSIGNMENT_ID = "synthetic_release_digital"
 COPY_ASSIGNMENT_ID = "synthetic_release_copy"
@@ -696,7 +696,7 @@ def main() -> int:
     parser.add_argument("--repository", type=Path, required=True)
     parser.add_argument(
         "--expected-core-version",
-        choices=("0.6.2", "0.6.3", "0.6.4"),
+        choices=("0.6.2", "0.6.3", "0.6.4", "0.6.5"),
         required=True,
     )
     args = parser.parse_args()

@@ -74,14 +74,16 @@ def test_release_edge_verifier_checks_diagnostic_privacy() -> None:
     assert "forbidden in rendered" in text
 
 
-def test_candidate_validator_runs_release_edge_for_each_core_endpoint() -> None:
+def test_current_release_gate_keeps_publication_qualification_without_legacy_matrix() -> None:
     text = (ROOT / "scripts" / "validate_release_candidate.ps1").read_text(
         encoding="utf-8"
     )
-    assert "verify_installed_release_edges.py" in text
-    assert "Installed release-edge acceptance Core $CoreVersion" in text
-    assert "(Join-Path $Acceptance 'workflow-workspace')" in text
-    assert "'--expected-core-version', $CoreVersion" in text
+    assert "verify_installed_producer_acceptance.py" in text
+    assert "verify_installed_issue421_reader_contract.py" in text
+    assert "Installed publication producer acceptance" in text
+    assert "Installed reader declaration" in text
+    assert "'--expected-core-version', '0.6.5'" in text
+    assert "verify_installed_release_edges.py" not in text
 
 
 def test_installed_acceptance_docs_explain_release_edge_authority() -> None:

@@ -3,6 +3,7 @@
 from pds_core.publication_compatibility import (
     PublicationContractSupport,
     PublicationProducerProfile,
+    PublicationReaderSupport,
     validate_publication_producer_profile,
 )
 from pds_core.publication_records import PUBLICATION_RECORD_SCHEMA_VERSION
@@ -10,6 +11,7 @@ from pds_core.publication_records import PUBLICATION_RECORD_SCHEMA_VERSION
 from quillan.pds_contract import (
     ACADEMIC_RESULT_MANIFEST_CONTRACT_VERSION,
     QUILLAN_ACADEMIC_WORK_CONTRACT_VERSION,
+    QUILLAN_ACADEMIC_RESULT_READER_CONTRACT_VERSION,
     QUILLAN_DISPLAY_NAME,
     QUILLAN_MODULE_ID,
 )
@@ -36,6 +38,17 @@ def get_publication_producer_profile() -> PublicationProducerProfile:
                     supported_capabilities=frozenset({"standards_ratings"}),
                     source_record_contracts=(),
                     allows_missing_source_record=True,
+                    reader_support=(
+                        PublicationReaderSupport(
+                            manifest_contract_version=(
+                                ACADEMIC_RESULT_MANIFEST_CONTRACT_VERSION
+                            ),
+                            distribution_name="quillan",
+                            reader_contract_version=(
+                                QUILLAN_ACADEMIC_RESULT_READER_CONTRACT_VERSION
+                            ),
+                        ),
+                    ),
                 ),
             ),
         )
